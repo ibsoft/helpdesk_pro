@@ -280,7 +280,7 @@
       // Auto-init toasts (for flashed messages)
       document.addEventListener("DOMContentLoaded", () => {
         const toastElList = [].slice.call(document.querySelectorAll('.toast'));
-        toastElList.map(t => new bootstrap.Toast(t, { delay: 4000 }).show());
+        toastElList.map(t => new bootstrap.Toast(t, { delay: 6000 }).show());
       });
 
       // Global toast utility for AJAX
