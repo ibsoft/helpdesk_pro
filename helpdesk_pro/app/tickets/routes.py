@@ -83,7 +83,10 @@ def create_ticket():
         description = request.form.get("description")
 
         if not subject or not description:
-            flash("Subject and description are required.", "warning")
+            msg = "Subject and description are required."
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return jsonify(success=False, message=msg, category="warning"), 400
+            flash(msg, "warning")
             return redirect(url_for("tickets.list_tickets"))
 
         t = Ticket(
@@ -97,18 +100,26 @@ def create_ticket():
         db.session.add(t)
         db.session.commit()
 
-        db.session.add(AuditLog(action="Create Ticket",
-                                username=current_user.username, ticket_id=t.id))
+        db.session.add(AuditLog(
+            action="Create Ticket",
+            username=current_user.username,
+            ticket_id=t.id
+        ))
         db.session.commit()
 
-        flash(f"Ticket #{t.id} created successfully.", "success")
+        msg = f"Ticket #{t.id} created successfully."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             row_html = render_template("tickets/_row.html", t=t)
-            return jsonify(success=True, html=row_html)
+            return jsonify(success=True, message=msg, category="success", html=row_html)
 
+        flash(msg, "success")
         return redirect(url_for("tickets.list_tickets"))
+
     except Exception as e:
-        flash(f"Error creating ticket: {str(e)}", "danger")
+        msg = f"Error creating ticket: {str(e)}"
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(success=False, message=msg, category="danger"), 500
+        flash(msg, "danger")
         return redirect(url_for("tickets.list_tickets"))
 
 
