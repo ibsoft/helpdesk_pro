@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  body[data-bs-theme="light"] {
+    background: linear-gradient(120deg,#0d6efd,#6610f2,#6f42c1);
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
+  }
+  body[data-bs-theme="dark"] {
+    background: linear-gradient(120deg,#0b0d10,#1a1d24,#292d36);
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
+  }
+  @keyframes gradientShift {
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+  }
+  .setup-card {
+    max-width: 480px;
+    margin: 10vh auto;
+    background: rgba(255,255,255,0.12);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    color: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    padding: 40px;
+    text-align: center;
+    animation: fadeIn 1.2s ease;
+  }
+  body[data-bs-theme="dark"] .setup-card {
+    background: rgba(0,0,0,0.4);
+  }
+  @keyframes fadeIn {
+    from{opacity:0;transform:translateY(25px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+</style>
+
+<div class="setup-card">
+  <h3 class="mb-4"><i class="fa fa-user-shield text-warning"></i> {{ _('Initial Administrator Setup') }}</h3>
+  <p class="text-white-50 mb-4">{{ _('No users found. Create the first administrator account to continue.') }}</p>
+
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="form-floating mb-3">
+      <input type="text" class="form-control" id="username" name="username" placeholder="admin" required>
+      <label for="username">{{ _('Username') }}</label>
+    </div>
+    <div class="form-floating mb-3">
+      <input type="email" class="form-control" id="email" name="email" placeholder="admin@domain.com">
+      <label for="email">{{ _('Email (optional)') }}</label>
+    </div>
+    <div class="form-floating mb-4">
+      <input type="password" class="form-control" id="password" name="password" placeholder="••••••" required>
+      <label for="password">{{ _('Password') }}</label>
+    </div>
+    <button type="submit" class="btn btn-warning w-100 fw-bold py-2">
+      <i class="fa fa-check"></i> {{ _('Create Admin Account') }}
+    </button>
+  </form>
+</div>
+{% endblock %}

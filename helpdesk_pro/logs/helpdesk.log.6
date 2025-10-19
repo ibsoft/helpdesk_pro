@@ -1,0 +1,111 @@
+2025-10-18 23:04:52,332 [ERROR] app: Exception on /users [GET]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\utils\roles.py", line 18, in wrapper
+    return f(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\users\routes.py", line 15, in list_users
+    return render_template("users/list.html", users=users)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\users\list.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\base.html", line 137, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\users\list.html", line 69, in block 'content'
+    <i class="fa fa-calendar-alt"></i> {{ _('Monthly Resolution Rate %') }}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\ext.py", line 168, in _gettext_alias
+    return __context.call(__context.resolve("gettext"), *args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\ext.py", line 180, in gettext
+    return rv % variables  # type: ignore
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\markupsafe\__init__.py", line 165, in __mod__
+    return self.__class__(super().__mod__(value))
+ValueError: incomplete format
+2025-10-18 23:09:29,316 [ERROR] app: Exception on /users [GET]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\utils\roles.py", line 18, in wrapper
+    return f(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\users\routes.py", line 15, in list_users
+    return render_template("users/list.html", users=users)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\users\list.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\base.html", line 137, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\users\list.html", line 69, in block 'content'
+    <i class="fa fa-calendar-alt"></i> {{ _('Monthly Resolution Rate %') }}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\ext.py", line 168, in _gettext_alias
+    return __context.call(__context.resolve("gettext"), *args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\ext.py", line 180, in gettext
+    return rv % variables  # type: ignore
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\markupsafe\__init__.py", line 165, in __mod__
+    return self.__class__(super().__mod__(value))
+ValueError: incomplete format
+2025-10-18 23:11:43,425 [ERROR] app: Exception on /users [GET]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\utils\roles.py", line 18, in wrapper
+    return f(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\users\routes.py", line 15, in list_users
+    return render_template("users/list.html", users=users)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 131, in _render
+    rv = template.render(context)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\users\list.html", line 1, in top-level template code
+    {% extends "base.html" %}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\base.html", line 137, in top-level template code
+    {% block content %}{% endblock %}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\templates\users\list.html", line 69, in block 'content'
+    <i class="fa fa-calendar-alt"></i> {{ _('Monthly Resolution Rate %') }}
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\ext.py", line 168, in _gettext_alias
+    return __context.call(__context.resolve("gettext"), *args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\ext.py", line 180, in gettext
+    return rv % variables  # type: ignore
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\markupsafe\__init__.py", line 165, in __mod__
+    return self.__class__(super().__mod__(value))
+ValueError: incomplete format

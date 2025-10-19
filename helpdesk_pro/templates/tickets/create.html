@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>{{ _('Create Ticket') }}</h3>
+<form method="post">
+  <div class="mb-3"><label>{{ _('Subject') }}</label><input name="subject" class="form-control"></div>
+  <div class="mb-3"><label>{{ _('Description') }}</label><textarea name="description" class="form-control"></textarea></div>
+  <div class="mb-3"><label>{{ _('Priority') }}</label><select name="priority" class="form-select">
+    <option>Low</option><option>Medium</option><option>High</option></select></div>
+  <div class="mb-3"><label>{{ _('Department') }}</label><input name="department" class="form-control"></div>
+  <button class="btn btn-success">{{ _('Submit') }}</button>
+</form>
+{% endblock %}

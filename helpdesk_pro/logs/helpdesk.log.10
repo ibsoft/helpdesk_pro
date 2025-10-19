@@ -1,0 +1,114 @@
+Exception on /users [GET]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\users\routes.py", line 11, in list_users
+    return render_template('users/list.html', users=users)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 1087, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 1016, in get_template
+    return self._load_template(name, globals)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\environment.py", line 975, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\jinja2\loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: users/list.html
+2025-10-18 17:21:57,252 [INFO] app: Helpdesk Pro started
+2025-10-18 17:21:58,423 [INFO] app: Helpdesk Pro started
+2025-10-18 17:23:07,410 [INFO] app: Helpdesk Pro started
+2025-10-18 17:23:08,665 [INFO] app: Helpdesk Pro started
+2025-10-18 17:26:20,635 [INFO] app: Helpdesk Pro started
+2025-10-18 17:26:21,993 [INFO] app: Helpdesk Pro started
+2025-10-18 17:30:04,907 [INFO] app: Helpdesk Pro started
+2025-10-18 17:30:06,302 [INFO] app: Helpdesk Pro started
+2025-10-18 17:31:53,366 [INFO] app: Helpdesk Pro started
+2025-10-18 17:31:54,691 [INFO] app: Helpdesk Pro started
+2025-10-18 17:39:06,817 [INFO] app: Helpdesk Pro started
+2025-10-18 17:39:07,912 [INFO] app: Helpdesk Pro started
+2025-10-18 17:42:47,541 [INFO] app: Helpdesk Pro started
+2025-10-18 17:42:48,777 [INFO] app: Helpdesk Pro started
+2025-10-18 17:50:09,746 [INFO] app: Helpdesk Pro started
+2025-10-18 17:50:11,222 [INFO] app: Helpdesk Pro started
+2025-10-18 17:54:26,764 [INFO] app: Helpdesk Pro started
+2025-10-18 17:54:29,208 [INFO] app: Helpdesk Pro started
+2025-10-18 17:55:43,173 [INFO] app: Helpdesk Pro started
+2025-10-18 17:55:44,513 [INFO] app: Helpdesk Pro started
+2025-10-18 17:55:46,840 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:10,850 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:13,502 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:21,153 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:24,680 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:37,878 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:39,191 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:53,485 [INFO] app: Helpdesk Pro started
+2025-10-18 17:57:54,854 [INFO] app: Helpdesk Pro started
+2025-10-18 18:29:13,050 [ERROR] app: Exception on /tickets [GET]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\sql\base.py", line 2181, in _entity_namespace_key
+    return getattr(ns, key)  # type: ignore
+AttributeError: type object 'Ticket' has no attribute 'created_by'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\tickets\routes.py", line 34, in list_tickets
+    tickets = Ticket.query.filter_by(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\query.py", line 1983, in filter_by
+    clauses = [
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\query.py", line 1984, in <listcomp>
+    _entity_namespace_key(from_entity, key) == value
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\sql\base.py", line 2183, in _entity_namespace_key
+    raise exc.InvalidRequestError(
+sqlalchemy.exc.InvalidRequestError: Entity namespace for "ticket" has no property "created_by"
+2025-10-18 18:29:15,886 [ERROR] app: Exception on /tickets [GET]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\sql\base.py", line 2181, in _entity_namespace_key
+    return getattr(ns, key)  # type: ignore
+AttributeError: type object 'Ticket' has no attribute 'created_by'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\tickets\routes.py", line 34, in list_tickets
+    tickets = Ticket.query.filter_by(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\query.py", line 1983, in filter_by
+    clauses = [
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\query.py", line 1984, in <listcomp>
+    _entity_namespace_key(from_entity, key) == value
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\sql\base.py", line 2183, in _entity_namespace_key
+    raise exc.InvalidRequestError(
+sqlalchemy.exc.InvalidRequestError: Entity namespace for "ticket" has no property "created_by"

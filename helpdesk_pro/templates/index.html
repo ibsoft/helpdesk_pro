@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<style>
+  /* 🎨 Theme-aware gradient background */
+  body[data-bs-theme="light"] {
+    background: linear-gradient(120deg, #0d6efd, #6610f2, #6f42c1);
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
+    color: #fff;
+  }
+
+  body[data-bs-theme="dark"] {
+    background: linear-gradient(120deg, #0e0f12, #1a1d24, #292d36);
+    background-size: 400% 400%;
+    animation: gradientShift 12s ease infinite;
+    color: #e9ecef;
+  }
+
+  @keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  /* 🪟 Card styling */
+  .welcome-card {
+    max-width: 620px;
+    margin: 8vh auto;
+    background: rgba(255, 255, 255, 0.12);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-radius: 22px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+    color: #fff;
+    text-align: center;
+    padding: 45px;
+    animation: fadeIn 1.4s ease;
+    transition: all 0.4s ease;
+  }
+
+  body[data-bs-theme="dark"] .welcome-card {
+    background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 0 25px rgba(255,255,255,0.08);
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .welcome-card h1 {
+    font-weight: 700;
+    font-size: 2.5rem;
+    letter-spacing: 1px;
+  }
+
+  .welcome-card p {
+    font-size: 1.1rem;
+    margin-top: 15px;
+    color: #e9ecef;
+  }
+
+  .welcome-btn {
+    font-size: 1.2rem;
+    padding: 12px 40px;
+    border-radius: 50px;
+    transition: all 0.3s ease;
+    box-shadow: 0 0 15px rgba(255,255,255,0.3);
+  }
+
+  .welcome-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 25px rgba(255,255,255,0.6);
+  }
+
+  .icon-deck {
+    display: flex;
+    justify-content: center;
+    gap: 45px;
+    margin-top: 40px;
+  }
+
+  .icon-deck i {
+    font-size: 2.3rem;
+    color: #ffc107;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+  }
+
+  .icon-deck i:hover {
+    transform: translateY(-8px) scale(1.15);
+    color: #fff;
+    text-shadow: 0 0 15px rgba(255,255,255,0.7);
+  }
+
+  footer { display: none; } /* clean splash page */
+</style>
+
+<div class="welcome-card">
+  <div class="mb-4">
+    <i class="fa fa-headset fa-4x text-warning"></i>
+  </div>
+
+  <h1>{{ _('Welcome to Helpdesk Pro') }}</h1>
+  <p class="lead mb-4">
+    {{ _('Your smart support & ticketing platform for modern IT operations.') }}
+  </p>
+
+  <a href="{{ url_for('auth.login') }}" class="btn btn-light welcome-btn fw-bold">
+    <i class="fa fa-right-to-bracket me-2"></i>{{ _('Login to Continue') }}
+  </a>
+
+  <div class="icon-deck mt-5">
+    <i class="fa fa-ticket-alt"></i>
+    <i class="fa fa-user-shield"></i>
+    <i class="fa fa-chart-line"></i>
+  </div>
+
+  <p class="mt-4 small text-white-50">
+    © {{ current_year }} UNIXFOR — {{ _('Empowering Secure IT Helpdesk Automation') }}
+  </p>
+</div>
+
+{% endblock %}

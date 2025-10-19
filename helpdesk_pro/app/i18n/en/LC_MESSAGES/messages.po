@@ -1,0 +1,32 @@
+msgid "Helpdesk Pro"
+msgstr "Helpdesk Pro"
+
+msgid "Welcome to Helpdesk Pro"
+msgstr "Welcome to Helpdesk Pro"
+
+msgid "Login"
+msgstr "Login"
+
+msgid "Sign in"
+msgstr "Sign in"
+
+msgid "Dashboard Overview"
+msgstr "Dashboard Overview"
+
+msgid "Users"
+msgstr "Users"
+
+msgid "Open Tickets"
+msgstr "Open Tickets"
+
+msgid "Closed Tickets"
+msgstr "Closed Tickets"
+
+msgid "Tickets"
+msgstr "Tickets"
+
+msgid "Create Ticket"
+msgstr "Create Ticket"
+
+msgid "Submit"
+msgstr "Submit"

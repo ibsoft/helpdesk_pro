@@ -1,0 +1,111 @@
+2025-10-18 19:50:12,808 [ERROR] app: Exception on /tickets/add [POST]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.InvalidTextRepresentation: invalid input syntax for type integer: "admin"
+LINE 1: ...lacerat hendrerit. ', 'High', 'Open', NULL, NULL, 'admin', '...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\tickets\routes.py", line 51, in create_ticket
+    db.session.commit()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\scoping.py", line 597, in commit
+    return self._proxied.commit()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 2017, in commit
+    trans.commit(_to_root=True)
+  File "<string>", line 2, in commit
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 1302, in commit
+    self._prepare_impl()
+  File "<string>", line 2, in _prepare_impl
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\state_changes.py", line 139, in _go
+    ret_value = fn(self, *arg, **kw)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 1277, in _prepare_impl
+    self.session.flush()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 4341, in flush
+    self._flush(objects)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 4476, in _flush
+    with util.safe_reraise():
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\util\langhelpers.py", line 146, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\session.py", line 4437, in _flush
+    flush_context.execute()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\unitofwork.py", line 466, in execute
+    rec.execute(self)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\unitofwork.py", line 642, in execute
+    util.preloaded.orm_persistence.save_obj(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\persistence.py", line 93, in save_obj
+    _emit_insert_statements(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\orm\persistence.py", line 1233, in _emit_insert_statements
+    result = connection.execute(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 1418, in execute
+    return meth(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\sql\elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 1640, in _execute_clauseelement
+    ret = self._execute_context(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 2353, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\sqlalchemy\engine\default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.DataError: (psycopg2.errors.InvalidTextRepresentation) invalid input syntax for type integer: "admin"
+LINE 1: ...lacerat hendrerit. ', 'High', 'Open', NULL, NULL, 'admin', '...
+                                                             ^
+
+[SQL: INSERT INTO ticket (subject, description, priority, status, department, assigned_to, created_by, created_at, updated_at, closed_at) VALUES (%(subject)s, %(description)s, %(priority)s, %(status)s, %(department)s, %(assigned_to)s, %(created_by)s, %(created_at)s, %(updated_at)s, %(closed_at)s) RETURNING ticket.id]
+[parameters: {'subject': 'Demo', 'description': 'orem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur nec tristique tortor. Vestibulum eget magna ut nisi pellentesque porttitor. Duis fa ... (603 characters truncated) ... id maximus odio blandit a. Mauris pretium risus sit amet ante congue convallis. Etiam feugiat facilisis libero, non ultrices dui placerat hendrerit. ', 'priority': 'High', 'status': 'Open', 'department': None, 'assigned_to': None, 'created_by': 'admin', 'created_at': datetime.datetime(2025, 10, 18, 16, 50, 12, 801070), 'updated_at': datetime.datetime(2025, 10, 18, 16, 50, 12, 801070), 'closed_at': None}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+2025-10-18 19:53:16,422 [ERROR] app: Exception on /tickets/add [POST]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\tickets\routes.py", line 57, in create_ticket
+    t.created_at_local = to_local(t.created_at)
+AttributeError: can't set attribute 'created_at_local'
+2025-10-18 19:53:36,837 [ERROR] app: Exception on /tickets/add [POST]
+Traceback (most recent call last):
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask\app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\.venv\lib\site-packages\flask_login\utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "C:\Users\ioannisb\Documents\Python-Development\IT\helpdesk_pro\app\tickets\routes.py", line 57, in create_ticket
+    t.created_at_local = to_local(t.created_at)
+AttributeError: can't set attribute 'created_at_local'
+2025-10-18 19:56:50,642 [INFO] app: Helpdesk Pro started
+2025-10-18 19:56:51,888 [INFO] app: Helpdesk Pro started

@@ -1,0 +1,32 @@
+msgid "Helpdesk Pro"
+msgstr "Helpdesk Pro"
+
+msgid "Welcome to Helpdesk Pro"
+msgstr "Καλώς ήρθατε στο Helpdesk Pro"
+
+msgid "Login"
+msgstr "Σύνδεση"
+
+msgid "Sign in"
+msgstr "Είσοδος"
+
+msgid "Dashboard Overview"
+msgstr "Επισκόπηση Πίνακα"
+
+msgid "Users"
+msgstr "Χρήστες"
+
+msgid "Open Tickets"
+msgstr "Ανοικτά Αιτήματα"
+
+msgid "Closed Tickets"
+msgstr "Κλειστά Αιτήματα"
+
+msgid "Tickets"
+msgstr "Αιτήματα"
+
+msgid "Create Ticket"
+msgstr "Δημιουργία Αιτήματος"
+
+msgid "Submit"
+msgstr "Υποβολή"

@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .card {
+    border: none;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease, box-shadow 0.3s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+  }
+
+  .card-header {
+    font-weight: 600;
+    font-size: 0.95rem;
+    letter-spacing: 0.3px;
+    background: #f8f9fa;
+    color: #212529;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+
+  body[data-bs-theme="dark"] .card {
+    background-color: #2b2d33 !important;
+    color: #e2e2e2 !important;
+    box-shadow: 0 2px 8px rgba(255,255,255,0.05);
+  }
+
+  body[data-bs-theme="dark"] .card-header {
+    background-color: #3a3a45 !important;
+    color: #f1f1f1;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+
+  h3 {
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    color: #343a40;
+    transition: color 0.4s ease;
+  }
+
+  body[data-bs-theme="dark"] h3 {
+    color: #eaeaea;
+  }
+</style>
+
+<h3 class="mb-4"><i class="fa fa-chart-line"></i> Dashboard Overview</h3>
+
+{% if current_user.role != "admin" %}
+  <div class="alert alert-info shadow-sm">
+    <i class="fa fa-user"></i>
+    Showing statistics only for your tickets (created or assigned).
+  </div>
+{% endif %}
+
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm bg-primary text-white">
+      <div class="card-body">
+        <i class="fa fa-users fa-2x mb-2"></i>
+        <h6>Users</h6>
+        <h4>{{ users }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm bg-success text-white">
+      <div class="card-body">
+        <i class="fa fa-folder-open fa-2x mb-2"></i>
+        <h6>Open Tickets</h6>
+        <h4>{{ open_tickets }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm bg-warning text-dark">
+      <div class="card-body">
+        <i class="fa fa-spinner fa-2x mb-2"></i>
+        <h6>In Progress</h6>
+        <h4>{{ in_progress }}</h4>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center shadow-sm bg-secondary text-white">
+      <div class="card-body">
+        <i class="fa fa-check-circle fa-2x mb-2"></i>
+        <h6>Closed Tickets</h6>
+        <h4>{{ closed_tickets }}</h4>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-calendar-day"></i> Daily Tickets</div>
+      <div class="card-body"><canvas id="dailyChart" height="180"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-calendar-week"></i> Weekly Tickets</div>
+      <div class="card-body"><canvas id="weeklyChart" height="180"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-2">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-calendar-alt"></i> Monthly Resolution Rate %</div>
+      <div class="card-body"><canvas id="monthlyChart" height="180"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-chart-bar"></i> Yearly Tickets Closed</div>
+      <div class="card-body"><canvas id="yearlyChart" height="180"></canvas></div>
+    </div>
+  </div>
+</div>
+
+{% if dept_summary %}
+<hr class="my-4">
+<h5><i class="fa fa-users-cog"></i> {{ _('Department Workload Summary') }}</h5>
+<div class="table-responsive">
+  <table class="table table-striped table-hover align-middle mt-2">
+    <thead class="table-dark">
+      <tr>
+        <th>{{ _('Technician') }}</th>
+        <th>{{ _('Open') }}</th>
+        <th>{{ _('In Progress') }}</th>
+        <th>{{ _('Closed') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in dept_summary %}
+        <tr>
+          <td><i class="fa fa-user text-primary"></i> {{ row.username }}</td>
+          <td><span class="badge bg-success">{{ row.open }}</span></td>
+          <td><span class="badge bg-warning text-dark">{{ row.in_progress }}</span></td>
+          <td><span class="badge bg-secondary">{{ row.closed }}</span></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const dailyLabels = {{ daily_labels|tojson }};
+const dailyCreated = {{ daily_created|tojson }};
+const dailyClosed = {{ daily_closed|tojson }};
+const weeklyLabels = {{ weekly_labels|tojson }};
+const weeklyCreated = {{ weekly_created|tojson }};
+const weeklyClosed = {{ weekly_closed|tojson }};
+const monthlyLabels = {{ monthly_labels|tojson }};
+const monthlyRate = {{ monthly_rate|tojson }};
+const yearlyLabels = {{ yearly_labels|tojson }};
+const yearlyClosed = {{ yearly_closed|tojson }};
+
+function getThemeColors() {
+  const dark = document.body.getAttribute('data-bs-theme') === 'dark';
+  return {
+    text: dark ? '#ddd' : '#333',
+    grid: dark ? '#555' : '#ccc',
+    primary: dark ? '#7ab4ff' : '#0d6efd',
+    success: dark ? '#57d68d' : '#198754',
+    barBlue: dark ? 'rgba(13,110,253,0.5)' : 'rgba(13,110,253,0.7)',
+    barGreen: dark ? 'rgba(25,135,84,0.5)' : 'rgba(25,135,84,0.7)'
+  };
+}
+
+function dualLine(ctx, labels, data1, data2, l1, l2) {
+  const c = getThemeColors();
+  return new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:l1, data:data1, borderColor:c.primary, backgroundColor:c.primary + '33', fill:true, tension:0.35 },
+        { label:l2, data:data2, borderColor:c.success, backgroundColor:c.success + '33', fill:true, tension:0.35 }
+      ]
+    },
+    options: {
+      plugins: { legend:{ position:'bottom', labels:{ color:c.text } } },
+      scales: {
+        x: { ticks:{ color:c.text }, grid:{ color:c.grid } },
+        y: { beginAtZero:true, ticks:{ color:c.text }, grid:{ color:c.grid } }
+      }
+    }
+  });
+}
+
+function barChart(ctx, labels, data, label, color) {
+  const c = getThemeColors();
+  return new Chart(ctx, {
+    type: 'bar',
+    data:{ labels, datasets:[{ label, data, backgroundColor:color }] },
+    options:{
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ ticks:{ color:c.text }, grid:{ color:c.grid } },
+        y:{ beginAtZero:true, ticks:{ color:c.text }, grid:{ color:c.grid } }
+      }
+    }
+  });
+}
+
+let dailyChart = dualLine(document.getElementById('dailyChart'), dailyLabels, dailyCreated, dailyClosed, 'Created', 'Closed');
+let weeklyChart = dualLine(document.getElementById('weeklyChart'), weeklyLabels, weeklyCreated, weeklyClosed, 'Created', 'Closed');
+let monthlyChart = barChart(document.getElementById('monthlyChart'), monthlyLabels, monthlyRate, 'Resolution Rate %', 'rgba(13,110,253,0.6)');
+let yearlyChart = barChart(document.getElementById('yearlyChart'), yearlyLabels, yearlyClosed, 'Tickets Closed', 'rgba(25,135,84,0.6)');
+
+document.getElementById("themeToggle").addEventListener("click", () => {
+  setTimeout(() => {
+    [dailyChart, weeklyChart, monthlyChart, yearlyChart].forEach(c => c.destroy());
+    dailyChart = dualLine(document.getElementById('dailyChart'), dailyLabels, dailyCreated, dailyClosed, 'Created', 'Closed');
+    weeklyChart = dualLine(document.getElementById('weeklyChart'), weeklyLabels, weeklyCreated, weeklyClosed, 'Created', 'Closed');
+    monthlyChart = barChart(document.getElementById('monthlyChart'), monthlyLabels, monthlyRate, 'Resolution Rate %', 'rgba(13,110,253,0.6)');
+    yearlyChart = barChart(document.getElementById('yearlyChart'), yearlyLabels, yearlyClosed, 'Tickets Closed', 'rgba(25,135,84,0.6)');
+  }, 150);
+});
+</script>
+{% endblock %}

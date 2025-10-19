@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .modal-header-gradient {
+    background: linear-gradient(135deg, #111827 0%, #0d6efd 60%, #6610f2 100%);
+    border-bottom: none;
+  }
+  .modal-header-gradient .modal-title {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .modal-header-gradient .btn-close {
+    filter: invert(1);
+  }
+</style>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4><i class="fa fa-ticket-alt"></i> {{ _('Tickets') }}</h4>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+    <i class="fa fa-plus"></i> {{ _('New Ticket') }}
+  </button>
+</div>
+
+<table id="ticketsTable" class="table table-striped table-hover align-middle w-100">
+  <thead class="table-dark">
+    <tr>
+      <th>{{ _('ID') }}</th>
+      <th>{{ _('Subject') }}</th>
+      <th>{{ _('Description') }}</th>
+      <th>{{ _('Priority') }}</th>
+      <th>{{ _('Status') }}</th>
+      <th>{{ _('Created By') }}</th>
+      <th>{{ _('Assigned To') }}</th>
+      <th>{{ _('Created') }}</th>
+      <th>{{ _('Closed') }}</th>
+      <th>{{ _('Actions') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for t in tickets %}
+    <tr id="ticket-row-{{ t.id }}">
+      <td>{{ t.id }}</td>
+      <td>{{ t.subject }}</td>
+      <td class="text-truncate" style="max-width:250px;">{{ t.description }}</td>
+
+      <td>
+        {% if t.priority == 'Low' %}
+          <span class="badge bg-success">{{ _('Low') }}</span>
+        {% elif t.priority == 'Medium' %}
+          <span class="badge bg-info text-dark">{{ _('Medium') }}</span>
+        {% elif t.priority == 'High' %}
+          <span class="badge bg-warning text-dark">{{ _('High') }}</span>
+        {% elif t.priority == 'Critical' %}
+          <span class="badge bg-danger">{{ _('Critical') }}</span>
+        {% endif %}
+      </td>
+
+      <td>
+        {% if t.status == 'Open' %}
+          <span class="badge bg-success">{{ _('Open') }}</span>
+        {% elif t.status == 'In Progress' %}
+          <span class="badge bg-warning text-dark">{{ _('In Progress') }}</span>
+        {% elif t.status == 'Closed' %}
+          <span class="badge bg-secondary">{{ _('Closed') }}</span>
+        {% endif %}
+      </td>
+
+      <td>{{ t.creator.username if t.creator else '—' }}</td>
+      <td>{{ t.assignee.username if t.assignee else '—' }}</td>
+
+      <td>{{ t.created_at_local.strftime('%Y-%m-%d %H:%M') if t.created_at_local else '—' }}</td>
+      <td>{{ t.closed_at_local.strftime('%Y-%m-%d %H:%M') if t.closed_at_local else '—' }}</td>
+
+      <td class="text-nowrap">
+        <i class="fa fa-comments{% if t.comments|length == 0 %} text-muted{% else %} text-primary{% endif %}" 
+           data-bs-toggle="tooltip"
+           data-bs-placement="top"
+           title="{% if t.comments|length == 0 %}{{ _('No comments') }}{% else %}{{ t.comments|length }} {{ _('comment(s) exist') }}{% endif %}"></i>
+
+        <i class="fa fa-paperclip ms-2{% if t.attachments|length == 0 %} text-muted{% else %} text-success{% endif %}" 
+           data-bs-toggle="tooltip"
+           data-bs-placement="top"
+           title="{% if t.attachments|length == 0 %}{{ _('No attachments') }}{% else %}{{ t.attachments|length }} {{ _('attachment(s) exist') }}{% endif %}"></i>
+
+        <a href="#" class="btn btn-sm btn-outline-info view-ticket-btn ms-2" data-id="{{ t.id }}" title="{{ _('View') }}">
+          <i class="fa fa-eye"></i>
+        </a>
+
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}" title="{{ _('Edit') }}">
+          <i class="fa fa-edit"></i>
+        </button>
+
+        <button type="button" class="btn btn-sm btn-outline-danger delete-ticket-btn" data-id="{{ t.id }}" title="{{ _('Delete') }}">
+          <i class="fa fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal{{ t.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content fancy-modal">
+          <form class="ajax-form" data-id="{{ t.id }}" action="{{ url_for('tickets.edit_ticket', id=t.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header modal-header-gradient text-white">
+              <h5 class="modal-title d-flex align-items-center gap-2">
+                <i class="fa fa-edit"></i>
+                <span>{{ _('Edit Ticket') }} #{{ t.id }} — {{ t.subject }}</span>
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <label class="form-label">{{ _('Subject') }}</label>
+              <input name="subject" class="form-control mb-2" value="{{ t.subject }}" required>
+
+              <label class="form-label">{{ _('Description') }}</label>
+              <textarea name="description" class="form-control mb-2" rows="3">{{ t.description }}</textarea>
+
+              <label class="form-label">{{ _('Priority') }}</label>
+              <select name="priority" class="form-select mb-2">
+                {% for p in ['Low','Medium','High','Critical'] %}
+                  <option value="{{ p }}" {% if t.priority == p %}selected{% endif %}>{{ _(p) }}</option>
+                {% endfor %}
+              </select>
+
+              <label class="form-label">{{ _('Status') }}</label>
+              <select name="status" class="form-select mb-2">
+                {% for s in ['Open','In Progress','Closed'] %}
+                  <option value="{{ s }}" {% if t.status == s %}selected{% endif %}>{{ _(s) }}</option>
+                {% endfor %}
+              </select>
+
+              {% if current_user.role in ['admin', 'manager'] %}
+              <label class="form-label">{{ _('Assign To (Technician)') }}</label>
+              <select name="assigned_to" class="form-select mb-2">
+                <option value="">{{ _('— Unassigned —') }}</option>
+                {% for u in users %}
+                  <option value="{{ u.id }}" {% if t.assigned_to == u.id %}selected{% endif %}>{{ u.username }} ({{ u.department }})</option>
+                {% endfor %}
+              </select>
+              {% endif %}
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> {{ _('Save') }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Add Modal -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form class="ajax-form" id="new-ticket-form" action="{{ url_for('tickets.create_ticket') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="fa fa-plus"></i> <span>{{ _('New Ticket') }}</span>
+          </h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">{{ _('Subject') }}</label>
+          <input name="subject" class="form-control mb-2" required>
+
+          <label class="form-label">{{ _('Description') }}</label>
+          <textarea name="description" class="form-control mb-2" rows="3" required></textarea>
+
+          <label class="form-label">{{ _('Priority') }}</label>
+          <select name="priority" class="form-select mb-2">
+            <option>{{ _('Low') }}</option>
+            <option>{{ _('Medium') }}</option>
+            <option>{{ _('High') }}</option>
+            <option>{{ _('Critical') }}</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> {{ _('Create') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Confirmation -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Confirm Delete') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">{{ _('Are you sure you want to delete this ticket?') }}</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <button type="button" id="confirmDeleteBtn" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DataTables + Buttons -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+<script>
+$(function() {
+  const table = $('#ticketsTable').DataTable({
+    order: [[0, 'desc']],
+    pageLength: 10,
+    language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
+    dom: "<'row mb-2'<'col-md-6 text-start'B><'col-md-6 text-end'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      { extend: 'excelHtml5', text: '<i class=\"fa fa-file-excel\"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ]
+  });
+
+  $('[data-bs-toggle="tooltip"]').tooltip();
+
+  let ticketToDelete = null;
+
+  $(document).on('click', '.delete-ticket-btn', function() {
+    ticketToDelete = $(this).data('id');
+    $('#deleteConfirmModal').modal('show');
+  });
+
+  $('#confirmDeleteBtn').on('click', function() {
+    if (!ticketToDelete) return;
+    const deleteBtn = $(this);
+    deleteBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Deleting...") }}');
+    $.post(`/tickets/${ticketToDelete}/delete`, { csrf_token: '{{ csrf_token() }}' })
+      .done(() => { $('#deleteConfirmModal').modal('hide'); window.location.reload(); })
+      .fail(() => {
+        deleteBtn.prop('disabled', false).html('{{ _("Delete") }}');
+        showFlash('❌ {{ _("Delete failed") }}', 'danger');
+        $('#deleteConfirmModal').modal('hide');
+      });
+  });
+
+ $(document).on('submit', '.ajax-form', function(e) {
+  e.preventDefault();
+  const form = $(this);
+  const modal = form.closest('.modal');
+  $.ajax({
+    url: form.attr('action'),
+    type: 'POST',
+    data: form.serialize(),
+    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    success: function(res) {
+      if (res.success) {
+        showToast(res.message, res.category || 'success');
+        modal.modal('hide');
+        setTimeout(() => window.location.reload(), 1000);
+      } else {
+        showToast(res.message || '⚠️ Operation failed', res.category || 'warning');
+      }
+    },
+    error: function(xhr) {
+      let msg = xhr.responseJSON?.message || '❌ Unexpected server error';
+      showToast(msg, 'danger');
+    }
+  });
+});
+
+
+  $(document).on('click', '.view-ticket-btn', function(e) {
+    e.preventDefault();
+    const id = $(this).data('id');
+    $.get(`/tickets/${id}/view`, function(html) {
+      $('body').append(html);
+      const modal = new bootstrap.Modal(document.getElementById('ticketViewModal'));
+      modal.show();
+      $('#ticketViewModal').on('hidden.bs.modal', () => $('#ticketViewModal').remove());
+    });
+  });
+
+  function showFlash(msg, type) {
+    const alert = $(`<div class="alert alert-${type} alert-dismissible fade show shadow-sm mt-2" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
+    $('.container').prepend(alert);
+    setTimeout(() => alert.alert('close'), 4000);
+  }
+});
+</script>
+
+<script>
+function showToast(message, category="info") {
+  const iconMap = {
+    success: "fa-check-circle text-success",
+    danger: "fa-exclamation-triangle text-danger",
+    warning: "fa-exclamation-circle text-warning",
+    info: "fa-info-circle text-info"
+  };
+  const icon = iconMap[category] || "fa-info-circle text-info";
+  const toast = $(`
+    <div class="toast align-items-center text-bg-${category} border-0 shadow-sm fade show mb-2 position-fixed top-0 end-0 me-3 mt-3" role="alert">
+      <div class="d-flex">
+        <div class="toast-body">
+          <i class="fa ${icon} me-2"></i>${message}
+        </div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+      </div>
+    </div>
+  `);
+  $('body').append(toast);
+  const bsToast = new bootstrap.Toast(toast[0], { delay: 3500 });
+  bsToast.show();
+  toast.on('hidden.bs.toast', () => toast.remove());
+}
+</script>
+
+{% endblock %}

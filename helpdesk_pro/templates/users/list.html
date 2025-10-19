@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4><i class="fa fa-users"></i> {{ _('Users') }}</h4>
+  {% if current_user.role == 'admin' %}
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+    <i class="fa fa-plus"></i> {{ _('New User') }}
+  </button>
+  {% endif %}
+</div>
+
+<table id="usersTable" class="table table-striped table-hover align-middle w-100">
+  <thead class="table-dark">
+    <tr>
+      <th>{{ _('ID') }}</th>
+      <th>{{ _('Username') }}</th>
+      <th>{{ _('Email') }}</th>
+      <th>{{ _('Role') }}</th>
+      <th>{{ _('Department') }}</th>
+      <th>{{ _('Active') }}</th>
+      <th>{{ _('Created') }}</th>
+      <th>{{ _('Actions') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for u in users %}
+    <tr id="user-row-{{ u.id }}">
+      <td>{{ u.id }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
+      <td>
+        {% if u.role == 'admin' %}
+          <span class="badge bg-danger">{{ _('Admin') }}</span>
+        {% elif u.role == 'manager' %}
+          <span class="badge bg-warning text-dark">{{ _('Manager') }}</span>
+        {% elif u.role == 'technician' %}
+          <span class="badge bg-info text-dark">{{ _('Technician') }}</span>
+        {% else %}
+          <span class="badge bg-secondary">{{ _('User') }}</span>
+        {% endif %}
+      </td>
+      <td>{{ u.department or '—' }}</td>
+      <td>
+        {% if u.active %}
+          <span class="badge bg-success">{{ _('Active') }}</span>
+        {% else %}
+          <span class="badge bg-secondary">{{ _('Inactive') }}</span>
+        {% endif %}
+      </td>
+      <td>{{ u.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>
+        {% if current_user.role in ['admin','manager'] %}
+        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ u.id }}">
+          <i class="fa fa-edit"></i>
+        </button>
+        {% endif %}
+        {% if current_user.role == 'admin' %}
+        <button type="button" class="btn btn-sm btn-outline-danger delete-user-btn" data-id="{{ u.id }}">
+          <i class="fa fa-trash"></i>
+        </button>
+        {% endif %}
+      </td>
+    </tr>
+
+    <!-- EDIT MODAL -->
+    <div class="modal fade" id="editModal{{ u.id }}" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+          <form class="ajax-edit-form" data-id="{{ u.id }}" action="{{ url_for('users.edit_user', id=u.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="modal-header bg-dark text-white">
+              <h5 class="modal-title"><i class="fa fa-edit"></i> {{ _('Edit User') }} #{{ u.id }}</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <label class="form-label">{{ _('Username') }}</label>
+              <input name="username" class="form-control mb-2" value="{{ u.username }}" required>
+
+              <label class="form-label">{{ _('Email') }}</label>
+              <input name="email" class="form-control mb-2" value="{{ u.email }}" required>
+
+              <label class="form-label">{{ _('Role') }}</label>
+              <select name="role" class="form-select mb-2">
+                {% for r in ['admin','manager','technician','user'] %}
+                  <option value="{{ r }}" {% if u.role==r %}selected{% endif %}>{{ _(r.capitalize()) }}</option>
+                {% endfor %}
+              </select>
+
+              <label class="form-label">{{ _('Department') }}</label>
+              <input name="department" class="form-control mb-2" value="{{ u.department or '' }}">
+
+              <label class="form-label">{{ _('Password (leave blank to keep unchanged)') }}</label>
+              <input type="password" name="password" class="form-control mb-2" placeholder="••••••">
+            </div>
+            <div class="modal-footer">
+              <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> {{ _('Save') }}</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% if current_user.role == 'admin' %}
+<!-- ADD USER MODAL -->
+<div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form class="ajax-add-form" action="{{ url_for('users.add_user') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header bg-dark text-white">
+          <h5 class="modal-title"><i class="fa fa-user-plus"></i> {{ _('Add New User') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <label class="form-label">{{ _('Username') }}</label>
+          <input name="username" class="form-control mb-2" required>
+          <label class="form-label">{{ _('Email') }}</label>
+          <input name="email" type="email" class="form-control mb-2" required>
+          <label class="form-label">{{ _('Password') }}</label>
+          <input name="password" type="password" class="form-control mb-2" required>
+          <label class="form-label">{{ _('Role') }}</label>
+          <select name="role" class="form-select mb-2">
+            <option>{{ _('User') }}</option><option>{{ _('Technician') }}</option><option>{{ _('Manager') }}</option><option>{{ _('Admin') }}</option>
+          </select>
+          <label class="form-label">{{ _('Department') }}</label>
+          <input name="department" class="form-control mb-2">
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> {{ _('Create') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- DELETE CONFIRMATION -->
+<div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Confirm Delete') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">{{ _('Are you sure you want to delete this user?') }}</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <button type="button" id="confirmDeleteBtn" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DATATABLES -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+
+<script>
+$(function() {
+  const table = $('#usersTable').DataTable({
+    order: [[0, 'desc']],
+    pageLength: 10,
+    dom: "<'row mb-2'<'col-md-6 text-start'B><'col-md-6 text-end'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      { extend: 'excelHtml5', text: '<i class=\"fa fa-file-excel\"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ]
+  });
+
+  let userToDelete = null;
+
+  $(document).on('click', '.delete-user-btn', function() {
+    userToDelete = $(this).data('id');
+    $('#deleteConfirmModal').modal('show');
+  });
+
+  $('#confirmDeleteBtn').on('click', function() {
+    if (!userToDelete) return;
+    $.post(`/users/${userToDelete}/delete`, { csrf_token: '{{ csrf_token() }}' })
+      .done(function() {
+        table.row($(`#user-row-${userToDelete}`)).remove().draw(false);
+        showFlash('🗑️ {{ _("User deleted") }}', 'warning');
+      })
+      .fail(xhr => showFlash(xhr.responseJSON?.error || '❌ {{ _("Delete failed") }}', 'danger'));
+    $('#deleteConfirmModal').modal('hide');
+  });
+
+  $(document).on('submit', '.ajax-edit-form', function(e) {
+    e.preventDefault();
+    const form = $(this);
+    const userId = form.data('id');
+    $.ajax({
+      url: form.attr('action'),
+      type: 'POST',
+      data: form.serialize(),
+      success: function() {
+        showFlash(`✅ {{ _("User") }} #${userId} {{ _("updated successfully") }}`, 'success');
+        $(`#editModal${userId}`).modal('hide');
+        setTimeout(() => location.reload(), 600);
+      },
+      error: function(xhr) {
+        const msg = xhr.responseJSON?.error || '❌ {{ _("Update failed") }}';
+        showFlash(msg, 'danger');
+      }
+    });
+  });
+
+  $(document).on('submit', '.ajax-add-form', function(e) {
+    e.preventDefault();
+    const form = $(this);
+    $.post(form.attr('action'), form.serialize())
+      .done(function() {
+        $('#addModal').modal('hide');
+        showFlash('✅ {{ _("User added successfully") }}', 'success');
+        setTimeout(() => location.reload(), 600);
+      })
+      .fail(xhr => showFlash(xhr.responseJSON?.error || '❌ {{ _("Failed to add user") }}', 'danger'));
+  });
+
+  function showFlash(msg, type) {
+    const alert = $(`<div class="alert alert-${type} alert-dismissible fade show shadow-sm mt-2" role="alert">
+      ${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>`);
+    $('.container').prepend(alert);
+    setTimeout(() => alert.alert('close'), 4000);
+  }
+});
+</script>
+{% endblock %}
