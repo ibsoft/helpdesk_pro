@@ -1,25 +1,57 @@
 <tr id="ticket-row-{{t.id}}">
   <td>{{ t.id }}</td>
   <td>{{ t.subject }}</td>
-  <td class="text-truncate" style="max-width:220px;">{{ t.description }}</td>
-  <td>{{ t.priority }}</td>
+  <td class="text-truncate" style="max-width:250px;">{{ t.description }}</td>
+
   <td>
-    {% if t.status == 'Open' %}
-      <span class="badge bg-success">Open</span>
-    {% elif t.status == 'In Progress' %}
-      <span class="badge bg-warning text-dark">In Progress</span>
-    {% elif t.status == 'Closed' %}
-      <span class="badge bg-secondary">Closed</span>
+    {% if t.priority == 'Low' %}
+      <span class="badge bg-success">{{ _('Low') }}</span>
+    {% elif t.priority == 'Medium' %}
+      <span class="badge bg-info text-dark">{{ _('Medium') }}</span>
+    {% elif t.priority == 'High' %}
+      <span class="badge bg-warning text-dark">{{ _('High') }}</span>
+    {% elif t.priority == 'Critical' %}
+      <span class="badge bg-danger">{{ _('Critical') }}</span>
     {% endif %}
   </td>
-  <td>{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
-  <td>{% if t.closed_at %}{{ t.closed_at.strftime('%Y-%m-%d %H:%M') }}{% else %}—{% endif %}</td>
+
   <td>
-    <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{t.id}}">
-      <i class="fa fa-edit"></i>
-    </button>
-    <a href="#" class="btn btn-sm btn-outline-info view-ticket-btn" data-id="{{t.id}}">
+    {% if t.status == 'Open' %}
+      <span class="badge bg-success">{{ _('Open') }}</span>
+    {% elif t.status == 'In Progress' %}
+      <span class="badge bg-warning text-dark">{{ _('In Progress') }}</span>
+    {% elif t.status == 'Closed' %}
+      <span class="badge bg-secondary">{{ _('Closed') }}</span>
+    {% endif %}
+  </td>
+
+  <td>{{ t.creator.username if t.creator else '—' }}</td>
+  <td>{{ t.assignee.username if t.assignee else '—' }}</td>
+
+  <td>{{ t.created_at_local.strftime('%Y-%m-%d %H:%M') if t.created_at_local else '—' }}</td>
+  <td>{{ t.closed_at_local.strftime('%Y-%m-%d %H:%M') if t.closed_at_local else '—' }}</td>
+
+  <td class="text-nowrap">
+    <i class="fa fa-comments{% if t.comments|length == 0 %} text-muted{% else %} text-primary{% endif %}" 
+       data-bs-toggle="tooltip"
+       data-bs-placement="top"
+       title="{% if t.comments|length == 0 %}{{ _('No comments') }}{% else %}{{ t.comments|length }} {{ _('comment(s) exist') }}{% endif %}"></i>
+
+    <i class="fa fa-paperclip ms-2{% if t.attachments|length == 0 %} text-muted{% else %} text-success{% endif %}" 
+       data-bs-toggle="tooltip"
+       data-bs-placement="top"
+       title="{% if t.attachments|length == 0 %}{{ _('No attachments') }}{% else %}{{ t.attachments|length }} {{ _('attachment(s) exist') }}{% endif %}"></i>
+
+    <a href="#" class="btn btn-sm btn-outline-info view-ticket-btn ms-2" data-id="{{ t.id }}" title="{{ _('View') }}">
       <i class="fa fa-eye"></i>
     </a>
+
+    <button type="button" class="btn btn-sm btn-outline-primary edit-ticket-btn" data-id="{{ t.id }}" title="{{ _('Edit') }}">
+      <i class="fa fa-edit"></i>
+    </button>
+
+    <button type="button" class="btn btn-sm btn-outline-danger delete-ticket-btn" data-id="{{ t.id }}" title="{{ _('Delete') }}">
+      <i class="fa fa-trash"></i>
+    </button>
   </td>
 </tr>
