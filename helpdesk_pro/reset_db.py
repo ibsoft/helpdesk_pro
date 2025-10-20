@@ -14,7 +14,7 @@ from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 DB_NAME = os.getenv("POSTGRES_DB", "helpdesk_pro")
 DB_USER = os.getenv("POSTGRES_USER", "postgres")
 DB_PASS = os.getenv("POSTGRES_PASSWORD", "superpass")
-DB_HOST = os.getenv("POSTGRES_HOST", "192.168.7.10")
+DB_HOST = os.getenv("POSTGRES_HOST", "192.168.1.123")
 DB_PORT = os.getenv("POSTGRES_PORT", "5432")
 
 APP_CONTEXT = "app:create_app"  # Flask app factory
