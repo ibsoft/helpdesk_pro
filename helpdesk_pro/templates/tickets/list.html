@@ -87,7 +87,7 @@
           <i class="fa fa-eye"></i>
         </a>
 
-        <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ t.id }}" title="{{ _('Edit') }}">
+        <button type="button" class="btn btn-sm btn-outline-primary edit-ticket-btn" data-id="{{ t.id }}" title="{{ _('Edit') }}">
           <i class="fa fa-edit"></i>
         </button>
 
@@ -96,58 +96,6 @@
         </button>
       </td>
     </tr>
-
-    <!-- Edit Modal -->
-    <div class="modal fade" id="editModal{{ t.id }}" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content fancy-modal">
-          <form class="ajax-form" data-id="{{ t.id }}" action="{{ url_for('tickets.edit_ticket', id=t.id) }}" method="post">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="modal-header modal-header-gradient text-white">
-              <h5 class="modal-title d-flex align-items-center gap-2">
-                <i class="fa fa-edit"></i>
-                <span>{{ _('Edit Ticket') }} #{{ t.id }} — {{ t.subject }}</span>
-              </h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-              <label class="form-label">{{ _('Subject') }}</label>
-              <input name="subject" class="form-control mb-2" value="{{ t.subject }}" required>
-
-              <label class="form-label">{{ _('Description') }}</label>
-              <textarea name="description" class="form-control mb-2" rows="3">{{ t.description }}</textarea>
-
-              <label class="form-label">{{ _('Priority') }}</label>
-              <select name="priority" class="form-select mb-2">
-                {% for p in ['Low','Medium','High','Critical'] %}
-                  <option value="{{ p }}" {% if t.priority == p %}selected{% endif %}>{{ _(p) }}</option>
-                {% endfor %}
-              </select>
-
-              <label class="form-label">{{ _('Status') }}</label>
-              <select name="status" class="form-select mb-2">
-                {% for s in ['Open','In Progress','Closed'] %}
-                  <option value="{{ s }}" {% if t.status == s %}selected{% endif %}>{{ _(s) }}</option>
-                {% endfor %}
-              </select>
-
-              {% if current_user.role in ['admin', 'manager'] %}
-              <label class="form-label">{{ _('Assign To (Technician)') }}</label>
-              <select name="assigned_to" class="form-select mb-2">
-                <option value="">{{ _('— Unassigned —') }}</option>
-                {% for u in users %}
-                  <option value="{{ u.id }}" {% if t.assigned_to == u.id %}selected{% endif %}>{{ u.username }} ({{ u.department }})</option>
-                {% endfor %}
-              </select>
-              {% endif %}
-            </div>
-            <div class="modal-footer">
-              <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> {{ _('Save') }}</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
     {% endfor %}
   </tbody>
 </table>
@@ -187,6 +135,17 @@
   </div>
 </div>
 
+<!-- Edit Modal Container -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content fancy-modal">
+      <div id="editModalContent">
+        <!-- Dynamic content will be loaded here -->
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Delete Confirmation -->
 <div class="modal fade" id="deleteConfirmModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -218,6 +177,7 @@
 
 <script>
 $(function() {
+  // Initialize DataTable
   const table = $('#ticketsTable').DataTable({
     order: [[0, 'desc']],
     pageLength: 10,
@@ -231,10 +191,12 @@ $(function() {
     ]
   });
 
+  // Initialize tooltips
   $('[data-bs-toggle="tooltip"]').tooltip();
 
   let ticketToDelete = null;
 
+  // Delete ticket handler
   $(document).on('click', '.delete-ticket-btn', function() {
     ticketToDelete = $(this).data('id');
     $('#deleteConfirmModal').modal('show');
@@ -245,7 +207,10 @@ $(function() {
     const deleteBtn = $(this);
     deleteBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Deleting...") }}');
     $.post(`/tickets/${ticketToDelete}/delete`, { csrf_token: '{{ csrf_token() }}' })
-      .done(() => { $('#deleteConfirmModal').modal('hide'); window.location.reload(); })
+      .done(() => { 
+        $('#deleteConfirmModal').modal('hide'); 
+        window.location.reload(); 
+      })
       .fail(() => {
         deleteBtn.prop('disabled', false).html('{{ _("Delete") }}');
         showFlash('❌ {{ _("Delete failed") }}', 'danger');
@@ -253,32 +218,93 @@ $(function() {
       });
   });
 
- $(document).on('submit', '.ajax-form', function(e) {
-  e.preventDefault();
-  const form = $(this);
-  const modal = form.closest('.modal');
-  $.ajax({
-    url: form.attr('action'),
-    type: 'POST',
-    data: form.serialize(),
-    headers: { 'X-Requested-With': 'XMLHttpRequest' },
-    success: function(res) {
-      if (res.success) {
-        showToast(res.message, res.category || 'success');
-        modal.modal('hide');
-        setTimeout(() => window.location.reload(), 1000);
-      } else {
-        showToast(res.message || '⚠️ Operation failed', res.category || 'warning');
-      }
-    },
-    error: function(xhr) {
-      let msg = xhr.responseJSON?.message || '❌ Unexpected server error';
-      showToast(msg, 'danger');
-    }
+  // Edit ticket handler - load modal content dynamically
+  $(document).on('click', '.edit-ticket-btn', function() {
+    const ticketId = $(this).data('id');
+    const editBtn = $(this);
+    
+    // Show loading state
+    editBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+    
+    // Load edit form via AJAX
+    $.get(`/tickets/${ticketId}/edit`, function(html) {
+      $('#editModalContent').html(html);
+      $('#editModal').modal('show');
+      editBtn.prop('disabled', false).html('<i class="fa fa-edit"></i>');
+    }).fail(function() {
+      showToast('❌ {{ _("Failed to load edit form") }}', 'danger');
+      editBtn.prop('disabled', false).html('<i class="fa fa-edit"></i>');
+    });
   });
-});
 
+  // Handle edit form submission
+  $(document).on('submit', '#editModalContent form', function(e) {
+    e.preventDefault();
+    const form = $(this);
+    const submitBtn = form.find('button[type="submit"]');
+    const originalBtnText = submitBtn.html();
+    
+    // Disable button and show loading
+    submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+    
+    $.ajax({
+      url: form.attr('action'),
+      type: 'POST',
+      data: form.serialize(),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(res) {
+        if (res.success) {
+          showToast(res.message, res.category || 'success');
+          $('#editModal').modal('hide');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          showToast(res.message || '⚠️ Operation failed', res.category || 'warning');
+          submitBtn.prop('disabled', false).html(originalBtnText);
+        }
+      },
+      error: function(xhr) {
+        let msg = xhr.responseJSON?.message || '❌ Unexpected server error';
+        showToast(msg, 'danger');
+        submitBtn.prop('disabled', false).html(originalBtnText);
+      }
+    });
+  });
 
+  // AJAX form handler for create
+  $(document).on('submit', '#new-ticket-form', function(e) {
+    e.preventDefault();
+    const form = $(this);
+    const modal = form.closest('.modal');
+    const submitBtn = form.find('button[type="submit"]');
+    const originalBtnText = submitBtn.html();
+    
+    // Disable button and show loading
+    submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Creating...") }}');
+    
+    $.ajax({
+      url: form.attr('action'),
+      type: 'POST',
+      data: form.serialize(),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(res) {
+        if (res.success) {
+          showToast(res.message, res.category || 'success');
+          modal.modal('hide');
+          setTimeout(() => window.location.reload(), 1000);
+        } else {
+          showToast(res.message || '⚠️ Operation failed', res.category || 'warning');
+          submitBtn.prop('disabled', false).html(originalBtnText);
+        }
+      },
+      error: function(xhr) {
+        let msg = xhr.responseJSON?.message || '❌ Unexpected server error';
+        showToast(msg, 'danger');
+        submitBtn.prop('disabled', false).html(originalBtnText);
+      }
+    });
+  });
+
+  // View ticket handler
   $(document).on('click', '.view-ticket-btn', function(e) {
     e.preventDefault();
     const id = $(this).data('id');
@@ -290,15 +316,15 @@ $(function() {
     });
   });
 
+  // Flash message function
   function showFlash(msg, type) {
     const alert = $(`<div class="alert alert-${type} alert-dismissible fade show shadow-sm mt-2" role="alert">${msg}<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`);
     $('.container').prepend(alert);
     setTimeout(() => alert.alert('close'), 4000);
   }
 });
-</script>
 
-<script>
+// Toast notification function
 function showToast(message, category="info") {
   const iconMap = {
     success: "fa-check-circle text-success",

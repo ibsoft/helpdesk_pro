@@ -1,0 +1,44 @@
+<form class="ajax-form" data-id="{{ ticket.id }}" action="{{ url_for('tickets.edit_ticket', id=ticket.id) }}" method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="modal-header modal-header-gradient text-white">
+    <h5 class="modal-title d-flex align-items-center gap-2">
+      <i class="fa fa-edit"></i>
+      <span>{{ _('Edit Ticket') }} #{{ ticket.id }} — {{ ticket.subject }}</span>
+    </h5>
+    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+  </div>
+  <div class="modal-body">
+    <label class="form-label">{{ _('Subject') }}</label>
+    <input name="subject" class="form-control mb-2" value="{{ ticket.subject }}" required>
+
+    <label class="form-label">{{ _('Description') }}</label>
+    <textarea name="description" class="form-control mb-2" rows="3">{{ ticket.description }}</textarea>
+
+    <label class="form-label">{{ _('Priority') }}</label>
+    <select name="priority" class="form-select mb-2">
+      {% for p in ['Low','Medium','High','Critical'] %}
+        <option value="{{ p }}" {% if ticket.priority == p %}selected{% endif %}>{{ _(p) }}</option>
+      {% endfor %}
+    </select>
+
+    <label class="form-label">{{ _('Status') }}</label>
+    <select name="status" class="form-select mb-2">
+      {% for s in ['Open','In Progress','Closed'] %}
+        <option value="{{ s }}" {% if ticket.status == s %}selected{% endif %}>{{ _(s) }}</option>
+      {% endfor %}
+    </select>
+
+    {% if current_user.role in ['admin', 'manager'] %}
+    <label class="form-label">{{ _('Assign To (Technician)') }}</label>
+    <select name="assigned_to" class="form-select mb-2">
+      <option value="">{{ _('— Unassigned —') }}</option>
+      {% for u in users %}
+        <option value="{{ u.id }}" {% if ticket.assigned_to == u.id %}selected{% endif %}>{{ u.username }} ({{ u.department }})</option>
+      {% endfor %}
+    </select>
+    {% endif %}
+  </div>
+  <div class="modal-footer">
+    <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> {{ _('Save') }}</button>
+  </div>
+</form>
