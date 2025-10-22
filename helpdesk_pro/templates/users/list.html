@@ -1,5 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
+
+<style>
+  .modal-header-gradient {
+    background: linear-gradient(135deg, #111827 0%, #0d6efd 60%, #6610f2 100%);
+    border-bottom: none;
+  }
+  .modal-header-gradient .modal-title {
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .modal-header-gradient .btn-close {
+    filter: invert(1);
+  }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4><i class="fa fa-users"></i> {{ _('Users') }}</h4>
   {% if current_user.role == 'admin' %}
@@ -65,11 +80,13 @@
     <!-- EDIT MODAL -->
     <div class="modal fade" id="editModal{{ u.id }}" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
+        <div class="modal-content fancy-modal">
           <form class="ajax-edit-form" data-id="{{ u.id }}" action="{{ url_for('users.edit_user', id=u.id) }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="modal-header bg-dark text-white">
-              <h5 class="modal-title"><i class="fa fa-edit"></i> {{ _('Edit User') }} #{{ u.id }}</h5>
+            <div class="modal-header modal-header-gradient text-white">
+              <h5 class="modal-title d-flex align-items-center gap-2">
+                <i class="fa fa-edit"></i> <span>{{ _('Edit User') }} #{{ u.id }}</span>
+              </h5>
               <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -77,7 +94,7 @@
               <input name="username" class="form-control mb-2" value="{{ u.username }}" required>
 
               <label class="form-label">{{ _('Email') }}</label>
-              <input name="email" class="form-control mb-2" value="{{ u.email }}" required>
+              <input name="email" type="email" class="form-control mb-2" value="{{ u.email }}" required>
 
               <label class="form-label">{{ _('Role') }}</label>
               <select name="role" class="form-select mb-2">
@@ -107,24 +124,33 @@
 <!-- ADD USER MODAL -->
 <div class="modal fade" id="addModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content">
+    <div class="modal-content fancy-modal">
       <form class="ajax-add-form" action="{{ url_for('users.add_user') }}" method="post">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="modal-header bg-dark text-white">
-          <h5 class="modal-title"><i class="fa fa-user-plus"></i> {{ _('Add New User') }}</h5>
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title d-flex align-items-center gap-2">
+            <i class="fa fa-user-plus"></i> <span>{{ _('Add New User') }}</span>
+          </h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <label class="form-label">{{ _('Username') }}</label>
           <input name="username" class="form-control mb-2" required>
+
           <label class="form-label">{{ _('Email') }}</label>
           <input name="email" type="email" class="form-control mb-2" required>
+
           <label class="form-label">{{ _('Password') }}</label>
           <input name="password" type="password" class="form-control mb-2" required>
+
           <label class="form-label">{{ _('Role') }}</label>
-          <select name="role" class="form-select mb-2">
-            <option>{{ _('User') }}</option><option>{{ _('Technician') }}</option><option>{{ _('Manager') }}</option><option>{{ _('Admin') }}</option>
+          <select name="role" class="form-select mb-2" required>
+            <option value="user">{{ _('User') }}</option>
+            <option value="technician">{{ _('Technician') }}</option>
+            <option value="manager">{{ _('Manager') }}</option>
+            <option value="admin">{{ _('Admin') }}</option>
           </select>
+
           <label class="form-label">{{ _('Department') }}</label>
           <input name="department" class="form-control mb-2">
         </div>
