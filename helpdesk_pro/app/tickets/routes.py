@@ -1,7 +1,11 @@
 from sqlalchemy import or_
 import os
 from datetime import datetime
-from zoneinfo import ZoneInfo
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:
+    from backports.zoneinfo import ZoneInfo
+
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
@@ -109,8 +113,8 @@ def create_ticket():
 
         msg = f"Ticket #{t.id} created successfully."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            row_html = render_template("tickets/_row.html", t=t)
-            return jsonify(success=True, message=msg, category="success", html=row_html)
+            # Return simple success response - let frontend handle page reload
+            return jsonify(success=True, message=msg, category="success")
 
         flash(msg, "success")
         return redirect(url_for("tickets.list_tickets"))
@@ -175,6 +179,11 @@ def edit_ticket(id):
             return jsonify(success=True, message=f"Ticket #{ticket.id} updated successfully.", category="success")
 
         # --- GET ---
+        # For AJAX requests, return only the form content
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get('ajax'):
+            return render_template("tickets/edit.html", ticket=ticket, users=users)
+        
+        # For regular requests (fallback)
         class DummyForm:
             def __init__(self, t):
                 self.subject = type('F', (), {'data': t.subject})()
@@ -190,7 +199,6 @@ def edit_ticket(id):
     except Exception as e:
         db.session.rollback()
         return jsonify(success=False, message=f"Error editing ticket: {str(e)}", category="danger")
-
 
 # ============================================================
 # VIEW
