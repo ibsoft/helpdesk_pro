@@ -121,10 +121,10 @@
 
           <label class="form-label">{{ _('Priority') }}</label>
           <select name="priority" class="form-select mb-2">
-            <option>{{ _('Low') }}</option>
-            <option>{{ _('Medium') }}</option>
-            <option>{{ _('High') }}</option>
-            <option>{{ _('Critical') }}</option>
+            <option value="Low">{{ _('Low') }}</option>
+            <option value="Medium">{{ _('Medium') }}</option>
+            <option value="High">{{ _('High') }}</option>
+            <option value="Critical">{{ _('Critical') }}</option>
           </select>
         </div>
         <div class="modal-footer">
@@ -193,6 +193,24 @@ $(function() {
 
   // Initialize tooltips
   $('[data-bs-toggle="tooltip"]').tooltip();
+
+  // Reset new ticket form when modal is shown
+  $('#addModal').on('show.bs.modal', function() {
+    const form = $('#new-ticket-form');
+    form[0].reset(); // Reset all form fields
+    
+    // Reset select to first option
+    form.find('select[name="priority"]').val('Low');
+    
+    // Clear any validation states
+    form.find('.is-invalid').removeClass('is-invalid');
+    form.find('.invalid-feedback').remove();
+  });
+
+  // Also reset form when modal is hidden (as a backup)
+  $('#addModal').on('hidden.bs.modal', function() {
+    $('#new-ticket-form')[0].reset();
+  });
 
   let ticketToDelete = null;
 
@@ -290,6 +308,7 @@ $(function() {
         if (res.success) {
           showToast(res.message, res.category || 'success');
           modal.modal('hide');
+          // Don't reset here - let the show.bs.modal event handle it
           setTimeout(() => window.location.reload(), 1000);
         } else {
           showToast(res.message || '⚠️ Operation failed', res.category || 'warning');
