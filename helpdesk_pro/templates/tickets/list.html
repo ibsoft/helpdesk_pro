@@ -13,6 +13,97 @@
   .modal-header-gradient .btn-close {
     filter: invert(1);
   }
+
+  .status-summary-card {
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+    overflow: hidden;
+  }
+  body[data-bs-theme="light"] .status-summary-card {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(102, 16, 242, 0.1) 50%, rgba(79, 70, 229, 0.12) 100%);
+    color: #1e293b;
+    border-color: rgba(13, 110, 253, 0.18);
+    --status-divider-color: rgba(15, 23, 42, 0.12);
+    --status-label-color: rgba(15, 23, 42, 0.65);
+    --status-total-bg: rgba(13, 110, 253, 0.18);
+    --status-total-fg: #0d47a1;
+    --status-open-bg: rgba(25, 135, 84, 0.18);
+    --status-open-fg: #0f5132;
+    --status-progress-bg: rgba(255, 193, 7, 0.22);
+    --status-progress-fg: #9a6700;
+    --status-closed-bg: rgba(108, 117, 125, 0.18);
+    --status-closed-fg: #495057;
+  }
+  body[data-bs-theme="dark"] .status-summary-card {
+    background: linear-gradient(135deg, rgba(11, 18, 32, 0.95) 0%, rgba(17, 24, 39, 0.96) 50%, rgba(31, 41, 55, 0.97) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.22);
+    --status-divider-color: rgba(148, 163, 184, 0.32);
+    --status-label-color: rgba(226, 232, 240, 0.7);
+    --status-total-bg: rgba(13, 110, 253, 0.22);
+    --status-total-fg: #cfe2ff;
+    --status-open-bg: rgba(25, 135, 84, 0.26);
+    --status-open-fg: #bbf7d0;
+    --status-progress-bg: rgba(255, 193, 7, 0.32);
+    --status-progress-fg: #fef3c7;
+    --status-closed-bg: rgba(108, 117, 125, 0.35);
+    --status-closed-fg: #e2e8f0;
+  }
+  .status-summary-card .status-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--status-divider-color);
+    transition: background 0.35s ease;
+  }
+  .status-summary-card .status-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .status-summary-card .status-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: background 0.35s ease, color 0.35s ease;
+  }
+  .status-summary-card .status-label {
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--status-label-color);
+    transition: color 0.35s ease;
+  }
+  .status-summary-card .status-count i {
+    font-size: 0.85rem;
+  }
+  .status-summary-card .status-count.total {
+    background: var(--status-total-bg);
+    color: var(--status-total-fg);
+  }
+  .status-summary-card .status-count.open {
+    background: var(--status-open-bg);
+    color: var(--status-open-fg);
+  }
+  .status-summary-card .status-count.progress {
+    background: var(--status-progress-bg);
+    color: var(--status-progress-fg);
+  }
+  .status-summary-card .status-count.closed {
+    background: var(--status-closed-bg);
+    color: var(--status-closed-fg);
+  }
+  @media (max-width: 767px) {
+    .status-summary-card .status-divider {
+      display: none;
+    }
+  }
 </style>
 
 {% set total_tickets = tickets|length %}
@@ -20,33 +111,33 @@
 {% set progress_count = tickets|selectattr('status', 'equalto', 'In Progress')|list|length %}
 {% set closed_count = tickets|selectattr('status', 'equalto', 'Closed')|list|length %}
 
-<div class="card border-0 shadow-sm bg-light mb-3">
+<div class="card status-summary-card border-0 shadow-sm mb-3">
   <div class="card-body py-3">
     <div class="d-flex flex-wrap align-items-center gap-4">
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge rounded-pill text-bg-primary px-3 py-2">
-          <i class="fa fa-layer-group me-1"></i>{{ total_tickets }}
+      <div class="status-block">
+        <span class="status-count total">
+          <i class="fa fa-layer-group"></i>{{ total_tickets }}
         </span>
-        <span class="text-muted text-uppercase small fw-semibold">{{ _('Total Tickets') }}</span>
+        <span class="status-label">{{ _('Total Tickets') }}</span>
       </div>
-      <div class="vr d-none d-md-block opacity-25"></div>
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge rounded-pill text-bg-success px-3 py-2">
-          <i class="fa fa-door-open me-1"></i>{{ open_count }}
+      <div class="status-divider d-none d-md-block"></div>
+      <div class="status-block">
+        <span class="status-count open">
+          <i class="fa fa-door-open"></i>{{ open_count }}
         </span>
-        <span class="text-muted text-uppercase small fw-semibold">{{ _('Open') }}</span>
+        <span class="status-label">{{ _('Open') }}</span>
       </div>
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge rounded-pill text-bg-warning px-3 py-2 text-dark">
-          <i class="fa fa-spinner me-1"></i>{{ progress_count }}
+      <div class="status-block">
+        <span class="status-count progress">
+          <i class="fa fa-spinner"></i>{{ progress_count }}
         </span>
-        <span class="text-muted text-uppercase small fw-semibold">{{ _('In Progress') }}</span>
+        <span class="status-label">{{ _('In Progress') }}</span>
       </div>
-      <div class="d-flex align-items-center gap-2">
-        <span class="badge rounded-pill text-bg-secondary px-3 py-2">
-          <i class="fa fa-check me-1"></i>{{ closed_count }}
+      <div class="status-block">
+        <span class="status-count closed">
+          <i class="fa fa-check"></i>{{ closed_count }}
         </span>
-        <span class="text-muted text-uppercase small fw-semibold">{{ _('Closed') }}</span>
+        <span class="status-label">{{ _('Closed') }}</span>
       </div>
     </div>
   </div>
