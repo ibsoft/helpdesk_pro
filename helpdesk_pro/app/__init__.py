@@ -90,12 +90,14 @@ def create_app():
     from app.users.routes import users_bp
     from app.dashboard.routes import dashboard_bp
     from app.api.routes import api_bp
+    from app.inventory.routes import inventory_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
     app.register_blueprint(users_bp)
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(api_bp, url_prefix="/api/v1")
+    app.register_blueprint(inventory_bp)
 
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)
