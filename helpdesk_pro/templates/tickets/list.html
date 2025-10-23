@@ -21,33 +21,34 @@
     overflow: hidden;
   }
   body[data-bs-theme="light"] .status-summary-card {
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(102, 16, 242, 0.1) 50%, rgba(79, 70, 229, 0.12) 100%);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.9) 50%, rgba(226, 232, 240, 0.85) 100%);
     color: #1e293b;
-    border-color: rgba(13, 110, 253, 0.18);
-    --status-divider-color: rgba(15, 23, 42, 0.12);
-    --status-label-color: rgba(15, 23, 42, 0.65);
+    border-color: rgba(148, 163, 184, 0.25);
+    --status-divider-color: rgba(148, 163, 184, 0.35);
+    --status-label-color: rgba(71, 85, 105, 0.75);
     --status-total-bg: rgba(13, 110, 253, 0.18);
     --status-total-fg: #0d47a1;
-    --status-open-bg: rgba(25, 135, 84, 0.18);
-    --status-open-fg: #0f5132;
-    --status-progress-bg: rgba(255, 193, 7, 0.22);
-    --status-progress-fg: #9a6700;
-    --status-closed-bg: rgba(108, 117, 125, 0.18);
-    --status-closed-fg: #495057;
+    --status-open-bg: rgba(16, 185, 129, 0.18);
+    --status-open-fg: #047857;
+    --status-progress-bg: rgba(245, 158, 11, 0.2);
+    --status-progress-fg: #b45309;
+    --status-closed-bg: rgba(100, 116, 139, 0.22);
+    --status-closed-fg: #374151;
   }
   body[data-bs-theme="dark"] .status-summary-card {
-    background: linear-gradient(135deg, rgba(11, 18, 32, 0.95) 0%, rgba(17, 24, 39, 0.96) 50%, rgba(31, 41, 55, 0.97) 100%);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(17, 24, 39, 0.72) 50%, rgba(30, 41, 59, 0.68) 100%);
     color: #e2e8f0;
-    border-color: rgba(148, 163, 184, 0.22);
-    --status-divider-color: rgba(148, 163, 184, 0.32);
-    --status-label-color: rgba(226, 232, 240, 0.7);
-    --status-total-bg: rgba(13, 110, 253, 0.22);
-    --status-total-fg: #cfe2ff;
-    --status-open-bg: rgba(25, 135, 84, 0.26);
+    border-color: rgba(148, 163, 184, 0.28);
+    backdrop-filter: blur(12px);
+    --status-divider-color: rgba(148, 163, 184, 0.35);
+    --status-label-color: rgba(203, 213, 225, 0.75);
+    --status-total-bg: rgba(59, 130, 246, 0.28);
+    --status-total-fg: #dbeafe;
+    --status-open-bg: rgba(34, 197, 94, 0.28);
     --status-open-fg: #bbf7d0;
-    --status-progress-bg: rgba(255, 193, 7, 0.32);
+    --status-progress-bg: rgba(251, 191, 36, 0.34);
     --status-progress-fg: #fef3c7;
-    --status-closed-bg: rgba(108, 117, 125, 0.35);
+    --status-closed-bg: rgba(148, 163, 184, 0.35);
     --status-closed-fg: #e2e8f0;
   }
   .status-summary-card .status-divider {
@@ -103,6 +104,34 @@
     .status-summary-card .status-divider {
       display: none;
     }
+  }
+
+  .dt-searchBuilder {
+    background: rgba(15, 23, 42, 0.02);
+    border-radius: 0.85rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+  }
+  body[data-bs-theme="dark"] .dt-searchBuilder {
+    background: rgba(15, 23, 42, 0.6);
+    border-color: rgba(148, 163, 184, 0.35);
+  }
+  .dt-searchBuilder button.btn {
+    border-radius: 0.5rem;
+    color: #0f172a;
+  }
+  body[data-bs-theme="dark"] .dt-searchBuilder button.btn,
+  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-secondary,
+  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-primary,
+  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-info {
+    color: #f8fafc;
+  }
+  .dt-searchBuilder .dtsb-titleRow {
+    margin-bottom: 0.75rem;
+  }
+  .dt-searchBuilder .dtsb-title {
+    font-weight: 600;
+    letter-spacing: 0.04em;
   }
 </style>
 
@@ -167,7 +196,7 @@
   </thead>
   <tbody>
     {% for t in tickets %}
-    <tr id="ticket-row-{{ t.id }}">
+    <tr id="ticket-row-{{ t.id }}" data-ticket-id="{{ t.id }}">
       <td>{{ t.id }}</td>
       <td>{{ t.subject }}</td>
       <td class="text-truncate" style="max-width:250px;">{{ t.description }}</td>
@@ -197,8 +226,14 @@
       <td>{{ t.creator.username if t.creator else '—' }}</td>
       <td>{{ t.assignee.username if t.assignee else '—' }}</td>
 
-      <td>{{ t.created_at_local.strftime('%Y-%m-%d %H:%M') if t.created_at_local else '—' }}</td>
-      <td>{{ t.closed_at_local.strftime('%Y-%m-%d %H:%M') if t.closed_at_local else '—' }}</td>
+      <td data-order="{{ t.created_at_local.isoformat() if t.created_at_local else '' }}"
+          data-search="{{ t.created_at_local.isoformat() if t.created_at_local else '' }}">
+        {{ t.created_at_local.strftime('%Y-%m-%d %H:%M') if t.created_at_local else '—' }}
+      </td>
+      <td data-order="{{ t.closed_at_local.isoformat() if t.closed_at_local else '' }}"
+          data-search="{{ t.closed_at_local.isoformat() if t.closed_at_local else '' }}">
+        {{ t.closed_at_local.strftime('%Y-%m-%d %H:%M') if t.closed_at_local else '—' }}
+      </td>
 
       <td class="text-nowrap">
         <i class="fa fa-comments{% if t.comments|length == 0 %} text-muted{% else %} text-primary{% endif %}" 
@@ -312,15 +347,40 @@ $(function() {
     language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
     dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
          "<'row'<'col-sm-12'tr>>" +
+         "<'row mt-3'<'col-12'Q>>" +
          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     buttons: [
       { extend: 'excelHtml5', text: '<i class=\"fa fa-file-excel\"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
-      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' }
-    ]
+      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' },
+      { extend: 'searchBuilder', text: '<i class=\"fa fa-filter\"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ],
+    columnDefs: [
+      { targets: [7, 8], type: 'date', searchBuilderType: 'date' }
+    ],
+    searchBuilder: {
+      columns: [0, 1, 3, 4, 5, 6, 7, 8],
+      depthLimit: 3
+    }
   });
 
   // Initialize tooltips
   $('[data-bs-toggle="tooltip"]').tooltip();
+
+  // Double-click row to open view modal
+  $('#ticketsTable tbody').on('dblclick', 'tr', function() {
+    const row = table.row(this);
+    if (!row.node()) return;
+    const $row = $(row.node());
+    const ticketId = $row.data('ticket-id');
+    if (!ticketId) return;
+
+    $.get(`/tickets/${ticketId}/view`, function(html) {
+      $('body').append(html);
+      const modal = new bootstrap.Modal(document.getElementById('ticketViewModal'));
+      modal.show();
+      $('#ticketViewModal').on('hidden.bs.modal', () => $('#ticketViewModal').remove());
+    });
+  });
 
   // Reset new ticket form when modal is shown
   $('#addModal').on('show.bs.modal', function() {
