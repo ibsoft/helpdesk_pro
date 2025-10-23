@@ -16,6 +16,21 @@
     <link href="https://cdn.datatables.net/datetime/1.5.2/css/dataTables.dateTime.min.css" rel="stylesheet">
     <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script>
+      (function() {
+        function readCookie(name) {
+          const match = document.cookie.match(new RegExp("(^|;)\\s*" + name + "\\=([^;]+)"));
+          return match ? match.pop() : null;
+        }
+        let theme = "light";
+        try {
+          theme = localStorage.getItem("theme") || readCookie("theme") || "light";
+        } catch (err) {
+          theme = readCookie("theme") || "light";
+        }
+        document.documentElement.setAttribute("data-bs-theme", theme);
+      })();
+    </script>
 
     <style>
       html, body {
@@ -26,12 +41,12 @@
       }
 
       /* ─── Background ─── */
-      body[data-bs-theme="light"] {
+      html[data-bs-theme="light"] body {
         background: #ffffff;
         color: #212529;
       }
 
-      body[data-bs-theme="dark"] {
+      html[data-bs-theme="dark"] body {
         background: #212529;
         color: #e9ecef;
       }
@@ -67,7 +82,7 @@
         border-bottom: 1px solid rgba(255,255,255,0.1);
       }
 
-      body[data-bs-theme="dark"] .navbar {
+      html[data-bs-theme="dark"] body .navbar {
         background: linear-gradient(120deg, #0b0d10, #1a1d24, #292d36);
         background-size: 400% 400%;
         animation: gradientShift 18s ease infinite;
@@ -114,7 +129,7 @@
         box-shadow: 0 -2px 10px rgba(0,0,0,0.3);
       }
 
-      body[data-bs-theme="dark"] footer {
+      html[data-bs-theme="dark"] body footer {
         background: linear-gradient(120deg, #0b0d10, #1a1d24, #292d36);
         background-size: 400% 400%;
         animation: gradientShift 18s ease infinite;
@@ -163,7 +178,7 @@
     </style>
   </head>
 
-  <body data-bs-theme="light">
+  <body>
 
     <!-- ─── Navbar ─── -->
     <nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
@@ -349,29 +364,54 @@
       }
 
       // Theme toggle
-      const themeToggle = document.getElementById("themeToggle");
-      const root = document.body;
-      const storedTheme = localStorage.getItem("theme") || "light";
-      root.setAttribute("data-bs-theme", storedTheme);
-      updateIcon(storedTheme);
+      (function() {
+        const themeToggle = document.getElementById("themeToggle");
+        if (!themeToggle) return;
+        const root = document.documentElement;
+        const bodyEl = document.body;
 
-      themeToggle.addEventListener("click", () => {
-        const current = root.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
-        root.setAttribute("data-bs-theme", current);
-        localStorage.setItem("theme", current);
-        updateIcon(current);
-      });
-
-      function updateIcon(mode) {
-        const icon = themeToggle.querySelector("i");
-        if (mode === "dark") {
-          icon.classList.replace("fa-sun", "fa-moon");
-          themeToggle.classList.replace("btn-outline-light", "btn-outline-warning");
-        } else {
-          icon.classList.replace("fa-moon", "fa-sun");
-          themeToggle.classList.replace("btn-outline-warning", "btn-outline-light");
+        function readCookie(name) {
+          const match = document.cookie.match(new RegExp("(^|;)\\s*" + name + "\\=([^;]+)"));
+          return match ? match.pop() : null;
         }
-      }
+
+        function applyTheme(theme) {
+          root.setAttribute("data-bs-theme", theme);
+          bodyEl.setAttribute("data-bs-theme", theme);
+          try {
+            localStorage.setItem("theme", theme);
+          } catch (err) {}
+          document.cookie = "theme=" + theme + ";path=/;max-age=31536000";
+          updateIcon(theme);
+        }
+
+        function getStoredTheme() {
+          try {
+            return localStorage.getItem("theme") || readCookie("theme") || root.getAttribute("data-bs-theme") || "light";
+          } catch (err) {
+            return readCookie("theme") || root.getAttribute("data-bs-theme") || "light";
+          }
+        }
+
+        function updateIcon(mode) {
+          const icon = themeToggle.querySelector("i");
+          if (!icon) return;
+          if (mode === "dark") {
+            icon.classList.replace("fa-sun", "fa-moon");
+            themeToggle.classList.replace("btn-outline-light", "btn-outline-warning");
+          } else {
+            icon.classList.replace("fa-moon", "fa-sun");
+            themeToggle.classList.replace("btn-outline-warning", "btn-outline-light");
+          }
+        }
+
+        applyTheme(getStoredTheme());
+
+        themeToggle.addEventListener("click", () => {
+          const current = root.getAttribute("data-bs-theme") === "dark" ? "light" : "dark";
+          applyTheme(current);
+        });
+      })();
     </script>
     {% block extra_js %}{% endblock %}
   </body>

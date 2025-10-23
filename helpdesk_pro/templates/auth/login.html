@@ -3,14 +3,14 @@
 
 <style>
   /* Light / Dark Gradients (linked to data-bs-theme) */
-  body[data-bs-theme="light"] {
+  html[data-bs-theme="light"] body {
     background: linear-gradient(120deg, #0d6efd, #6610f2, #6f42c1);
     background-size: 400% 400%;
     animation: gradientShift 12s ease infinite;
     color: #212529;
   }
 
-  body[data-bs-theme="dark"] {
+  html[data-bs-theme="dark"] body {
     background: linear-gradient(120deg, #14161a, #1f1f28, #292d36);
     background-size: 400% 400%;
     animation: gradientShift 12s ease infinite;
@@ -35,7 +35,7 @@
     animation: fadeIn 1.3s ease;
   }
 
-  body[data-bs-theme="dark"] .login-card {
+  html[data-bs-theme="dark"] body .login-card {
     background: rgba(0,0,0,0.4);
     color: #e9ecef;
     box-shadow: 0 0 25px rgba(255,255,255,0.1);
@@ -58,7 +58,7 @@
     color: #fff;
   }
 
-  body[data-bs-theme="dark"] .form-control {
+  html[data-bs-theme="dark"] body .form-control {
     background: rgba(255,255,255,0.08);
     color: #f1f1f1;
   }

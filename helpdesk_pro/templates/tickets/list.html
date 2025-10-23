@@ -20,7 +20,7 @@
     transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
     overflow: hidden;
   }
-  body[data-bs-theme="light"] .status-summary-card {
+  html[data-bs-theme="light"] body .status-summary-card {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.9) 50%, rgba(226, 232, 240, 0.85) 100%);
     color: #1e293b;
     border-color: rgba(148, 163, 184, 0.25);
@@ -35,7 +35,7 @@
     --status-closed-bg: rgba(100, 116, 139, 0.22);
     --status-closed-fg: #374151;
   }
-  body[data-bs-theme="dark"] .status-summary-card {
+  html[data-bs-theme="dark"] body .status-summary-card {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(17, 24, 39, 0.72) 50%, rgba(30, 41, 59, 0.68) 100%);
     color: #e2e8f0;
     border-color: rgba(148, 163, 184, 0.28);
@@ -112,7 +112,7 @@
     padding: 1rem 1.25rem;
     border: 1px solid rgba(148, 163, 184, 0.2);
   }
-  body[data-bs-theme="dark"] .dt-searchBuilder {
+  html[data-bs-theme="dark"] body .dt-searchBuilder {
     background: rgba(15, 23, 42, 0.6);
     border-color: rgba(148, 163, 184, 0.35);
   }
@@ -120,10 +120,10 @@
     border-radius: 0.5rem;
     color: #0f172a;
   }
-  body[data-bs-theme="dark"] .dt-searchBuilder button.btn,
-  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-secondary,
-  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-primary,
-  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-info {
+  html[data-bs-theme="dark"] body .dt-searchBuilder button.btn,
+  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-secondary,
+  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-primary,
+  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-info {
     color: #f8fafc;
   }
   .dt-searchBuilder .dtsb-titleRow {
