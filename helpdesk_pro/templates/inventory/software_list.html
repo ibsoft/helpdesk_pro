@@ -1,0 +1,723 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .inventory-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(241, 245, 249, 0.9) 45%, rgba(224, 231, 255, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  body[data-bs-theme="dark"] .inventory-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .inventory-summary-card .metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .inventory-summary-card .metric-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  body[data-bs-theme="dark"] .inventory-summary-card .metric-count {
+    box-shadow: inset 0 0 0 1px rgba(241, 245, 249, 0.08);
+  }
+  .inventory-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .inventory-summary-card .divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(148, 163, 184, 0.36);
+  }
+  @media (max-width: 767px) {
+    .inventory-summary-card .divider {
+      display: none;
+    }
+  }
+  body[data-bs-theme="dark"] .dt-searchBuilder {
+    background: rgba(15, 23, 42, 0.6);
+  }
+  .dt-searchBuilder {
+    border-radius: 0.85rem;
+    padding: 1rem 1.25rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    background: rgba(15, 23, 42, 0.02);
+  }
+  .dt-searchBuilder button.btn {
+    border-radius: 0.5rem;
+  }
+  body[data-bs-theme="dark"] .dt-searchBuilder button.btn,
+  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-secondary,
+  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-primary,
+  body[data-bs-theme="light"] .dt-searchBuilder .btn-outline-info {
+    color: #f8fafc;
+  }
+  .badge-soft {
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+  }
+  .datatable-nowrap th,
+  .datatable-nowrap td {
+    white-space: nowrap;
+  }
+  .dataTables_wrapper .dataTables_scroll {
+    overflow: auto;
+  }
+</style>
+
+{% set total_assets = assets|length %}
+{% set assigned_count = assets|selectattr('assignee', 'ne', None)|list|length %}
+{% set unassigned_count = total_assets - assigned_count %}
+{% set active_count = status_summary.get('Active', 0) %}
+{% set expiring_count = status_summary.get('Expiring Soon', 0) %}
+
+<div class="card inventory-summary-card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="metric">
+        <span class="metric-count bg-primary-subtle text-primary-emphasis">
+          <i class="fa fa-layer-group"></i> {{ total_assets }}
+        </span>
+        <span class="metric-label">{{ _('Total Software Assets') }}</span>
+      </div>
+      <div class="divider d-none d-md-block"></div>
+      <div class="metric">
+        <span class="metric-count bg-success-subtle text-success-emphasis">
+          <i class="fa fa-user-check"></i> {{ assigned_count }}
+        </span>
+        <span class="metric-label">{{ _('Assigned') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-secondary-subtle text-secondary-emphasis">
+          <i class="fa fa-inbox"></i> {{ unassigned_count }}
+        </span>
+        <span class="metric-label">{{ _('Unassigned') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-info-subtle text-info-emphasis">
+          <i class="fa fa-bolt"></i> {{ active_count }}
+        </span>
+        <span class="metric-label">{{ _('Active Licenses') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-warning-subtle text-warning-emphasis">
+          <i class="fa fa-hourglass-half"></i> {{ expiring_count }}
+        </span>
+        <span class="metric-label">{{ _('Expiring Soon') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-danger-subtle text-danger-emphasis">
+          <i class="fa fa-calendar-times"></i> {{ expired_count }}
+        </span>
+        <span class="metric-label">{{ _('Already Expired') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="fa fa-code-branch"></i> {{ _('Software Inventory') }}</h4>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#softwareCreateModal">
+    <i class="fa fa-plus"></i> {{ _('New Software Asset') }}
+  </button>
+</div>
+
+<table id="softwareTable" class="table table-striped table-hover align-middle w-100 datatable-nowrap">
+  <thead class="table-dark">
+    <tr>
+      <th>#</th>
+      <th>{{ _('Name') }}</th>
+      <th>{{ _('Vendor') }}</th>
+      <th>{{ _('Version') }}</th>
+      <th>{{ _('Category') }}</th>
+      <th>{{ _('License Type') }}</th>
+      <th>{{ _('License Key') }}</th>
+      <th>{{ _('Custom Serial') }}</th>
+      <th>{{ _('Serial Number') }}</th>
+      <th>{{ _('Seats') }}</th>
+      <th>{{ _('Platform') }}</th>
+      <th>{{ _('Environment') }}</th>
+      <th>{{ _('Status') }}</th>
+      <th>{{ _('Purchase Date') }}</th>
+      <th>{{ _('Expiration Date') }}</th>
+      <th>{{ _('Renewal Date') }}</th>
+      <th>{{ _('Assigned To') }}</th>
+      <th>{{ _('Assigned On') }}</th>
+      <th>{{ _('Cost Center') }}</th>
+      <th>{{ _('Support Vendor') }}</th>
+      <th>{{ _('Support Email') }}</th>
+      <th>{{ _('Support Phone') }}</th>
+      <th>{{ _('Usage Scope') }}</th>
+      <th>{{ _('Notes') }}</th>
+      <th>{{ _('Actions') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for asset in assets %}
+    <tr data-asset-id="{{ asset.id }}">
+      <td>{{ asset.id }}</td>
+      <td class="fw-semibold">{{ asset.name }}</td>
+      <td>{{ asset.vendor or '—' }}</td>
+      <td>{{ asset.version or '—' }}</td>
+      <td>{{ asset.category or '—' }}</td>
+      <td>{{ asset.license_type or '—' }}</td>
+      <td><code class="small">{{ asset.license_key or '—' }}</code></td>
+      <td>{{ asset.custom_tag or '—' }}</td>
+      <td>{{ asset.serial_number or '—' }}</td>
+      <td>{{ asset.seats or '—' }}</td>
+      <td>{{ asset.platform or '—' }}</td>
+      <td>{{ asset.environment or '—' }}</td>
+      <td>
+        {% if asset.status == 'Active' %}
+          <span class="badge-soft bg-success-subtle text-success-emphasis">{{ _('Active') }}</span>
+        {% elif asset.status == 'Expiring Soon' %}
+          <span class="badge-soft bg-warning-subtle text-warning-emphasis">{{ _('Expiring Soon') }}</span>
+        {% elif asset.status == 'Expired' %}
+          <span class="badge-soft bg-danger-subtle text-danger-emphasis">{{ _('Expired') }}</span>
+        {% elif asset.status == 'Planned' %}
+          <span class="badge-soft bg-info-subtle text-info-emphasis">{{ _('Planned') }}</span>
+        {% elif asset.status == 'Retired' %}
+          <span class="badge-soft bg-secondary-subtle text-secondary-emphasis">{{ _('Retired') }}</span>
+        {% else %}
+          <span class="badge-soft bg-light text-body-secondary">{{ asset.status or _('Unknown') }}</span>
+        {% endif %}
+      </td>
+      <td data-order="{{ asset.purchase_date.isoformat() if asset.purchase_date else '' }}" data-search="{{ asset.purchase_date.isoformat() if asset.purchase_date else '' }}">
+        {{ asset.purchase_date.strftime('%Y-%m-%d') if asset.purchase_date else '—' }}
+      </td>
+      <td data-order="{{ asset.expiration_date.isoformat() if asset.expiration_date else '' }}" data-search="{{ asset.expiration_date.isoformat() if asset.expiration_date else '' }}">
+        {{ asset.expiration_date.strftime('%Y-%m-%d') if asset.expiration_date else '—' }}
+      </td>
+      <td data-order="{{ asset.renewal_date.isoformat() if asset.renewal_date else '' }}" data-search="{{ asset.renewal_date.isoformat() if asset.renewal_date else '' }}">
+        {{ asset.renewal_date.strftime('%Y-%m-%d') if asset.renewal_date else '—' }}
+      </td>
+      <td>{{ asset.assignee.username if asset.assignee else '—' }}</td>
+      <td data-order="{{ asset.assigned_on.isoformat() if asset.assigned_on else '' }}" data-search="{{ asset.assigned_on.isoformat() if asset.assigned_on else '' }}">
+        {{ asset.assigned_on.strftime('%Y-%m-%d') if asset.assigned_on else '—' }}
+      </td>
+      <td>{{ asset.cost_center or '—' }}</td>
+      <td>{{ asset.support_vendor or '—' }}</td>
+      <td>{{ asset.support_email or '—' }}</td>
+      <td>{{ asset.support_phone or '—' }}</td>
+      <td>{{ asset.usage_scope or '—' }}</td>
+      <td class="text-truncate" style="max-width: 220px;">{{ (asset.deployment_notes or '')[:120] ~ ('…' if asset.deployment_notes and asset.deployment_notes|length > 120 else '') }}</td>
+      <td class="text-nowrap">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary edit-software-btn"
+                data-id="{{ asset.id }}"
+                data-update-url="{{ url_for('inventory.update_software', asset_id=asset.id) }}">
+          <i class="fa fa-edit"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger delete-software-btn ms-1"
+                data-id="{{ asset.id }}"
+                data-delete-url="{{ url_for('inventory.delete_software', asset_id=asset.id) }}"
+                data-name="{{ asset.name }}">
+          <i class="fa fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Create Modal -->
+<div class="modal fade" id="softwareCreateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <form id="software-create-form" action="{{ url_for('inventory.create_software') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-plus-circle me-2"></i>{{ _('New Software Asset') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label">{{ _('Name') }}</label>
+              <input name="name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Vendor') }}</label>
+              <input name="vendor" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">{{ _('Version') }}</label>
+              <input name="version" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">{{ _('Seats') }}</label>
+              <input name="seats" type="number" min="0" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Category') }}</label>
+              <select name="category" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in categories %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('License Type') }}</label>
+              <select name="license_type" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in license_types %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Status') }}</label>
+              <select name="status" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in statuses %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('License Key') }}</label>
+              <input name="license_key" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Custom Serial') }}</label>
+              <input name="custom_tag" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Serial Number') }}</label>
+              <input name="serial_number" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Platform') }}</label>
+              <select name="platform" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in platforms %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Environment') }}</label>
+              <select name="environment" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in environments %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Cost Center') }}</label>
+              <input name="cost_center" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Purchase Date') }}</label>
+              <input name="purchase_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Expiration Date') }}</label>
+              <input name="expiration_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Renewal Date') }}</label>
+              <input name="renewal_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Support Vendor') }}</label>
+              <input name="support_vendor" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Support Email') }}</label>
+              <input name="support_email" type="email" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Support Phone') }}</label>
+              <input name="support_phone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Contract URL') }}</label>
+              <input name="contract_url" type="url" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Assigned To') }}</label>
+              <select name="assigned_to" class="form-select">
+                <option value="">{{ _('Unassigned') }}</option>
+                {% for user in users %}
+                  <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Assigned On') }}</label>
+              <input name="assigned_on" type="date" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Usage Scope') }}</label>
+              <input name="usage_scope" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Deployment Notes') }}</label>
+              <textarea name="deployment_notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fa fa-save"></i> {{ _('Save') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="softwareEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <form id="software-edit-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-pen-to-square me-2"></i>{{ _('Edit Software Asset') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label">{{ _('Name') }}</label>
+              <input name="name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Vendor') }}</label>
+              <input name="vendor" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">{{ _('Version') }}</label>
+              <input name="version" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">{{ _('Seats') }}</label>
+              <input name="seats" type="number" min="0" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Category') }}</label>
+              <select name="category" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in categories %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('License Type') }}</label>
+              <select name="license_type" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in license_types %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Status') }}</label>
+              <select name="status" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in statuses %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('License Key') }}</label>
+              <input name="license_key" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Custom Serial') }}</label>
+              <input name="custom_tag" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Serial Number') }}</label>
+              <input name="serial_number" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Platform') }}</label>
+              <select name="platform" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in platforms %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Environment') }}</label>
+              <select name="environment" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for item in environments %}
+                  <option value="{{ item }}">{{ _(item) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Cost Center') }}</label>
+              <input name="cost_center" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Purchase Date') }}</label>
+              <input name="purchase_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Expiration Date') }}</label>
+              <input name="expiration_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Renewal Date') }}</label>
+              <input name="renewal_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Support Vendor') }}</label>
+              <input name="support_vendor" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Support Email') }}</label>
+              <input name="support_email" type="email" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Support Phone') }}</label>
+              <input name="support_phone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Contract URL') }}</label>
+              <input name="contract_url" type="url" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Assigned To') }}</label>
+              <select name="assigned_to" class="form-select">
+                <option value="">{{ _('Unassigned') }}</option>
+                {% for user in users %}
+                  <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Assigned On') }}</label>
+              <input name="assigned_on" type="date" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Usage Scope') }}</label>
+              <input name="usage_scope" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Deployment Notes') }}</label>
+              <textarea name="deployment_notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fa fa-save"></i> {{ _('Update') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="softwareDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="software-delete-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Software Asset') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ _('Are you sure you want to delete') }} <strong id="software-delete-name"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+  const softwareTable = $('#softwareTable').DataTable({
+    order: [[0, 'desc']],
+    pageLength: 25,
+    language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
+    scrollX: true,
+    scrollCollapse: true,
+    autoWidth: false,
+    dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row mt-3'<'col-12'Q>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      { extend: 'excelHtml5', text: '<i class=\"fa fa-file-excel\"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' },
+      { extend: 'searchBuilder', text: '<i class=\"fa fa-filter\"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ],
+    columnDefs: [
+      { targets: [13, 14, 15, 17], type: 'date', searchBuilderType: 'date' }
+    ],
+    searchBuilder: {
+      columns: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22]
+    }
+  });
+
+  function submitForm($form, modalId) {
+    const submitBtn = $form.find('button[type="submit"]');
+    const originalHtml = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    $.ajax({
+      url: $form.attr('action'),
+      type: 'POST',
+      data: $form.serialize(),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(res) {
+        if (!res || res.success === false) {
+          const msg = (res && res.message) ? res.message : '❌ {{ _("Unexpected error while saving.") }}';
+          const category = (res && res.category) ? res.category : 'danger';
+          showToast(msg, category);
+          submitBtn.prop('disabled', false).html(originalHtml);
+          return;
+        }
+        if (modalId) {
+          const modalEl = document.getElementById(modalId);
+          if (modalEl) {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+          }
+        }
+        showToast(res.message || '{{ _("Operation completed successfully") }}', res.category || 'success');
+        setTimeout(() => window.location.reload(), 400);
+      },
+      error: function(xhr) {
+        const data = xhr.responseJSON || {};
+        const msg = data.message || '❌ {{ _("Unexpected error while saving.") }}';
+        const category = data.category || 'danger';
+        showToast(msg, category);
+        submitBtn.prop('disabled', false).html(originalHtml);
+      }
+    });
+  }
+
+  $('#software-create-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'softwareCreateModal');
+  });
+
+  $('#software-edit-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'softwareEditModal');
+  });
+
+  $('#software-delete-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'softwareDeleteModal');
+  });
+
+  const softCreate = document.getElementById('softwareCreateModal');
+  if (softCreate) {
+    softCreate.addEventListener('hidden.bs.modal', function() {
+      const form = this.querySelector('form');
+      if (form) form.reset();
+    });
+  }
+
+  function populateSoftwareForm(asset, updateUrl) {
+    const form = $('#software-edit-form');
+    form.attr('action', updateUrl);
+    form.find('[name="name"]').val(asset.name);
+    form.find('[name="vendor"]').val(asset.vendor);
+    form.find('[name="version"]').val(asset.version);
+    form.find('[name="seats"]').val(asset.seats);
+    form.find('[name="category"]').val(asset.category);
+    form.find('[name="license_type"]').val(asset.license_type);
+    form.find('[name="status"]').val(asset.status);
+    form.find('[name="license_key"]').val(asset.license_key);
+    form.find('[name="custom_tag"]').val(asset.custom_tag);
+    form.find('[name="serial_number"]').val(asset.serial_number);
+    form.find('[name="platform"]').val(asset.platform);
+    form.find('[name="environment"]').val(asset.environment);
+    form.find('[name="cost_center"]').val(asset.cost_center);
+    form.find('[name="purchase_date"]').val(asset.purchase_date);
+    form.find('[name="expiration_date"]').val(asset.expiration_date);
+    form.find('[name="renewal_date"]').val(asset.renewal_date);
+    form.find('[name="support_vendor"]').val(asset.support_vendor);
+    form.find('[name="support_email"]').val(asset.support_email);
+    form.find('[name="support_phone"]').val(asset.support_phone);
+    form.find('[name="contract_url"]').val(asset.contract_url);
+    form.find('[name="assigned_to"]').val(asset.assigned_to || '');
+    form.find('[name="assigned_on"]').val(asset.assigned_on);
+    form.find('[name="usage_scope"]').val(asset.usage_scope);
+    form.find('[name="deployment_notes"]').val(asset.deployment_notes);
+  }
+
+  function openSoftwareEdit(btn) {
+    const assetId = btn.data('id');
+    if (!assetId) return;
+    $.get(`/inventory/software/${assetId}/details`, function(res) {
+      if (!res.success) {
+        showToast(res.message || '{{ _("Failed to load software asset") }}', res.category || 'danger');
+        return;
+      }
+      populateSoftwareForm(res.asset, btn.data('update-url'));
+      const modal = new bootstrap.Modal(document.getElementById('softwareEditModal'));
+      modal.show();
+    }).fail(function() {
+      showToast('{{ _("Failed to load software asset.") }}', 'danger');
+    });
+  }
+
+  $(document).on('click', '.edit-software-btn', function() {
+    openSoftwareEdit($(this));
+  });
+
+  $(document).on('click', '.delete-software-btn', function() {
+    const btn = $(this);
+    const modalEl = document.getElementById('softwareDeleteModal');
+    if (!modalEl) return;
+    const modal = new bootstrap.Modal(modalEl);
+    $('#software-delete-form').attr('action', btn.data('delete-url'));
+    $('#software-delete-name').text(btn.data('name'));
+    modal.show();
+  });
+
+  $('#softwareTable tbody').on('dblclick', 'tr', function() {
+    const btn = $(this).find('.edit-software-btn');
+    if (btn.length) {
+      openSoftwareEdit(btn);
+    }
+  });
+});
+</script>
+{% endblock %}

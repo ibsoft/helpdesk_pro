@@ -36,6 +36,20 @@
         color: #e9ecef;
       }
 
+      /* ─── Gradient modal headers ─── */
+      .modal-header-gradient {
+        background: linear-gradient(135deg, #111827 0%, #0d6efd 60%, #6610f2 100%);
+        border-bottom: none;
+        color: #ffffff;
+      }
+      .modal-header-gradient .modal-title {
+        font-weight: 600;
+        letter-spacing: 0.3px;
+      }
+      .modal-header-gradient .btn-close {
+        filter: invert(1);
+      }
+
       main {
         flex: 1 0 auto;
         padding-bottom: 70px;
@@ -183,6 +197,25 @@
                 <a class="nav-link" href="{{ url_for('users.list_users') }}?lang={{ g.locale }}">
                   <i class="fa fa-users"></i> {{ _('Users') }}
                 </a>
+              </li>
+            {% endif %}
+            {% if current_user.is_authenticated and current_user.role in ['admin'] %}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="inventoryMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fa fa-boxes-stacked"></i> {{ _('Inventory') }}
+                </a>
+                <ul class="dropdown-menu" aria-labelledby="inventoryMenu">
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('inventory.software_list') }}?lang={{ g.locale }}">
+                      <i class="fa fa-code-branch me-2 text-primary"></i>{{ _('Software') }}
+                    </a>
+                  </li>
+                  <li>
+                    <a class="dropdown-item" href="{{ url_for('inventory.hardware_list') }}?lang={{ g.locale }}">
+                      <i class="fa fa-microchip me-2 text-secondary"></i>{{ _('Hardware') }}
+                    </a>
+                  </li>
+                </ul>
               </li>
             {% endif %}
           </ul>
@@ -340,5 +373,6 @@
         }
       }
     </script>
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
