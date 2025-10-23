@@ -15,6 +15,43 @@
   }
 </style>
 
+{% set total_tickets = tickets|length %}
+{% set open_count = tickets|selectattr('status', 'equalto', 'Open')|list|length %}
+{% set progress_count = tickets|selectattr('status', 'equalto', 'In Progress')|list|length %}
+{% set closed_count = tickets|selectattr('status', 'equalto', 'Closed')|list|length %}
+
+<div class="card border-0 shadow-sm bg-light mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge rounded-pill text-bg-primary px-3 py-2">
+          <i class="fa fa-layer-group me-1"></i>{{ total_tickets }}
+        </span>
+        <span class="text-muted text-uppercase small fw-semibold">{{ _('Total Tickets') }}</span>
+      </div>
+      <div class="vr d-none d-md-block opacity-25"></div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge rounded-pill text-bg-success px-3 py-2">
+          <i class="fa fa-door-open me-1"></i>{{ open_count }}
+        </span>
+        <span class="text-muted text-uppercase small fw-semibold">{{ _('Open') }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge rounded-pill text-bg-warning px-3 py-2 text-dark">
+          <i class="fa fa-spinner me-1"></i>{{ progress_count }}
+        </span>
+        <span class="text-muted text-uppercase small fw-semibold">{{ _('In Progress') }}</span>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge rounded-pill text-bg-secondary px-3 py-2">
+          <i class="fa fa-check me-1"></i>{{ closed_count }}
+        </span>
+        <span class="text-muted text-uppercase small fw-semibold">{{ _('Closed') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4><i class="fa fa-ticket-alt"></i> {{ _('Tickets') }}</h4>
   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
@@ -182,7 +219,7 @@ $(function() {
     order: [[0, 'desc']],
     pageLength: 10,
     language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
-    dom: "<'row mb-2'<'col-md-6 text-start'B><'col-md-6 text-end'f>>" +
+    dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
          "<'row'<'col-sm-12'tr>>" +
          "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
     buttons: [
