@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .tool-summary-card {
+    border-radius: 0.85rem;
+    border: 1px solid transparent;
+    transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+    overflow: hidden;
+  }
+  html[data-bs-theme="light"] body .tool-summary-card {
+    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(102, 16, 242, 0.12) 50%, rgba(79, 70, 229, 0.14) 100%);
+    color: #1e293b;
+    border-color: rgba(13, 110, 253, 0.2);
+  }
+  html[data-bs-theme="dark"] body .tool-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(17, 24, 39, 0.78) 50%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.3);
+    backdrop-filter: blur(12px);
+  }
+  .tool-summary-card .metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .tool-summary-card .metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  html[data-bs-theme="dark"] body .tool-summary-card .metric-pill {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  }
+  .calculator-card {
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148,163,184,0.2);
+  }
+  html[data-bs-theme="dark"] body .calculator-card {
+    background-color: rgba(30, 41, 59, 0.75);
+    border-color: rgba(148,163,184,0.35);
+  }
+</style>
+
+<div class="card tool-summary-card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap gap-4 align-items-center">
+      <div class="metric">
+        <span class="metric-pill bg-primary-subtle text-primary-emphasis">
+          <i class="fa fa-sitemap"></i> {{ _('Subnet Calculator') }}
+        </span>
+        <span class="text-muted small">{{ _('Plan networks, see usable hosts, broadcast, masks and wildcard masks instantly.') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-pill bg-success-subtle text-success-emphasis">
+          <i class="fa fa-signal"></i> {{ _('Ping / Reachability') }}
+        </span>
+        <span class="text-muted small">{{ _('Test ICMP responses and basic TCP reachability to critical hosts.') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-pill bg-warning-subtle text-warning-emphasis">
+          <i class="fa fa-lock"></i> {{ _('Port Scanner') }}
+        </span>
+        <span class="text-muted small">{{ _('Check TCP/UDP port status to validate services and firewall rules.') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-xl-6">
+    <div class="card calculator-card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fa fa-calculator me-2 text-primary"></i>{{ _('Network Calculator') }}</span>
+        <small class="text-muted">{{ _('Supports IPv4 & CIDR notation') }}</small>
+      </div>
+      <div class="card-body">
+        <form id="subnetCalcForm">
+          <div class="input-group mb-3">
+            <span class="input-group-text"><i class="fa fa-network-wired"></i></span>
+            <input type="text" class="form-control" id="calcNetwork" placeholder="192.168.1.0/24" required>
+            <button class="btn btn-primary" type="submit"><i class="fa fa-magic me-1"></i>{{ _('Calculate') }}</button>
+          </div>
+        </form>
+        <div id="calcResult" class="d-none">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <div class="p-3 rounded border">
+                <div class="text-muted text-uppercase small">{{ _('Network Address') }}</div>
+                <div class="fw-semibold" id="calcNetworkAddress">-</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded border">
+                <div class="text-muted text-uppercase small">{{ _('Broadcast Address') }}</div>
+                <div class="fw-semibold" id="calcBroadcast">-</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded border">
+                <div class="text-muted text-uppercase small">{{ _('Netmask') }}</div>
+                <div class="fw-semibold" id="calcNetmask">-</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded border">
+                <div class="text-muted text-uppercase small">{{ _('Wildcard Mask') }}</div>
+                <div class="fw-semibold" id="calcWildcard">-</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded border">
+                <div class="text-muted text-uppercase small">{{ _('Usable Host Range') }}</div>
+                <div class="fw-semibold" id="calcHostRange">-</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="p-3 rounded border">
+                <div class="text-muted text-uppercase small">{{ _('Host Capacity') }}</div>
+                <div class="fw-semibold" id="calcHostCount">-</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="calcError" class="alert alert-danger d-none mt-3"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card calculator-card shadow-sm mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fa fa-signal me-2 text-success"></i>{{ _('ICMP Ping Check') }}</span>
+        <small class="text-muted">{{ _('Quick reachability test (simulated)') }}</small>
+      </div>
+      <div class="card-body">
+        <form id="pingForm">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">{{ _('Target Host / IP') }}</label>
+              <input type="text" class="form-control" id="pingTarget" placeholder="8.8.8.8" required>
+            </div>
+            <div class="col-md-4">
+              <button class="btn btn-success w-100" type="submit">
+                <i class="fa fa-play me-1"></i>{{ _('Ping') }}
+              </button>
+            </div>
+          </div>
+        </form>
+        <pre class="mt-3 small bg-body-tertiary rounded p-3" id="pingOutput">{{ _('Use the form to run a simulated ping test.') }}</pre>
+      </div>
+    </div>
+
+    <div class="card calculator-card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fa fa-lock me-2 text-warning"></i>{{ _('Port Scanner') }}</span>
+        <small class="text-muted">{{ _('Check TCP/UDP port state (simulated)') }}</small>
+      </div>
+      <div class="card-body">
+        <form id="portForm">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Target Host / IP') }}</label>
+              <input type="text" class="form-control" id="portTarget" placeholder="192.168.1.10" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Ports (e.g. 22,80,443)') }}</label>
+              <input type="text" class="form-control" id="portList" placeholder="22,80,443">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Protocol') }}</label>
+              <select class="form-select" id="portProtocol">
+                <option value="tcp">TCP</option>
+                <option value="udp">UDP</option>
+              </select>
+            </div>
+            <div class="col-md-6 d-flex align-items-end">
+              <button class="btn btn-warning w-100" type="submit">
+                <i class="fa fa-search me-1"></i>{{ _('Scan Ports') }}
+              </button>
+            </div>
+          </div>
+        </form>
+        <pre class="mt-3 small bg-body-tertiary rounded p-3" id="portOutput">{{ _('Use the form to run a simulated port scan.') }}</pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+  function toIPv4Int(ip) {
+    const parts = ip.split('.');
+    if (parts.length !== 4) throw new Error();
+    return parts.reduce((acc, part) => {
+      const oct = Number(part);
+      if (!Number.isInteger(oct) || oct < 0 || oct > 255) throw new Error();
+      return (acc << 8) + oct;
+    }, 0) >>> 0;
+  }
+
+  function intToIPv4(int) {
+    return [
+      (int >>> 24) & 0xff,
+      (int >>> 16) & 0xff,
+      (int >>> 8) & 0xff,
+      int & 0xff
+    ].join('.');
+  }
+
+  function calcIPv4(network) {
+    const parts = network.split('/');
+    if (parts.length !== 2) throw new Error();
+    const prefix = Number(parts[1]);
+    if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) throw new Error();
+    const ipInt = toIPv4Int(parts[0]);
+    const mask = prefix === 0 ? 0 : ((0xffffffff << (32 - prefix)) >>> 0);
+    const networkInt = ipInt & mask;
+    const broadcastInt = networkInt | (~mask >>> 0);
+    let firstHost = networkInt;
+    let lastHost = broadcastInt;
+    let hostCount;
+    if (prefix <= 30) {
+      firstHost = networkInt + 1;
+      lastHost = broadcastInt - 1;
+      hostCount = Math.max((broadcastInt - networkInt - 1), 0);
+    } else if (prefix === 31) {
+      hostCount = 2;
+    } else {
+      hostCount = 1;
+    }
+    const netmask = intToIPv4(mask >>> 0);
+    const wildcard = intToIPv4((~mask) >>> 0);
+    let hostRange;
+    if (prefix > 30 || hostCount <= 0) {
+      hostRange = `${intToIPv4(networkInt)} – ${intToIPv4(broadcastInt)}`;
+    } else {
+      hostRange = `${intToIPv4(firstHost)} – ${intToIPv4(lastHost)}`;
+    }
+
+    return {
+      network_address: intToIPv4(networkInt),
+      broadcast_address: intToIPv4(broadcastInt),
+      netmask: netmask,
+      wildcard: wildcard,
+      host_range: hostRange,
+      hosts: hostCount,
+    };
+  }
+
+  function formatResult(data) {
+    $('#calcNetworkAddress').text(data.network_address);
+    $('#calcBroadcast').text(data.broadcast_address);
+    $('#calcNetmask').text(data.netmask);
+    $('#calcWildcard').text(data.wildcard);
+    $('#calcHostRange').text(data.host_range);
+    $('#calcHostCount').text(data.hosts);
+    $('#calcError').addClass('d-none');
+    $('#calcResult').removeClass('d-none');
+  }
+
+  $('#subnetCalcForm').on('submit', function(e) {
+    e.preventDefault();
+    const network = $('#calcNetwork').val().trim();
+    if (!network) return;
+    try {
+      const ipv4Result = calcIPv4(network);
+      formatResult(ipv4Result);
+    } catch (err) {
+      $('#calcError').removeClass('d-none').text('{{ _("Invalid network format. Use something like 192.168.1.0/24") }}');
+      $('#calcResult').addClass('d-none');
+    }
+  });
+
+  $('#pingForm').on('submit', function(e) {
+    e.preventDefault();
+    const target = $('#pingTarget').val().trim();
+    if (!target) return;
+    const now = new Date().toLocaleTimeString();
+    $('#pingOutput').text(`[${now}] Ping to ${target}\nReply from ${target}: bytes=32 time=10ms TTL=60\nReply from ${target}: bytes=32 time=11ms TTL=60\nReply from ${target}: bytes=32 time=9ms TTL=60\n---\nPing statistics for ${target}:\n    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss)`);
+  });
+
+  $('#portForm').on('submit', function(e) {
+    e.preventDefault();
+    const target = $('#portTarget').val().trim();
+    const ports = $('#portList').val().trim() || '22,80,443';
+    const protocol = $('#portProtocol').val();
+    const portArray = ports.split(',').map(p => p.trim()).filter(Boolean);
+    const lines = [`Scanning ${protocol.toUpperCase()} ports on ${target}...`];
+    portArray.forEach(port => {
+      const open = ['22','80','443','3389','53'].includes(port);
+      lines.push(`Port ${port}/${protocol.toUpperCase()}: ${open ? 'Open' : 'Closed'}`);
+    });
+    $('#portOutput').text(lines.join('\n'));
+  });
+});
+</script>
+{% endblock %}
