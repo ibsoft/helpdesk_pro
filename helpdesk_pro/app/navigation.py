@@ -57,6 +57,14 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
         ],
     },
     {
+        "key": "knowledge",
+        "label": "Knowledge Base",
+        "icon": "fa fa-book",
+        "roles": ["admin", "manager", "technician", "user"],
+        "order": 35,
+        "endpoint": "knowledge.list_articles",
+    },
+    {
         "key": "networks",
         "label": "Networks",
         "icon": "fa fa-network-wired",
@@ -78,6 +86,14 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
             },
         ],
+    },
+    {
+        "key": "collaboration",
+        "label": "Collaboration",
+        "icon": "fa fa-comments",
+        "roles": ["admin", "manager", "technician", "user"],
+        "order": 45,
+        "endpoint": "collab.chat_home",
     },
     {
         "key": "manage",

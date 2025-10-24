@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h4 class="mb-3">
+  {% if article %}
+    <i class="fa fa-edit"></i> {{ _('Edit Article') }}
+  {% else %}
+    <i class="fa fa-plus"></i> {{ _('New Knowledge Article') }}
+  {% endif %}
+</h4>
+
+<form method="post" class="card shadow-sm">
+  <div class="card-body row g-3">
+    <div class="col-md-8">
+      <label class="form-label">{{ _('Title') }}</label>
+      <input class="form-control" name="title" value="{{ article.title if article else '' }}" required>
+    </div>
+    <div class="col-md-4">
+      <label class="form-label">{{ _('Category') }}</label>
+      <input class="form-control" name="category" value="{{ article.category if article else '' }}">
+    </div>
+    <div class="col-12">
+      <label class="form-label">{{ _('Summary') }}</label>
+      <textarea class="form-control" name="summary" rows="2">{{ article.summary if article else '' }}</textarea>
+    </div>
+    <div class="col-12">
+      <label class="form-label">{{ _('Content') }}</label>
+      <textarea class="form-control" name="content" rows="12" required>{{ article.content if article else '' }}</textarea>
+    </div>
+    <div class="col-md-8">
+      <label class="form-label">{{ _('Tags (comma separated)') }}</label>
+      <input class="form-control" name="tags" value="{{ article.tags if article else '' }}">
+    </div>
+    <div class="col-md-4 d-flex align-items-center">
+      <div class="form-check mt-4">
+        <input class="form-check-input" type="checkbox" id="isPublished" name="is_published" {% if article is not none and article.is_published %}checked{% elif article is none %}checked{% endif %}>
+        <label class="form-check-label" for="isPublished">{{ _('Published') }}</label>
+      </div>
+    </div>
+  </div>
+  <div class="card-footer d-flex justify-content-between">
+    <a href="{{ url_for('knowledge.list_articles') }}" class="btn btn-outline-secondary"><i class="fa fa-arrow-left"></i> {{ _('Cancel') }}</a>
+    <div>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-primary"><i class="fa fa-save"></i> {{ _('Save') }}</button>
+    </div>
+  </div>
+</form>
+
+{% endblock %}

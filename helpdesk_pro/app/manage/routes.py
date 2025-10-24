@@ -68,7 +68,7 @@ def access():
             "roles": [],
         }
         for role in AVAILABLE_ROLES:
-            definition = definition_lookup[item["key"]]
+            definition = definition_lookup.get(item["key"], {})
             default = default_allowed(definition, type("obj", (object,), {"role": role})())
             perm = MenuPermission.query.filter_by(menu_key=item["key"], role=role, user_id=None).first()
             current = perm.allowed if perm is not None else default

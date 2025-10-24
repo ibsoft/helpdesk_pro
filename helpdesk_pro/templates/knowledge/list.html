@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .kb-card {
+    border-radius: 0.85rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .kb-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+  }
+  .tag-pill {
+    border-radius: 999px;
+    padding: 0.1rem 0.6rem;
+    background: rgba(13, 110, 253, 0.12);
+    color: #0d6efd;
+    font-size: 0.75rem;
+  }
+  html[data-bs-theme="dark"] body .tag-pill {
+    background: rgba(59, 130, 246, 0.25);
+    color: #bfdbfe;
+  }
+  .kb-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(226, 232, 240, 0.9) 55%, rgba(224, 231, 255, 0.88) 100%);
+    overflow: hidden;
+    color: #0f172a;
+  }
+  html[data-bs-theme="dark"] body .kb-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 55%, rgba(30, 41, 59, 0.74) 100%);
+    border-color: rgba(148, 163, 184, 0.35);
+    color: #e2e8f0;
+    backdrop-filter: blur(12px);
+  }
+  .kb-summary-card .kb-metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .kb-summary-card .kb-metric-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  html[data-bs-theme="dark"] body .kb-summary-card .kb-metric-count {
+    box-shadow: inset 0 0 0 1px rgba(226, 232, 240, 0.15);
+  }
+  .kb-summary-card .kb-metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  html[data-bs-theme="dark"] body .kb-summary-card .kb-metric-label {
+    opacity: 0.85;
+  }
+  .kb-summary-card .kb-divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(148, 163, 184, 0.36);
+  }
+  @media (max-width: 767px) {
+    .kb-summary-card .kb-divider {
+      display: none;
+    }
+  }
+</style>
+
+{% set stats = knowledge_stats %}
+<div class="card kb-summary-card border-0 shadow-sm mb-4">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="kb-metric">
+        <span class="kb-metric-count bg-primary-subtle text-primary-emphasis">
+          <i class="fa fa-book"></i> {{ stats.total }}
+        </span>
+        <span class="kb-metric-label">{{ _('Total Articles') }}</span>
+      </div>
+      <div class="kb-divider d-none d-md-block"></div>
+      <div class="kb-metric">
+        <span class="kb-metric-count bg-success-subtle text-success-emphasis">
+          <i class="fa fa-check-circle"></i> {{ stats.published }}
+        </span>
+        <span class="kb-metric-label">{{ _('Published') }}</span>
+      </div>
+      <div class="kb-metric">
+        <span class="kb-metric-count bg-warning-subtle text-warning-emphasis">
+          <i class="fa fa-pencil"></i> {{ stats.drafts }}
+        </span>
+        <span class="kb-metric-label">{{ _('Drafts') }}</span>
+      </div>
+      <div class="kb-metric">
+        <span class="kb-metric-count bg-info-subtle text-info-emphasis">
+          <i class="fa fa-layer-group"></i> {{ stats.categories }}
+        </span>
+        <span class="kb-metric-label">{{ _('Categories') }}</span>
+      </div>
+      <div class="kb-metric">
+        <span class="kb-metric-count bg-secondary-subtle text-secondary-emphasis">
+          <i class="fa fa-hashtag"></i> {{ stats.tags }}
+        </span>
+        <span class="kb-metric-label">{{ _('Tags') }}</span>
+      </div>
+      <div class="kb-metric">
+        <span class="kb-metric-count bg-danger-subtle text-danger-emphasis">
+          <i class="fa fa-paperclip"></i> {{ stats.attachments }}
+        </span>
+        <span class="kb-metric-label">{{ _('Attachments') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="fa fa-book"></i> {{ _('Knowledge Base') }}</h4>
+  {% if can_edit %}
+    <a href="{{ url_for('knowledge.create_article') }}" class="btn btn-primary">
+      <i class="fa fa-plus"></i> {{ _('New Article') }}
+    </a>
+  {% endif %}
+</div>
+
+<form class="card shadow-sm mb-3" method="get">
+  <div class="card-body d-flex flex-wrap gap-3 align-items-end">
+    <div>
+      <label class="form-label">{{ _('Search') }}</label>
+      <input type="text" class="form-control" name="q" value="{{ search }}" placeholder="{{ _('keywords, tags, content...') }}">
+    </div>
+    <div>
+      <label class="form-label">{{ _('Category') }}</label>
+      <select class="form-select" name="category">
+        <option value="">{{ _('All') }}</option>
+        {% for c in categories %}
+          <option value="{{ c }}" {% if c == request.args.get('category') %}selected{% endif %}>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">{{ _('Tag') }}</label>
+      <select class="form-select" name="tag">
+        <option value="">{{ _('All') }}</option>
+        {% for t in tags %}
+          <option value="{{ t }}" {% if t == request.args.get('tag') %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="ms-auto">
+      <button type="submit" class="btn btn-outline-primary"><i class="fa fa-search"></i> {{ _('Filter') }}</button>
+    </div>
+  </div>
+</form>
+
+{% if articles %}
+  <div class="row g-3">
+    {% for article in articles %}
+      <div class="col-xl-4 col-md-6">
+        <div class="card kb-card h-100 shadow-sm">
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title"><i class="fa fa-file-alt text-primary"></i> {{ article.title }}</h5>
+            {% if article.summary %}
+              <p class="text-muted">{{ article.summary|truncate(160) }}</p>
+            {% endif %}
+            <div class="mt-auto">
+              <div class="mb-2 small text-muted">
+                <i class="fa fa-clock"></i> {{ _('Updated') }}: {{ article.updated_at.strftime('%Y-%m-%d %H:%M') if article.updated_at else _('n/a') }}
+              </div>
+              {% if article.tags %}
+                <div class="mb-2">
+                  {% for tag in article.tags.split(',') if tag.strip() %}
+                    <span class="tag-pill me-1">#{{ tag.strip() }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+              <a href="{{ url_for('knowledge.view_article', article_id=article.id) }}" class="btn btn-outline-primary btn-sm">
+                <i class="fa fa-eye"></i> {{ _('View') }}
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="alert alert-info">
+    <i class="fa fa-info-circle"></i> {{ _('No articles found. Try adjusting your filters or create a new one.') }}
+  </div>
+{% endif %}
+
+{% endblock %}

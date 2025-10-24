@@ -25,6 +25,9 @@ class Config:
         "X-Frame-Options": "DENY",
         "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
     }
+    KNOWLEDGE_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'knowledge_uploads')
+    COLLAB_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'chat_uploads')
+
 
     LANGUAGES = ['en', 'el']
     BABEL_DEFAULT_LOCALE = 'en'

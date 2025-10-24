@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0"><i class="fa fa-clock-rotate-left"></i> {{ _('Version') }} v{{ version.version_number }}</h4>
+    <small class="text-muted">{{ _('Created') }} {{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else _('n/a') }}</small>
+  </div>
+  <a href="{{ url_for('knowledge.view_article', article_id=article.id) }}" class="btn btn-outline-secondary">
+    <i class="fa fa-arrow-left"></i> {{ _('Back to Article') }}
+  </a>
+</div>
+
+<div class="card shadow-sm mb-3">
+  <div class="card-body">
+    <h5>{{ version.title }}</h5>
+    {% if version.summary %}
+      <div class="alert alert-secondary">{{ version.summary }}</div>
+    {% endif %}
+    <div>{{ version.content | safe }}</div>
+  </div>
+</div>
+
+{% endblock %}
