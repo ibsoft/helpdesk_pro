@@ -12,7 +12,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from flask_babel import Babel
@@ -79,9 +79,12 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
+        from app.navigation import get_navigation_for_user
+
         return {
             "current_year": datetime.now().year,
             "current_lang": g.get("locale", app.config["BABEL_DEFAULT_LOCALE"]),
+            "navigation": get_navigation_for_user(current_user),
         }
 
     # ───────── Blueprints ───────── #
@@ -92,6 +95,8 @@ def create_app():
     from app.api.routes import api_bp
     from app.inventory.routes import inventory_bp
     from app.networks.routes import networks_bp
+    from app.manage.routes import manage_bp
+    from app.networks.routes import networks_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -100,6 +105,7 @@ def create_app():
     app.register_blueprint(api_bp, url_prefix="/api/v1")
     app.register_blueprint(inventory_bp)
     app.register_blueprint(networks_bp)
+    app.register_blueprint(manage_bp)
 
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)

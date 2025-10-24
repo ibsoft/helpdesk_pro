@@ -193,63 +193,30 @@
 
         <div class="collapse navbar-collapse" id="mainNav">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            {% if current_user.is_authenticated and current_user.role in ['admin', 'manager'] %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('dashboard.index') }}?lang={{ g.locale }}">
-                  <i class="fa fa-chart-line"></i> {{ _('Dashboard') }}
-                </a>
-              </li>
-            {% endif %}
-            {% if current_user.is_authenticated %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('tickets.list_tickets') }}?lang={{ g.locale }}">
-                  <i class="fa fa-ticket"></i> {{ _('Tickets') }}
-                </a>
-              </li>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.role in ['admin'] %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('users.list_users') }}?lang={{ g.locale }}">
-                  <i class="fa fa-users"></i> {{ _('Users') }}
-                </a>
-              </li>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.role in ['admin'] %}
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="inventoryMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fa fa-boxes-stacked"></i> {{ _('Inventory') }}
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="inventoryMenu">
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('inventory.software_list') }}?lang={{ g.locale }}">
-                      <i class="fa fa-code-branch me-2 text-primary"></i>{{ _('Software') }}
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('inventory.hardware_list') }}?lang={{ g.locale }}">
-                      <i class="fa fa-microchip me-2 text-secondary"></i>{{ _('Hardware') }}
-                    </a>
-                  </li>
-                </ul>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="networkMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fa fa-network-wired"></i> {{ _('Networks') }}
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="networkMenu">
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('networks.network_maps') }}?lang={{ g.locale }}">
-                      <i class="fa fa-sitemap me-2 text-info"></i>{{ _('Network Maps') }}
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('networks.network_tools') }}?lang={{ g.locale }}">
-                      <i class="fa fa-toolbox me-2 text-warning"></i>{{ _('Network Tools') }}
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            {% endif %}
+            {% for item in navigation %}
+              {% if item.type == 'link' %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ item.url }}">
+                    {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %} {{ _(item.label) }}
+                  </a>
+                </li>
+              {% elif item.type == 'dropdown' %}
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="nav_{{ item.key }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %} {{ _(item.label) }}
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="nav_{{ item.key }}">
+                    {% for child in item.children %}
+                      <li>
+                        <a class="dropdown-item" href="{{ child.url }}">
+                          {% if child.icon %}<i class="{{ child.icon }} me-2"></i>{% endif %}{{ _(child.label) }}
+                        </a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </li>
+              {% endif %}
+            {% endfor %}
           </ul>
 
           <ul class="navbar-nav ms-auto align-items-center">
