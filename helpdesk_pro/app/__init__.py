@@ -79,8 +79,8 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
-        from app.navigation import get_navigation_for_user
-        from app.models import ChatMessage, ChatMembership, ChatMessageRead
+        from app.navigation import get_navigation_for_user, is_feature_allowed
+        from app.models import ChatMessage, ChatMembership, ChatMessageRead, AssistantConfig
 
         chat_unread = 0
         if current_user.is_authenticated:
@@ -93,11 +93,18 @@ def create_app():
                 .count()
             )
 
+        assistant_widget = None
+        if current_user.is_authenticated and is_feature_allowed("assistant_widget", current_user):
+            cfg = AssistantConfig.get()
+            if cfg and cfg.is_enabled:
+                assistant_widget = cfg.to_dict()
+
         return {
             "current_year": datetime.now().year,
             "current_lang": g.get("locale", app.config["BABEL_DEFAULT_LOCALE"]),
             "navigation": get_navigation_for_user(current_user),
             "chat_unread_count": chat_unread,
+            "assistant_widget_config": assistant_widget,
         }
 
     # ───────── Blueprints ───────── #
@@ -112,6 +119,7 @@ def create_app():
     from app.knowledge.routes import knowledge_bp
     from app.manage.routes import manage_bp
     from app.networks.routes import networks_bp
+    from app.assistant.routes import assistant_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -123,6 +131,7 @@ def create_app():
     app.register_blueprint(knowledge_bp)
     app.register_blueprint(manage_bp)
     app.register_blueprint(collab_bp)
+    app.register_blueprint(assistant_bp)
 
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)

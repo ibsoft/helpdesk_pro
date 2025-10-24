@@ -26,19 +26,65 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
         "order": 10,
     },
     {
+        "key": "manage",
+        "label": "Manage",
+        "icon": "fa fa-sliders",
+        "roles": ["admin"],
+        "order": 20,
+        "children": [
+            {
+                "key": "manage_users",
+                "label": "Users",
+                "icon": "fa fa-users",
+                "endpoint": "users.list_users",
+                "roles": ["admin"],
+            },
+            {
+                "key": "manage_access",
+                "label": "Access",
+                "icon": "fa fa-key",
+                "endpoint": "manage.access",
+                "roles": ["admin"],
+            },
+            {
+                "key": "manage_assistant",
+                "label": "AI Assistant",
+                "icon": "fa fa-robot",
+                "endpoint": "manage.assistant_settings",
+                "roles": ["admin"],
+            },
+        ],
+    },
+    {
         "key": "tickets",
         "label": "Tickets",
         "icon": "fa fa-ticket",
         "endpoint": "tickets.list_tickets",
         "roles": ["admin", "manager", "technician", "user"],
-        "order": 20,
+        "order": 30,
+    },
+    {
+        "key": "knowledge",
+        "label": "Knowledge Base",
+        "icon": "fa fa-book",
+        "roles": ["admin", "manager", "technician", "user"],
+        "order": 40,
+        "endpoint": "knowledge.list_articles",
+    },
+    {
+        "key": "collaboration",
+        "label": "Collaboration",
+        "icon": "fa fa-comments",
+        "roles": ["admin", "manager", "technician", "user"],
+        "order": 50,
+        "endpoint": "collab.chat_home",
     },
     {
         "key": "inventory",
         "label": "Inventory",
         "icon": "fa fa-boxes-stacked",
         "roles": ["admin"],
-        "order": 30,
+        "order": 60,
         "children": [
             {
                 "key": "inventory_software",
@@ -57,19 +103,11 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
         ],
     },
     {
-        "key": "knowledge",
-        "label": "Knowledge Base",
-        "icon": "fa fa-book",
-        "roles": ["admin", "manager", "technician", "user"],
-        "order": 35,
-        "endpoint": "knowledge.list_articles",
-    },
-    {
         "key": "networks",
         "label": "Networks",
         "icon": "fa fa-network-wired",
         "roles": ["admin"],
-        "order": 40,
+        "order": 70,
         "children": [
             {
                 "key": "networks_maps",
@@ -88,35 +126,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
         ],
     },
     {
-        "key": "collaboration",
-        "label": "Collaboration",
-        "icon": "fa fa-comments",
+        "key": "assistant_widget",
+        "label": "AI Assistant Widget",
+        "icon": "fa fa-robot",
         "roles": ["admin", "manager", "technician", "user"],
-        "order": 45,
-        "endpoint": "collab.chat_home",
-    },
-    {
-        "key": "manage",
-        "label": "Manage",
-        "icon": "fa fa-sliders",
-        "roles": ["admin"],
-        "order": 50,
-        "children": [
-            {
-                "key": "manage_users",
-                "label": "Users",
-                "icon": "fa fa-users",
-                "endpoint": "users.list_users",
-                "roles": ["admin"],
-            },
-            {
-                "key": "manage_access",
-                "label": "Access",
-                "icon": "fa fa-key",
-                "endpoint": "manage.access",
-                "roles": ["admin"],
-            },
-        ],
+        "order": 200,
+        "show_in_nav": False,
+        "auth_required": True,
     },
 ]
 
@@ -131,6 +147,9 @@ def default_allowed(item: Dict[str, Any], user) -> bool:
 
 
 def resolve_menu_item(item: Dict[str, Any], user) -> Optional[Dict[str, Any]]:
+    if item.get("show_in_nav") is False:
+        return None
+
     allowed = default_allowed(item, user)
 
     if user and user.is_authenticated:
@@ -213,3 +232,23 @@ def definition_map(definitions: Optional[List[Dict[str, Any]]] = None) -> Dict[s
         if item.get("children"):
             mapping.update(definition_map(item["children"]))
     return mapping
+
+
+def is_feature_allowed(key: str, user) -> bool:
+    definitions = definition_map()
+    item = definitions.get(key)
+    if not item:
+        return False
+
+    allowed = default_allowed(item, user)
+    if user and getattr(user, "is_authenticated", False):
+        user_perm = MenuPermission.query.filter_by(menu_key=key, user_id=user.id).first()
+        if user_perm:
+            return user_perm.allowed
+        role_perm = MenuPermission.query.filter_by(menu_key=key, user_id=None, role=user.role).first()
+        if role_perm:
+            return role_perm.allowed
+    else:
+        if item.get("auth_required", True):
+            return False
+    return allowed

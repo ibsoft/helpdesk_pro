@@ -427,6 +427,9 @@
         setInterval(update, 15000);
       });
     </script>
+    {% if assistant_widget_config %}
+      {% include "partials/assistant_widget.html" %}
+    {% endif %}
     {% block extra_js %}{% endblock %}
   </body>
 </html>
