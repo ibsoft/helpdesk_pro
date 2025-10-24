@@ -33,6 +33,10 @@
     </script>
 
     <style>
+      :root {
+        --navbar-height: 56px;
+      }
+
       html, body {
         height: 100%;
         display: flex;
@@ -71,6 +75,10 @@
         background: inherit;
       }
 
+      body.nav-open {
+        overflow: hidden;
+      }
+
       /* ─── Navbar with Purple Gradient ─── */
       .navbar {
         min-height: 48px !important;
@@ -80,6 +88,9 @@
         background-size: 400% 400%;
         animation: gradientShift 18s ease infinite;
         border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1200;
       }
 
       html[data-bs-theme="dark"] body .navbar {
@@ -110,6 +121,48 @@
       .navbar-dark .nav-link.active {
         color: #fff !important;
         text-shadow: 0 0 5px rgba(255,255,255,0.4);
+      }
+
+      .navbar-toggler {
+        position: relative;
+        z-index: 1201;
+      }
+
+      @media (max-width: 991.98px) {
+        .navbar {
+          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+        }
+        .navbar-collapse {
+          position: fixed;
+          top: calc(var(--navbar-height, 56px) + 8px);
+          left: 1rem;
+          right: 1rem;
+          background: linear-gradient(135deg, rgba(13, 110, 253, 0.97), rgba(102, 16, 242, 0.97));
+          border-radius: 0.85rem;
+          padding: 1.25rem;
+          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.28);
+          max-height: calc(100vh - var(--navbar-height, 56px) - 24px);
+          overflow-y: auto;
+          z-index: 1200;
+          transition: transform 0.25s ease, opacity 0.25s ease;
+          transform: translateY(-12px);
+          opacity: 0;
+          pointer-events: none;
+        }
+        .navbar-collapse.show,
+        .navbar-collapse.collapsing {
+          transform: translateY(0);
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .navbar-collapse.collapsing {
+          overflow: hidden;
+          transition: height 0.2s ease;
+        }
+        .navbar-collapse.show .nav-link {
+          padding-left: 0;
+          padding-right: 0;
+        }
       }
 
       /* ─── Footer with Purple Gradient ─── */
@@ -408,6 +461,23 @@
       })();
 
       document.addEventListener("DOMContentLoaded", function() {
+        const navbarEl = document.querySelector(".navbar");
+        const setNavbarHeight = () => {
+          if (!navbarEl) return;
+          const height = navbarEl.offsetHeight || 56;
+          document.documentElement.style.setProperty("--navbar-height", `${height}px`);
+        };
+        setNavbarHeight();
+        window.addEventListener("resize", setNavbarHeight);
+
+        const navCollapse = document.getElementById("mainNav");
+        if (navCollapse) {
+          navCollapse.addEventListener("show.bs.collapse", () => document.body.classList.add("nav-open"));
+          navCollapse.addEventListener("shown.bs.collapse", () => document.body.classList.add("nav-open"));
+          navCollapse.addEventListener("hide.bs.collapse", () => document.body.classList.remove("nav-open"));
+          navCollapse.addEventListener("hidden.bs.collapse", () => document.body.classList.remove("nav-open"));
+        }
+
         const badge = document.getElementById("collab-nav-badge");
         if (!badge) return;
         const update = function() {
