@@ -19,7 +19,7 @@ AVAILABLE_ROLES = ["admin", "manager", "technician", "user"]
 MENU_DEFINITIONS: List[Dict[str, Any]] = [
     {
         "key": "dashboard",
-        "label": "Dashboard",
+        "label": _("Dashboard"),
         "icon": "fa fa-chart-line",
         "endpoint": "dashboard.index",
         "roles": ["admin", "manager"],
@@ -27,28 +27,28 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "manage",
-        "label": "Manage",
+        "label": _("Manage"),
         "icon": "fa fa-sliders",
         "roles": ["admin"],
         "order": 20,
         "children": [
             {
                 "key": "manage_users",
-                "label": "Users",
+                "label": _("Users"),
                 "icon": "fa fa-users",
                 "endpoint": "users.list_users",
                 "roles": ["admin"],
             },
             {
                 "key": "manage_access",
-                "label": "Access",
+                "label": _("Access"),
                 "icon": "fa fa-key",
                 "endpoint": "manage.access",
                 "roles": ["admin"],
             },
             {
                 "key": "manage_assistant",
-                "label": "AI Assistant",
+                "label": _("AI Assistant"),
                 "icon": "fa fa-robot",
                 "endpoint": "manage.assistant_settings",
                 "roles": ["admin"],
@@ -57,7 +57,7 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "tickets",
-        "label": "Tickets",
+        "label": _("Tickets"),
         "icon": "fa fa-ticket",
         "endpoint": "tickets.list_tickets",
         "roles": ["admin", "manager", "technician", "user"],
@@ -65,7 +65,7 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "knowledge",
-        "label": "Knowledge Base",
+        "label": _("Knowledge Base"),
         "icon": "fa fa-book",
         "roles": ["admin", "manager", "technician", "user"],
         "order": 40,
@@ -73,7 +73,7 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "collaboration",
-        "label": "Collaboration",
+        "label": _("Collaboration"),
         "icon": "fa fa-comments",
         "roles": ["admin", "manager", "technician", "user"],
         "order": 50,
@@ -81,21 +81,21 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "inventory",
-        "label": "Inventory",
+        "label": _("Inventory"),
         "icon": "fa fa-boxes-stacked",
         "roles": ["admin"],
         "order": 60,
         "children": [
             {
                 "key": "inventory_software",
-                "label": "Software",
+                "label": _("Software"),
                 "icon": "fa fa-code-branch text-primary",
                 "endpoint": "inventory.software_list",
                 "roles": ["admin"],
             },
             {
                 "key": "inventory_hardware",
-                "label": "Hardware",
+                "label": _("Hardware"),
                 "icon": "fa fa-microchip text-secondary",
                 "endpoint": "inventory.hardware_list",
                 "roles": ["admin"],
@@ -104,21 +104,21 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "networks",
-        "label": "Networks",
+        "label": _("Networks"),
         "icon": "fa fa-network-wired",
         "roles": ["admin"],
         "order": 70,
         "children": [
             {
                 "key": "networks_maps",
-                "label": "Network Maps",
+                "label": _("Network Maps"),
                 "icon": "fa fa-sitemap text-info",
                 "endpoint": "networks.network_maps",
                 "roles": ["admin"],
             },
             {
                 "key": "networks_tools",
-                "label": "Network Tools",
+                "label": _("Network Tools"),
                 "icon": "fa fa-toolbox text-warning",
                 "endpoint": "networks.network_tools",
                 "roles": ["admin"],
@@ -127,7 +127,7 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
     },
     {
         "key": "assistant_widget",
-        "label": "AI Assistant Widget",
+        "label": _("AI Assistant Widget"),
         "icon": "fa fa-robot",
         "roles": ["admin", "manager", "technician", "user"],
         "order": 200,

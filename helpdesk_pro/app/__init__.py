@@ -105,6 +105,7 @@ def create_app():
             "navigation": get_navigation_for_user(current_user),
             "chat_unread_count": chat_unread,
             "assistant_widget_config": assistant_widget,
+            "app_version": app.config.get("APP_VERSION", "1.0.0"),
         }
 
     # ───────── Blueprints ───────── #

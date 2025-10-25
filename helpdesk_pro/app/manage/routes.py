@@ -9,6 +9,7 @@ from flask_babel import gettext as _
 
 from app import db
 from app.models import MenuPermission, AssistantConfig
+from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
     MENU_DEFINITIONS,
     AVAILABLE_ROLES,
@@ -101,9 +102,9 @@ def assistant_settings():
 
     if request.method == "POST":
         config.is_enabled = bool(request.form.get("is_enabled"))
-        provider = request.form.get("provider") or "webhook"
-        if provider not in {"chatgpt", "webhook"}:
-            provider = "webhook"
+        provider = request.form.get("provider") or "builtin"
+        if provider not in {"chatgpt", "chatgpt_hybrid", "webhook", "builtin"}:
+            provider = "builtin"
         config.provider = provider
 
         position = request.form.get("position") or "right"
@@ -114,14 +115,16 @@ def assistant_settings():
         config.button_label = (request.form.get("button_label") or "Ask AI").strip()[:120]
         config.window_title = (request.form.get("window_title") or "AI Assistant").strip()[:120]
         config.welcome_message = (request.form.get("welcome_message") or "").strip()
+        system_prompt = (request.form.get("system_prompt") or "").strip()
+        config.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
 
-        if provider == "chatgpt":
+        if provider in {"chatgpt", "chatgpt_hybrid"}:
             config.openai_api_key = (request.form.get("openai_api_key") or "").strip()
             config.openai_model = (request.form.get("openai_model") or "gpt-3.5-turbo").strip()
             config.webhook_url = None
             config.webhook_method = "POST"
             config.webhook_headers = None
-        else:
+        elif provider == "webhook":
             config.openai_api_key = None
             config.openai_model = "gpt-3.5-turbo"
             config.webhook_url = (request.form.get("webhook_url") or "").strip() or None
@@ -139,6 +142,12 @@ def assistant_settings():
                     flash(_("Webhook headers must be valid JSON."), "warning")
             else:
                 config.webhook_headers = None
+        else:  # builtin
+            config.openai_api_key = None
+            config.openai_model = "gpt-3.5-turbo"
+            config.webhook_url = None
+            config.webhook_method = "POST"
+            config.webhook_headers = None
 
         db.session.add(config)
         db.session.commit()

@@ -30,7 +30,7 @@
   }
   .assistant-panel {
     width: min(360px, 95vw);
-    max-height: min(90vh, 1040px);
+    max-height: var(--assistant-max-height, 70vh);
     display: flex;
     flex-direction: column;
     border-radius: 1rem;
@@ -159,6 +159,15 @@
   const unreadBadge = document.getElementById("assistantUnreadBadge");
 
   if (!root || !form) return;
+
+  function updatePanelOffset() {
+    const nav = document.querySelector(".navbar");
+    const navHeight = nav ? nav.offsetHeight : 64;
+    const available = Math.max(240, window.innerHeight - navHeight - 72);
+    document.documentElement.style.setProperty("--assistant-max-height", `${available}px`);
+  }
+  updatePanelOffset();
+  window.addEventListener("resize", updatePanelOffset);
 
   const escapeHTML = (value) => (value || '')
     .replace(/&/g, '&amp;')

@@ -28,8 +28,8 @@ class Config:
     KNOWLEDGE_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'knowledge_uploads')
     COLLAB_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'chat_uploads')
 
-
     LANGUAGES = ['en', 'el']
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_TRANSLATION_DIRECTORIES = os.path.join(
         os.path.dirname(__file__), 'translations')
+    APP_VERSION = os.getenv('APP_VERSION', '1.0.5')

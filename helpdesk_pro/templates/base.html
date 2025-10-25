@@ -283,13 +283,6 @@
                 </a>
               </li>
             {% endif %}
-            {% if current_user.is_authenticated %}
-              <li class="nav-item me-3 text-white small">
-                <i class="fa fa-user-circle"></i>
-                {{ current_user.username }} ({{ _(current_user.role|capitalize) }})
-              </li>
-            {% endif %}
-
             <li class="nav-item me-2">
               <button id="themeToggle" class="btn btn-sm btn-outline-light" title="{{ _('Toggle theme') }}">
                 <i class="fa fa-sun"></i>
@@ -308,10 +301,32 @@
             </li>
 
             {% if current_user.is_authenticated %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('auth.logout') }}?lang={{ g.locale }}">
-                  <i class="fa fa-sign-out-alt"></i> {{ _('Logout') }}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fa fa-user-circle"></i>
+                  <span class="d-none d-lg-inline">{{ current_user.username }}</span>
                 </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                  <li>
+                    <button class="dropdown-item d-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                      <i class="fa fa-info-circle text-primary"></i>
+                      {{ _('About') }}
+                    </button>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="{{ url_for('auth.logout') }}?lang={{ g.locale }}">
+                      <i class="fa fa-sign-out-alt text-danger"></i>
+                      {{ _('Logout') }}
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item me-2">
+                <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                  <i class="fa fa-info-circle"></i> {{ _('About') }}
+                </button>
               </li>
             {% endif %}
           </ul>
@@ -363,6 +378,27 @@
         <a href="mailto:ioannis.bouhras@gmail.com"><i class="fa fa-envelope"></i></a>
       </span>
     </footer>
+
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header modal-header-gradient">
+            <h5 class="modal-title" id="aboutModalLabel"><i class="fa fa-info-circle"></i> {{ _('About Helpdesk Pro') }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2"><strong>{{ _('Version') }}:</strong> {{ app_version }}</p>
+            <p class="mb-0">
+              <strong>{{ _('Author') }}:</strong> Ioannis A. Bouhras<br>
+              <a href="mailto:ioannis.bouhras@gmail.com">ioannis.bouhras@gmail.com</a>
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ─── JS ─── -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
