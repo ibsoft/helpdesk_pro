@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h4 class="mb-0"><i class="fa fa-file-alt"></i> {{ article.title }}</h4>
+    <small class="text-muted">{{ _('Updated') }} {{ article.updated_at.strftime('%Y-%m-%d %H:%M') if article.updated_at else _('n/a') }}</small>
+  </div>
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('knowledge.list_articles') }}" class="btn btn-outline-secondary">
+      <i class="fa fa-arrow-left"></i> {{ _('Back') }}
+    </a>
+    {% if can_edit %}
+      <a class="btn btn-outline-primary" href="{{ url_for('knowledge.edit_article', article_id=article.id) }}">
+        <i class="fa fa-edit"></i> {{ _('Edit') }}
+      </a>
+      <form method="post" action="{{ url_for('knowledge.delete_article', article_id=article.id) }}" onsubmit="return confirm('{{ _('Delete this article?') }}');">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-danger"><i class="fa fa-trash"></i></button>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if article.category or article.tags %}
+  <div class="mb-3">
+    {% if article.category %}
+      <span class="badge bg-info-subtle text-info-emphasis me-2"><i class="fa fa-layer-group"></i> {{ article.category }}</span>
+    {% endif %}
+    {% if article.tags %}
+      {% for tag in article.tags.split(',') if tag.strip() %}
+        <span class="badge bg-primary-subtle text-primary-emphasis me-1">#{{ tag.strip() }}</span>
+      {% endfor %}
+    {% endif %}
+  </div>
+{% endif %}
+
+{% if article.summary %}
+  <div class="alert alert-secondary shadow-sm">
+    <strong>{{ _('Summary') }}:</strong> {{ article.summary }}
+  </div>
+{% endif %}
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    {{ article.content | safe }}
+  </div>
+</div>
+
+{% if article.attachments %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-header"><i class="fa fa-paperclip"></i> {{ _('Attachments') }}</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm align-middle">
+          <thead>
+            <tr>
+              <th>{{ _('File') }}</th>
+              <th>{{ _('Type') }}</th>
+              <th>{{ _('Size') }}</th>
+              <th>{{ _('Uploaded') }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for attachment in article.attachments %}
+              <tr>
+                <td><a href="{{ url_for('knowledge.download_attachment', filename=attachment.stored_filename) }}">{{ attachment.original_filename }}</a></td>
+                <td>{{ attachment.mimetype or _('Unknown') }}</td>
+                <td>{% if attachment.file_size %}{{ (attachment.file_size / 1024)|round(1) }} KB{% else %}—{% endif %}</td>
+                <td>{{ attachment.uploaded_at.strftime('%Y-%m-%d %H:%M') if attachment.uploaded_at else '—' }}</td>
+                <td class="text-end">
+                  {% if can_edit %}
+                    <form method="post" action="{{ url_for('knowledge.delete_attachment', article_id=article.id, attachment_id=attachment.id) }}" onsubmit="return confirm('{{ _('Remove this attachment?') }}');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                    </form>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if can_edit %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-header"><i class="fa fa-upload"></i> {{ _('Upload Attachment') }}</div>
+    <div class="card-body">
+      <form method="post" action="{{ url_for('knowledge.upload_attachment', article_id=article.id) }}" enctype="multipart/form-data" class="row g-3">
+        <div class="col-md-8">
+          <input type="file" class="form-control" name="attachment" required>
+        </div>
+        <div class="col-md-4">
+          <button class="btn btn-outline-primary w-100" type="submit"><i class="fa fa-upload"></i> {{ _('Upload') }}</button>
+        </div>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      </form>
+    </div>
+  </div>
+{% endif %}
+
+{% if article.versions %}
+  <div class="card shadow-sm">
+    <div class="card-header"><i class="fa fa-history"></i> {{ _('Version History') }}</div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>{{ _('Version') }}</th>
+              <th>{{ _('Created') }}</th>
+              <th>{{ _('Author') }}</th>
+              <th>{{ _('Title') }}</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for version in article.versions %}
+              <tr>
+                <td>v{{ version.version_number }}</td>
+                <td>{{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else '—' }}</td>
+                <td>{{ version.created_by }}</td>
+                <td>{{ version.title }}</td>
+                <td class="text-end">
+                  <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('knowledge.view_version', article_id=article.id, version_id=version.id) }}">
+                    <i class="fa fa-eye"></i> {{ _('View') }}
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}

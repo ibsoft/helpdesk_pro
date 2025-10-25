@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-18 23:38+0300\n"
+"POT-Creation-Date: 2025-10-24 23:16+0300\n"
 "PO-Revision-Date: 2025-10-18 23:43+0300\n"
 "Last-Translator: Ioannis Bouchras <ioannis.bouchras@unixfor.gr>\n"
 "Language: el\n"
@@ -18,41 +18,346 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: templates/base.html:6 templates/base.html:56
-msgid "Helpdesk Pro"
-msgstr "Helpdesk Pro"
 
-#: templates/base.html:68
-msgid "Dashboard"
-msgstr "Πίνακας Ελέγχου"
+#: app/navigation.py:30
+msgid "Manage"
+msgstr "Διαχείριση"
 
-#: templates/base.html:75 templates/tickets/list.html:4
-msgid "Tickets"
-msgstr "Αιτήματα"
-
-#: templates/base.html:82 templates/users/list.html:4
+#: app/navigation.py:37 templates/users/list.html:19
 msgid "Users"
 msgstr "Χρήστες"
 
-#: templates/base.html:97
+#: app/navigation.py:44
+msgid "Access"
+msgstr "Πρόσβαση"
+
+#: app/navigation.py:51
+msgid "AI Assistant"
+msgstr "Βοηθός ΤΝ"
+
+#: app/navigation.py:60 templates/tickets/list.html:176
+msgid "Tickets"
+msgstr "Αιτήματα"
+
+#: app/navigation.py:68 templates/knowledge/list.html:122
+msgid "Knowledge Base"
+msgstr "Γνωσιακή βάση"
+
+#: app/navigation.py:76
+msgid "Collaboration"
+msgstr "Συνεργασία"
+
+#: app/navigation.py:84
+msgid "Inventory"
+msgstr "Απογραφή"
+
+#: app/navigation.py:91
+msgid "Software"
+msgstr "Λογισμικό"
+
+#: app/navigation.py:98
+msgid "Hardware"
+msgstr "Υλικό"
+
+#: app/navigation.py:107
+msgid "Networks"
+msgstr "Δίκτυα"
+
+#: app/navigation.py:114 templates/networks/maps.html:97
+msgid "Network Maps"
+msgstr "Χάρτες δικτύου"
+
+#: app/navigation.py:121
+msgid "Network Tools"
+msgstr "Εργαλεία δικτύου"
+
+#: app/navigation.py:130 templates/manage/assistant_settings.html:26
+msgid "AI Assistant Widget"
+msgstr "Widget βοηθού AI"
+
+#: app/assistant/routes.py:113
+msgid "Assistant is disabled."
+msgstr "Ο βοηθός είναι απενεργοποιημένος."
+
+#: app/assistant/routes.py:119 app/collab/routes.py:334
+#: templates/collab/chat.html:680
+msgid "Message cannot be empty."
+msgstr "Το μήνυμα δεν μπορεί να είναι κενό."
+
+#: app/assistant/routes.py:128 app/assistant/routes.py:132
+msgid "OpenAI API key is not configured."
+msgstr "Το κλειδί API του OpenAI δεν έχει ρυθμιστεί."
+
+#: app/assistant/routes.py:143
+msgid "Webhook URL is not configured."
+msgstr "Η διεύθυνση URL του webhook δεν έχει ρυθμιστεί."
+
+#: app/assistant/routes.py:146
+#, python-format
+msgid "Connection error: %(error)s"
+msgstr "Σφάλμα σύνδεσης: %(error)s"
+
+#: app/assistant/routes.py:151
+msgid "Assistant did not return a reply."
+msgstr "Ο βοηθός δεν επέστρεψε απάντηση."
+# Assistant fallback hint
+msgid "I can help with ticket summaries, knowledge base articles and attachments, inventory assignments, and network availability. For example: 'Show my open tickets today', 'Which articles mention VPN', 'List hardware assigned to Alice', or 'Find an available IP in 192.168.1.0/24'."
+msgstr "Μπορώ να βοηθήσω με σύνοψη αιτημάτων, άρθρα και συνημμένα γνωσιακής βάσης, απογραφή υλικού/λογισμικού και διαθεσιμότητα δικτύου. Για παράδειγμα: 'Εμφάνισε τα ανοικτά αιτήματά μου σήμερα', 'Ποια άρθρα αναφέρουν VPN', 'Κατάλογος υλικού που έχει ανατεθεί στην Άννα', ή 'Βρες διαθέσιμη IP στο 192.168.1.0/24'."
+
+msgid "No software assets matched those filters. However, I found related knowledge base items:\n%s"
+msgstr "Δεν βρέθηκαν εγγραφές λογισμικού με αυτά τα φίλτρα. Ωστόσο, εντόπισα σχετικά στοιχεία στη γνωσιακή βάση:\n%s"
+
+msgid "No hardware assets matched those filters. However, I found related knowledge base items:\n%s"
+msgstr "Δεν βρέθηκαν εγγραφές υλικού με αυτά τα φίλτρα. Ωστόσο, εντόπισα σχετικά στοιχεία στη γνωσιακή βάση:\n%s"
+
+#: app/assistant/routes.py:203
+#, python-format
+msgid "OpenAI error: %(status)s %(body)s"
+msgstr "Σφάλμα OpenAI: %(status)s %(body)s"
+
+#: app/assistant/routes.py:252
+#, python-format
+msgid "Webhook error: %(status)s %(body)s"
+msgstr "Σφάλμα webhook: %(status)s %(body)s"
+
+#: app/assistant/routes.py:256
+#, python-format
+msgid "Invalid webhook response: %(error)s"
+msgstr "Μη έγκυρη απόκριση webhook: %(error)s"
+
+#: app/assistant/routes.py:260
+msgid "Webhook response is missing a 'reply' field."
+msgstr "Η απόκριση του webhook δεν περιέχει το πεδίο «reply»."
+
+#: app/collab/routes.py:57 templates/collab/chat.html:333
+#: templates/collab/chat.html:838
+msgid "General Chat"
+msgstr "Γενική συνομιλία"
+
+#: app/collab/routes.py:86
+msgid "Direct Chat"
+msgstr "Άμεση συνομιλία"
+
+#: app/collab/routes.py:210
+msgid "Invalid user."
+msgstr "Μη έγκυρος χρήστης."
+
+#: app/collab/routes.py:214 app/collab/routes.py:420
+msgid "User not found."
+msgstr "Ο χρήστης δεν βρέθηκε."
+
+#: app/collab/routes.py:269 templates/inventory/hardware_list.html:206
+#: templates/inventory/software_list.html:198
+#: templates/knowledge/detail.html:69
+msgid "Unknown"
+msgstr "Άγνωστο"
+
+#: app/collab/routes.py:283 app/collab/routes.py:320 app/collab/routes.py:376
+msgid "You are not part of this conversation."
+msgstr "Δεν συμμετέχετε σε αυτή τη συζήτηση."
+
+#: app/collab/routes.py:386
+msgid "You are not authorized to do this."
+msgstr "Δεν έχετε δικαίωμα για αυτή την ενέργεια."
+
+#: app/collab/routes.py:390
+msgid "Only the general chat can be purged."
+msgstr "Μόνο η γενική συνομιλία μπορεί να καθαριστεί."
+
+#: app/collab/routes.py:417
+msgid "Cannot favorite yourself."
+msgstr "Δεν μπορείτε να προσθέσετε τον εαυτό σας στα αγαπημένα."
+
+#: app/collab/routes.py:455
+msgid "You do not have access to this file."
+msgstr "Δεν έχετε πρόσβαση σε αυτό το αρχείο."
+
+#: app/collab/routes.py:464 app/collab/routes.py:475
+msgid "You cannot delete this conversation."
+msgstr "Δεν μπορείτε να διαγράψετε αυτή τη συζήτηση."
+
+#: app/knowledge/routes.py:122
+msgid "You do not have access to this article."
+msgstr "Δεν έχετε πρόσβαση σε αυτό το άρθρο."
+
+#: app/knowledge/routes.py:135
+msgid "You do not have permission to create articles."
+msgstr "Δεν έχετε δικαίωμα να δημιουργήσετε άρθρα."
+
+#: app/knowledge/routes.py:147 app/knowledge/routes.py:187
+msgid "Title and content are required."
+msgstr "Ο τίτλος και το περιεχόμενο είναι υποχρεωτικά."
+
+#: app/knowledge/routes.py:164
+#, fuzzy
+msgid "Article created successfully."
+msgstr "Το άρθρο δημιουργήθηκε με επιτυχία."
+
+#: app/knowledge/routes.py:174
+msgid "You do not have permission to edit articles."
+msgstr "Δεν έχετε δικαίωμα να επεξεργαστείτε άρθρα."
+
+#: app/knowledge/routes.py:199
+#, fuzzy
+msgid "Article updated successfully."
+msgstr "Το άρθρο ενημερώθηκε με επιτυχία."
+
+#: app/knowledge/routes.py:209
+msgid "You do not have permission to delete articles."
+msgstr "Δεν έχετε δικαίωμα να διαγράψετε άρθρα."
+
+#: app/knowledge/routes.py:214
+#, fuzzy
+msgid "Article deleted."
+msgstr "Το άρθρο διαγράφηκε."
+
+#: app/knowledge/routes.py:222
+msgid "You do not have permission to upload attachments."
+msgstr "Δεν έχετε δικαίωμα να ανεβάσετε συνημμένα."
+
+#: app/knowledge/routes.py:228
+msgid "Please select a file to upload."
+msgstr "Παρακαλώ επιλέξτε ένα αρχείο για μεταφόρτωση."
+
+#: app/knowledge/routes.py:233
+msgid "Invalid filename."
+msgstr "Μη έγκυρο όνομα αρχείου."
+
+#: app/knowledge/routes.py:259
+#, fuzzy
+msgid "Attachment uploaded."
+msgstr "Το συνημμένο ανέβηκε."
+
+#: app/knowledge/routes.py:267
+msgid "You do not have permission to delete attachments."
+msgstr "Δεν έχετε δικαίωμα να διαγράψετε συνημμένα."
+
+#: app/knowledge/routes.py:277
+#, fuzzy
+msgid "Attachment removed."
+msgstr "Το συνημμένο αφαιρέθηκε."
+
+#: app/knowledge/routes.py:287
+msgid "You do not have access to this attachment."
+msgstr "Δεν έχετε πρόσβαση σε αυτό το συνημμένο."
+
+#: app/knowledge/routes.py:297
+msgid "You do not have permission to view historical versions."
+msgstr "Δεν έχετε δικαίωμα να δείτε παλαιότερες εκδόσεις."
+
+#: app/manage/routes.py:63
+msgid "Access settings updated."
+msgstr "Οι ρυθμίσεις πρόσβασης ενημερώθηκαν."
+
+#: app/manage/routes.py:65
+msgid "No changes were necessary."
+msgstr "Δεν απαιτήθηκαν αλλαγές."
+
+#: app/manage/routes.py:140
+msgid "Webhook headers must be valid JSON object."
+msgstr "Τα headers του webhook πρέπει να είναι έγκυρο αντικείμενο JSON."
+
+#: app/manage/routes.py:142
+msgid "Webhook headers must be valid JSON."
+msgstr "Τα headers του webhook πρέπει να είναι έγκυρο JSON."
+
+#: app/manage/routes.py:154
+msgid "Assistant settings saved."
+msgstr "Οι ρυθμίσεις του βοηθού αποθηκεύτηκαν."
+
+# Dashboard strings
+msgid "Dashboard Overview"
+msgstr "Επισκόπηση πίνακα ελέγχου"
+
+msgid "Showing statistics only for your tickets (created or assigned)."
+msgstr "Εμφανίζονται στατιστικά μόνο για τα αιτήματά σας (δημιουργημένα ή ανατεθειμένα)."
+
+msgid "Open Tickets"
+msgstr "Ανοικτά αιτήματα"
+
+msgid "Closed Tickets"
+msgstr "Κλειστά αιτήματα"
+
+msgid "Daily Tickets"
+msgstr "Ημερήσια αιτήματα"
+
+msgid "Weekly Tickets"
+msgstr "Εβδομαδιαία αιτήματα"
+
+msgid "Monthly Resolution Rate"
+msgstr "Μηνιαίο ποσοστό επίλυσης"
+
+msgid "Yearly Tickets Closed"
+msgstr "Ετήσια κλειστά αιτήματα"
+
+msgid "Hardware Assignment"
+msgstr "Κατανομή υλικού"
+
+msgid "Software Assignment"
+msgstr "Κατανομή λογισμικού"
+
+msgid "Knowledge Base Articles Published"
+msgstr "Δημοσιευμένα άρθρα γνωσιακής βάσης"
+
+msgid "Network Utilisation (Top 8)"
+msgstr "Χρήση δικτύου (Top 8)"
+
+#: templates/base.html:6
+msgid "Helpdesk Pro"
+msgstr "Helpdesk Pro"
+
+#: templates/base.html:294
 msgid "Toggle theme"
 msgstr "Αλλαγή θέματος"
 
-#: templates/base.html:117
+#: templates/base.html:301
+msgid "About"
+msgstr "Σχετικά"
+
+#: templates/base.html:319
 msgid "Logout"
 msgstr "Αποσύνδεση"
 
-#: templates/base.html:143
+#: templates/base.html:366
 msgid "All Rights Reserved"
 msgstr "Όλα τα δικαιώματα διατηρούνται"
 
-#: templates/index.html:4
+#: templates/base.html:377
+#, fuzzy
+msgid "About Helpdesk Pro"
+msgstr "Σχετικά με το Helpdesk Pro"
+
+#: templates/base.html:378 templates/base.html:388
+#, fuzzy
+msgid "Close"
+msgstr "Κλείσιμο"
+
+#: templates/base.html:381 templates/inventory/software_list.html:147
+#: templates/inventory/software_list.html:261
+#: templates/inventory/software_list.html:412
+#: templates/knowledge/detail.html:114 templates/knowledge/version.html:6
+msgid "Version"
+msgstr "Έκδοση"
+
+#: templates/base.html:383 templates/knowledge/detail.html:116
+msgid "Author"
+msgstr "Συντάκτης"
+
+#: templates/index.html:105
 msgid "Welcome to Helpdesk Pro"
 msgstr "Καλώς ήρθατε στο Helpdesk Pro"
 
-#: templates/index.html:5
-msgid "Login"
-msgstr "Σύνδεση"
+#: templates/index.html:107
+msgid "Your smart support & ticketing platform for modern IT operations."
+msgstr "Η έξυπνη πλατφόρμα υποστήριξης και ticketing για σύγχρονες λειτουργίες ΙΤ."
+
+#: templates/index.html:111
+msgid "Login to Continue"
+msgstr "Συνδεθείτε για να συνεχίσετε"
+
+#: templates/index.html:121
+msgid "Empowering Secure IT Helpdesk Automation"
+msgstr "Ενδυνάμωση ασφαλούς αυτοματοποίησης IT Helpdesk"
 
 #: templates/auth/forgot_password.html:4
 msgid "Password Reset Coming Soon"
@@ -62,32 +367,38 @@ msgstr "Επαναφορά Κωδικού Σύντομα Διαθέσιμη"
 msgid "Please contact your system administrator to reset your password."
 msgstr "Επικοινωνήστε με τον διαχειριστή του συστήματος για επαναφορά κωδικού."
 
-#: templates/auth/login.html:8
+#: templates/auth/login.html:108
 msgid "Sign in to Helpdesk Pro"
 msgstr "Συνδεθείτε στο Helpdesk Pro"
 
-#: templates/auth/login.html:14 templates/users/list.html:16
-#: templates/users/list.html:76 templates/users/list.html:118
+#: templates/auth/login.html:109
+msgid "Your secure access to IT support and ticketing"
+msgstr "Η ασφαλής πρόσβασή σας στην υποστήριξη και το ticketing ΙΤ"
+
+#: templates/auth/login.html:117 templates/auth/setup_admin.html:49
+#: templates/users/list.html:31 templates/users/list.html:93
+#: templates/users/list.html:137
 msgid "Username"
 msgstr "Όνομα Χρήστη"
 
-#: templates/auth/login.html:18 templates/users/list.html:122
+#: templates/auth/login.html:122 templates/auth/setup_admin.html:57
+#: templates/users/list.html:143
 msgid "Password"
 msgstr "Κωδικός"
 
-#: templates/auth/login.html:22
+#: templates/auth/login.html:127
 msgid "Remember me"
 msgstr "Να με θυμάσαι"
 
-#: templates/auth/login.html:25
+#: templates/auth/login.html:131
 msgid "Sign in"
 msgstr "Σύνδεση"
 
-#: templates/auth/login.html:29
+#: templates/auth/login.html:136
 msgid "Forgot password?"
 msgstr "Ξεχάσατε τον κωδικό;"
 
-#: templates/auth/login.html:30
+#: templates/auth/login.html:137
 msgid "Create an account"
 msgstr "Δημιουργία λογαριασμού"
 
@@ -101,31 +412,1425 @@ msgstr ""
 "Η αυτόματη εγγραφή είναι απενεργοποιημένη. Επικοινωνήστε με τον "
 "διαχειριστή."
 
+#: templates/auth/setup_admin.html:42
+msgid "Initial Administrator Setup"
+msgstr "Αρχική ρύθμιση διαχειριστή"
+
+#: templates/auth/setup_admin.html:43
+msgid "No users found. Create the first administrator account to continue."
+msgstr ""
+"Δεν βρέθηκαν χρήστες. Δημιουργήστε τον πρώτο λογαριασμό διαχειριστή για "
+"να συνεχίσετε."
+
+#: templates/auth/setup_admin.html:53
+msgid "Email (optional)"
+msgstr "Email (προαιρετικό)"
+
+#: templates/auth/setup_admin.html:60
+#, fuzzy
+msgid "Create Admin Account"
+msgstr "Δημιουργία λογαριασμού Διαχειριστή"
+
+#: templates/collab/chat.html:261
+msgid "Total Conversations"
+msgstr "Συνολικές συνομιλίες"
+
+#: templates/collab/chat.html:268
+msgid "Direct Messages"
+msgstr "Άμεσα μηνύματα"
+
+#: templates/collab/chat.html:274
+msgid "Team Channels"
+msgstr "Κανάλια ομάδας"
+
+#: templates/collab/chat.html:280
+#, fuzzy
+msgid "Unread"
+msgstr "Μη αναγνωσμένα"
+
+#: templates/collab/chat.html:286
+msgid "Messages Today"
+msgstr "Μηνύματα σήμερα"
+
+#: templates/collab/chat.html:292
+msgid "Favorites"
+msgstr "Αγαπημένα"
+
+#: templates/collab/chat.html:303
+#, fuzzy
+msgid "Conversations"
+msgstr "Συζητήσεις"
+
+#: templates/collab/chat.html:334 templates/collab/chat.html:656
+msgid "Everyone in the organization"
+msgstr "Όλοι στον οργανισμό"
+
+#: templates/collab/chat.html:338 templates/collab/chat.html:895
+msgid "Purge General Chat"
+msgstr "Καθαρισμός γενικής συνομιλίας"
+
+#: templates/collab/chat.html:348
+msgid "Select or start a conversation to view messages."
+msgstr "Επιλέξτε ή ξεκινήστε μια συζήτηση για να δείτε μηνύματα."
+
+#: templates/collab/chat.html:363 templates/partials/assistant_widget.html:139
+msgid "Type your message..."
+msgstr "Πληκτρολογήστε το μήνυμά σας..."
+
+#: templates/collab/chat.html:376
+#, fuzzy
+msgid "People"
+msgstr "Άτομα"
+
+#: templates/collab/chat.html:419
+msgid "is typing"
+msgstr "γράφει"
+
+#: templates/collab/chat.html:420
+msgid "are typing"
+msgstr "γράφουν"
+
+#: templates/collab/chat.html:421
+msgid "Someone is typing"
+msgstr "Κάποιος γράφει"
+
+#: templates/collab/chat.html:423
+msgid "General chat cleared."
+msgstr "Η γενική συνομιλία καθαρίστηκε."
+
+#: templates/collab/chat.html:424
+msgid "Unable to purge general chat."
+msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
+
+#: templates/collab/chat.html:656
+msgid "Direct conversation"
+msgstr "Άμεση συζήτηση"
+
+#: templates/collab/chat.html:702
+#, fuzzy
+msgid "Send failed"
+msgstr "Η αποστολή απέτυχε"
+
+#: templates/collab/chat.html:755
+msgid "Unable to open conversation"
+msgstr "Αδυναμία ανοίγματος συζήτησης"
+
+#: templates/collab/chat.html:842 templates/collab/chat.html:846
+msgid "Unable to delete conversation"
+msgstr "Αδυναμία διαγραφής συζήτησης"
+
+#: templates/collab/chat.html:877
+#, fuzzy
+msgid "Preview"
+msgstr "Προεπισκόπηση"
+
+#: templates/collab/chat.html:883
+msgid "Download"
+msgstr "Λήψη"
+
+#: templates/collab/chat.html:899
+msgid ""
+"This will permanently delete all messages in the General chat for "
+"everyone. This action cannot be undone."
+msgstr ""
+"Αυτό θα διαγράψει οριστικά όλα τα μηνύματα στη Γενική συνομιλία για "
+"όλους. Η ενέργεια δεν μπορεί να αναιρεθεί."
+
+#: templates/collab/chat.html:902 templates/collab/chat.html:921
+#: templates/inventory/hardware_list.html:412
+#: templates/inventory/hardware_list.html:582
+#: templates/inventory/hardware_list.html:606
+#: templates/inventory/software_list.html:381
+#: templates/inventory/software_list.html:532
+#: templates/inventory/software_list.html:556 templates/knowledge/edit.html:42
+#: templates/networks/hosts.html:218 templates/networks/hosts.html:242
+#: templates/networks/maps.html:202 templates/networks/maps.html:255
+#: templates/networks/maps.html:279 templates/tickets/list.html:322
+#: templates/users/list.html:176
+msgid "Cancel"
+msgstr "Ακύρωση"
+
+#: templates/collab/chat.html:903
+msgid "Purge"
+msgstr "Καθαρισμός"
+
+#: templates/collab/chat.html:914
+msgid "Delete Conversation"
+msgstr "Διαγραφή συζήτησης"
+
+#: templates/collab/chat.html:918
+#, fuzzy
+msgid ""
+"Are you sure you want to delete this conversation? This action cannot be "
+"undone."
+msgstr ""
+"Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή τη συζήτηση; Η ενέργεια δεν "
+"μπορεί να αναιρεθεί."
+
+#: templates/collab/chat.html:922 templates/inventory/hardware_list.html:608
+#: templates/inventory/software_list.html:558 templates/networks/hosts.html:244
+#: templates/networks/maps.html:281 templates/tickets/_row.html:53
+#: templates/tickets/list.html:257 templates/tickets/list.html:323
+#: templates/tickets/list.html:421 templates/users/list.html:177
+msgid "Delete"
+msgstr "Διαγραφή"
+
+#: templates/dashboard/index.html:169
+msgid "Department Workload Summary"
+msgstr "Σύνοψη φόρτου εργασίας τμήματος"
+
+#: templates/dashboard/index.html:174 templates/users/list.html:52
+#: templates/users/list.html:149
+msgid "Technician"
+msgstr "Τεχνικός"
+
+#: templates/dashboard/index.html:175 templates/tickets/_row.html:20
+#: templates/tickets/list.html:157 templates/tickets/list.html:218
+msgid "Open"
+msgstr "Ανοιχτό"
+
+#: templates/dashboard/index.html:176 templates/tickets/_row.html:22
+#: templates/tickets/list.html:163 templates/tickets/list.html:220
+msgid "In Progress"
+msgstr "Σε εξέλιξη"
+
+#: templates/dashboard/index.html:177 templates/tickets/_row.html:24
+#: templates/tickets/list.html:169 templates/tickets/list.html:193
+#: templates/tickets/list.html:222
+msgid "Closed"
+msgstr "Κλειστό"
+
+#: templates/inventory/hardware_list.html:99
+msgid "Total Hardware Assets"
+msgstr "Σύνολο υλικού"
+
+#: templates/inventory/hardware_list.html:106
+#: templates/inventory/software_list.html:104
+#, fuzzy
+msgid "Assigned"
+msgstr "Ανατεθειμένα"
+
+#: templates/inventory/hardware_list.html:112
+msgid "In Inventory"
+msgstr "Στο απόθεμα"
+
+#: templates/inventory/hardware_list.html:118
+msgid "Maintenance"
+msgstr "Συντήρηση"
+
+#: templates/inventory/hardware_list.html:124
+#: templates/inventory/hardware_list.html:196
+msgid "In Service"
+msgstr "Σε λειτουργία"
+
+#: templates/inventory/hardware_list.html:130
+#: templates/inventory/hardware_list.html:198
+msgid "In Stock"
+msgstr "Διαθέσιμο"
+
+#: templates/inventory/hardware_list.html:137
+msgid "Hardware Inventory"
+msgstr "Απογραφή υλικού"
+
+#: templates/inventory/hardware_list.html:139
+#: templates/inventory/hardware_list.html:259
+msgid "New Hardware Asset"
+msgstr "Νέο στοιχείο υλικού"
+
+#: templates/inventory/hardware_list.html:146
+#: templates/inventory/hardware_list.html:265
+#: templates/inventory/hardware_list.html:435
+#, fuzzy
+msgid "Asset Tag"
+msgstr "Ετικέτα περιουσιακού στοιχείου"
+
+#: templates/inventory/hardware_list.html:147
+#: templates/inventory/hardware_list.html:269
+#: templates/inventory/hardware_list.html:439
+#: templates/inventory/software_list.html:151
+#: templates/inventory/software_list.html:300
+#: templates/inventory/software_list.html:451
+msgid "Custom Serial"
+msgstr "Προσαρμοσμένο σειριακό"
+
+#: templates/inventory/hardware_list.html:148
+#: templates/inventory/hardware_list.html:273
+#: templates/inventory/hardware_list.html:443
+#: templates/inventory/software_list.html:152
+#: templates/inventory/software_list.html:304
+#: templates/inventory/software_list.html:455
+msgid "Serial Number"
+msgstr "Σειριακός αριθμός"
+
+#: templates/inventory/hardware_list.html:149
+#: templates/inventory/hardware_list.html:277
+#: templates/inventory/hardware_list.html:447
+#: templates/inventory/software_list.html:148
+#: templates/inventory/software_list.html:269
+#: templates/inventory/software_list.html:420 templates/knowledge/edit.html:19
+#: templates/knowledge/list.html:137
+msgid "Category"
+msgstr "Κατηγορία"
+
+#: templates/inventory/hardware_list.html:150
+#: templates/inventory/hardware_list.html:286
+#: templates/inventory/hardware_list.html:456
+#: templates/knowledge/detail.html:59
+msgid "Type"
+msgstr "Τύπος"
+
+#: templates/inventory/hardware_list.html:151
+#: templates/inventory/hardware_list.html:295
+#: templates/inventory/hardware_list.html:465
+#, fuzzy
+msgid "Manufacturer"
+msgstr "Κατασκευαστής"
+
+#: templates/inventory/hardware_list.html:152
+#: templates/inventory/hardware_list.html:299
+#: templates/inventory/hardware_list.html:469
+msgid "Model"
+msgstr "Μοντέλο"
+
+#: templates/inventory/hardware_list.html:153
+#: templates/inventory/hardware_list.html:303
+#: templates/inventory/hardware_list.html:473
+msgid "CPU"
+msgstr "Επεξεργαστής"
+
+#: templates/inventory/hardware_list.html:154
+#: templates/inventory/hardware_list.html:307
+#: templates/inventory/hardware_list.html:477
+msgid "RAM"
+msgstr "Μνήμη RAM"
+
+#: templates/inventory/hardware_list.html:155
+#: templates/inventory/hardware_list.html:311
+#: templates/inventory/hardware_list.html:481
+msgid "Storage"
+msgstr "Αποθήκευση"
+
+#: templates/inventory/hardware_list.html:156
+#: templates/inventory/hardware_list.html:315
+#: templates/inventory/hardware_list.html:485
+msgid "GPU"
+msgstr "Κάρτα γραφικών"
+
+#: templates/inventory/hardware_list.html:157
+#: templates/inventory/hardware_list.html:319
+#: templates/inventory/hardware_list.html:489
+#, fuzzy
+msgid "Operating System"
+msgstr "Λειτουργικό σύστημα"
+
+#: templates/inventory/hardware_list.html:158
+#: templates/inventory/hardware_list.html:323
+#: templates/inventory/hardware_list.html:493
+#: templates/inventory/software_list.html:156
+#: templates/inventory/software_list.html:287
+#: templates/inventory/software_list.html:438 templates/tickets/edit.html:24
+#: templates/tickets/list.html:189 templates/tickets/view.html:217
+msgid "Status"
+msgstr "Κατάσταση"
+
+#: templates/inventory/hardware_list.html:159
+#: templates/inventory/hardware_list.html:332
+#: templates/inventory/hardware_list.html:502
+#, fuzzy
+msgid "Condition"
+msgstr "Κατάσταση συσκευής"
+
+#: templates/inventory/hardware_list.html:160
+#: templates/inventory/hardware_list.html:341
+#: templates/inventory/hardware_list.html:511
+#, fuzzy
+msgid "Location"
+msgstr "Τοποθεσία"
+
+#: templates/inventory/hardware_list.html:161
+#: templates/inventory/hardware_list.html:345
+#: templates/inventory/hardware_list.html:515
+msgid "Rack/Room"
+msgstr "Rack/Χώρος"
+
+#: templates/inventory/hardware_list.html:162
+#: templates/inventory/hardware_list.html:349
+#: templates/inventory/hardware_list.html:519 templates/networks/hosts.html:115
+#: templates/networks/hosts.html:179
+msgid "IP Address"
+msgstr "Διεύθυνση IP"
+
+#: templates/inventory/hardware_list.html:163
+#: templates/inventory/hardware_list.html:353
+#: templates/inventory/hardware_list.html:523 templates/networks/hosts.html:117
+#: templates/networks/hosts.html:187
+msgid "MAC Address"
+msgstr "Διεύθυνση MAC"
+
+#: templates/inventory/hardware_list.html:164
+#: templates/inventory/hardware_list.html:357
+#: templates/inventory/hardware_list.html:527 templates/networks/hosts.html:116
+#: templates/networks/hosts.html:183
+#, fuzzy
+msgid "Hostname"
+msgstr "Όνομα κεντρικού (hostname)"
+
+#: templates/inventory/hardware_list.html:165
+#: templates/inventory/hardware_list.html:361
+#: templates/inventory/hardware_list.html:531
+#: templates/inventory/software_list.html:157
+#: templates/inventory/software_list.html:330
+#: templates/inventory/software_list.html:481
+msgid "Purchase Date"
+msgstr "Ημ/νία αγοράς"
+
+#: templates/inventory/hardware_list.html:166
+#: templates/inventory/hardware_list.html:365
+#: templates/inventory/hardware_list.html:535
+msgid "Warranty End"
+msgstr "Λήξη εγγύησης"
+
+#: templates/inventory/hardware_list.html:167
+#: templates/inventory/hardware_list.html:369
+#: templates/inventory/hardware_list.html:539
+#: templates/inventory/software_list.html:163
+#: templates/inventory/software_list.html:342
+#: templates/inventory/software_list.html:493
+msgid "Support Vendor"
+msgstr "Πάροχος υποστήριξης"
+
+#: templates/inventory/hardware_list.html:168
+#: templates/inventory/hardware_list.html:373
+#: templates/inventory/hardware_list.html:543
+msgid "Support Contract"
+msgstr "Σύμβαση υποστήριξης"
+
+#: templates/inventory/hardware_list.html:169
+#: templates/inventory/hardware_list.html:393
+#: templates/inventory/hardware_list.html:563
+#: templates/inventory/software_list.html:160
+#: templates/inventory/software_list.html:358
+#: templates/inventory/software_list.html:509 templates/networks/hosts.html:119
+#: templates/tickets/list.html:191
+msgid "Assigned To"
+msgstr "Ανατέθηκε Σε"
+
+#: templates/inventory/hardware_list.html:170
+#: templates/inventory/hardware_list.html:402
+#: templates/inventory/hardware_list.html:572
+#: templates/inventory/software_list.html:161
+#: templates/inventory/software_list.html:367
+#: templates/inventory/software_list.html:518
+#, fuzzy
+msgid "Assigned On"
+msgstr "Ημ/νία ανάθεσης"
+
+#: templates/inventory/hardware_list.html:171
+#: templates/inventory/hardware_list.html:377
+#: templates/inventory/hardware_list.html:547
+msgid "Accessories"
+msgstr "Αξεσουάρ"
+
+#: templates/inventory/hardware_list.html:172
+#: templates/inventory/hardware_list.html:381
+#: templates/inventory/hardware_list.html:551
+msgid "Power Supply"
+msgstr "Τροφοδοτικό"
+
+#: templates/inventory/hardware_list.html:173
+msgid "BIOS"
+msgstr "BIOS"
+
+#: templates/inventory/hardware_list.html:174
+msgid "Firmware"
+msgstr "Firmware"
+
+#: templates/inventory/hardware_list.html:175
+#: templates/inventory/hardware_list.html:406
+#: templates/inventory/hardware_list.html:576
+#: templates/inventory/software_list.html:167 templates/networks/hosts.html:213
+#: templates/networks/maps.html:115 templates/networks/maps.html:196
+#: templates/networks/maps.html:249
+msgid "Notes"
+msgstr "Σημειώσεις"
+
+#: templates/inventory/hardware_list.html:176
+#: templates/inventory/software_list.html:168 templates/networks/hosts.html:122
+#: templates/networks/maps.html:116 templates/tickets/list.html:194
+#: templates/users/list.html:37
+msgid "Actions"
+msgstr "Ενέργειες"
+
+#: templates/inventory/hardware_list.html:200
+msgid "Under Maintenance"
+msgstr "Υπό συντήρηση"
+
+#: templates/inventory/hardware_list.html:202
+#: templates/inventory/software_list.html:196
+#, fuzzy
+msgid "Retired"
+msgstr "Αποσυρμένο"
+
+#: templates/inventory/hardware_list.html:204
+msgid "Disposed"
+msgstr "Απορριφθέν"
+
+#: templates/inventory/hardware_list.html:279
+#: templates/inventory/hardware_list.html:288
+#: templates/inventory/hardware_list.html:325
+#: templates/inventory/hardware_list.html:334
+#: templates/inventory/hardware_list.html:449
+#: templates/inventory/hardware_list.html:458
+#: templates/inventory/hardware_list.html:495
+#: templates/inventory/hardware_list.html:504
+#: templates/inventory/software_list.html:271
+#: templates/inventory/software_list.html:280
+#: templates/inventory/software_list.html:289
+#: templates/inventory/software_list.html:310
+#: templates/inventory/software_list.html:319
+#: templates/inventory/software_list.html:422
+#: templates/inventory/software_list.html:431
+#: templates/inventory/software_list.html:440
+#: templates/inventory/software_list.html:461
+#: templates/inventory/software_list.html:470 templates/networks/hosts.html:193
+msgid "Select..."
+msgstr "Επιλέξτε..."
+
+#: templates/inventory/hardware_list.html:385
+#: templates/inventory/hardware_list.html:555
+msgid "BIOS Version"
+msgstr "Έκδοση BIOS"
+
+#: templates/inventory/hardware_list.html:389
+#: templates/inventory/hardware_list.html:559
+msgid "Firmware Version"
+msgstr "Έκδοση firmware"
+
+#: templates/inventory/hardware_list.html:395
+#: templates/inventory/hardware_list.html:565
+#: templates/inventory/software_list.html:110
+#: templates/inventory/software_list.html:360
+#: templates/inventory/software_list.html:511
+#, fuzzy
+msgid "Unassigned"
+msgstr "— Μη ανατεθειμένο —"
+
+#: templates/inventory/hardware_list.html:414
+#: templates/inventory/software_list.html:383 templates/knowledge/edit.html:45
+#: templates/networks/maps.html:204 templates/tickets/edit.html:42
+#: templates/users/list.html:113
+msgid "Save"
+msgstr "Αποθήκευση"
+
+#: templates/inventory/hardware_list.html:429
+msgid "Edit Hardware Asset"
+msgstr "Επεξεργασία στοιχείου υλικού"
+
+#: templates/inventory/hardware_list.html:584
+#: templates/inventory/software_list.html:534 templates/networks/hosts.html:220
+#: templates/networks/maps.html:257
+#, fuzzy
+msgid "Update"
+msgstr "Ενημέρωση"
+
+#: templates/inventory/hardware_list.html:599
+msgid "Delete Hardware Asset"
+msgstr "Διαγραφή στοιχείου υλικού"
+
+#: templates/inventory/hardware_list.html:603
+#: templates/inventory/software_list.html:553 templates/networks/maps.html:276
+#, fuzzy
+msgid "Are you sure you want to delete"
+msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε"
+
+#: templates/inventory/hardware_list.html:633
+#: templates/inventory/software_list.html:583 templates/networks/hosts.html:269
+#: templates/networks/maps.html:306 templates/tickets/list.html:353
+#: templates/users/list.html:204
+msgid "Excel"
+msgstr "Excel"
+
+#: templates/inventory/hardware_list.html:634
+#: templates/inventory/software_list.html:584 templates/networks/hosts.html:270
+#: templates/networks/maps.html:307 templates/tickets/list.html:354
+#: templates/users/list.html:205
+msgid "Print"
+msgstr "Εκτύπωση"
+
+#: templates/inventory/hardware_list.html:635
+#: templates/inventory/software_list.html:585 templates/networks/hosts.html:271
+#: templates/networks/maps.html:308 templates/tickets/list.html:355
+msgid "Advanced Filters"
+msgstr "Σύνθετα φίλτρα"
+
+#: templates/inventory/hardware_list.html:648
+#: templates/inventory/software_list.html:598 templates/networks/hosts.html:281
+#: templates/networks/maps.html:318 templates/tickets/list.html:454
+msgid "Saving..."
+msgstr "Γίνεται αποθήκευση..."
+
+#: templates/inventory/hardware_list.html:657
+#: templates/inventory/hardware_list.html:675
+#: templates/inventory/software_list.html:607
+#: templates/inventory/software_list.html:625 templates/networks/hosts.html:290
+#: templates/networks/hosts.html:308 templates/networks/maps.html:327
+#: templates/networks/maps.html:345
+msgid "Unexpected error while saving."
+msgstr "Απρόσμενο σφάλμα κατά την αποθήκευση."
+
+#: templates/inventory/hardware_list.html:670
+#: templates/inventory/software_list.html:620 templates/networks/hosts.html:303
+#: templates/networks/maps.html:340
+#, fuzzy
+msgid "Operation completed successfully"
+msgstr "Η ενέργεια ολοκληρώθηκε επιτυχώς"
+
+#: templates/inventory/hardware_list.html:746
+#, fuzzy
+msgid "Failed to load hardware asset"
+msgstr "Αποτυχία φόρτωσης στοιχείου υλικού"
+
+#: templates/inventory/hardware_list.html:753
+#, fuzzy
+msgid "Failed to load hardware asset."
+msgstr "Αποτυχία φόρτωσης στοιχείου υλικού."
+
+#: templates/inventory/software_list.html:97
+msgid "Total Software Assets"
+msgstr "Σύνολο λογισμικού"
+
+#: templates/inventory/software_list.html:116
+msgid "Active Licenses"
+msgstr "Ενεργές άδειες"
+
+#: templates/inventory/software_list.html:122
+#: templates/inventory/software_list.html:190
+msgid "Expiring Soon"
+msgstr "Λήγουν σύντομα"
+
+#: templates/inventory/software_list.html:128
+msgid "Already Expired"
+msgstr "Έχουν λήξει"
+
+#: templates/inventory/software_list.html:135
+msgid "Software Inventory"
+msgstr "Απογραφή λογισμικού"
+
+#: templates/inventory/software_list.html:137
+#: templates/inventory/software_list.html:247
+msgid "New Software Asset"
+msgstr "Νέο στοιχείο λογισμικού"
+
+#: templates/inventory/software_list.html:145
+#: templates/inventory/software_list.html:253
+#: templates/inventory/software_list.html:404 templates/networks/maps.html:106
+#: templates/networks/maps.html:172 templates/networks/maps.html:225
+#, fuzzy
+msgid "Name"
+msgstr "Όνομα"
+
+#: templates/inventory/software_list.html:146
+#: templates/inventory/software_list.html:257
+#: templates/inventory/software_list.html:408
+msgid "Vendor"
+msgstr "Προμηθευτής"
+
+#: templates/inventory/software_list.html:149
+#: templates/inventory/software_list.html:278
+#: templates/inventory/software_list.html:429
+msgid "License Type"
+msgstr "Τύπος άδειας"
+
+#: templates/inventory/software_list.html:150
+#: templates/inventory/software_list.html:296
+#: templates/inventory/software_list.html:447
+msgid "License Key"
+msgstr "Κλειδί άδειας"
+
+#: templates/inventory/software_list.html:153
+#: templates/inventory/software_list.html:265
+#: templates/inventory/software_list.html:416
+#, fuzzy
+msgid "Seats"
+msgstr "Θέσεις"
+
+#: templates/inventory/software_list.html:154
+#: templates/inventory/software_list.html:308
+#: templates/inventory/software_list.html:459
+msgid "Platform"
+msgstr "Πλατφόρμα"
+
+#: templates/inventory/software_list.html:155
+#: templates/inventory/software_list.html:317
+#: templates/inventory/software_list.html:468
+msgid "Environment"
+msgstr "Περιβάλλον"
+
+#: templates/inventory/software_list.html:158
+#: templates/inventory/software_list.html:334
+#: templates/inventory/software_list.html:485
+msgid "Expiration Date"
+msgstr "Ημ/νία λήξης"
+
+#: templates/inventory/software_list.html:159
+#: templates/inventory/software_list.html:338
+#: templates/inventory/software_list.html:489
+msgid "Renewal Date"
+msgstr "Ημ/νία ανανέωσης"
+
+#: templates/inventory/software_list.html:162
+#: templates/inventory/software_list.html:326
+#: templates/inventory/software_list.html:477
+msgid "Cost Center"
+msgstr "Κέντρο κόστους"
+
+#: templates/inventory/software_list.html:164
+#: templates/inventory/software_list.html:346
+#: templates/inventory/software_list.html:497
+msgid "Support Email"
+msgstr "Email υποστήριξης"
+
+#: templates/inventory/software_list.html:165
+#: templates/inventory/software_list.html:350
+#: templates/inventory/software_list.html:501
+msgid "Support Phone"
+msgstr "Τηλέφωνο υποστήριξης"
+
+#: templates/inventory/software_list.html:166
+#: templates/inventory/software_list.html:371
+#: templates/inventory/software_list.html:522
+msgid "Usage Scope"
+msgstr "Πεδίο χρήσης"
+
+#: templates/inventory/software_list.html:188 templates/users/list.html:35
+#: templates/users/list.html:60
+msgid "Active"
+msgstr "Ενεργός"
+
+#: templates/inventory/software_list.html:192
+msgid "Expired"
+msgstr "Ληγμένο"
+
+#: templates/inventory/software_list.html:194
+#, fuzzy
+msgid "Planned"
+msgstr "Προγραμματισμένο"
+
+#: templates/inventory/software_list.html:354
+#: templates/inventory/software_list.html:505
+msgid "Contract URL"
+msgstr "URL σύμβασης"
+
+#: templates/inventory/software_list.html:375
+#: templates/inventory/software_list.html:526
+msgid "Deployment Notes"
+msgstr "Σημειώσεις ανάπτυξης"
+
+#: templates/inventory/software_list.html:398
+msgid "Edit Software Asset"
+msgstr "Επεξεργασία στοιχείου λογισμικού"
+
+#: templates/inventory/software_list.html:549
+msgid "Delete Software Asset"
+msgstr "Διαγραφή στοιχείου λογισμικού"
+
+#: templates/inventory/software_list.html:690
+#, fuzzy
+msgid "Failed to load software asset"
+msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού"
+
+#: templates/inventory/software_list.html:697
+#, fuzzy
+msgid "Failed to load software asset."
+msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού."
+
+#: templates/knowledge/detail.html:7 templates/knowledge/list.html:172
+#, fuzzy
+msgid "Updated"
+msgstr "ενημερώθηκε σε"
+
+#: templates/knowledge/detail.html:7 templates/knowledge/list.html:172
+#: templates/knowledge/version.html:7
+msgid "n/a"
+msgstr "—"
+
+#: templates/knowledge/detail.html:11
+msgid "Back"
+msgstr "Πίσω"
+
+#: templates/knowledge/detail.html:15 templates/tickets/_row.html:49
+#: templates/tickets/list.html:253
+msgid "Edit"
+msgstr "Επεξεργασία"
+
+#: templates/knowledge/detail.html:17
+#, fuzzy
+msgid "Delete this article?"
+msgstr "Διαγραφή αυτού του άρθρου;"
+
+#: templates/knowledge/detail.html:40 templates/knowledge/edit.html:23
+msgid "Summary"
+msgstr "Περίληψη"
+
+#: templates/knowledge/detail.html:52 templates/knowledge/list.html:115
+#: templates/tickets/view.html:191
+msgid "Attachments"
+msgstr "Συνημμένα"
+
+#: templates/knowledge/detail.html:58
+msgid "File"
+msgstr "Αρχείο"
+
+#: templates/knowledge/detail.html:60
+msgid "Size"
+msgstr "Μέγεθος"
+
+#: templates/knowledge/detail.html:61
+#, fuzzy
+msgid "Uploaded"
+msgstr "Μεταφορτώθηκε"
+
+#: templates/knowledge/detail.html:74
+#, fuzzy
+msgid "Remove this attachment?"
+msgstr "Αφαίρεση αυτού του συνημμένου;"
+
+#: templates/knowledge/detail.html:91
+#, fuzzy
+msgid "Upload Attachment"
+msgstr "Μεταφόρτωση συνημμένου"
+
+#: templates/knowledge/detail.html:98 templates/tickets/view.html:285
+#: templates/tickets/view.html:408
+msgid "Upload"
+msgstr "Μεταφόρτωση"
+
+#: templates/knowledge/detail.html:108
+msgid "Version History"
+msgstr "Ιστορικό εκδόσεων"
+
+#: templates/knowledge/detail.html:115 templates/knowledge/version.html:7
+#: templates/tickets/list.html:192 templates/users/list.html:36
+msgid "Created"
+msgstr "Δημιουργία"
+
+#: templates/knowledge/detail.html:117 templates/knowledge/edit.html:15
+msgid "Title"
+msgstr "Τίτλος"
+
+#: templates/knowledge/detail.html:130 templates/knowledge/list.html:182
+#: templates/tickets/_row.html:45 templates/tickets/list.html:249
+msgid "View"
+msgstr "Προβολή"
+
+#: templates/knowledge/edit.html:6
+#, fuzzy
+msgid "Edit Article"
+msgstr "Επεξεργασία άρθρου"
+
+#: templates/knowledge/edit.html:8
+msgid "New Knowledge Article"
+msgstr "Νέο άρθρο Γνώσης"
+
+#: templates/knowledge/edit.html:27
+#, fuzzy
+msgid "Content"
+msgstr "Περιεχόμενο"
+
+#: templates/knowledge/edit.html:31
+msgid "Tags (comma separated)"
+msgstr "Ετικέτες (χωρισμένες με κόμμα)"
+
+#: templates/knowledge/edit.html:37 templates/knowledge/list.html:91
+msgid "Published"
+msgstr "Δημοσιευμένο"
+
+#: templates/knowledge/list.html:84
+msgid "Total Articles"
+msgstr "Σύνολο άρθρων"
+
+#: templates/knowledge/list.html:97
+msgid "Drafts"
+msgstr "Προσχέδια"
+
+#: templates/knowledge/list.html:103
+msgid "Categories"
+msgstr "Κατηγορίες"
+
+#: templates/knowledge/list.html:109
+#, fuzzy
+msgid "Tags"
+msgstr "Ετικέτες"
+
+#: templates/knowledge/list.html:125
+#, fuzzy
+msgid "New Article"
+msgstr "Νέο άρθρο"
+
+#: templates/knowledge/list.html:133
+#, fuzzy
+msgid "Search"
+msgstr "Αναζήτηση"
+
+#: templates/knowledge/list.html:134
+msgid "keywords, tags, content..."
+msgstr "λέξεις-κλειδιά, ετικέτες, περιεχόμενο..."
+
+#: templates/knowledge/list.html:139 templates/knowledge/list.html:148
+msgid "All"
+msgstr "Όλα"
+
+#: templates/knowledge/list.html:146
+msgid "Tag"
+msgstr "Ετικέτα"
+
+#: templates/knowledge/list.html:155
+msgid "Filter"
+msgstr "Φίλτρο"
+
+#: templates/knowledge/list.html:192
+msgid "No articles found. Try adjusting your filters or create a new one."
+msgstr "Δεν βρέθηκαν άρθρα. Δοκιμάστε να αλλάξετε τα φίλτρα ή δημιουργήστε νέο."
+
+#: templates/knowledge/version.html:10
+msgid "Back to Article"
+msgstr "Επιστροφή στο άρθρο"
+
+#: templates/manage/access.html:26 templates/manage/assistant_settings.html:28
+msgid "Access Control"
+msgstr "Έλεγχος πρόσβασης"
+
+#: templates/manage/access.html:28
+#, fuzzy
+msgid "Manage Users"
+msgstr "Διαχείριση χρηστών"
+
+#: templates/manage/access.html:34
+msgid ""
+"Toggle which roles can see each menu item. Defaults apply when no "
+"override is set."
+msgstr ""
+"Εναλλάξτε ποιοι ρόλοι βλέπουν κάθε στοιχείο μενού. Οι προεπιλογές ισχύουν"
+" όταν δεν έχει οριστεί εξαίρεση."
+
+#: templates/manage/access.html:41
+msgid "Menu Permissions"
+msgstr "Δικαιώματα μενού"
+
+#: templates/manage/access.html:48
+msgid "Menu Item"
+msgstr "Στοιχείο μενού"
+
+#: templates/manage/access.html:75
+msgid "Save Changes"
+msgstr "Αποθήκευση αλλαγών"
+
+#: templates/manage/assistant_settings.html:34
+msgid ""
+"Configure the floating assistant widget. Use the Access page to limit "
+"visibility to specific roles."
+msgstr ""
+"Ρυθμίστε το αιωρούμενο widget βοηθού. Χρησιμοποιήστε τη σελίδα Πρόσβαση "
+"για να περιορίσετε την ορατότητα σε συγκεκριμένους ρόλους."
+
+#: templates/manage/assistant_settings.html:41
+msgid "Widget Appearance"
+msgstr "Εμφάνιση widget"
+
+#: templates/manage/assistant_settings.html:47
+msgid "Enable assistant widget"
+msgstr "Ενεργοποίηση widget βοηθού"
+
+#: templates/manage/assistant_settings.html:53
+msgid "Button label"
+msgstr "Ετικέτα κουμπιού"
+
+#: templates/manage/assistant_settings.html:57
+msgid "Window title"
+msgstr "Τίτλος παραθύρου"
+
+#: templates/manage/assistant_settings.html:61
+msgid "Welcome message"
+msgstr "Μήνυμα καλωσορίσματος"
+
+#: templates/manage/assistant_settings.html:65
+msgid "System prompt / instructions"
+msgstr "System prompt / οδηγίες"
+
+#: templates/manage/assistant_settings.html:66
+msgid "Describe how the assistant should behave"
+msgstr "Περιγράψτε πώς πρέπει να συμπεριφέρεται ο βοηθός"
+
+#: templates/manage/assistant_settings.html:68
+msgid ""
+"Used as the system message so the assistant behaves like your IT expert "
+"with PostgreSQL module context."
+msgstr ""
+"Χρησιμοποιείται ως system message ώστε ο βοηθός να λειτουργεί ως IT "
+"expert με πλαίσιο από το PostgreSQL module."
+
+#: templates/manage/assistant_settings.html:72
+msgid "Button position"
+msgstr "Θέση κουμπιού"
+
+#: templates/manage/assistant_settings.html:74
+msgid "Bottom right"
+msgstr "Κάτω δεξιά"
+
+#: templates/manage/assistant_settings.html:75
+msgid "Bottom left"
+msgstr "Κάτω αριστερά"
+
+#: templates/manage/assistant_settings.html:84
+msgid "Provider"
+msgstr "Πάροχος"
+
+#: templates/manage/assistant_settings.html:93
+msgid "OpenAI ChatGPT API"
+msgstr "OpenAI ChatGPT API"
+
+#: templates/manage/assistant_settings.html:97
+msgid ""
+"Sends the full conversation to OpenAI and returns their response. "
+"Requires an API key below."
+msgstr ""
+"Στέλνει ολόκληρη τη συνομιλία στο OpenAI και επιστρέφει την απάντησή του."
+" Απαιτείται API key παρακάτω."
+
+#: templates/manage/assistant_settings.html:106
+msgid "OpenAI + DB Tools"
+msgstr "OpenAI + DB Tools"
+
+#: templates/manage/assistant_settings.html:110
+msgid ""
+"Uses OpenAI with tool-calling to query the database via the built-in "
+"helpers. Configure the OpenAI credentials below."
+msgstr ""
+"Χρησιμοποιεί OpenAI με tool-calling για ερωτήματα στη βάση μέσω των "
+"ενσωματωμένων helpers. Ρυθμίστε τα διαπιστευτήρια OpenAI παρακάτω."
+
+#: templates/manage/assistant_settings.html:119
+msgid "Built-in (direct database lookup)"
+msgstr "Ενσωματωμένο (άμεση αναζήτηση στη βάση)"
+
+#: templates/manage/assistant_settings.html:124
+msgid ""
+"Responds by querying the Tickets, Knowledge Base, Inventory, and Network "
+"tables in read-only mode."
+msgstr ""
+"Απαντά εκτελώντας ερωτήματα στους πίνακες Tickets, Γνωσιακής Βάσης, "
+"Απογραφής και Δικτύων σε λειτουργία μόνο ανάγνωσης."
+
+#: templates/manage/assistant_settings.html:127
+msgid ""
+"Relies on the system prompt above for behaviour—no external services or "
+"API keys required."
+msgstr ""
+"Βασίζεται στο system prompt για τη συμπεριφορά—δεν απαιτούνται εξωτερικές"
+" υπηρεσίες ή API keys."
+
+#: templates/manage/assistant_settings.html:137
+msgid "Custom webhook (n8n, etc.)"
+msgstr "Προσαρμοσμένο webhook (n8n κ.λπ.)"
+
+#: templates/manage/assistant_settings.html:141
+msgid "Webhook URL"
+msgstr "Webhook URL"
+
+#: templates/manage/assistant_settings.html:145
+msgid "HTTP method"
+msgstr "Μέθοδος HTTP"
+
+#: templates/manage/assistant_settings.html:152
+msgid "Custom headers (JSON)"
+msgstr "Προσαρμοσμένα headers (JSON)"
+
+#: templates/manage/assistant_settings.html:156
+msgid ""
+"The webhook receives JSON payloads with the current message, history, and"
+" user context. It must return JSON with a \"reply\" field."
+msgstr ""
+"Το webhook λαμβάνει JSON payloads με το τρέχον μήνυμα, το ιστορικό και το"
+" πλαίσιο χρήστη. Πρέπει να επιστρέφει JSON με πεδίο «reply»."
+
+#: templates/manage/assistant_settings.html:163
+msgid "OpenAI API key"
+msgstr "OpenAI API key"
+
+#: templates/manage/assistant_settings.html:167
+msgid "OpenAI model"
+msgstr "Μοντέλο OpenAI"
+
+#: templates/manage/assistant_settings.html:172
+msgid ""
+"These credentials are required for the OpenAI and OpenAI + DB Tools "
+"providers. They are stored encrypted in the database."
+msgstr ""
+"Τα διαπιστευτήρια απαιτούνται για τους παρόχους OpenAI και OpenAI + DB "
+"Tools. Αποθηκεύονται κρυπτογραφημένα στη βάση."
+
+#: templates/manage/assistant_settings.html:184
+msgid "Role visibility"
+msgstr "Ορατότητα ρόλων"
+
+#: templates/manage/assistant_settings.html:186
+msgid ""
+"Use the Access Control page to choose which roles can see the assistant "
+"widget (entry: \"AI Assistant Widget\")."
+msgstr ""
+"Χρησιμοποιήστε τη σελίδα Ελέγχου Πρόσβασης για να επιλέξετε ποιοι ρόλοι "
+"βλέπουν το widget βοηθού (είσοδος: «AI Assistant Widget»)."
+
+#: templates/manage/assistant_settings.html:193
+msgid "Save Settings"
+msgstr "Αποθήκευση ρυθμίσεων"
+
+#: templates/networks/hosts.html:71 templates/networks/maps.html:108
+msgid "Network"
+msgstr "Δίκτυο"
+
+#: templates/networks/hosts.html:77 templates/networks/maps.html:107
+#, fuzzy
+msgid "CIDR"
+msgstr "CIDR"
+
+#: templates/networks/hosts.html:83
+#, fuzzy
+msgid "Hosts Managed"
+msgstr "Διαχειριζόμενοι hosts"
+
+#: templates/networks/hosts.html:89
+msgid "Capacity"
+msgstr "Χωρητικότητα"
+
+#: templates/networks/hosts.html:96
+msgid "Hosts in"
+msgstr "Συσκευές σε"
+
+#: templates/networks/hosts.html:99
+msgid "Back to Networks"
+msgstr "Πίσω στα Δίκτυα"
+
+#: templates/networks/hosts.html:105
+msgid "Generate Hosts"
+msgstr "Δημιουργία hosts"
+
+#: templates/networks/hosts.html:118 templates/networks/hosts.html:191
+msgid "Device Type"
+msgstr "Τύπος συσκευής"
+
+#: templates/networks/hosts.html:120 templates/networks/hosts.html:143
+msgid "Reserved"
+msgstr "Δεσμευμένο"
+
+#: templates/networks/hosts.html:121 templates/networks/maps.html:114
+#: templates/networks/maps.html:192 templates/networks/maps.html:245
+#: templates/tickets/create.html:6 templates/tickets/edit.html:14
+#: templates/tickets/list.html:187 templates/tickets/list.html:282
+msgid "Description"
+msgstr "Περιγραφή"
+
+#: templates/networks/hosts.html:145
+msgid "Available"
+msgstr "Διαθέσιμη"
+
+#: templates/networks/hosts.html:174
+#, fuzzy
+msgid "Edit Host"
+msgstr "Επεξεργασία host"
+
+#: templates/networks/hosts.html:194
+#, fuzzy
+msgid "Server"
+msgstr "Διακομιστής"
+
+#: templates/networks/hosts.html:195
+#, fuzzy
+msgid "Printer"
+msgstr "Εκτυπωτής"
+
+#: templates/networks/hosts.html:196
+msgid "Workstation"
+msgstr "Σταθμός εργασίας"
+
+#: templates/networks/hosts.html:197
+msgid "Network Device"
+msgstr "Δικτυακή συσκευή"
+
+#: templates/networks/hosts.html:198
+msgid "IoT Device"
+msgstr "Συσκευή IoT"
+
+#: templates/networks/hosts.html:199
+msgid "VoIP / Telephony"
+msgstr "VoIP / Τηλεφωνία"
+
+#: templates/networks/hosts.html:200
+msgid "Camera / CCTV"
+msgstr "Κάμερα / CCTV"
+
+#: templates/networks/hosts.html:201
+msgid "Other"
+msgstr "Άλλο"
+
+#: templates/networks/hosts.html:205
+msgid "Assigned To (User / Asset)"
+msgstr "Ανατεθειμένο σε (Χρήστη / Περιουσιακό)"
+
+#: templates/networks/hosts.html:210
+msgid "Reserve this IP address"
+msgstr "Δέσμευση αυτής της διεύθυνσης IP"
+
+#: templates/networks/hosts.html:235
+#, fuzzy
+msgid "Delete Host"
+msgstr "Διαγραφή host"
+
+#: templates/networks/hosts.html:239
+#, fuzzy
+msgid "Are you sure you want to delete host"
+msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε host"
+
+#: templates/networks/maps.html:83
+msgid "Total Networks"
+msgstr "Σύνολο δικτύων"
+
+#: templates/networks/maps.html:90
+msgid "Aggregate Host Capacity"
+msgstr "Συνολική χωρητικότητα hosts"
+
+#: templates/networks/maps.html:99
+#, fuzzy
+msgid "Add Network"
+msgstr "Προσθήκη δικτύου"
+
+#: templates/networks/maps.html:109
+msgid "Broadcast"
+msgstr "Broadcast"
+
+#: templates/networks/maps.html:110
+msgid "Hosts"
+msgstr "Hosts"
+
+#: templates/networks/maps.html:111 templates/networks/maps.html:188
+#: templates/networks/maps.html:241
+msgid "Gateway"
+msgstr "Gateway"
+
+#: templates/networks/maps.html:112
+#, fuzzy
+msgid "Site"
+msgstr "Τοποθεσία"
+
+#: templates/networks/maps.html:113 templates/networks/maps.html:184
+#: templates/networks/maps.html:237
+msgid "VLAN"
+msgstr "VLAN"
+
+#: templates/networks/maps.html:166
+#, fuzzy
+msgid "New Network"
+msgstr "Νέο δίκτυο"
+
+#: templates/networks/maps.html:176 templates/networks/maps.html:229
+msgid "Network (CIDR)"
+msgstr "Δίκτυο (CIDR)"
+
+#: templates/networks/maps.html:180 templates/networks/maps.html:233
+msgid "Site / Location"
+msgstr "Ιστότοπος / Τοποθεσία"
+
+#: templates/networks/maps.html:219
+#, fuzzy
+msgid "Edit Network"
+msgstr "Επεξεργασία δικτύου"
+
+#: templates/networks/maps.html:272
+#, fuzzy
+msgid "Delete Network"
+msgstr "Διαγραφή δικτύου"
+
+#: templates/networks/tools.html:55
+msgid "Subnet Calculator"
+msgstr "Υπολογιστής υποδικτύου"
+
+#: templates/networks/tools.html:57
+msgid ""
+"Plan networks, see usable hosts, broadcast, masks and wildcard masks "
+"instantly."
+msgstr ""
+"Σχεδιάστε δίκτυα, δείτε άμεσα χρήσιμα hosts, broadcast, μάσκες και "
+"wildcard μάσκες."
+
+#: templates/networks/tools.html:61
+msgid "Ping / Reachability"
+msgstr "Ping / Διαθεσιμότητα"
+
+#: templates/networks/tools.html:63
+msgid "Test ICMP responses and basic TCP reachability to critical hosts."
+msgstr "Ελέγξτε ICMP αποκρίσεις και βασική TCP διαθεσιμότητα σε κρίσιμους hosts."
+
+#: templates/networks/tools.html:67 templates/networks/tools.html:161
+msgid "Port Scanner"
+msgstr "Σαρωτής θυρών"
+
+#: templates/networks/tools.html:69
+msgid "Check TCP/UDP port status to validate services and firewall rules."
+msgstr ""
+"Ελέγξτε την κατάσταση θυρών TCP/UDP για επαλήθευση υπηρεσιών και κανόνων "
+"firewall."
+
+#: templates/networks/tools.html:79
+msgid "Network Calculator"
+msgstr "Υπολογιστής δικτύου"
+
+#: templates/networks/tools.html:80
+msgid "Supports IPv4 & CIDR notation"
+msgstr "Υποστηρίζει IPv4 & σημειογραφία CIDR"
+
+#: templates/networks/tools.html:87
+msgid "Calculate"
+msgstr "Υπολογισμός"
+
+#: templates/networks/tools.html:94
+msgid "Network Address"
+msgstr "Διεύθυνση δικτύου"
+
+#: templates/networks/tools.html:100
+msgid "Broadcast Address"
+msgstr "Διεύθυνση εκπομπής"
+
+#: templates/networks/tools.html:106
+msgid "Netmask"
+msgstr "Μάσκα δικτύου"
+
+#: templates/networks/tools.html:112
+msgid "Wildcard Mask"
+msgstr "Wildcard μάσκα"
+
+#: templates/networks/tools.html:118
+msgid "Usable Host Range"
+msgstr "Εύρος χρήσιμων hosts"
+
+#: templates/networks/tools.html:124
+msgid "Host Capacity"
+msgstr "Χωρητικότητα hosts"
+
+#: templates/networks/tools.html:138
+msgid "ICMP Ping Check"
+msgstr "Έλεγχος ICMP ping"
+
+#: templates/networks/tools.html:139
+msgid "Quick reachability test (simulated)"
+msgstr "Γρήγορος έλεγχος διαθεσιμότητας (προσομοιωμένος)"
+
+#: templates/networks/tools.html:145 templates/networks/tools.html:168
+msgid "Target Host / IP"
+msgstr "Στόχος Host / IP"
+
+#: templates/networks/tools.html:150
+#, fuzzy
+msgid "Ping"
+msgstr "Ping"
+
+#: templates/networks/tools.html:155
+msgid "Use the form to run a simulated ping test."
+msgstr "Χρησιμοποιήστε τη φόρμα για να εκτελέσετε προσομοιωμένο ping."
+
+#: templates/networks/tools.html:162
+msgid "Check TCP/UDP port state (simulated)"
+msgstr "Έλεγχος κατάστασης θυρών TCP/UDP (προσομοιωμένος)"
+
+#: templates/networks/tools.html:172
+msgid "Ports (e.g. 22,80,443)"
+msgstr "Θύρες (π.χ. 22,80,443)"
+
+#: templates/networks/tools.html:176
+msgid "Protocol"
+msgstr "Πρωτόκολλο"
+
+#: templates/networks/tools.html:184
+msgid "Scan Ports"
+msgstr "Σάρωση θυρών"
+
+#: templates/networks/tools.html:189
+msgid "Use the form to run a simulated port scan."
+msgstr "Χρησιμοποιήστε τη φόρμα για να εκτελέσετε προσομοιωμένη σάρωση θυρών."
+
+#: templates/networks/tools.html:278
+msgid "Invalid network format. Use something like 192.168.1.0/24"
+msgstr "Μη έγκυρη μορφή δικτύου. Χρησιμοποιήστε π.χ. 192.168.1.0/24"
+
+#: templates/partials/assistant_widget.html:220
+msgid "Thinking..."
+msgstr "Σκέφτομαι..."
+
+#: templates/partials/assistant_widget.html:231
+msgid "Assistant error"
+msgstr "Σφάλμα βοηθού"
+
+#: templates/partials/assistant_widget.html:233
+#: templates/partials/assistant_widget.html:245
+msgid "Sorry, something went wrong."
+msgstr "Συγγνώμη, κάτι πήγε στραβά."
+
+#: templates/partials/assistant_widget.html:246
+msgid "Connection error"
+msgstr "Σφάλμα σύνδεσης"
+
+#: templates/tickets/_row.html:8 templates/tickets/list.html:206
+#: templates/tickets/list.html:287
+msgid "Low"
+msgstr "Χαμηλή"
+
+#: templates/tickets/_row.html:10 templates/tickets/list.html:208
+#: templates/tickets/list.html:288
+msgid "Medium"
+msgstr "Μεσαία"
+
+#: templates/tickets/_row.html:12 templates/tickets/list.html:210
+#: templates/tickets/list.html:289
+msgid "High"
+msgstr "Υψηλή"
+
+#: templates/tickets/_row.html:14 templates/tickets/list.html:212
+#: templates/tickets/list.html:290
+msgid "Critical"
+msgstr "Κρίσιμη"
+
+#: templates/tickets/_row.html:38 templates/tickets/list.html:242
+msgid "No comments"
+msgstr "Δεν υπάρχουν σχόλια"
+
+#: templates/tickets/_row.html:38 templates/tickets/list.html:242
+msgid "comment(s) exist"
+msgstr "υπάρχουν σχόλια"
+
+#: templates/tickets/_row.html:43 templates/tickets/list.html:247
+msgid "No attachments"
+msgstr "Δεν υπάρχουν συνημμένα"
+
+#: templates/tickets/_row.html:43 templates/tickets/list.html:247
+msgid "attachment(s) exist"
+msgstr "υπάρχουν συνημμένα"
+
 #: templates/tickets/create.html:3
 msgid "Create Ticket"
 msgstr "Δημιουργία Αιτήματος"
 
-#: templates/tickets/create.html:5 templates/tickets/edit.html:15
-#: templates/tickets/list.html:14 templates/tickets/list.html:96
-#: templates/tickets/list.html:150
+#: templates/tickets/create.html:5 templates/tickets/edit.html:11
+#: templates/tickets/list.html:186 templates/tickets/list.html:279
 msgid "Subject"
 msgstr "Θέμα"
 
-#: templates/tickets/create.html:6 templates/tickets/edit.html:20
-#: templates/tickets/list.html:15 templates/tickets/list.html:99
-#: templates/tickets/list.html:153
-msgid "Description"
-msgstr "Περιγραφή"
-
-#: templates/tickets/create.html:7 templates/tickets/edit.html:26
-#: templates/tickets/list.html:16 templates/tickets/list.html:102
-#: templates/tickets/list.html:156
+#: templates/tickets/create.html:7 templates/tickets/edit.html:17
+#: templates/tickets/list.html:188 templates/tickets/list.html:285
+#: templates/tickets/view.html:209
 msgid "Priority"
 msgstr "Προτεραιότητα"
 
-#: templates/tickets/create.html:9 templates/tickets/edit.html:34
-#: templates/users/list.html:19 templates/users/list.html:89
-#: templates/users/list.html:128
+#: templates/tickets/create.html:9 templates/users/list.html:34
+#: templates/users/list.html:106 templates/users/list.html:154
 msgid "Department"
 msgstr "Τμήμα"
 
@@ -133,327 +1838,201 @@ msgstr "Τμήμα"
 msgid "Submit"
 msgstr "Υποβολή"
 
-#: templates/tickets/edit.html:5 templates/tickets/list.html:6
-#: templates/tickets/list.html:146
-msgid "New Ticket"
-msgstr "Νέο Αίτημα"
-
-#: templates/tickets/edit.html:7 templates/tickets/list.html:92
+#: templates/tickets/edit.html:6
 msgid "Edit Ticket"
 msgstr "Επεξεργασία Αιτήματος"
 
-#: templates/tickets/edit.html:16
-msgid "Enter subject"
-msgstr "Εισάγετε θέμα"
-
-#: templates/tickets/edit.html:21
-msgid "Describe the issue..."
-msgstr "Περιγράψτε το πρόβλημα..."
-
-#: templates/tickets/edit.html:30 templates/tickets/list.html:17
-#: templates/tickets/list.html:109
-msgid "Status"
-msgstr "Κατάσταση"
-
-#: templates/tickets/edit.html:35
-msgid "Enter department"
-msgstr "Εισάγετε τμήμα"
-
-#: templates/tickets/edit.html:41
+#: templates/tickets/edit.html:32
 msgid "Assign To (Technician)"
 msgstr "Ανάθεση Σε (Τεχνικό)"
 
-#: templates/tickets/edit.html:48 templates/tickets/list.html:129
-#: templates/users/list.html:96
-msgid "Save"
-msgstr "Αποθήκευση"
-
-#: templates/tickets/edit.html:51 templates/tickets/list.html:182
-#: templates/users/list.html:150
-msgid "Cancel"
-msgstr "Ακύρωση"
-
-#: templates/tickets/list.html:13 templates/users/list.html:15
-msgid "ID"
-msgstr "Α/Α"
-
-#: templates/tickets/list.html:18
-msgid "Created By"
-msgstr "Δημιουργήθηκε Από"
-
-#: templates/tickets/list.html:19
-msgid "Assigned To"
-msgstr "Ανατέθηκε Σε"
-
-#: templates/tickets/list.html:20 templates/users/list.html:21
-msgid "Created"
-msgstr "Δημιουργία"
-
-#: templates/tickets/list.html:21 templates/tickets/list.html:50
-msgid "Closed"
-msgstr "Κλειστό"
-
-#: templates/tickets/list.html:22 templates/users/list.html:22
-msgid "Actions"
-msgstr "Ενέργειες"
-
-#: templates/tickets/list.html:34 templates/tickets/list.html:158
-msgid "Low"
-msgstr "Χαμηλή"
-
-#: templates/tickets/list.html:36 templates/tickets/list.html:159
-msgid "Medium"
-msgstr "Μεσαία"
-
-#: templates/tickets/list.html:38 templates/tickets/list.html:160
-msgid "High"
-msgstr "Υψηλή"
-
-#: templates/tickets/list.html:40 templates/tickets/list.html:161
-msgid "Critical"
-msgstr "Κρίσιμη"
-
-#: templates/tickets/list.html:46
-msgid "Open"
-msgstr "Ανοιχτό"
-
-#: templates/tickets/list.html:48
-msgid "In Progress"
-msgstr "Σε εξέλιξη"
-
-#: templates/tickets/list.html:64
-msgid "No comments"
-msgstr "Δεν υπάρχουν σχόλια"
-
-#: templates/tickets/list.html:64
-msgid "comment(s) exist"
-msgstr "υπάρχουν σχόλια"
-
-#: templates/tickets/list.html:69
-msgid "No attachments"
-msgstr "Δεν υπάρχουν συνημμένα"
-
-#: templates/tickets/list.html:69
-msgid "attachment(s) exist"
-msgstr "υπάρχουν συνημμένα"
-
-#: templates/tickets/list.html:71
-msgid "View"
-msgstr "Προβολή"
-
-#: templates/tickets/list.html:75
-msgid "Edit"
-msgstr "Επεξεργασία"
-
-#: templates/tickets/list.html:79 templates/tickets/list.html:183
-#: templates/users/list.html:151
-msgid "Delete"
-msgstr "Διαγραφή"
-
-#: templates/tickets/list.html:117
-msgid "Assign To"
-msgstr "Ανάθεση Σε"
-
-#: templates/tickets/list.html:119
+#: templates/tickets/edit.html:34
 msgid "— Unassigned —"
 msgstr "— Μη ανατεθειμένο —"
 
-#: templates/tickets/list.html:165 templates/users/list.html:132
+#: templates/tickets/list.html:150
+#, fuzzy
+msgid "Total Tickets"
+msgstr "Σύνολο Αιτημάτων"
+
+#: templates/tickets/list.html:178 templates/tickets/list.html:274
+msgid "New Ticket"
+msgstr "Νέο Αίτημα"
+
+#: templates/tickets/list.html:185 templates/users/list.html:30
+msgid "ID"
+msgstr "Α/Α"
+
+#: templates/tickets/list.html:190
+msgid "Created By"
+msgstr "Δημιουργήθηκε Από"
+
+#: templates/tickets/list.html:294 templates/users/list.html:158
 msgid "Create"
 msgstr "Δημιουργία"
 
-#: templates/tickets/list.html:177 templates/users/list.html:145
+#: templates/tickets/list.html:317 templates/users/list.html:171
 msgid "Confirm Delete"
 msgstr "Επιβεβαίωση Διαγραφής"
 
-#: templates/tickets/list.html:180
+#: templates/tickets/list.html:320
 msgid "Are you sure you want to delete this ticket?"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το αίτημα;"
 
-#: templates/tickets/list.html:213 templates/users/list.html:178
-msgid "Excel"
-msgstr "Excel"
+#: templates/tickets/list.html:414
+msgid "Deleting..."
+msgstr "Γίνεται διαγραφή..."
 
-#: templates/tickets/list.html:214 templates/users/list.html:179
-msgid "Print"
-msgstr "Εκτύπωση"
-
-#: templates/tickets/list.html:232
-msgid "Ticket deleted"
-msgstr "Το αίτημα διαγράφηκε"
-
-#: templates/tickets/list.html:234 templates/users/list.html:197
+#: templates/tickets/list.html:422 templates/users/list.html:223
 msgid "Delete failed"
 msgstr "Η διαγραφή απέτυχε"
 
-#: templates/tickets/list.html:244
-msgid "Operation successful"
-msgstr "Η ενέργεια ολοκληρώθηκε επιτυχώς"
+#: templates/tickets/list.html:441
+#, fuzzy
+msgid "Failed to load edit form"
+msgstr "Αποτυχία φόρτωσης φόρμας επεξεργασίας"
 
-#: templates/tickets/list.html:247
-msgid "Error submitting form"
-msgstr "Σφάλμα κατά την υποβολή της φόρμας"
+#: templates/tickets/list.html:488
+msgid "Creating..."
+msgstr "Γίνεται δημιουργία..."
 
-#: templates/tickets/view.html:7
+#: templates/tickets/view.html:8
 msgid "Ticket"
 msgstr "Αίτημα"
 
-#: templates/tickets/view.html:14
+#: templates/tickets/view.html:189
 msgid "Details"
 msgstr "Λεπτομέρειες"
 
-#: templates/tickets/view.html:15
+#: templates/tickets/view.html:190
 msgid "Comments"
 msgstr "Σχόλια"
 
-#: templates/tickets/view.html:16
-msgid "Attachments"
-msgstr "Συνημμένα"
-
-#: templates/tickets/view.html:17
+#: templates/tickets/view.html:192
 msgid "Activity Log"
 msgstr "Αρχείο Ενεργειών"
 
-#: templates/tickets/view.html:26
+#: templates/tickets/view.html:201
 msgid "Description:"
 msgstr "Περιγραφή:"
 
-#: templates/tickets/view.html:32
-msgid "Priority:"
-msgstr "Προτεραιότητα:"
-
-#: templates/tickets/view.html:40
-msgid "Status:"
-msgstr "Κατάσταση:"
-
-#: templates/tickets/view.html:50
+#: templates/tickets/view.html:229
 msgid "Created by:"
 msgstr "Δημιουργήθηκε από:"
 
-#: templates/tickets/view.html:51
+#: templates/tickets/view.html:230
 msgid "Assigned to:"
 msgstr "Ανατέθηκε σε:"
 
-#: templates/tickets/view.html:52
+#: templates/tickets/view.html:231
 msgid "Created at:"
 msgstr "Ημ/νία δημιουργίας:"
 
-#: templates/tickets/view.html:55 templates/tickets/view.html:169
+#: templates/tickets/view.html:233
 msgid "Closed at:"
 msgstr "Ημ/νία κλεισίματος:"
 
-#: templates/tickets/view.html:72
+#: templates/tickets/view.html:252
 msgid "No comments yet."
 msgstr "Δεν υπάρχουν ακόμη σχόλια."
 
-#: templates/tickets/view.html:78
+#: templates/tickets/view.html:258
 msgid "Add comment..."
 msgstr "Προσθήκη σχολίου..."
 
-#: templates/tickets/view.html:80
+#: templates/tickets/view.html:260 templates/tickets/view.html:380
 msgid "Add Comment"
 msgstr "Προσθήκη Σχολίου"
 
-#: templates/tickets/view.html:94
+#: templates/tickets/view.html:277
 msgid "No attachments yet."
 msgstr "Δεν υπάρχουν ακόμη συνημμένα."
 
-#: templates/tickets/view.html:101
-msgid "Upload"
-msgstr "Μεταφόρτωση"
-
-#: templates/tickets/view.html:115
+#: templates/tickets/view.html:299
 msgid "No activity recorded."
 msgstr "Δεν υπάρχουν καταγεγραμμένες ενέργειες."
 
-#: templates/tickets/view.html:176
-msgid "updated to"
-msgstr "ενημερώθηκε σε"
+#: templates/tickets/view.html:369
+#, fuzzy
+msgid "Adding..."
+msgstr "Γίνεται προσθήκη..."
 
-#: templates/tickets/view.html:179 templates/users/list.html:215
+#: templates/tickets/view.html:377 templates/users/list.html:241
 msgid "Update failed"
 msgstr "Η ενημέρωση απέτυχε"
 
-#: templates/tickets/view.html:189
-msgid "Comment added"
-msgstr "Το σχόλιο προστέθηκε"
+#: templates/tickets/view.html:391
+#, fuzzy
+msgid "Uploading..."
+msgstr "Γίνεται μεταφόρτωση..."
 
-#: templates/tickets/view.html:206
-msgid "File uploaded"
-msgstr "Το αρχείο μεταφορτώθηκε"
-
-#: templates/tickets/view.html:209
+#: templates/tickets/view.html:405
 msgid "Upload failed"
 msgstr "Η μεταφόρτωση απέτυχε"
 
-#: templates/users/list.html:7
+#: templates/users/list.html:22
 msgid "New User"
 msgstr "Νέος Χρήστης"
 
-#: templates/users/list.html:17 templates/users/list.html:79
-#: templates/users/list.html:120
+#: templates/users/list.html:32 templates/users/list.html:96
+#: templates/users/list.html:140
 msgid "Email"
 msgstr "Email"
 
-#: templates/users/list.html:18 templates/users/list.html:82
-#: templates/users/list.html:124
+#: templates/users/list.html:33 templates/users/list.html:99
+#: templates/users/list.html:146
 msgid "Role"
 msgstr "Ρόλος"
 
-#: templates/users/list.html:20 templates/users/list.html:45
-msgid "Active"
-msgstr "Ενεργός"
-
-#: templates/users/list.html:33 templates/users/list.html:126
+#: templates/users/list.html:48 templates/users/list.html:151
 msgid "Admin"
 msgstr "Διαχειριστής"
 
-#: templates/users/list.html:35 templates/users/list.html:126
+#: templates/users/list.html:50 templates/users/list.html:150
 msgid "Manager"
 msgstr "Προϊστάμενος"
 
-#: templates/users/list.html:37 templates/users/list.html:126
-msgid "Technician"
-msgstr "Τεχνικός"
-
-#: templates/users/list.html:39 templates/users/list.html:126
-#: templates/users/list.html:210
+#: templates/users/list.html:54 templates/users/list.html:148
+#: templates/users/list.html:236
 msgid "User"
 msgstr "Χρήστης"
 
-#: templates/users/list.html:47
+#: templates/users/list.html:62
 msgid "Inactive"
 msgstr "Ανενεργός"
 
-#: templates/users/list.html:72
+#: templates/users/list.html:88
 msgid "Edit User"
 msgstr "Επεξεργασία Χρήστη"
 
-#: templates/users/list.html:92
+#: templates/users/list.html:109
 msgid "Password (leave blank to keep unchanged)"
 msgstr "Κωδικός (αφήστε κενό για να παραμείνει ίδιος)"
 
-#: templates/users/list.html:114
+#: templates/users/list.html:132
 msgid "Add New User"
 msgstr "Προσθήκη Νέου Χρήστη"
 
-#: templates/users/list.html:148
+#: templates/users/list.html:174
 msgid "Are you sure you want to delete this user?"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτόν τον χρήστη;"
 
-#: templates/users/list.html:195
+#: templates/users/list.html:221
 msgid "User deleted"
 msgstr "Ο χρήστης διαγράφηκε"
 
-#: templates/users/list.html:210
+#: templates/users/list.html:236
 msgid "updated successfully"
 msgstr "ενημερώθηκε επιτυχώς"
 
-#: templates/users/list.html:227
+#: templates/users/list.html:253
 msgid "User added successfully"
 msgstr "Ο χρήστης προστέθηκε επιτυχώς"
 
-#: templates/users/list.html:230
+#: templates/users/list.html:256
 msgid "Failed to add user"
 msgstr "Αποτυχία προσθήκης χρήστη"
 
+#: app/navigation.py:23
+msgid "Dashboard"
+msgstr "Πίνακας ελέγχου"

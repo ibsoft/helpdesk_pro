@@ -12,7 +12,7 @@ from flask import (
 )
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager
+from flask_login import LoginManager, current_user
 from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from flask_babel import Babel
@@ -79,9 +79,33 @@ def create_app():
 
     @app.context_processor
     def inject_globals():
+        from app.navigation import get_navigation_for_user, is_feature_allowed
+        from app.models import ChatMessage, ChatMembership, ChatMessageRead, AssistantConfig
+
+        chat_unread = 0
+        if current_user.is_authenticated:
+            chat_unread = (
+                db.session.query(ChatMessage.id)
+                .join(ChatMembership, (ChatMembership.conversation_id == ChatMessage.conversation_id) & (ChatMembership.user_id == current_user.id))
+                .outerjoin(ChatMessageRead, (ChatMessageRead.message_id == ChatMessage.id) & (ChatMessageRead.user_id == current_user.id))
+                .filter(ChatMessage.sender_id != current_user.id)
+                .filter(ChatMessageRead.id.is_(None))
+                .count()
+            )
+
+        assistant_widget = None
+        if current_user.is_authenticated and is_feature_allowed("assistant_widget", current_user):
+            cfg = AssistantConfig.get()
+            if cfg and cfg.is_enabled:
+                assistant_widget = cfg.to_dict()
+
         return {
             "current_year": datetime.now().year,
             "current_lang": g.get("locale", app.config["BABEL_DEFAULT_LOCALE"]),
+            "navigation": get_navigation_for_user(current_user),
+            "chat_unread_count": chat_unread,
+            "assistant_widget_config": assistant_widget,
+            "app_version": app.config.get("APP_VERSION", "1.0.0"),
         }
 
     # ───────── Blueprints ───────── #
@@ -91,6 +115,12 @@ def create_app():
     from app.dashboard.routes import dashboard_bp
     from app.api.routes import api_bp
     from app.inventory.routes import inventory_bp
+    from app.networks.routes import networks_bp
+    from app.collab.routes import collab_bp
+    from app.knowledge.routes import knowledge_bp
+    from app.manage.routes import manage_bp
+    from app.networks.routes import networks_bp
+    from app.assistant.routes import assistant_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -98,6 +128,11 @@ def create_app():
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(api_bp, url_prefix="/api/v1")
     app.register_blueprint(inventory_bp)
+    app.register_blueprint(networks_bp)
+    app.register_blueprint(knowledge_bp)
+    app.register_blueprint(manage_bp)
+    app.register_blueprint(collab_bp)
+    app.register_blueprint(assistant_bp)
 
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)
@@ -107,6 +142,24 @@ def create_app():
     handler.setFormatter(logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
     app.logger.addHandler(handler)
+
+    if not any(isinstance(h, logging.StreamHandler) for h in app.logger.handlers):
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(app.config.get("LOG_LEVEL", "INFO"))
+        console_handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+        app.logger.addHandler(console_handler)
+
+    app.logger.setLevel(app.config.get("LOG_LEVEL", "INFO"))
+    app.logger.propagate = False
+
+    if app.config.get("SQLALCHEMY_ECHO", False) or app.config.get("LOG_LEVEL", "INFO") == "DEBUG":
+        sql_logger = logging.getLogger("sqlalchemy.engine")
+        sql_logger.setLevel(logging.INFO)
+        if not any(isinstance(h, logging.StreamHandler) for h in sql_logger.handlers):
+            sql_console = logging.StreamHandler()
+            sql_console.setFormatter(logging.Formatter("%(asctime)s [SQL] %(message)s"))
+            sql_logger.addHandler(sql_console)
     app.logger.info("Helpdesk Pro started")
 
     # ───────── Root route ───────── #

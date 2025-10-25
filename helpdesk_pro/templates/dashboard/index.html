@@ -47,12 +47,12 @@
   }
 </style>
 
-<h3 class="mb-4"><i class="fa fa-chart-line"></i> Dashboard Overview</h3>
+<h3 class="mb-4"><i class="fa fa-chart-line"></i> {{ _('Dashboard Overview') }}</h3>
 
 {% if current_user.role != "admin" %}
   <div class="alert alert-info shadow-sm">
     <i class="fa fa-user"></i>
-    Showing statistics only for your tickets (created or assigned).
+    {{ _('Showing statistics only for your tickets (created or assigned).') }}
   </div>
 {% endif %}
 
@@ -61,7 +61,7 @@
     <div class="card text-center shadow-sm bg-primary text-white">
       <div class="card-body">
         <i class="fa fa-users fa-2x mb-2"></i>
-        <h6>Users</h6>
+        <h6>{{ _('Users') }}</h6>
         <h4>{{ users }}</h4>
       </div>
     </div>
@@ -70,7 +70,7 @@
     <div class="card text-center shadow-sm bg-success text-white">
       <div class="card-body">
         <i class="fa fa-folder-open fa-2x mb-2"></i>
-        <h6>Open Tickets</h6>
+        <h6>{{ _('Open Tickets') }}</h6>
         <h4>{{ open_tickets }}</h4>
       </div>
     </div>
@@ -79,7 +79,7 @@
     <div class="card text-center shadow-sm bg-warning text-dark">
       <div class="card-body">
         <i class="fa fa-spinner fa-2x mb-2"></i>
-        <h6>In Progress</h6>
+        <h6>{{ _('In Progress') }}</h6>
         <h4>{{ in_progress }}</h4>
       </div>
     </div>
@@ -88,7 +88,7 @@
     <div class="card text-center shadow-sm bg-secondary text-white">
       <div class="card-body">
         <i class="fa fa-check-circle fa-2x mb-2"></i>
-        <h6>Closed Tickets</h6>
+        <h6>{{ _('Closed Tickets') }}</h6>
         <h4>{{ closed_tickets }}</h4>
       </div>
     </div>
@@ -98,13 +98,13 @@
 <div class="row g-3 mb-3">
   <div class="col-md-6">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-calendar-day"></i> Daily Tickets</div>
+      <div class="card-header"><i class="fa fa-calendar-day"></i> {{ _('Daily Tickets') }}</div>
       <div class="card-body"><canvas id="dailyChart" height="180"></canvas></div>
     </div>
   </div>
   <div class="col-md-6">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-calendar-week"></i> Weekly Tickets</div>
+      <div class="card-header"><i class="fa fa-calendar-week"></i> {{ _('Weekly Tickets') }}</div>
       <div class="card-body"><canvas id="weeklyChart" height="180"></canvas></div>
     </div>
   </div>
@@ -113,17 +113,56 @@
 <div class="row g-3 mt-2">
   <div class="col-md-6">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-calendar-alt"></i> Monthly Resolution Rate %</div>
+      <div class="card-header"><i class="fa fa-calendar-alt"></i> {{ _('Monthly Resolution Rate') }} %</div>
       <div class="card-body"><canvas id="monthlyChart" height="180"></canvas></div>
     </div>
   </div>
   <div class="col-md-6">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-chart-bar"></i> Yearly Tickets Closed</div>
+      <div class="card-header"><i class="fa fa-chart-bar"></i> {{ _('Yearly Tickets Closed') }}</div>
       <div class="card-body"><canvas id="yearlyChart" height="180"></canvas></div>
     </div>
   </div>
 </div>
+
+{% if inventory_enabled %}
+<div class="row g-3 mt-3">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-microchip"></i> {{ _('Hardware Assignment') }}</div>
+      <div class="card-body"><canvas id="hardwareChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-code"></i> {{ _('Software Assignment') }}</div>
+      <div class="card-body"><canvas id="softwareChart" height="200"></canvas></div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if knowledge_enabled or networks_enabled %}
+  {% set col_class = 'col-lg-6 col-12' if knowledge_enabled and networks_enabled else 'col-12' %}
+  <div class="row g-3 mt-3">
+    {% if knowledge_enabled %}
+      <div class="{{ col_class }}">
+        <div class="card shadow-sm">
+          <div class="card-header"><i class="fa fa-lightbulb"></i> {{ _('Knowledge Base Articles Published') }}</div>
+          <div class="card-body"><canvas id="knowledgeChart" height="220"></canvas></div>
+        </div>
+      </div>
+    {% endif %}
+    {% if networks_enabled %}
+      <div class="{{ col_class }}">
+        <div class="card shadow-sm">
+          <div class="card-header"><i class="fa fa-network-wired"></i> {{ _('Network Utilisation (Top 8)') }}</div>
+          <div class="card-body"><canvas id="networkChart" height="220"></canvas></div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
 
 {% if dept_summary %}
 <hr class="my-4">
@@ -165,6 +204,13 @@ const monthlyLabels = {{ monthly_labels|tojson }};
 const monthlyRate = {{ monthly_rate|tojson }};
 const yearlyLabels = {{ yearly_labels|tojson }};
 const yearlyClosed = {{ yearly_closed|tojson }};
+const knowledgeLabels = {{ knowledge_labels|tojson }};
+const knowledgeCounts = {{ knowledge_counts|tojson }};
+const hardwareStats = {{ hardware_stats|tojson }};
+const softwareStats = {{ software_stats|tojson }};
+const networkLabels = {{ network_labels|tojson }};
+const networkUsed = {{ network_used|tojson }};
+const networkAvailable = {{ network_available|tojson }};
 
 function getThemeColors() {
   const dark = document.body.getAttribute('data-bs-theme') === 'dark';
@@ -214,19 +260,100 @@ function barChart(ctx, labels, data, label, color) {
   });
 }
 
-let dailyChart = dualLine(document.getElementById('dailyChart'), dailyLabels, dailyCreated, dailyClosed, 'Created', 'Closed');
-let weeklyChart = dualLine(document.getElementById('weeklyChart'), weeklyLabels, weeklyCreated, weeklyClosed, 'Created', 'Closed');
-let monthlyChart = barChart(document.getElementById('monthlyChart'), monthlyLabels, monthlyRate, 'Resolution Rate %', 'rgba(13,110,253,0.6)');
-let yearlyChart = barChart(document.getElementById('yearlyChart'), yearlyLabels, yearlyClosed, 'Tickets Closed', 'rgba(25,135,84,0.6)');
+function doughnutChart(ctx, labels, data) {
+  const c = getThemeColors();
+  return new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: [c.primary, c.success],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: c.text } } }
+    }
+  });
+}
 
-document.getElementById("themeToggle").addEventListener("click", () => {
-  setTimeout(() => {
-    [dailyChart, weeklyChart, monthlyChart, yearlyChart].forEach(c => c.destroy());
-    dailyChart = dualLine(document.getElementById('dailyChart'), dailyLabels, dailyCreated, dailyClosed, 'Created', 'Closed');
-    weeklyChart = dualLine(document.getElementById('weeklyChart'), weeklyLabels, weeklyCreated, weeklyClosed, 'Created', 'Closed');
-    monthlyChart = barChart(document.getElementById('monthlyChart'), monthlyLabels, monthlyRate, 'Resolution Rate %', 'rgba(13,110,253,0.6)');
-    yearlyChart = barChart(document.getElementById('yearlyChart'), yearlyLabels, yearlyClosed, 'Tickets Closed', 'rgba(25,135,84,0.6)');
-  }, 150);
-});
+function stackedBarChart(ctx, labels, used, available) {
+  const c = getThemeColors();
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Used', data: used, backgroundColor: c.primary + 'aa' },
+        { label: 'Available', data: available, backgroundColor: c.success + 'aa' }
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: c.text } } },
+      scales: {
+        x: { stacked: true, ticks: { color: c.text }, grid: { color: c.grid } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: c.text }, grid: { color: c.grid } }
+      }
+    }
+  });
+}
+
+let charts = [];
+
+function renderCharts() {
+  charts.forEach(chart => chart.destroy());
+  charts = [];
+
+  const dailyCtx = document.getElementById('dailyChart');
+  if (dailyCtx) charts.push(dualLine(dailyCtx, dailyLabels, dailyCreated, dailyClosed, 'Created', 'Closed'));
+
+  const weeklyCtx = document.getElementById('weeklyChart');
+  if (weeklyCtx) charts.push(dualLine(weeklyCtx, weeklyLabels, weeklyCreated, weeklyClosed, 'Created', 'Closed'));
+
+  const monthlyCtx = document.getElementById('monthlyChart');
+  if (monthlyCtx) charts.push(barChart(monthlyCtx, monthlyLabels, monthlyRate, 'Resolution Rate %', 'rgba(13,110,253,0.6)'));
+
+  const yearlyCtx = document.getElementById('yearlyChart');
+  if (yearlyCtx) charts.push(barChart(yearlyCtx, yearlyLabels, yearlyClosed, 'Tickets Closed', 'rgba(25,135,84,0.6)'));
+
+  const knowledgeCtx = document.getElementById('knowledgeChart');
+  if (knowledgeCtx && knowledgeLabels.length) {
+    const c = getThemeColors();
+    charts.push(new Chart(knowledgeCtx, {
+      type: 'bar',
+      data: { labels: knowledgeLabels, datasets: [{ label: 'Articles published', data: knowledgeCounts, backgroundColor: c.primary + '66', borderColor: c.primary, borderWidth: 1.5 }] },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: c.text }, grid: { color: c.grid } },
+          y: { beginAtZero: true, ticks: { color: c.text }, grid: { color: c.grid } }
+        }
+      }
+    }));
+  }
+
+  const hardwareCtx = document.getElementById('hardwareChart');
+  if (hardwareCtx && (hardwareStats.assigned || hardwareStats.available)) {
+    charts.push(doughnutChart(hardwareCtx, ['Assigned', 'Available'], [hardwareStats.assigned, hardwareStats.available]));
+  }
+
+  const softwareCtx = document.getElementById('softwareChart');
+  if (softwareCtx && (softwareStats.assigned || softwareStats.available)) {
+    charts.push(doughnutChart(softwareCtx, ['Assigned', 'Available'], [softwareStats.assigned, softwareStats.available]));
+  }
+
+  const networkCtx = document.getElementById('networkChart');
+  if (networkCtx && networkLabels.length) {
+    charts.push(stackedBarChart(networkCtx, networkLabels, networkUsed, networkAvailable));
+  }
+}
+
+renderCharts();
+
+const themeToggle = document.getElementById("themeToggle");
+if (themeToggle) {
+  themeToggle.addEventListener("click", () => setTimeout(renderCharts, 150));
+}
 </script>
 {% endblock %}

@@ -33,6 +33,10 @@
     </script>
 
     <style>
+      :root {
+        --navbar-height: 56px;
+      }
+
       html, body {
         height: 100%;
         display: flex;
@@ -71,6 +75,10 @@
         background: inherit;
       }
 
+      body.nav-open {
+        overflow: hidden;
+      }
+
       /* ─── Navbar with Purple Gradient ─── */
       .navbar {
         min-height: 48px !important;
@@ -80,6 +88,9 @@
         background-size: 400% 400%;
         animation: gradientShift 18s ease infinite;
         border-bottom: 1px solid rgba(255,255,255,0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1200;
       }
 
       html[data-bs-theme="dark"] body .navbar {
@@ -110,6 +121,48 @@
       .navbar-dark .nav-link.active {
         color: #fff !important;
         text-shadow: 0 0 5px rgba(255,255,255,0.4);
+      }
+
+      .navbar-toggler {
+        position: relative;
+        z-index: 1201;
+      }
+
+      @media (max-width: 991.98px) {
+        .navbar {
+          box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+        }
+        .navbar-collapse {
+          position: fixed;
+          top: calc(var(--navbar-height, 56px) + 8px);
+          left: 1rem;
+          right: 1rem;
+          background: linear-gradient(135deg, rgba(13, 110, 253, 0.97), rgba(102, 16, 242, 0.97));
+          border-radius: 0.85rem;
+          padding: 1.25rem;
+          box-shadow: 0 18px 36px rgba(15, 23, 42, 0.28);
+          max-height: calc(100vh - var(--navbar-height, 56px) - 24px);
+          overflow-y: auto;
+          z-index: 1200;
+          transition: transform 0.25s ease, opacity 0.25s ease;
+          transform: translateY(-12px);
+          opacity: 0;
+          pointer-events: none;
+        }
+        .navbar-collapse.show,
+        .navbar-collapse.collapsing {
+          transform: translateY(0);
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .navbar-collapse.collapsing {
+          overflow: hidden;
+          transition: height 0.2s ease;
+        }
+        .navbar-collapse.show .nav-link {
+          padding-left: 0;
+          padding-right: 0;
+        }
       }
 
       /* ─── Footer with Purple Gradient ─── */
@@ -193,56 +246,43 @@
 
         <div class="collapse navbar-collapse" id="mainNav">
           <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-            {% if current_user.is_authenticated and current_user.role in ['admin', 'manager'] %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('dashboard.index') }}?lang={{ g.locale }}">
-                  <i class="fa fa-chart-line"></i> {{ _('Dashboard') }}
-                </a>
-              </li>
-            {% endif %}
-            {% if current_user.is_authenticated %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('tickets.list_tickets') }}?lang={{ g.locale }}">
-                  <i class="fa fa-ticket"></i> {{ _('Tickets') }}
-                </a>
-              </li>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.role in ['admin'] %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('users.list_users') }}?lang={{ g.locale }}">
-                  <i class="fa fa-users"></i> {{ _('Users') }}
-                </a>
-              </li>
-            {% endif %}
-            {% if current_user.is_authenticated and current_user.role in ['admin'] %}
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" id="inventoryMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fa fa-boxes-stacked"></i> {{ _('Inventory') }}
-                </a>
-                <ul class="dropdown-menu" aria-labelledby="inventoryMenu">
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('inventory.software_list') }}?lang={{ g.locale }}">
-                      <i class="fa fa-code-branch me-2 text-primary"></i>{{ _('Software') }}
-                    </a>
-                  </li>
-                  <li>
-                    <a class="dropdown-item" href="{{ url_for('inventory.hardware_list') }}?lang={{ g.locale }}">
-                      <i class="fa fa-microchip me-2 text-secondary"></i>{{ _('Hardware') }}
-                    </a>
-                  </li>
-                </ul>
-              </li>
-            {% endif %}
+            {% for item in navigation %}
+              {% if item.type == 'link' %}
+                <li class="nav-item">
+                  <a class="nav-link" href="{{ item.url }}">
+                    {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %} {{ _(item.label) }}
+                  </a>
+                </li>
+              {% elif item.type == 'dropdown' %}
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" href="#" id="nav_{{ item.key }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %} {{ _(item.label) }}
+                  </a>
+                  <ul class="dropdown-menu" aria-labelledby="nav_{{ item.key }}">
+                    {% for child in item.children %}
+                      <li>
+                        <a class="dropdown-item" href="{{ child.url }}">
+                          {% if child.icon %}<i class="{{ child.icon }} me-2"></i>{% endif %}{{ _(child.label) }}
+                        </a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </li>
+              {% endif %}
+            {% endfor %}
           </ul>
 
           <ul class="navbar-nav ms-auto align-items-center">
             {% if current_user.is_authenticated %}
-              <li class="nav-item me-3 text-white small">
-                <i class="fa fa-user-circle"></i>
-                {{ current_user.username }} ({{ _(current_user.role|capitalize) }})
+              <li class="nav-item me-3 position-relative">
+                <a class="nav-link" id="collab-nav-link" href="{{ url_for('collab.chat_home') }}?lang={{ g.locale }}">
+                  <i class="fa fa-comments"></i>
+                  <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger {% if not chat_unread_count %}d-none{% endif %}" id="collab-nav-badge">
+                    {% if chat_unread_count %}{{ chat_unread_count if chat_unread_count < 100 else '99+' }}{% endif %}
+                  </span>
+                </a>
               </li>
             {% endif %}
-
             <li class="nav-item me-2">
               <button id="themeToggle" class="btn btn-sm btn-outline-light" title="{{ _('Toggle theme') }}">
                 <i class="fa fa-sun"></i>
@@ -261,10 +301,32 @@
             </li>
 
             {% if current_user.is_authenticated %}
-              <li class="nav-item">
-                <a class="nav-link" href="{{ url_for('auth.logout') }}?lang={{ g.locale }}">
-                  <i class="fa fa-sign-out-alt"></i> {{ _('Logout') }}
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <i class="fa fa-user-circle"></i>
+                  <span class="d-none d-lg-inline">{{ current_user.username }}</span>
                 </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                  <li>
+                    <button class="dropdown-item d-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                      <i class="fa fa-info-circle text-primary"></i>
+                      {{ _('About') }}
+                    </button>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <a class="dropdown-item d-flex align-items-center gap-2" href="{{ url_for('auth.logout') }}?lang={{ g.locale }}">
+                      <i class="fa fa-sign-out-alt text-danger"></i>
+                      {{ _('Logout') }}
+                    </a>
+                  </li>
+                </ul>
+              </li>
+            {% else %}
+              <li class="nav-item me-2">
+                <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#aboutModal">
+                  <i class="fa fa-info-circle"></i> {{ _('About') }}
+                </button>
               </li>
             {% endif %}
           </ul>
@@ -316,6 +378,27 @@
         <a href="mailto:ioannis.bouhras@gmail.com"><i class="fa fa-envelope"></i></a>
       </span>
     </footer>
+
+    <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header modal-header-gradient">
+            <h5 class="modal-title" id="aboutModalLabel"><i class="fa fa-info-circle"></i> {{ _('About Helpdesk Pro') }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-2"><strong>{{ _('Version') }}:</strong> {{ app_version }}</p>
+            <p class="mb-0">
+              <strong>{{ _('Author') }}:</strong> Ioannis A. Bouhras<br>
+              <a href="mailto:ioannis.bouhras@gmail.com">ioannis.bouhras@gmail.com</a>
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- ─── JS ─── -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
@@ -412,7 +495,47 @@
           applyTheme(current);
         });
       })();
+
+      document.addEventListener("DOMContentLoaded", function() {
+        const navbarEl = document.querySelector(".navbar");
+        const setNavbarHeight = () => {
+          if (!navbarEl) return;
+          const height = navbarEl.offsetHeight || 56;
+          document.documentElement.style.setProperty("--navbar-height", `${height}px`);
+        };
+        setNavbarHeight();
+        window.addEventListener("resize", setNavbarHeight);
+
+        const navCollapse = document.getElementById("mainNav");
+        if (navCollapse) {
+          navCollapse.addEventListener("show.bs.collapse", () => document.body.classList.add("nav-open"));
+          navCollapse.addEventListener("shown.bs.collapse", () => document.body.classList.add("nav-open"));
+          navCollapse.addEventListener("hide.bs.collapse", () => document.body.classList.remove("nav-open"));
+          navCollapse.addEventListener("hidden.bs.collapse", () => document.body.classList.remove("nav-open"));
+        }
+
+        const badge = document.getElementById("collab-nav-badge");
+        if (!badge) return;
+        const update = function() {
+          fetch("{{ url_for('collab.api_unread_count') }}", { credentials: 'same-origin' })
+            .then(resp => resp.json())
+            .then(data => {
+              const count = data.unread || 0;
+              if (count > 0) {
+                badge.textContent = count > 99 ? '99+' : count;
+                badge.classList.remove('d-none');
+              } else {
+                badge.classList.add('d-none');
+              }
+            }).catch(() => {});
+        };
+        update();
+        setInterval(update, 15000);
+      });
     </script>
+    {% if assistant_widget_config %}
+      {% include "partials/assistant_widget.html" %}
+    {% endif %}
     {% block extra_js %}{% endblock %}
   </body>
 </html>

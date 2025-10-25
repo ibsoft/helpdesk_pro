@@ -1,10 +1,14 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
-from sqlalchemy import func, or_, case
-from datetime import datetime, timedelta
+from sqlalchemy import func, or_, case, select
+from datetime import datetime, timedelta, date
 from app import db
 from app.models.user import User
 from app.models.ticket import Ticket
+from app.models.knowledge import KnowledgeArticle
+from app.models.inventory import HardwareAsset, SoftwareAsset
+from app.models.network import Network, NetworkHost
+from app.navigation import is_feature_allowed
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -42,78 +46,144 @@ def index():
     closed_tickets = tickets_query.filter_by(status="Closed").count()
     in_progress = tickets_query.filter_by(status="In Progress").count()
 
+    ticket_ids_subq = tickets_query.with_entities(Ticket.id).subquery()
+    ticket_ids_select = select(ticket_ids_subq.c.id).scalar_subquery()
+
     # === 3️⃣ Aggregation helper ===
-    def aggregate(period):
-        created = (
-            db.session.query(
-                func.date_trunc(period, func.timezone(
-                    tz, Ticket.created_at)).label("p"),
-                func.count(Ticket.id).label("c")
-            )
-            .filter(Ticket.id.in_(tickets_query.with_entities(Ticket.id)))
-            .group_by("p")
-            .order_by("p")
-            .all()
-        )
-        closed = (
-            db.session.query(
-                func.date_trunc(period, func.timezone(
-                    tz, Ticket.closed_at)).label("p"),
-                func.count(Ticket.id).label("c")
-            )
-            .filter(
-                Ticket.closed_at.isnot(None),
-                Ticket.id.in_(tickets_query.with_entities(Ticket.id))
-            )
-            .group_by("p")
-            .order_by("p")
-            .all()
-        )
-        return created, closed
+    def aggregate_map(period, column, skip_null=False):
+        bucket = func.date_trunc(period, func.timezone(tz, column)).label("bucket")
+        query = db.session.query(bucket, func.count()).filter(Ticket.id.in_(ticket_ids_select))
+        if skip_null:
+            query = query.filter(column.isnot(None))
+        rows = query.group_by(bucket).order_by(bucket).all()
+        data = {}
+        for bucket_value, count in rows:
+            if not bucket_value:
+                continue
+            bucket_date = bucket_value.date() if hasattr(bucket_value, "date") else bucket_value
+            data[bucket_date] = count
+        return data
 
-    created_day, closed_day = aggregate("day")
-    created_week, closed_week = aggregate("week")
-    created_month, closed_month = aggregate("month")
-    created_year, closed_year = aggregate("year")
+    created_day_map = aggregate_map("day", Ticket.created_at)
+    closed_day_map = aggregate_map("day", Ticket.closed_at, skip_null=True)
+    created_week_map = aggregate_map("week", Ticket.created_at)
+    closed_week_map = aggregate_map("week", Ticket.closed_at, skip_null=True)
+    created_month_map = aggregate_map("month", Ticket.created_at)
+    closed_month_map = aggregate_map("month", Ticket.closed_at, skip_null=True)
+    closed_year_map = aggregate_map("year", Ticket.closed_at, skip_null=True)
 
-    # === 4️⃣ Fill helper ===
-    def fill(data, delta, count, fmt):
-        m = {}
-        for d in data:
-            date_val = d[0]
-            if hasattr(date_val, "date"):
-                date_val = date_val.date()
-            m[date_val] = d[1]
-        now = datetime.now()
-        labels, vals = [], []
-        for i in range(count - 1, -1, -1):
-            day = (now - i * delta).date()
-            labels.append(day.strftime(fmt))
-            vals.append(m.get(day, 0))
-        return labels, vals
+    # === 4️⃣ Period helpers ===
+    def shift_month(base: date, offset: int) -> date:
+        year = base.year + ((base.month - 1 + offset) // 12)
+        month = (base.month - 1 + offset) % 12 + 1
+        return date(year, month, 1)
+
+    def generate_period_keys(period: str, count: int):
+        today_date = datetime.now().date()
+        if period == "day":
+            start = today_date - timedelta(days=count - 1)
+            return [start + timedelta(days=i) for i in range(count)]
+        if period == "week":
+            current_week_start = today_date - timedelta(days=today_date.weekday())
+            return [current_week_start - timedelta(weeks=count - 1 - i) for i in range(count)]
+        if period == "month":
+            current_month_start = today_date.replace(day=1)
+            return [shift_month(current_month_start, -(count - 1 - i)) for i in range(count)]
+        if period == "year":
+            current_year_start = date(today_date.year, 1, 1)
+            return [date(today_date.year - (count - 1 - i), 1, 1) for i in range(count)]
+        raise ValueError(f"Unsupported period: {period}")
+
+    def build_series(period: str, count: int, data_map: dict, formatter):
+        keys = generate_period_keys(period, count)
+        labels = [formatter(key) for key in keys]
+        values = [data_map.get(key, 0) for key in keys]
+        return labels, values
 
     # === 5️⃣ Charts data ===
-    daily_labels, daily_created = fill(
-        created_day, timedelta(days=1), 7, "%d %b")
-    _, daily_closed = fill(closed_day, timedelta(days=1), 7, "%d %b")
+    def daily_formatter(d: date) -> str:
+        return d.strftime("%d %b")
 
-    weekly_labels, weekly_created = fill(
-        created_week, timedelta(weeks=1), 8, "W%W")
-    _, weekly_closed = fill(closed_week, timedelta(weeks=1), 8, "W%W")
+    def weekly_formatter(d: date) -> str:
+        iso = d.isocalendar()
+        year = getattr(iso, "year", iso[0])
+        week = getattr(iso, "week", iso[1])
+        return f"{year} W{week:02d}"
 
-    monthly_labels, monthly_created = fill(
-        created_month, timedelta(days=30), 12, "%b %Y")
-    _, monthly_closed = fill(closed_month, timedelta(days=30), 12, "%b %Y")
+    def monthly_formatter(d: date) -> str:
+        return d.strftime("%b %Y")
+
+    def yearly_formatter(d: date) -> str:
+        return str(d.year)
+
+    daily_labels, daily_created = build_series("day", 7, created_day_map, daily_formatter)
+    _, daily_closed = build_series("day", 7, closed_day_map, daily_formatter)
+
+    weekly_labels, weekly_created = build_series("week", 8, created_week_map, weekly_formatter)
+    _, weekly_closed = build_series("week", 8, closed_week_map, weekly_formatter)
+
+    monthly_labels, monthly_created = build_series("month", 12, created_month_map, monthly_formatter)
+    _, monthly_closed = build_series("month", 12, closed_month_map, monthly_formatter)
 
     monthly_rate = [
         round((closed / created * 100) if created else 0, 1)
         for created, closed in zip(monthly_created, monthly_closed)
     ]
 
-    yearly_labels, yearly_closed = fill(
-        closed_year, timedelta(days=365), 5, "%Y")
+    yearly_labels, yearly_closed = build_series("year", 5, closed_year_map, yearly_formatter)
 
-    # === 6️⃣ Department summary table (Managers & Admins) ===
+    # === 6️⃣ Additional module metrics ===
+    knowledge_enabled = is_feature_allowed("knowledge", current_user)
+    knowledge_labels, knowledge_counts = [], []
+    if knowledge_enabled:
+        knowledge_rows = (
+            db.session.query(
+                func.date_trunc("month", func.timezone(tz, KnowledgeArticle.created_at)).label("bucket"),
+                func.count(KnowledgeArticle.id)
+            )
+            .filter(KnowledgeArticle.is_published.is_(True))
+            .group_by("bucket")
+            .order_by("bucket")
+            .all()
+        )
+        knowledge_map = {}
+        for bucket_value, count in knowledge_rows:
+            if not bucket_value:
+                continue
+            knowledge_map[bucket_value.date()] = count
+        knowledge_labels, knowledge_counts = build_series("month", 12, knowledge_map, monthly_formatter)
+
+    inventory_enabled = is_feature_allowed("inventory", current_user)
+    hardware_stats = {"total": 0, "assigned": 0, "available": 0}
+    software_stats = {"total": 0, "assigned": 0, "available": 0}
+    if inventory_enabled:
+        hardware_stats["total"] = db.session.query(func.count(HardwareAsset.id)).scalar() or 0
+        hardware_stats["assigned"] = db.session.query(func.count(HardwareAsset.id)).filter(HardwareAsset.assigned_to.isnot(None)).scalar() or 0
+        hardware_stats["available"] = max(hardware_stats["total"] - hardware_stats["assigned"], 0)
+
+        software_stats["total"] = db.session.query(func.count(SoftwareAsset.id)).scalar() or 0
+        software_stats["assigned"] = db.session.query(func.count(SoftwareAsset.id)).filter(SoftwareAsset.assigned_to.isnot(None)).scalar() or 0
+        software_stats["available"] = max(software_stats["total"] - software_stats["assigned"], 0)
+
+    networks_enabled = is_feature_allowed("networks", current_user)
+    network_labels, network_used, network_available = [], [], []
+    if networks_enabled:
+        top_networks = (
+            db.session.query(Network, func.count(NetworkHost.id).label("used"))
+            .outerjoin(NetworkHost, NetworkHost.network_id == Network.id)
+            .group_by(Network.id)
+            .order_by(func.count(NetworkHost.id).desc())
+            .limit(8)
+            .all()
+        )
+        for network, used in top_networks:
+            label = network.name or network.cidr
+            capacity = network.host_capacity or 0
+            network_labels.append(label)
+            network_used.append(int(used or 0))
+            network_available.append(max(capacity - int(used or 0), 0))
+
+    # === 7️⃣ Department summary table (Managers & Admins) ===
     dept_summary = []
     if current_user.role in ("admin", "manager"):
         if current_user.role == "admin":
@@ -138,7 +208,7 @@ def index():
             .all()
         )
 
-    # === 7️⃣ Render ===
+    # === 8️⃣ Render ===
     return render_template(
         "dashboard/index.html",
         users=users_count,
@@ -155,5 +225,15 @@ def index():
         monthly_rate=monthly_rate,
         yearly_labels=yearly_labels,
         yearly_closed=yearly_closed,
-        dept_summary=dept_summary
+        dept_summary=dept_summary,
+        knowledge_enabled=knowledge_enabled,
+        knowledge_labels=knowledge_labels,
+        knowledge_counts=knowledge_counts,
+        inventory_enabled=inventory_enabled,
+        hardware_stats=hardware_stats,
+        software_stats=software_stats,
+        networks_enabled=networks_enabled,
+        network_labels=network_labels,
+        network_used=network_used,
+        network_available=network_available,
     )
