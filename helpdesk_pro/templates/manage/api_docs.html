@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <div>
+    <h3 class="mb-1"><i class="fa fa-book-open text-primary"></i> {{ _('API Documentation') }}</h3>
+    <p class="text-muted mb-0">{{ _('Interactive Swagger UI for the Helpdesk Pro REST API.') }}</p>
+  </div>
+  <a href="{{ url_for('manage.api_keys') }}" class="btn btn-outline-primary">
+    <i class="fa fa-key"></i> {{ _('Manage API Keys') }}
+  </a>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body p-0">
+    <div id="swagger-ui"></div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui.css">
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.11.0/swagger-ui-bundle.js" crossorigin="anonymous"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    SwaggerUIBundle({
+      url: "{{ spec_url }}",
+      dom_id: "#swagger-ui",
+      deepLinking: true,
+      presets: [SwaggerUIBundle.presets.apis],
+      layout: "BaseLayout",
+      requestInterceptor: (req) => {
+        // Pre-fill API key if the admin copies it into localStorage.
+        const storedKey = window.localStorage.getItem("helpdeskApiKey");
+        if (storedKey && !req.headers["X-API-Key"]) {
+          req.headers["X-API-Key"] = storedKey;
+        }
+        return req;
+      },
+    });
+  });
+</script>
+
+{% endblock %}

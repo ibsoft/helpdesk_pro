@@ -305,4 +305,42 @@
   </nav>
 {% endif %}
 
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const form = document.getElementById("kbSearchForm");
+    if (!form) {
+      return;
+    }
+    const categoryInput = document.getElementById("kbCategoryInput");
+    const tagInput = document.getElementById("kbTagInput");
+
+    const activateDropdown = (selector, input) => {
+      document.querySelectorAll(selector).forEach((item) => {
+        item.addEventListener("click", (event) => {
+          event.preventDefault();
+          const value = item.getAttribute("data-value") || "";
+          input.value = value;
+          form.submit();
+        });
+      });
+    };
+
+    activateDropdown(".kb-category-option", categoryInput);
+    activateDropdown(".kb-tag-option", tagInput);
+
+    const activateChips = (selector, input) => {
+      document.querySelectorAll(selector).forEach((chip) => {
+        chip.addEventListener("click", () => {
+          const value = chip.getAttribute("data-value") || "";
+          input.value = value;
+          form.submit();
+        });
+      });
+    };
+
+    activateChips("#kbCategoryChips .kb-chip", categoryInput);
+    activateChips("#kbTagChips .kb-chip", tagInput);
+  });
+</script>
+
 {% endblock %}

@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 
 from app import db
-from app.models import MenuPermission, AssistantConfig
+from app.models import MenuPermission, AssistantConfig, ApiClient, User
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
     MENU_DEFINITIONS,
@@ -168,3 +168,96 @@ def assistant_settings():
         config=config,
         headers_pretty=headers_pretty,
     )
+
+
+@manage_bp.route("/api", methods=["GET", "POST"])
+@login_required
+def api_keys():
+    _require_admin()
+
+    new_key_value = None
+    client_id = None
+
+    if request.method == "POST":
+        action = request.form.get("action") or ""
+        client_id = request.form.get("client_id")
+        default_user_id = request.form.get("default_user_id") or None
+        if default_user_id:
+            try:
+                default_user_id = int(default_user_id)
+                if not User.query.get(default_user_id):
+                    flash(_("Selected default user does not exist."), "warning")
+                    default_user_id = None
+            except (TypeError, ValueError):
+                default_user_id = None
+
+        try:
+            if action == "create":
+                name = (request.form.get("name") or _("New API Client")).strip()
+                description = (request.form.get("description") or "").strip() or None
+                client = ApiClient(name=name or _("New API Client"), description=description)
+                if default_user_id:
+                    client.default_user_id = default_user_id
+                new_key_value = client.assign_new_secret()
+                db.session.commit()
+                flash(_("API key created. Copy it now, it will not be shown again."), "success")
+            elif action == "rotate" and client_id:
+                client = ApiClient.query.get(int(client_id))
+                if not client:
+                    flash(_("API client not found."), "warning")
+                else:
+                    if default_user_id:
+                        client.default_user_id = default_user_id
+                    new_key_value = client.assign_new_secret()
+                    db.session.commit()
+                    flash(_("API key rotated. Copy the new key immediately."), "success")
+            elif action == "update" and client_id:
+                client = ApiClient.query.get(int(client_id))
+                if not client:
+                    flash(_("API client not found."), "warning")
+                else:
+                    client.name = (request.form.get("name") or client.name).strip() or client.name
+                    client.description = (request.form.get("description") or "").strip() or None
+                    client.default_user_id = default_user_id
+                    db.session.add(client)
+                    db.session.commit()
+                    flash(_("API client details updated."), "success")
+            elif action == "revoke" and client_id:
+                client = ApiClient.query.get(int(client_id))
+                if not client:
+                    flash(_("API client not found."), "warning")
+                else:
+                    client.revoke()
+                    db.session.commit()
+                    flash(_("API key revoked."), "info")
+            elif action == "delete" and client_id:
+                client = ApiClient.query.get(int(client_id))
+                if not client:
+                    flash(_("API client not found."), "warning")
+                else:
+                    db.session.delete(client)
+                    db.session.commit()
+                    flash(_("API client deleted."), "info")
+            else:
+                flash(_("Unsupported action."), "warning")
+        except Exception as exc:  # pragma: no cover
+            db.session.rollback()
+            flash(_("Error processing request: %(error)s", error=str(exc)), "danger")
+
+    clients = ApiClient.query.order_by(ApiClient.created_at.desc()).all()
+    users = User.query.order_by(User.username.asc()).all()
+
+    return render_template(
+        "manage/api_keys.html",
+        clients=clients,
+        users=users,
+        new_key_value=new_key_value,
+    )
+
+
+@manage_bp.route("/api/docs", methods=["GET"])
+@login_required
+def api_docs():
+    _require_admin()
+    spec_url = url_for("api.openapi_spec")
+    return render_template("manage/api_docs.html", spec_url=spec_url)
