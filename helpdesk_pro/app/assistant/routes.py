@@ -38,6 +38,9 @@ from app.navigation import is_feature_allowed
 
 
 CIDR_PATTERN = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}\b")
+IP_ADDRESS_PATTERN = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
+HOSTNAME_QUERY_PATTERN = re.compile(r"(?:hostname|host)\s+(?:named\s+)?([a-z0-9_.\-\:]+)", re.IGNORECASE)
+MAC_QUERY_PATTERN = re.compile(r"(?:mac(?:\s+address)?)\s+(?:of|for|=)?\s*([0-9a-f:\-]{8,})", re.IGNORECASE)
 TICKET_ID_PATTERN = re.compile(r"ticket\s+#?(\d+)|αιτημ(?:α|ατος)?\s*#?(\d+)", re.IGNORECASE)
 USER_REF_PATTERN = re.compile(
     r"(?:assigned to|for|owner|user|ip\s+of|για|σε)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
@@ -615,13 +618,14 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
 
     if not candidate:
         user_tokens = _extract_user_tokens(message)
+        host_tokens = _extract_network_host_tokens(message)
         user_usernames: List[str] = []
         if user and getattr(user, "username", None):
             user_usernames.append(user.username)
-        if user_tokens or user_usernames:
+        if user_tokens or user_usernames or host_tokens:
             conditions = []
             search_tokens: List[str] = []
-            for token in user_tokens:
+            for token in list(user_tokens) + list(host_tokens):
                 cleaned = _safe_strip(token)
                 if cleaned:
                     search_tokens.append(cleaned)
@@ -1283,6 +1287,27 @@ def _extract_user_tokens(message: str) -> List[str]:
             seen.add(key)
             deduped.append(token)
     return deduped
+
+
+def _extract_network_host_tokens(message: str) -> List[str]:
+    tokens: List[str] = []
+
+    for match in HOSTNAME_QUERY_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(1))
+        if candidate:
+            tokens.append(candidate)
+
+    for match in MAC_QUERY_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(1))
+        if candidate:
+            tokens.append(candidate)
+
+    for match in IP_ADDRESS_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(0))
+        if candidate and "/" not in candidate:  # avoid double-counting CIDRs
+            tokens.append(candidate)
+
+    return tokens
 
 
 def _lookup_hardware_asset_by_identifier(message: str) -> Optional[HardwareAsset]:
