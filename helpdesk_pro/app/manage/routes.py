@@ -103,7 +103,7 @@ def assistant_settings():
     if request.method == "POST":
         config.is_enabled = bool(request.form.get("is_enabled"))
         provider = request.form.get("provider") or "builtin"
-        if provider not in {"chatgpt", "chatgpt_hybrid", "webhook", "builtin"}:
+        if provider not in {"chatgpt", "chatgpt_hybrid", "webhook", "builtin", "openwebui"}:
             provider = "builtin"
         config.provider = provider
 
@@ -121,12 +121,27 @@ def assistant_settings():
         if provider in {"chatgpt", "chatgpt_hybrid"}:
             config.openai_api_key = (request.form.get("openai_api_key") or "").strip()
             config.openai_model = (request.form.get("openai_model") or "gpt-3.5-turbo").strip()
+            config.openwebui_api_key = None
+            config.openwebui_base_url = None
+            config.openwebui_model = "gpt-3.5-turbo"
+            config.webhook_url = None
+            config.webhook_method = "POST"
+            config.webhook_headers = None
+        elif provider == "openwebui":
+            config.openwebui_api_key = (request.form.get("openwebui_api_key") or "").strip() or None
+            config.openwebui_base_url = (request.form.get("openwebui_base_url") or "").strip() or None
+            config.openwebui_model = (request.form.get("openwebui_model") or "gpt-3.5-turbo").strip()
+            config.openai_api_key = None
+            config.openai_model = "gpt-3.5-turbo"
             config.webhook_url = None
             config.webhook_method = "POST"
             config.webhook_headers = None
         elif provider == "webhook":
             config.openai_api_key = None
             config.openai_model = "gpt-3.5-turbo"
+            config.openwebui_api_key = None
+            config.openwebui_base_url = None
+            config.openwebui_model = "gpt-3.5-turbo"
             config.webhook_url = (request.form.get("webhook_url") or "").strip() or None
             config.webhook_method = (request.form.get("webhook_method") or "POST").strip().upper()
             headers_raw = (request.form.get("webhook_headers") or "").strip()
@@ -145,6 +160,9 @@ def assistant_settings():
         else:  # builtin
             config.openai_api_key = None
             config.openai_model = "gpt-3.5-turbo"
+            config.openwebui_api_key = None
+            config.openwebui_base_url = None
+            config.openwebui_model = "gpt-3.5-turbo"
             config.webhook_url = None
             config.webhook_method = "POST"
             config.webhook_headers = None

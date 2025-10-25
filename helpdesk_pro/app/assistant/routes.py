@@ -12,7 +12,7 @@ This module now supports three providers:
 import json
 import re
 from datetime import date, timedelta
-from typing import List, Dict, Any, Iterable, Optional, Tuple
+from typing import List, Dict, Any, Iterable, Optional, Tuple, Union
 
 import requests
 from flask import Blueprint, jsonify, request, abort, current_app, url_for
@@ -30,6 +30,7 @@ from app.models import (
     HardwareAsset,
     SoftwareAsset,
     Network,
+    NetworkHost,
     User,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
@@ -38,7 +39,10 @@ from app.navigation import is_feature_allowed
 
 CIDR_PATTERN = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}\b")
 TICKET_ID_PATTERN = re.compile(r"ticket\s+#?(\d+)|αιτημ(?:α|ατος)?\s*#?(\d+)", re.IGNORECASE)
-USER_REF_PATTERN = re.compile(r"(?:assigned to|for|owner|για|σε)\s+([a-z0-9_.\-άέήίόύώ]+)", re.IGNORECASE)
+USER_REF_PATTERN = re.compile(
+    r"(?:assigned to|for|owner|user|ip\s+of|για|σε)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
 ASSET_TAG_PATTERN = re.compile(r"(?:asset|ετικέτα)\s+tag\s+#?([a-z0-9_.\-]+)", re.IGNORECASE)
 HOSTNAME_PATTERN = re.compile(r"(?:hostname|όνομα\s+host)\s+([a-z0-9_.\-]+)", re.IGNORECASE)
 SERIAL_PATTERN = re.compile(r"(?:serial|σειριακό)\s+#?([a-z0-9_.\-]+)", re.IGNORECASE)
@@ -227,6 +231,24 @@ def _build_history(messages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     return valid
 
 
+def _normalize_message_text(message: str) -> str:
+    if not message:
+        return ""
+    replacements = {
+        "“": '"',
+        "”": '"',
+        "‘": "'",
+        "’": "'",
+    }
+    return message.translate(str.maketrans(replacements))
+
+
+def _safe_strip(value: Union[str, None], chars: Optional[str] = None) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip(chars) if chars else value.strip()
+
+
 def _should_force_builtin(message: str) -> bool:
     lowered = (message or "").lower()
     if not lowered:
@@ -239,7 +261,7 @@ def _should_force_builtin(message: str) -> bool:
 def _is_meaningful_builtin_reply(reply: Optional[str]) -> bool:
     if not reply:
         return False
-    stripped = reply.strip()
+    stripped = _safe_strip(reply)
     if not stripped:
         return False
     return stripped != BUILTIN_DEFAULT_RESPONSE
@@ -269,6 +291,7 @@ def _maybe_builtin_override(
 
 
 def _dispatch_module_query(tool_name: str, message: str, user) -> str:
+    message = _normalize_message_text(message)
     lowered = message.lower()
     if tool_name == "query_tickets":
         response = _answer_ticket_query(message, lowered, user)
@@ -296,10 +319,13 @@ def api_message():
         return jsonify({"success": False, "message": _("Assistant is disabled.")}), 400
 
     data = request.get_json(silent=True) or {}
-    message = (data.get("message") or "").strip()
+    message = _safe_strip(data.get("message"))
     history = _build_history(data.get("history", []))
     if not message:
         return jsonify({"success": False, "message": _("Message cannot be empty.")}), 400
+
+    normalized_message = _normalize_message_text(message)
+    message = normalized_message
 
     system_prompt = config.system_prompt or DEFAULT_SYSTEM_PROMPT
     history.append({"role": "user", "content": message})
@@ -332,6 +358,11 @@ def api_message():
                 }
                 used_llm_provider = True
                 reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
+            elif config.provider == "openwebui":
+                if not config.openwebui_base_url:
+                    return jsonify({"success": False, "message": _("OpenWebUI base URL is not configured.")}), 400
+                used_llm_provider = True
+                reply = _call_openwebui(messages_for_model, config)
             elif config.provider == "builtin":
                 reply = _call_builtin(message, history, current_user)
             else:
@@ -343,7 +374,7 @@ def api_message():
         except Exception as exc:  # pragma: no cover
             return jsonify({"success": False, "message": str(exc)}), 500
 
-    if not reply and config.provider in {"chatgpt", "chatgpt_hybrid"}:
+    if not reply and config.provider in {"chatgpt", "chatgpt_hybrid", "openwebui"}:
         if not _is_meaningful_builtin_reply(builtin_reply):
             builtin_reply = _call_builtin(message, history, current_user)
         if _is_meaningful_builtin_reply(builtin_reply):
@@ -414,7 +445,7 @@ def _call_openai(
     tool_calls = message.get("tool_calls") if allow_tools else None
     if allow_tools and tool_calls:
         if depth >= 3:
-            return message.get("content", "Tool call limit reached.").strip()
+            return _safe_strip(message.get("content", "Tool call limit reached.")) or "Tool call limit reached."
         new_messages = messages + [message]
         for call in tool_calls:
             result = _execute_tool_call(call, tool_context or {})
@@ -426,7 +457,37 @@ def _call_openai(
                 }
             )
         return _call_openai(new_messages, config, allow_tools=True, tool_context=tool_context, depth=depth + 1)
-    return message.get("content", "").strip()
+    return _safe_strip(message.get("content", ""))
+
+
+def _call_openwebui(
+    messages: List[Dict[str, str]],
+    config: AssistantConfig,
+) -> str:
+    base_url = (config.openwebui_base_url or "").rstrip("/")
+    if not base_url:
+        raise RuntimeError(_("OpenWebUI base URL is not configured."))
+
+    endpoint = f"{base_url}/api/v1/chat/completions"
+    headers = {"Content-Type": "application/json"}
+    if config.openwebui_api_key:
+        headers["Authorization"] = f"Bearer {config.openwebui_api_key}"
+
+    payload = {
+        "model": config.openwebui_model or "gpt-3.5-turbo",
+        "messages": messages,
+        "stream": False,
+    }
+
+    response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
+    if response.status_code >= 400:
+        raise RuntimeError(_("OpenWebUI error: %(status)s %(body)s", status=response.status_code, body=response.text))
+    data = response.json()
+    choices = data.get("choices") or []
+    if not choices:
+        return ""
+    message = choices[0].get("message", {})
+    return _safe_strip(message.get("content", ""))
 
 
 def _call_webhook(
@@ -461,7 +522,7 @@ def _call_webhook(
         raise RuntimeError(_("Invalid webhook response: %(error)s", error=str(exc)))
     reply = data.get("reply")
     if isinstance(reply, str):
-        return reply.strip()
+        return _safe_strip(reply)
     raise RuntimeError(_("Webhook response is missing a 'reply' field."))
 
 
@@ -481,7 +542,7 @@ def _execute_tool_call(tool_call: Dict[str, Any], context: Dict[str, Any]) -> st
     query = args.get("query") or context.get("latest_user_message") or ""
     user = context.get("user")
 
-    if not query.strip():
+    if not _safe_strip(query):
         return "No query provided for helpdesk lookup."
 
     if name not in {tool["name"] for tool in LLM_TOOL_DEFINITIONS}:
@@ -499,7 +560,11 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
 
     lowered = message.lower()
 
-    network_response = _answer_network_query(message, lowered)
+    try:
+        network_response = _answer_network_query(message, lowered, user)
+    except Exception as exc:  # pragma: no cover
+        current_app.logger.exception("Assistant network handler failed: %s", exc)
+        network_response = ""
     if network_response:
         return network_response
 
@@ -532,7 +597,7 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
     return BUILTIN_DEFAULT_RESPONSE
 
 
-def _answer_network_query(message: str, lowered: str) -> Optional[str]:
+def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
     candidate = None
     cidr_match = CIDR_PATTERN.search(message)
     query = Network.query.options(joinedload(Network.hosts))
@@ -543,13 +608,69 @@ def _answer_network_query(message: str, lowered: str) -> Optional[str]:
     if not candidate:
         name_match = re.search(r"(?:network|subnet|vlan)\s+([a-z0-9_.\-\s]+)", lowered)
         if name_match:
-            name = name_match.group(1).strip()
+            name = _safe_strip(name_match.group(1))
             candidate = query.filter(func.lower(Network.name) == name.lower()).first()
             if not candidate:
                 candidate = query.filter(Network.name.ilike(f"%{name}%")).first()
 
     if not candidate:
-        if any(term in lowered for term in NETWORK_KEYWORDS) or "cidr" in lowered:
+        user_tokens = _extract_user_tokens(message)
+        user_usernames: List[str] = []
+        if user and getattr(user, "username", None):
+            user_usernames.append(user.username)
+        if user_tokens or user_usernames:
+            conditions = []
+            search_tokens: List[str] = []
+            for token in user_tokens:
+                cleaned = _safe_strip(token)
+                if cleaned:
+                    search_tokens.append(cleaned)
+
+            for token in search_tokens:
+                lowered_token = token.lower()
+                like = f"%{lowered_token}%"
+                conditions.append(
+                    or_(
+                        func.lower(NetworkHost.assigned_to).ilike(like),
+                        func.lower(NetworkHost.hostname).ilike(like),
+                        func.lower(NetworkHost.ip_address).ilike(like),
+                        func.lower(NetworkHost.mac_address).ilike(like),
+                        func.lower(NetworkHost.device_type).ilike(like),
+                        func.lower(NetworkHost.description).ilike(like),
+                    )
+                )
+            for uname in user_usernames:
+                if uname:
+                    conditions.append(func.lower(NetworkHost.assigned_to) == uname.lower())
+
+            if conditions:
+                host_query = NetworkHost.query.join(Network)
+                host_results = (
+                    host_query.filter(or_(*conditions))
+                    .order_by(func.lower(Network.name).asc(), NetworkHost.ip_address.asc())
+                    .limit(25)
+                    .all()
+                )
+                if host_results:
+                    lines = []
+                    for host in host_results:
+                        network_label = host.network.name or host.network.cidr or f"Network #{host.network_id}"
+                        hostname = host.hostname or "—"
+                        assigned = host.assigned_to or "Unassigned"
+                        mac = host.mac_address or "—"
+                        device_type = host.device_type or "—"
+                        reserved_flag = "Reserved" if host.is_reserved else "Available"
+                        description = host.description or "—"
+                        lines.append(
+                            f"{host.ip_address} — {network_label}; hostname {hostname}; MAC {mac}; type {device_type}; "
+                            f"assigned to {assigned}; status {reserved_flag}; notes {description}"
+                        )
+                    if len(host_results) == 25:
+                        lines.append("…limited to first 25 matches.")
+                    return "Network matches:\n" + "\n".join(lines)
+                return "No network hosts matched that user name."
+
+        if any(term in lowered for term in NETWORK_KEYWORDS) or "cidr" in lowered or "ip" in lowered:
             networks = query.order_by(Network.updated_at.desc()).limit(20).all()
             if not networks:
                 return "No networks are currently registered in the database."
@@ -558,7 +679,7 @@ def _answer_network_query(message: str, lowered: str) -> Optional[str]:
                 host_count = len(net.hosts)
                 site = net.site or "n/a"
                 vlan = net.vlan or "n/a"
-                summary = f"{net.name} ({net.cidr}) — site {site}; VLAN {vlan}; hosts tracked {host_count}"
+                summary = f"{(net.name or 'Unnamed network')} ({net.cidr}) — site {site}; VLAN {vlan}; hosts tracked {host_count}"
                 if getattr(net, "gateway", None):
                     summary += f"; gateway {net.gateway}"
                 lines.append(summary)
@@ -675,7 +796,7 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
 
     dept_match = re.search(r"department\s+([a-z0-9_\- ]+)", lowered)
     if dept_match:
-        dept = dept_match.group(1).strip()
+        dept = _safe_strip(dept_match.group(1))
         base_query = base_query.filter(func.lower(Ticket.department) == dept.lower())
         filters.append(f"department {dept}")
 
@@ -830,7 +951,7 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
 
     loc_match = re.search(r"location\s+([a-z0-9_\- ]+)", lowered)
     if loc_match:
-        location = loc_match.group(1).strip()
+        location = _safe_strip(loc_match.group(1))
         base_query = base_query.filter(func.lower(HardwareAsset.location) == location.lower())
         filters.append(f"location {location}")
 
@@ -963,7 +1084,7 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
 
     category_match = re.search(r"category\s+(?:is|=)?\s*['\"]?([a-z0-9\-\s_/]+)['\"]?", message, flags=re.IGNORECASE)
     if category_match:
-        category_value = category_match.group(1).strip()
+        category_value = _safe_strip(category_match.group(1))
         if category_value:
             base_query = base_query.filter(func.lower(SoftwareAsset.category) == category_value.lower())
             filters.append(f"category {category_value}")
@@ -971,7 +1092,7 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
 
     vendor_match = re.search(r"vendor\s+(?:is|=)?\s*['\"]?([a-z0-9\-\s_/]+)['\"]?", message, flags=re.IGNORECASE)
     if vendor_match:
-        vendor_value = vendor_match.group(1).strip()
+        vendor_value = _safe_strip(vendor_match.group(1))
         if vendor_value:
             base_query = base_query.filter(func.lower(SoftwareAsset.vendor) == vendor_value.lower())
             filters.append(f"vendor {vendor_value}")
@@ -1111,7 +1232,7 @@ def _extract_keywords(text: str, extra_stop: Optional[Iterable[str]] = None) -> 
 
 
 def _resolve_user_reference(identifier: str) -> Optional[User]:
-    cleaned = (identifier or "").strip().strip(".,:;!")
+    cleaned = _safe_strip(identifier).strip(".,:;!")
     if not cleaned:
         return None
     return User.query.filter(func.lower(User.username) == cleaned.lower()).first()
@@ -1122,22 +1243,46 @@ def _extract_candidate_phrases(message: str) -> List[str]:
 
     # quoted phrases take priority
     for match in QUOTED_PATTERN.finditer(message):
-        phrase = match.group(1) or match.group(2)
+        phrase = _safe_strip(match.group(1) or match.group(2))
         if phrase:
-            candidates.append(phrase.strip())
+            candidates.append(phrase)
 
     # phrases introduced by keywords (for, find, etc.)
     for match in PHRASE_PATTERN.finditer(message):
-        phrase = match.group(1).strip()
+        raw = match.group(1) or ""
+        phrase = _safe_strip(raw)
         if not phrase:
             continue
         phrase = re.split(r"[?.,;]", phrase)[0]
         phrase = re.sub(r"\b(key|keys|license|licence|serial|product key)\b", "", phrase, flags=re.IGNORECASE)
-        phrase = re.sub(r"\s+", " ", phrase).strip()
+        phrase = _safe_strip(re.sub(r"\s+", " ", phrase))
         if phrase and phrase.lower() not in (cand.lower() for cand in candidates):
             candidates.append(phrase)
 
     return candidates[:3]
+
+
+def _extract_user_tokens(message: str) -> List[str]:
+    tokens: List[str] = []
+
+    for match in USER_REF_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(1), " \"'.,:;!")
+        if candidate:
+            tokens.append(candidate)
+
+    for match in QUOTED_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(1) or match.group(2))
+        if candidate:
+            tokens.append(candidate)
+
+    seen = set()
+    deduped: List[str] = []
+    for token in tokens:
+        key = token.lower()
+        if key and key not in seen:
+            seen.add(key)
+            deduped.append(token)
+    return deduped
 
 
 def _lookup_hardware_asset_by_identifier(message: str) -> Optional[HardwareAsset]:
@@ -1150,7 +1295,7 @@ def _lookup_hardware_asset_by_identifier(message: str) -> Optional[HardwareAsset
     ):
         match = pattern.search(message)
         if match:
-            value = match.group(1).strip()
+            value = _safe_strip(match.group(1))
             if value:
                 asset = query.filter(func.lower(column) == value.lower()).first()
                 if asset:
@@ -1165,7 +1310,8 @@ def _lookup_software_asset_by_identifier(message: str) -> Optional[SoftwareAsset
     candidates: List[Tuple[str, Any]] = []
 
     for match in SOFTWARE_TAG_PATTERN.finditer(message):
-        value = (match.group(1) or "").strip()
+        raw = match.group(1)
+        value = _safe_strip(raw)
         if value:
             candidates.append((value, SoftwareAsset.custom_tag))
 
@@ -1202,13 +1348,17 @@ def _lookup_software_asset_by_identifier(message: str) -> Optional[SoftwareAsset
 
     for pattern, column in direct_patterns:
         for match in pattern.finditer(message):
-            value = (match.group(1) or "").strip(" '\"#:;,")
+            raw = match.group(1)
+            cleaned = _safe_strip(raw)
+            value = cleaned.strip(" '\"#:;,") if cleaned else ""
             if value:
                 candidates.append((value, column))
 
     bare_license_pattern = re.compile(r"\b(?:[a-z0-9]{4,}-){2,}[a-z0-9]{4,}\b", re.IGNORECASE)
     for match in bare_license_pattern.finditer(message):
-        value = (match.group(0) or "").strip(" '\"#:;,")
+        raw = match.group(0)
+        cleaned = _safe_strip(raw)
+        value = cleaned.strip(" '\"#:;,") if cleaned else ""
         if value:
             candidates.append((value, SoftwareAsset.license_key))
 
