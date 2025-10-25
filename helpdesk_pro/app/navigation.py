@@ -53,6 +53,20 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "endpoint": "manage.assistant_settings",
                 "roles": ["admin"],
             },
+            {
+                "key": "manage_api",
+                "label": _("API Keys"),
+                "icon": "fa fa-key",
+                "endpoint": "manage.api_keys",
+                "roles": ["admin"],
+            },
+            {
+                "key": "manage_api_docs",
+                "label": _("API Docs"),
+                "icon": "fa fa-book-open",
+                "endpoint": "manage.api_docs",
+                "roles": ["admin"],
+            },
         ],
     },
     {

@@ -115,7 +115,8 @@ HARDWARE_KEYWORDS = {
 }
 NETWORK_KEYWORDS = {
     "network", "subnet", "cidr", "vlan", "ip", "wifi",
-    "δίκτυο", "υποδίκτυο", "cidr", "vlan", "ip", "ίπ", "δικτυο"
+    "δίκτυο", "υποδίκτυο", "cidr", "vlan", "ip", "ίπ", "δικτυο",
+    "networks", "subnets"
 }
 
 SOFTWARE_SEARCH_COLUMNS = [
@@ -548,7 +549,23 @@ def _answer_network_query(message: str, lowered: str) -> Optional[str]:
                 candidate = query.filter(Network.name.ilike(f"%{name}%")).first()
 
     if not candidate:
-        if cidr_match or any(term in lowered for term in NETWORK_KEYWORDS):
+        if any(term in lowered for term in NETWORK_KEYWORDS) or "cidr" in lowered:
+            networks = query.order_by(Network.updated_at.desc()).limit(20).all()
+            if not networks:
+                return "No networks are currently registered in the database."
+            lines = []
+            for net in networks:
+                host_count = len(net.hosts)
+                site = net.site or "n/a"
+                vlan = net.vlan or "n/a"
+                summary = f"{net.name} ({net.cidr}) — site {site}; VLAN {vlan}; hosts tracked {host_count}"
+                if getattr(net, "gateway", None):
+                    summary += f"; gateway {net.gateway}"
+                lines.append(summary)
+            if len(networks) == 20:
+                lines.append("…showing latest 20 networks.")
+            return "Tracked networks:\n" + "\n".join(lines)
+        if cidr_match:
             return "I couldn't find that network in the database."
         return None
 

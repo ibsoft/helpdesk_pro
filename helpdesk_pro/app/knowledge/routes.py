@@ -61,28 +61,39 @@ def _require_editor():
 @knowledge_bp.route("/")
 @login_required
 def list_articles():
-    query = KnowledgeArticle.query.filter_by(is_published=True)
+    base_query = KnowledgeArticle.query.filter_by(is_published=True)
     search = request.args.get("q", "").strip()
     category = request.args.get("category", "").strip()
     tag = request.args.get("tag", "").strip()
+    page = max(request.args.get("page", 1, type=int) or 1, 1)
+    per_page = 100
 
     if search:
         like_term = f"%{search}%"
-        query = query.outerjoin(KnowledgeAttachment).filter(
-            or_(
-                KnowledgeArticle.title.ilike(like_term),
-                KnowledgeArticle.summary.ilike(like_term),
-                KnowledgeArticle.content.ilike(like_term),
-                KnowledgeArticle.tags.ilike(like_term),
-                KnowledgeAttachment.extracted_text.ilike(like_term),
+        base_query = (
+            base_query.outerjoin(KnowledgeAttachment)
+            .filter(
+                or_(
+                    KnowledgeArticle.title.ilike(like_term),
+                    KnowledgeArticle.summary.ilike(like_term),
+                    KnowledgeArticle.content.ilike(like_term),
+                    KnowledgeArticle.tags.ilike(like_term),
+                    KnowledgeAttachment.extracted_text.ilike(like_term),
+                    KnowledgeAttachment.original_filename.ilike(like_term),
+                )
             )
-        ).distinct()
+            .distinct()
+        )
     if category:
-        query = query.filter(KnowledgeArticle.category == category)
+        base_query = base_query.filter(KnowledgeArticle.category == category)
     if tag:
-        query = query.filter(KnowledgeArticle.tags.ilike(f"%{tag}%"))
+        base_query = base_query.filter(KnowledgeArticle.tags.ilike(f"%{tag}%"))
 
-    articles = query.order_by(KnowledgeArticle.updated_at.desc()).all()
+    pagination = (
+        base_query.order_by(KnowledgeArticle.updated_at.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+    articles = pagination.items
     category_rows = db.session.query(KnowledgeArticle.category).distinct().all()
     categories = [c[0] for c in category_rows if c[0]]
 
@@ -103,6 +114,8 @@ def list_articles():
         "attachments": db.session.query(func.count(KnowledgeAttachment.id)).scalar() or 0,
     }
 
+    pagination_args = {k: v for k, v in request.args.items() if k != "page" and v}
+
     return render_template(
         "knowledge/list.html",
         articles=articles,
@@ -111,6 +124,9 @@ def list_articles():
         tags=sorted(tag_set),
         can_edit=_require_editor(),
         knowledge_stats=knowledge_stats,
+        pagination=pagination,
+        pagination_args=pagination_args,
+        per_page=per_page,
     )
 
 
