@@ -79,7 +79,7 @@ class AssistantConfig(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     is_enabled = db.Column(db.Boolean, default=False, nullable=False)
-    provider = db.Column(db.String(32), default="builtin", nullable=False)  # chatgpt | webhook | builtin | chatgpt_hybrid
+    provider = db.Column(db.String(32), default="builtin", nullable=False)  # chatgpt | webhook | builtin | chatgpt_hybrid | openwebui
     position = db.Column(db.String(16), default="right", nullable=False)  # left | right
     button_label = db.Column(db.String(120), default="Ask AI", nullable=False)
     window_title = db.Column(db.String(120), default="AI Assistant", nullable=False)
@@ -88,6 +88,10 @@ class AssistantConfig(db.Model):
 
     openai_api_key = db.Column(db.String(255))
     openai_model = db.Column(db.String(80), default="gpt-3.5-turbo")
+
+    openwebui_api_key = db.Column(db.String(255))
+    openwebui_base_url = db.Column(db.String(512))
+    openwebui_model = db.Column(db.String(80), default="gpt-3.5-turbo")
 
     webhook_url = db.Column(db.String(512))
     webhook_method = db.Column(db.String(10), default="POST")
@@ -110,7 +114,7 @@ class AssistantConfig(db.Model):
         if not instance.system_prompt or instance.system_prompt in LEGACY_SYSTEM_PROMPTS:
             instance.system_prompt = DEFAULT_SYSTEM_PROMPT
             changed = True
-        if instance.provider not in {"chatgpt", "chatgpt_hybrid", "webhook", "builtin"}:
+        if instance.provider not in {"chatgpt", "chatgpt_hybrid", "webhook", "builtin", "openwebui"}:
             instance.provider = "builtin"
             changed = True
         if changed:

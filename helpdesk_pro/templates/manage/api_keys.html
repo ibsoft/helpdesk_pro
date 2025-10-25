@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+  .modal-backdrop.show {
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop {
+    background-color: rgba(15, 23, 42, 0.45) !important;
+  }
+  tr.collapse.show td {
+    background-color: var(--bs-tertiary-bg);
+  }
+  html[data-bs-theme="dark"] tr.collapse.show td {
+    background-color: rgba(24, 32, 45, 0.75);
+  }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h3 class="mb-0"><i class="fa fa-key text-primary"></i> {{ _('API Keys') }}</h3>
   <a href="{{ url_for('manage.api_keys') }}" class="btn btn-outline-secondary btn-sm">
@@ -53,7 +68,7 @@
     <span class="small text-muted">{{ clients|length }} {{ _('client(s) total') }}</span>
   </div>
   <div class="table-responsive">
-    <table class="table align-middle mb-0">
+    <table class="table align-middle mb-0" id="apiClientsTable">
       <thead class="table-light">
         <tr>
           <th>{{ _('Name') }}</th>
@@ -106,17 +121,15 @@
               </td>
               <td class="text-end">
                 <div class="d-flex gap-1 justify-content-end flex-wrap">
-                  <form method="post" class="d-inline-flex gap-1">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="action" value="update">
-                    <input type="hidden" name="client_id" value="{{ client.id }}">
-                    <input type="hidden" name="name" value="{{ client.name }}">
-                    <input type="hidden" name="description" value="{{ client.description }}">
-                    <input type="hidden" name="default_user_id" value="{{ client.default_user_id or '' }}">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#editClientModal{{ client.id }}">
-                      <i class="fa fa-pen"></i> {{ _('Edit') }}
-                    </button>
-                  </form>
+                  <button
+                    type="button"
+                    class="btn btn-outline-secondary btn-sm"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#clientEditor{{ client.id }}"
+                    aria-expanded="false"
+                    aria-controls="clientEditor{{ client.id }}">
+                    <i class="fa fa-pen"></i> {{ _('Edit') }}
+                  </button>
                   <form method="post" onsubmit="return confirm('{{ _('Rotate key for this client? The previous key will stop working immediately.') }}');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="action" value="rotate">
@@ -156,42 +169,46 @@
               </td>
             </tr>
 
-            <div class="modal fade" id="editClientModal{{ client.id }}" tabindex="-1" aria-hidden="true">
-              <div class="modal-dialog modal-dialog-centered">
-                <form method="post" class="modal-content border-0 shadow-lg">
-                  <div class="modal-header border-0">
-                    <h5 class="modal-title"><i class="fa fa-pen-to-square"></i> {{ _('Edit API Client') }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+            <tr class="collapse" id="clientEditor{{ client.id }}" data-bs-parent="#apiClientsTable">
+              <td colspan="7">
+                <div class="card border-primary-subtle shadow-sm">
+                  <div class="card-body">
+                    <form method="post" class="row g-3 align-items-end">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="update">
+                      <input type="hidden" name="client_id" value="{{ client.id }}">
+                      <div class="col-md-4">
+                        <label class="form-label">{{ _('Name') }}</label>
+                        <input type="text" class="form-control" name="name" value="{{ client.name }}">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">{{ _('Description') }}</label>
+                        <input type="text" class="form-control" name="description" value="{{ client.description or '' }}">
+                      </div>
+                      <div class="col-md-4">
+                        <label class="form-label">{{ _('Default user context') }}</label>
+                        <select class="form-select" name="default_user_id">
+                          <option value="">{{ _('None') }}</option>
+                          {% for user in users %}
+                            <option value="{{ user.id }}" {% if client.default_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.role }})</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                      <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                        <button
+                          type="button"
+                          class="btn btn-outline-secondary"
+                          data-bs-toggle="collapse"
+                          data-bs-target="#clientEditor{{ client.id }}">
+                          {{ _('Cancel') }}
+                        </button>
+                        <button type="submit" class="btn btn-primary">{{ _('Save changes') }}</button>
+                      </div>
+                    </form>
                   </div>
-                  <div class="modal-body py-3">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="action" value="update">
-                    <input type="hidden" name="client_id" value="{{ client.id }}">
-                    <div class="mb-3">
-                      <label class="form-label">{{ _('Name') }}</label>
-                      <input type="text" class="form-control" name="name" value="{{ client.name }}">
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label">{{ _('Description') }}</label>
-                      <input type="text" class="form-control" name="description" value="{{ client.description or '' }}">
-                    </div>
-                    <div class="mb-0">
-                      <label class="form-label">{{ _('Default user context') }}</label>
-                      <select class="form-select" name="default_user_id">
-                        <option value="">{{ _('None') }}</option>
-                        {% for user in users %}
-                          <option value="{{ user.id }}" {% if client.default_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.role }})</option>
-                        {% endfor %}
-                      </select>
-                    </div>
-                  </div>
-                  <div class="modal-footer border-0 pt-0">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ _('Save changes') }}</button>
-                  </div>
-                </form>
-              </div>
-            </div>
+                </div>
+              </td>
+            </tr>
           {% endfor %}
         {% endif %}
       </tbody>
