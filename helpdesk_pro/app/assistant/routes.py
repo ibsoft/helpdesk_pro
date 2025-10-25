@@ -996,6 +996,22 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
         phrases = _extract_candidate_phrases(message)
         for phrase in phrases:
             like = f"%{phrase}%"
+            name_results = (
+                base_query.filter(
+                    or_(
+                        SoftwareAsset.name.ilike(like),
+                        SoftwareAsset.custom_tag.ilike(like),
+                    )
+                )
+                .order_by(SoftwareAsset.updated_at.desc())
+                .limit(10)
+                .all()
+            )
+            if name_results:
+                results = name_results
+                current_app.logger.info("Assistant software query phrase matched by name/custom_tag phrase=%s count=%s", phrase, len(results))
+                break
+
             phrase_results = (
                 base_query.filter(
                     or_(*[column.ilike(like) for column in SOFTWARE_SEARCH_COLUMNS])
@@ -1006,6 +1022,7 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
             )
             if phrase_results:
                 results = phrase_results
+                current_app.logger.info("Assistant software query phrase matched by broad search phrase=%s count=%s", phrase, len(results))
                 break
 
     if not results:
