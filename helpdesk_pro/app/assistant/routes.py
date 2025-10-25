@@ -12,13 +12,13 @@ This module now supports three providers:
 import json
 import re
 from datetime import date, timedelta
-from typing import List, Dict, Any, Iterable, Optional
+from typing import List, Dict, Any, Iterable, Optional, Tuple
 
 import requests
-from flask import Blueprint, jsonify, request, abort
+from flask import Blueprint, jsonify, request, abort, current_app, url_for
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import joinedload
 
 from app import csrf
@@ -68,7 +68,6 @@ STOP_WORDS = {
     "please",
     "help",
     "need",
-    "info",
     "information",
     "details",
     "lookup",
@@ -76,6 +75,14 @@ STOP_WORDS = {
     "me",
     "my",
     "latest",
+    "assign",
+    "assigned",
+    "assignment",
+    "assignments",
+    "unassigned",
+    "pdf",
+    "file",
+    "document",
 }
 
 OPEN_STATUS_VALUES = ["open", "in progress", "pending", "new", "reopened"]
@@ -86,8 +93,15 @@ TICKET_KEYWORDS = {
     "ticket", "tickets", "incident", "case", "request",
     "αίτημα", "αιτήματα", "εισιτήριο", "εισιτήρια", "υπόθεση"
 }
+TICKET_TEXT_STOP = {
+    "ticket", "tickets", "incident", "incidents", "case", "cases", "request", "requests",
+    "open", "closed", "pending", "progress", "status", "priority", "department",
+    "assigned", "assign", "assignee", "me", "my", "today", "yesterday", "count", "how",
+    "many", "list", "show", "find", "latest", "new", "update", "updated"
+}
 KNOWLEDGE_KEYWORDS = {
     "knowledge", "kb", "article", "articles", "procedure", "guide", "manual", "attachment", "attachments",
+    "info", "information", "details",
     "γνωση", "γνώση", "γνώσεων", "άρθρο", "άρθρα", "διαδικασία", "οδηγία", "εγχειρίδιο", "συνημμένο", "συνημμένα"
 }
 SOFTWARE_KEYWORDS = {
@@ -103,6 +117,87 @@ NETWORK_KEYWORDS = {
     "network", "subnet", "cidr", "vlan", "ip", "wifi",
     "δίκτυο", "υποδίκτυο", "cidr", "vlan", "ip", "ίπ", "δικτυο"
 }
+
+SOFTWARE_SEARCH_COLUMNS = [
+    SoftwareAsset.name,
+    SoftwareAsset.vendor,
+    SoftwareAsset.category,
+    SoftwareAsset.version,
+    SoftwareAsset.license_type,
+    SoftwareAsset.license_key,
+    SoftwareAsset.serial_number,
+    SoftwareAsset.custom_tag,
+    SoftwareAsset.platform,
+    SoftwareAsset.environment,
+    SoftwareAsset.status,
+    SoftwareAsset.cost_center,
+    SoftwareAsset.support_vendor,
+    SoftwareAsset.support_email,
+    SoftwareAsset.support_phone,
+    SoftwareAsset.contract_url,
+    SoftwareAsset.usage_scope,
+    SoftwareAsset.deployment_notes,
+]
+
+SENSITIVE_LICENSE_TERMS = (
+    "license key",
+    "licence key",
+    "product key",
+    "serial number",
+    "activation key",
+    "activation code",
+    "windows key",
+    "software key",
+    "cd key",
+    "κλειδί",
+    "σειριακό",
+)
+
+REFUSAL_MARKERS = (
+    "unable to provide",
+    "cannot provide",
+    "can't provide",
+    "not able to provide",
+    "cannot help with that request",
+    "can't help with that request",
+)
+
+BUILTIN_DEFAULT_RESPONSE = (
+    "I can help with ticket summaries, knowledge base articles and attachments, inventory assignments, "
+    "and network availability. For example: 'Show my open tickets today', 'Which articles mention VPN', "
+    "'List hardware assigned to Alice', or 'Find an available IP in 192.168.1.0/24'."
+)
+
+LLM_TOOL_DEFINITIONS = [
+    {
+        "name": "query_tickets",
+        "description": (
+            "Look up ticket information from the Helpdesk Pro database. Use this to retrieve ticket summaries, "
+            "counts, or details filtered by status, priority, department, assignee, or dates."
+        ),
+    },
+    {
+        "name": "query_knowledge_base",
+        "description": (
+            "Search knowledge base articles and attachments stored in Helpdesk Pro. Use this to find guides, "
+            "procedures, or documents that match specific keywords or phrases."
+        ),
+    },
+    {
+        "name": "query_software_inventory",
+        "description": (
+            "Retrieve software asset records, including license keys and assignment details, from the Helpdesk Pro "
+            "inventory."
+        ),
+    },
+    {
+        "name": "query_hardware_inventory",
+        "description": (
+            "Retrieve hardware asset records, including asset tags, hostnames, serials, and assignment details, "
+            "from the Helpdesk Pro inventory."
+        ),
+    },
+]
 
 PHRASE_PATTERN = re.compile(
     r"(?:for|about|regarding|lookup|find|search for|αναζήτησε|βρες|για)\s+([a-z0-9\"'\\-\\s\\.]+)",
@@ -131,6 +226,64 @@ def _build_history(messages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     return valid
 
 
+def _should_force_builtin(message: str) -> bool:
+    lowered = (message or "").lower()
+    if not lowered:
+        return False
+    if not any(keyword in lowered for keyword in SOFTWARE_KEYWORDS):
+        return False
+    return any(term in lowered for term in SENSITIVE_LICENSE_TERMS)
+
+
+def _is_meaningful_builtin_reply(reply: Optional[str]) -> bool:
+    if not reply:
+        return False
+    stripped = reply.strip()
+    if not stripped:
+        return False
+    return stripped != BUILTIN_DEFAULT_RESPONSE
+
+
+def _maybe_builtin_override(
+    message: str,
+    history: List[Dict[str, str]],
+    user,
+    reply: str,
+    cached: Optional[str] = None,
+) -> Optional[str]:
+    if not _should_force_builtin(message):
+        return None
+    lowered_reply = (reply or "").lower()
+    if not lowered_reply:
+        return None
+    if not any(marker in lowered_reply for marker in REFUSAL_MARKERS):
+        return None
+    builtin_reply = cached if _is_meaningful_builtin_reply(cached) else None
+    if not builtin_reply:
+        builtin_reply = _call_builtin(message, history, user)
+    if _is_meaningful_builtin_reply(builtin_reply):
+        current_app.logger.info("Assistant fallback: overriding LLM refusal with builtin software lookup.")
+        return builtin_reply
+    return None
+
+
+def _dispatch_module_query(tool_name: str, message: str, user) -> str:
+    lowered = message.lower()
+    if tool_name == "query_tickets":
+        response = _answer_ticket_query(message, lowered, user)
+        return response or "No tickets matched those filters."
+    if tool_name == "query_knowledge_base":
+        response = _answer_knowledge_query(message)
+        return response or "No knowledge items matched those filters."
+    if tool_name == "query_software_inventory":
+        response = _answer_software_query(message, lowered, user)
+        return response or "No software assets matched those filters."
+    if tool_name == "query_hardware_inventory":
+        response = _answer_hardware_query(message, lowered, user)
+        return response or "No hardware assets matched those filters."
+    return "Unsupported tool call."
+
+
 @assistant_bp.route("/api/message", methods=["POST"])
 @login_required
 def api_message():
@@ -151,30 +304,55 @@ def api_message():
     history.append({"role": "user", "content": message})
     messages_for_model = [{"role": "system", "content": system_prompt}] + history if system_prompt else history
 
-    try:
-        if config.provider == "chatgpt":
-            if not config.openai_api_key:
-                return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
-            reply = _call_openai(messages_for_model, config, allow_tools=False)
-        elif config.provider == "chatgpt_hybrid":
-            if not config.openai_api_key:
-                return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
-            tool_context = {
-                "user": current_user,
-                "history": history,
-                "latest_user_message": message,
-            }
-            reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
-        elif config.provider == "builtin":
-            reply = _call_builtin(message, history, current_user)
-        else:
-            if not config.webhook_url:
-                return jsonify({"success": False, "message": _("Webhook URL is not configured.")}), 400
-            reply = _call_webhook(history, messages_for_model, config, system_prompt)
-    except requests.RequestException as exc:
-        return jsonify({"success": False, "message": _("Connection error: %(error)s", error=str(exc))}), 502
-    except Exception as exc:  # pragma: no cover
-        return jsonify({"success": False, "message": str(exc)}), 500
+    reply: Optional[str] = None
+    builtin_reply: Optional[str] = None
+    used_llm_provider = False
+
+    if config.provider in {"chatgpt", "chatgpt_hybrid"} and _should_force_builtin(message):
+        builtin_reply = _call_builtin(message, history, current_user)
+        if _is_meaningful_builtin_reply(builtin_reply):
+            current_app.logger.info("Assistant bypassed LLM for sensitive software query.")
+            reply = builtin_reply
+
+    if reply is None:
+        try:
+            if config.provider == "chatgpt":
+                if not config.openai_api_key:
+                    return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
+                used_llm_provider = True
+                reply = _call_openai(messages_for_model, config, allow_tools=False)
+            elif config.provider == "chatgpt_hybrid":
+                if not config.openai_api_key:
+                    return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
+                tool_context = {
+                    "user": current_user,
+                    "history": history,
+                    "latest_user_message": message,
+                }
+                used_llm_provider = True
+                reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
+            elif config.provider == "builtin":
+                reply = _call_builtin(message, history, current_user)
+            else:
+                if not config.webhook_url:
+                    return jsonify({"success": False, "message": _("Webhook URL is not configured.")}), 400
+                reply = _call_webhook(history, messages_for_model, config, system_prompt)
+        except requests.RequestException as exc:
+            return jsonify({"success": False, "message": _("Connection error: %(error)s", error=str(exc))}), 502
+        except Exception as exc:  # pragma: no cover
+            return jsonify({"success": False, "message": str(exc)}), 500
+
+    if not reply and config.provider in {"chatgpt", "chatgpt_hybrid"}:
+        if not _is_meaningful_builtin_reply(builtin_reply):
+            builtin_reply = _call_builtin(message, history, current_user)
+        if _is_meaningful_builtin_reply(builtin_reply):
+            current_app.logger.info("Assistant recovered missing LLM reply with builtin software lookup.")
+            reply = builtin_reply
+
+    if used_llm_provider and reply:
+        override = _maybe_builtin_override(message, history, current_user, reply, cached=builtin_reply)
+        if override:
+            reply = override
 
     if not reply:
         return jsonify({"success": False, "message": _("Assistant did not return a reply.")}), 502
@@ -204,12 +382,8 @@ def _call_openai(
             {
                 "type": "function",
                 "function": {
-                    "name": "query_helpdesk_modules",
-                    "description": (
-                        "Look up information from the Helpdesk Pro PostgreSQL database. "
-                        "Use this when you need live data about tickets, knowledge base articles, "
-                        "hardware/software inventory, or network allocations."
-                    ),
+                    "name": tool["name"],
+                    "description": tool["description"],
                     "parameters": {
                         "type": "object",
                         "properties": {
@@ -217,7 +391,7 @@ def _call_openai(
                                 "type": "string",
                                 "description": (
                                     "Natural language description of what to retrieve, including any filters "
-                                    "(ticket ids, usernames, asset tags, networks, etc.)."
+                                    "(ids, usernames, tags, statuses, dates, etc.)."
                                 ),
                             }
                         },
@@ -225,6 +399,7 @@ def _call_openai(
                     },
                 },
             }
+            for tool in LLM_TOOL_DEFINITIONS
         ]
         payload["tool_choice"] = "auto"
     response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
@@ -292,8 +467,6 @@ def _call_webhook(
 def _execute_tool_call(tool_call: Dict[str, Any], context: Dict[str, Any]) -> str:
     function = tool_call.get("function") or {}
     name = function.get("name") or ""
-    if name != "query_helpdesk_modules":
-        return f"Unsupported tool call: {name}"
 
     raw_args = function.get("arguments") or ""
     if isinstance(raw_args, dict):
@@ -305,14 +478,16 @@ def _execute_tool_call(tool_call: Dict[str, Any], context: Dict[str, Any]) -> st
             args = {"query": raw_args if isinstance(raw_args, str) else ""}
 
     query = args.get("query") or context.get("latest_user_message") or ""
-    history = context.get("history") or []
     user = context.get("user")
 
     if not query.strip():
         return "No query provided for helpdesk lookup."
 
+    if name not in {tool["name"] for tool in LLM_TOOL_DEFINITIONS}:
+        return f"Unsupported tool call: {name}"
+
     try:
-        result = _call_builtin(query, history, user)
+        result = _dispatch_module_query(name, query, user)
     except Exception as exc:
         return f"Error while querying database: {exc}"
     return result or "No matching records were found."
@@ -327,31 +502,33 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
     if network_response:
         return network_response
 
-    if any(keyword in lowered for keyword in TICKET_KEYWORDS):
+    has_ticket = any(keyword in lowered for keyword in TICKET_KEYWORDS)
+    has_knowledge = any(keyword in lowered for keyword in KNOWLEDGE_KEYWORDS)
+    has_hardware = any(keyword in lowered for keyword in HARDWARE_KEYWORDS)
+    has_software = any(keyword in lowered for keyword in SOFTWARE_KEYWORDS)
+    force_software = _should_force_builtin(message)
+
+    if has_ticket:
         ticket_response = _answer_ticket_query(message, lowered, user)
         if ticket_response:
             return ticket_response
 
-    if any(keyword in lowered for keyword in KNOWLEDGE_KEYWORDS):
+    if has_knowledge:
         knowledge_response = _answer_knowledge_query(message)
         if knowledge_response:
             return knowledge_response
 
-    if any(keyword in lowered for keyword in HARDWARE_KEYWORDS):
-        hardware_response = _answer_hardware_query(message, lowered, user)
-        if hardware_response:
-            return hardware_response
-
-    if any(keyword in lowered for keyword in SOFTWARE_KEYWORDS):
+    if has_software:
         software_response = _answer_software_query(message, lowered, user)
         if software_response:
             return software_response
 
-    return (
-        "I can help with ticket summaries, knowledge base articles and attachments, inventory assignments, "
-        "and network availability. For example: 'Show my open tickets today', 'Which articles mention VPN', "
-        "'List hardware assigned to Alice', or 'Find an available IP in 192.168.1.0/24'."
-    )
+    if has_hardware and not force_software:
+        hardware_response = _answer_hardware_query(message, lowered, user)
+        if hardware_response:
+            return hardware_response
+
+    return BUILTIN_DEFAULT_RESPONSE
 
 
 def _answer_network_query(message: str, lowered: str) -> Optional[str]:
@@ -434,6 +611,8 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
 
     base_query = Ticket.query.options(joinedload(Ticket.assignee))
     filters: List[str] = []
+    results: List[Ticket] = []
+    total: Optional[int] = None
 
     if any(token in lowered for token in ("assigned to me", "my ticket", "my tickets")) and user:
         base_query = base_query.filter(Ticket.assigned_to == user.id)
@@ -484,10 +663,49 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
         filters.append(f"department {dept}")
 
     need_total = "how many" in lowered or "count" in lowered
-    total = base_query.count() if need_total else None
-    results = base_query.order_by(Ticket.created_at.desc()).limit(20).all()
-    if total is None:
-        total = len(results)
+    used_content_filters = False
+    phrases = _extract_candidate_phrases(message)
+    if phrases:
+        used_content_filters = True
+    for phrase in phrases:
+        like = f"%{phrase}%"
+        phrase_query = base_query.filter(
+            or_(
+                Ticket.subject.ilike(like),
+                Ticket.description.ilike(like),
+                Ticket.department.ilike(like),
+            )
+        )
+        phrase_results = phrase_query.order_by(Ticket.created_at.desc()).limit(20).all()
+        if phrase_results:
+            results = phrase_results
+            total = phrase_query.count() if need_total else len(results)
+            break
+
+    if not results:
+        keywords = _extract_keywords(message, extra_stop=TICKET_KEYWORDS | TICKET_TEXT_STOP)
+        if keywords:
+            used_content_filters = True
+        keyword_query = base_query
+        for keyword in keywords[:4]:
+            like = f"%{keyword}%"
+            keyword_query = keyword_query.filter(
+                or_(
+                    Ticket.subject.ilike(like),
+                    Ticket.description.ilike(like),
+                    Ticket.department.ilike(like),
+                )
+            )
+        results = keyword_query.order_by(Ticket.created_at.desc()).limit(20).all()
+        if results:
+            total = keyword_query.count() if need_total else len(results)
+
+    if not results:
+        if filters or used_content_filters:
+            return "No tickets matched those filters."
+        fallback_query = base_query.order_by(Ticket.created_at.desc())
+        results = fallback_query.limit(20).all()
+        total = fallback_query.count() if need_total else len(results)
 
     if not results:
         if filters:
@@ -558,8 +776,13 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
         tags = article.tags or "n/a"
         attachment_count = len(article.attachments)
         attachment_part = f" | attachments: {attachment_count}" if attachment_count else ""
+        try:
+            link = url_for("knowledge.view_article", article_id=article.id, _external=True)
+        except RuntimeError:
+            link = ""
+        link_part = f" | link: <{link}>" if link else ""
         lines.append(
-            f"#{article.id} {article.title} — tags: {tags}; updated {updated}{attachment_part}"
+            f"#{article.id} {article.title} — tags: {tags}; updated {updated}{attachment_part}{link_part}"
         )
 
     return "Top knowledge base matches:\n" + "\n".join(lines)
@@ -595,31 +818,48 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
         filters.append(f"location {location}")
 
     keywords = _extract_keywords(message, extra_stop={"hardware", "device", "devices", "asset", "assets"})
+    need_total = "how many" in lowered or "count" in lowered
+    request_all = any(
+        phrase in lowered
+        for phrase in (
+            "all hardware",
+            "list hardware",
+            "show hardware",
+            "hardware inventory",
+            "όλο το υλικό",
+            "λίστα υλικού",
+        )
+    ) or lowered.strip() in {"list all hardware", "list hardware", "show all hardware", "display hardware"}
+
     results: List[HardwareAsset] = []
 
-    phrases = _extract_candidate_phrases(message)
-    for phrase in phrases:
-        like = f"%{phrase}%"
-        phrase_results = (
-            base_query.filter(
-                or_(
-                    HardwareAsset.category.ilike(like),
-                    HardwareAsset.type.ilike(like),
-                    HardwareAsset.manufacturer.ilike(like),
-                    HardwareAsset.model.ilike(like),
-                    HardwareAsset.hostname.ilike(like),
-                    HardwareAsset.asset_tag.ilike(like),
-                    HardwareAsset.serial_number.ilike(like),
-                    HardwareAsset.custom_tag.ilike(like),
+    if request_all and not keywords and not filters:
+        results = base_query.order_by(HardwareAsset.updated_at.desc()).limit(20).all()
+        total = base_query.count() if need_total else len(results)
+    else:
+        phrases = _extract_candidate_phrases(message)
+        for phrase in phrases:
+            like = f"%{phrase}%"
+            phrase_results = (
+                base_query.filter(
+                    or_(
+                        HardwareAsset.category.ilike(like),
+                        HardwareAsset.type.ilike(like),
+                        HardwareAsset.manufacturer.ilike(like),
+                        HardwareAsset.model.ilike(like),
+                        HardwareAsset.hostname.ilike(like),
+                        HardwareAsset.asset_tag.ilike(like),
+                        HardwareAsset.serial_number.ilike(like),
+                        HardwareAsset.custom_tag.ilike(like),
+                    )
                 )
+                .order_by(HardwareAsset.updated_at.desc())
+                .limit(10)
+                .all()
             )
-            .order_by(HardwareAsset.updated_at.desc())
-            .limit(10)
-            .all()
-        )
-        if phrase_results:
-            results = phrase_results
-            break
+            if phrase_results:
+                results = phrase_results
+                break
 
     if not results:
         keyword_conditions = []
@@ -640,18 +880,20 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
 
         filtered_query = base_query.filter(or_(*keyword_conditions)) if keyword_conditions else base_query
         results = filtered_query.order_by(HardwareAsset.updated_at.desc()).limit(10).all()
-        total = filtered_query.count() if "how many" in lowered or "count" in lowered else len(results)
-    else:
+        total = filtered_query.count() if need_total else len(results)
+    elif not (request_all and not keywords and not filters):
         total = len(results)
 
     if not results:
-        knowledge_hint = _answer_knowledge_query(message)
-        if knowledge_hint:
-            return (
-                "No hardware assets matched those filters. However, I found related knowledge base items:\n"
-                f"{knowledge_hint}"
-            )
-        if filters or keywords:
+        if request_all and not keywords and not filters:
+            fallback_query = HardwareAsset.query.order_by(HardwareAsset.updated_at.desc())
+            fallback_results = fallback_query.limit(20).all()
+            if fallback_results:
+                results = fallback_results
+                total = fallback_query.count() if need_total else len(results)
+
+    if not results:
+        if filters or keywords or request_all:
             return "No hardware assets matched those filters."
         return None
 
@@ -679,17 +921,49 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
 
 
 def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
+    current_app.logger.info("Assistant software query message=%s", message)
     specific = _lookup_software_asset_by_identifier(message)
     if specific:
+        current_app.logger.info("Assistant software query matched specific asset id=%s", specific.id)
         return _format_software_detail(specific)
 
     base_query = SoftwareAsset.query.options(joinedload(SoftwareAsset.assignee))
     filters: List[str] = []
     keywords = _extract_keywords(message, extra_stop={"software", "license", "licence", "application", "app", "subscription"})
+    need_total = "how many" in lowered or "count" in lowered
+    request_all = any(
+        phrase in lowered
+        for phrase in (
+            "all software",
+            "list software",
+            "show software",
+            "software inventory",
+            "όλο το λογισμικό",
+            "λίστα λογισμικού",
+        )
+    ) or lowered.strip() in {"list all software", "list software", "show all software", "display software"}
+    field_filters_applied = False
+
+    category_match = re.search(r"category\s+(?:is|=)?\s*['\"]?([a-z0-9\-\s_/]+)['\"]?", message, flags=re.IGNORECASE)
+    if category_match:
+        category_value = category_match.group(1).strip()
+        if category_value:
+            base_query = base_query.filter(func.lower(SoftwareAsset.category) == category_value.lower())
+            filters.append(f"category {category_value}")
+            field_filters_applied = True
+
+    vendor_match = re.search(r"vendor\s+(?:is|=)?\s*['\"]?([a-z0-9\-\s_/]+)['\"]?", message, flags=re.IGNORECASE)
+    if vendor_match:
+        vendor_value = vendor_match.group(1).strip()
+        if vendor_value:
+            base_query = base_query.filter(func.lower(SoftwareAsset.vendor) == vendor_value.lower())
+            filters.append(f"vendor {vendor_value}")
+            field_filters_applied = True
 
     if any(token in lowered for token in ("assigned to me", "my software", "my license", "my licences")) and user:
         base_query = base_query.filter(SoftwareAsset.assigned_to == user.id)
         filters.append(f"assigned to {user.username}")
+        field_filters_applied = True
     else:
         assignee_match = USER_REF_PATTERN.search(message)
         if assignee_match:
@@ -697,10 +971,12 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
             if target:
                 base_query = base_query.filter(SoftwareAsset.assigned_to == target.id)
                 filters.append(f"assigned to {target.username}")
+                field_filters_applied = True
 
     if "unassigned" in lowered or "available" in lowered:
         base_query = base_query.filter(SoftwareAsset.assigned_to.is_(None))
         filters.append("unassigned")
+        field_filters_applied = True
 
     if "expir" in lowered:
         today = date.today()
@@ -712,58 +988,57 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
         filters.append("expiring within 60 days")
 
     results: List[SoftwareAsset] = []
-    phrases = _extract_candidate_phrases(message)
-    for phrase in phrases:
-        like = f"%{phrase}%"
-        phrase_results = (
-            base_query.filter(
-                or_(
-                    SoftwareAsset.name.ilike(like),
-                    SoftwareAsset.vendor.ilike(like),
-                    SoftwareAsset.category.ilike(like),
-                    SoftwareAsset.custom_tag.ilike(like),
-                    SoftwareAsset.version.ilike(like),
-                    SoftwareAsset.license_key.ilike(like),
+    if request_all and not field_filters_applied:
+        results = base_query.order_by(SoftwareAsset.updated_at.desc()).limit(20).all()
+        total = base_query.count() if need_total else len(results)
+        current_app.logger.info("Assistant software query request_all fetched=%s total=%s", len(results), total)
+    else:
+        phrases = _extract_candidate_phrases(message)
+        for phrase in phrases:
+            like = f"%{phrase}%"
+            phrase_results = (
+                base_query.filter(
+                    or_(*[column.ilike(like) for column in SOFTWARE_SEARCH_COLUMNS])
                 )
+                .order_by(SoftwareAsset.updated_at.desc())
+                .limit(10)
+                .all()
             )
-            .order_by(SoftwareAsset.updated_at.desc())
-            .limit(10)
-            .all()
-        )
-        if phrase_results:
-            results = phrase_results
-            break
+            if phrase_results:
+                results = phrase_results
+                break
 
     if not results:
         keyword_conditions = []
         for keyword in keywords[:6]:
             like = f"%{keyword}%"
-            keyword_conditions.append(
-                or_(
-                    SoftwareAsset.name.ilike(like),
-                    SoftwareAsset.vendor.ilike(like),
-                    SoftwareAsset.category.ilike(like),
-                    SoftwareAsset.custom_tag.ilike(like),
-                    SoftwareAsset.license_key.ilike(like),
-                    SoftwareAsset.serial_number.ilike(like),
-                    SoftwareAsset.version.ilike(like),
-                )
-            )
+            keyword_conditions.append(or_(*[column.ilike(like) for column in SOFTWARE_SEARCH_COLUMNS]))
 
-        filtered_query = base_query.filter(or_(*keyword_conditions)) if keyword_conditions else base_query
+        filtered_query = base_query.filter(and_(*keyword_conditions)) if keyword_conditions else base_query
         results = filtered_query.order_by(SoftwareAsset.updated_at.desc()).limit(10).all()
-        total = filtered_query.count() if "how many" in lowered or "count" in lowered else len(results)
-    else:
+        total = filtered_query.count() if need_total else len(results)
+    elif not (request_all and not field_filters_applied):
         total = len(results)
 
     if not results:
-        knowledge_hint = _answer_knowledge_query(message)
-        if knowledge_hint:
-            return (
-                "No software assets matched those filters. However, I found related knowledge base items:\n"
-                f"{knowledge_hint}"
-            )
-        if filters or keywords:
+        if field_filters_applied:
+            fallback_query = base_query.order_by(SoftwareAsset.updated_at.desc())
+            fallback_results = fallback_query.limit(20).all()
+            if fallback_results:
+                current_app.logger.info("Assistant software query fallback (field filters) returned %s records", len(fallback_results))
+                results = fallback_results
+                total = fallback_query.count() if need_total else len(results)
+        elif request_all or (not field_filters_applied and not keywords):
+            fallback_query = SoftwareAsset.query.order_by(SoftwareAsset.updated_at.desc())
+            fallback_results = fallback_query.limit(20 if request_all else 10).all()
+            if fallback_results:
+                current_app.logger.info("Assistant software query fallback (global) returned %s records", len(fallback_results))
+                results = fallback_results
+                total = fallback_query.count() if need_total else len(results)
+
+    if not results:
+        current_app.logger.info("Assistant software query empty after fallbacks.")
+        if filters or keywords or request_all:
             return "No software assets matched those filters."
         return None
 
@@ -789,6 +1064,7 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
     else:
         header = f"Found {total} software record(s)."
 
+    current_app.logger.info("Assistant software query returning %s rows", len(results))
     return "\n".join([header] + lines)
 
 
@@ -852,13 +1128,65 @@ def _lookup_hardware_asset_by_identifier(message: str) -> Optional[HardwareAsset
 def _lookup_software_asset_by_identifier(message: str) -> Optional[SoftwareAsset]:
     query = SoftwareAsset.query.options(joinedload(SoftwareAsset.assignee))
 
-    match = SOFTWARE_TAG_PATTERN.search(message)
-    if match:
-        value = match.group(1).strip()
+    candidates: List[Tuple[str, Any]] = []
+
+    for match in SOFTWARE_TAG_PATTERN.finditer(message):
+        value = (match.group(1) or "").strip()
         if value:
-            asset = query.filter(func.lower(SoftwareAsset.custom_tag) == value.lower()).first()
-            if asset:
-                return asset
+            candidates.append((value, SoftwareAsset.custom_tag))
+
+    direct_patterns = (
+        (
+            re.compile(
+                r"license\s+(?:key|code|number|id)\s*[:#]?\s*([a-z0-9\-]{4,})",
+                re.IGNORECASE,
+            ),
+            SoftwareAsset.license_key,
+        ),
+        (
+            re.compile(
+                r"activation\s+(?:code|key)\s*[:#]?\s*([a-z0-9\-]{4,})",
+                re.IGNORECASE,
+            ),
+            SoftwareAsset.license_key,
+        ),
+        (
+            re.compile(
+                r"seria\w*\s+(?:number|no\.?)\s*[:#]?\s*([a-z0-9_.\-]+)",
+                re.IGNORECASE,
+            ),
+            SoftwareAsset.serial_number,
+        ),
+        (
+            re.compile(
+                r"serial\s*#\s*([a-z0-9_.\-]+)",
+                re.IGNORECASE,
+            ),
+            SoftwareAsset.serial_number,
+        ),
+    )
+
+    for pattern, column in direct_patterns:
+        for match in pattern.finditer(message):
+            value = (match.group(1) or "").strip(" '\"#:;,")
+            if value:
+                candidates.append((value, column))
+
+    bare_license_pattern = re.compile(r"\b(?:[a-z0-9]{4,}-){2,}[a-z0-9]{4,}\b", re.IGNORECASE)
+    for match in bare_license_pattern.finditer(message):
+        value = (match.group(0) or "").strip(" '\"#:;,")
+        if value:
+            candidates.append((value, SoftwareAsset.license_key))
+
+    seen: set[str] = set()
+    for value, column in candidates:
+        lowered = value.lower()
+        if lowered in seen:
+            continue
+        seen.add(lowered)
+        asset = query.filter(func.lower(column) == lowered).first()
+        if asset:
+            return asset
 
     return None
 

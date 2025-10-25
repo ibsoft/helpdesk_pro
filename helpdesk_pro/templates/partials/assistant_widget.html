@@ -176,6 +176,25 @@
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
+  const escapeAttribute = (value) => (value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+  const renderAssistantContent = (value) => {
+    const escaped = escapeHTML(value || '');
+    const withMarkdownLinks = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, text, url) => {
+      const cleanUrl = url.replace(/&amp;/g, '&');
+      return `<a href="${escapeAttribute(cleanUrl)}" target="_blank" rel="noopener">${text}</a>`;
+    });
+    const withAngleLinks = withMarkdownLinks.replace(/&lt;(https?:\/\/[^&\s]+(?:&amp;[^\s;]+)*)&gt;/g, (_, url) => {
+      const cleanUrl = url.replace(/&amp;/g, '&');
+      const display = cleanUrl.replace(/&/g, '&amp;');
+      return `<a href="${escapeAttribute(cleanUrl)}" target="_blank" rel="noopener">${display}</a>`;
+    });
+    return withAngleLinks.replace(/\n/g, "<br>");
+  };
+
   let history = [];
   let isOpen = false;
   let pending = false;
@@ -199,10 +218,9 @@
     } else {
       bubble.className = "assistant-message assistant-message-system";
     }
-    const safeContent = escapeHTML(content).replace(/\n/g, "<br>");
     bubble.innerHTML = options.spinner
       ? `<span class="assistant-spinner"><span class="spinner-border spinner-border-sm"></span> ${escapeHTML(content)}</span>`
-      : safeContent;
+      : renderAssistantContent(content);
     messagesEl.appendChild(bubble);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return bubble;

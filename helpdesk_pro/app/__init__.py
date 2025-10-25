@@ -142,6 +142,24 @@ def create_app():
     handler.setFormatter(logging.Formatter(
         "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
     app.logger.addHandler(handler)
+
+    if not any(isinstance(h, logging.StreamHandler) for h in app.logger.handlers):
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(app.config.get("LOG_LEVEL", "INFO"))
+        console_handler.setFormatter(logging.Formatter(
+            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+        app.logger.addHandler(console_handler)
+
+    app.logger.setLevel(app.config.get("LOG_LEVEL", "INFO"))
+    app.logger.propagate = False
+
+    if app.config.get("SQLALCHEMY_ECHO", False) or app.config.get("LOG_LEVEL", "INFO") == "DEBUG":
+        sql_logger = logging.getLogger("sqlalchemy.engine")
+        sql_logger.setLevel(logging.INFO)
+        if not any(isinstance(h, logging.StreamHandler) for h in sql_logger.handlers):
+            sql_console = logging.StreamHandler()
+            sql_console.setFormatter(logging.Formatter("%(asctime)s [SQL] %(message)s"))
+            sql_logger.addHandler(sql_console)
     app.logger.info("Helpdesk Pro started")
 
     # ───────── Root route ───────── #
