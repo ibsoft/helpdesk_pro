@@ -80,7 +80,7 @@ def create_app():
     @app.context_processor
     def inject_globals():
         from app.navigation import get_navigation_for_user, is_feature_allowed
-        from app.models import ChatMessage, ChatMembership, ChatMessageRead, AssistantConfig
+        from app.models import ChatMessage, ChatMembership, ChatMessageRead, AssistantConfig, AuthConfig
 
         chat_unread = 0
         if current_user.is_authenticated:
@@ -94,6 +94,7 @@ def create_app():
             )
 
         assistant_widget = None
+        auth_config = AuthConfig.load().to_dict()
         if current_user.is_authenticated and is_feature_allowed("assistant_widget", current_user):
             cfg = AssistantConfig.get()
             if cfg and cfg.is_enabled:
@@ -105,6 +106,7 @@ def create_app():
             "navigation": get_navigation_for_user(current_user),
             "chat_unread_count": chat_unread,
             "assistant_widget_config": assistant_widget,
+            "auth_config": auth_config,
             "app_version": app.config.get("APP_VERSION", "1.0.0"),
         }
 

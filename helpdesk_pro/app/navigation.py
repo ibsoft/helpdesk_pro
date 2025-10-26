@@ -47,6 +47,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
             },
             {
+                "key": "manage_auth",
+                "label": _("Authentication"),
+                "icon": "fa fa-user-shield",
+                "endpoint": "manage.auth_settings",
+                "roles": ["admin"],
+            },
+            {
                 "key": "manage_assistant",
                 "label": _("AI Assistant"),
                 "icon": "fa fa-robot",

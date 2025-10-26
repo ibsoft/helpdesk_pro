@@ -6,4 +6,5 @@ from .knowledge import KnowledgeArticle, KnowledgeArticleVersion, KnowledgeAttac
 from .collab import ChatConversation, ChatMembership, ChatMessage, ChatMessageRead, ChatFavorite
 from .menu import MenuPermission
 from .assistant import AssistantConfig, AssistantSession, AssistantMessage, AssistantDocument
+from .auth_config import AuthConfig
 from .api import ApiClient
