@@ -47,6 +47,28 @@
     transform: translateY(0);
     visibility: visible;
   }
+  .assistant-widget.assistant-fullscreen {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 1090;
+    background: rgba(15, 23, 42, 0.25);
+    backdrop-filter: blur(10px);
+  }
+  .assistant-widget.assistant-fullscreen .assistant-panel {
+    width: min(720px, 96vw);
+    height: min(92vh, 720px);
+    max-height: none;
+    margin-top: 1.5rem;
+  }
+  .assistant-widget.assistant-fullscreen .assistant-messages {
+    flex: 1 1 auto;
+  }
   .assistant-messages {
     flex: 1 1 auto;
     padding: 1rem;
@@ -319,9 +341,14 @@
       <div>
         <strong><i class="fa fa-robot text-primary"></i> {{ cfg.window_title }}</strong>
       </div>
-      <button type="button" class="btn btn-sm btn-light" id="assistantClose">
-        <i class="fa fa-xmark"></i>
-      </button>
+      <div class="btn-group btn-group-sm">
+        <button type="button" class="btn btn-light" id="assistantFullscreenToggle" aria-label="{{ _('Toggle full screen') }}">
+          <i class="fa fa-up-right-and-down-left-from-center"></i>
+        </button>
+        <button type="button" class="btn btn-light" id="assistantClose">
+          <i class="fa fa-xmark"></i>
+        </button>
+      </div>
     </div>
     <div class="assistant-messages" id="assistantMessages">
       {% if cfg.welcome_message %}
@@ -367,6 +394,7 @@
   const panel = document.getElementById("assistantPanel");
   const toggleBtn = document.getElementById("assistantToggle");
   const closeBtn = document.getElementById("assistantClose");
+  const fullscreenBtn = document.getElementById("assistantFullscreenToggle");
   const form = document.getElementById("assistantForm");
   const input = document.getElementById("assistantInput");
   const messagesEl = document.getElementById("assistantMessages");
@@ -485,6 +513,7 @@
   let currentSession = null;
   let history = [];
   let isOpen = false;
+  let isFullscreen = false;
   let pending = false;
   let sessionReadyPromise = null;
 
@@ -616,6 +645,28 @@
     return sessionReadyPromise || bootstrapSession();
   }
 
+  function updateFullscreenButton() {
+    if (!fullscreenBtn) return;
+    if (isFullscreen) {
+      fullscreenBtn.innerHTML = '<i class="fa fa-down-left-and-up-right-to-center"></i>';
+      fullscreenBtn.setAttribute("aria-label", "{{ _('Exit full screen') }}");
+      fullscreenBtn.setAttribute("title", "{{ _('Exit full screen') }}");
+    } else {
+      fullscreenBtn.innerHTML = '<i class="fa fa-up-right-and-down-left-from-center"></i>';
+      fullscreenBtn.setAttribute("aria-label", "{{ _('Enter full screen') }}");
+      fullscreenBtn.setAttribute("title", "{{ _('Enter full screen') }}");
+    }
+  }
+
+  function toggleFullscreen(forceState) {
+    isFullscreen = typeof forceState === "boolean" ? forceState : !isFullscreen;
+    if (isFullscreen && !isOpen) {
+      toggle(true);
+    }
+    root.classList.toggle("assistant-fullscreen", isFullscreen);
+    updateFullscreenButton();
+  }
+
   function appendMessage(role, content, options = {}) {
     const bubble = document.createElement("div");
     if (role === "user") {
@@ -699,7 +750,16 @@
   }
 
   toggleBtn.addEventListener("click", () => toggle(true));
-  closeBtn.addEventListener("click", () => toggle(false));
+  closeBtn.addEventListener("click", () => {
+    if (isFullscreen) {
+      toggleFullscreen(false);
+    }
+    toggle(false);
+  });
+  if (fullscreenBtn) {
+    fullscreenBtn.addEventListener("click", () => toggleFullscreen());
+    updateFullscreenButton();
+  }
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -715,8 +775,12 @@
   });
 
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && isOpen) {
-      toggle(false);
+    if (event.key === "Escape" && (isOpen || isFullscreen)) {
+      if (isFullscreen) {
+        toggleFullscreen(false);
+      } else if (isOpen) {
+        toggle(false);
+      }
     }
   });
 
