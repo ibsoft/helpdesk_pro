@@ -11,6 +11,7 @@ This module now supports three providers:
 
 import json
 import re
+import ipaddress
 from datetime import date, timedelta
 from typing import List, Dict, Any, Iterable, Optional, Tuple, Union
 
@@ -38,6 +39,9 @@ from app.navigation import is_feature_allowed
 
 
 CIDR_PATTERN = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}/\d{1,2}\b")
+IP_ADDRESS_PATTERN = re.compile(r"\b\d{1,3}(?:\.\d{1,3}){3}\b")
+HOSTNAME_QUERY_PATTERN = re.compile(r"(?:hostname|host)\s+(?:named\s+)?([a-z0-9_.\-\:]+)", re.IGNORECASE)
+MAC_QUERY_PATTERN = re.compile(r"(?:mac(?:\s+address)?)\s+(?:of|for|=)?\s*([0-9a-f:\-]{8,})", re.IGNORECASE)
 TICKET_ID_PATTERN = re.compile(r"ticket\s+#?(\d+)|αιτημ(?:α|ατος)?\s*#?(\d+)", re.IGNORECASE)
 USER_REF_PATTERN = re.compile(
     r"(?:assigned to|for|owner|user|ip\s+of|για|σε)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
@@ -123,6 +127,63 @@ NETWORK_KEYWORDS = {
     "networks", "subnets"
 }
 
+NETWORK_HINT_STOPWORDS = {
+    "map",
+    "maps",
+    "diagram",
+    "diagrams",
+    "topology",
+    "topologies",
+    "layout",
+    "layouts",
+    "overview",
+    "summary",
+    "details",
+    "information",
+    "info",
+    "hosts",
+    "host",
+    "available",
+    "addresses",
+    "address",
+    "ips",
+    "ip",
+    "list",
+    "lists",
+    "show",
+    "find",
+    "lookup",
+    "questions",
+    "question",
+    "from",
+    "database",
+    "db",
+    "inventory",
+    "status",
+    "update",
+    "updates",
+    "report",
+    "reports",
+    "what",
+    "is",
+    "the",
+    "this",
+    "that",
+    "which",
+    "who",
+    "where",
+    "gateway",
+    "vlan",
+    "site",
+    "hosts",
+    "host",
+    "network",
+    "subnet",
+    "cidr",
+}
+
+NETWORK_HINT_BREAK_RE = re.compile(r"\b(for|with|from|of|to|in|on|about|regarding|covering|showing)\b", re.IGNORECASE)
+
 SOFTWARE_SEARCH_COLUMNS = [
     SoftwareAsset.name,
     SoftwareAsset.vendor,
@@ -200,6 +261,13 @@ LLM_TOOL_DEFINITIONS = [
         "description": (
             "Retrieve hardware asset records, including asset tags, hostnames, serials, and assignment details, "
             "from the Helpdesk Pro inventory."
+        ),
+    },
+    {
+        "name": "query_network_inventory",
+        "description": (
+            "Retrieve network details, including CIDR blocks, available IPs, host reservations, and assignments "
+            "from the Helpdesk Pro network map."
         ),
     },
 ]
@@ -305,6 +373,9 @@ def _dispatch_module_query(tool_name: str, message: str, user) -> str:
     if tool_name == "query_hardware_inventory":
         response = _answer_hardware_query(message, lowered, user)
         return response or "No hardware assets matched those filters."
+    if tool_name == "query_network_inventory":
+        response = _answer_network_query(message, lowered, user)
+        return response or "No network records matched those filters."
     return "Unsupported tool call."
 
 
@@ -361,8 +432,13 @@ def api_message():
             elif config.provider == "openwebui":
                 if not config.openwebui_base_url:
                     return jsonify({"success": False, "message": _("OpenWebUI base URL is not configured.")}), 400
+                tool_context = {
+                    "user": current_user,
+                    "history": history,
+                    "latest_user_message": message,
+                }
                 used_llm_provider = True
-                reply = _call_openwebui(messages_for_model, config)
+                reply = _call_openwebui(messages_for_model, config, tool_context=tool_context)
             elif config.provider == "builtin":
                 reply = _call_builtin(message, history, current_user)
             else:
@@ -444,8 +520,10 @@ def _call_openai(
     message = choices[0].get("message", {})
     tool_calls = message.get("tool_calls") if allow_tools else None
     if allow_tools and tool_calls:
-        if depth >= 3:
-            return _safe_strip(message.get("content", "Tool call limit reached.")) or "Tool call limit reached."
+        limit = _tool_call_limit()
+        if limit >= 0 and depth >= limit:
+            fallback = "Remote tool execution limit reached. Please respond directly with the information gathered so far."
+            return _safe_strip(message.get("content", fallback)) or fallback
         new_messages = messages + [message]
         for call in tool_calls:
             result = _execute_tool_call(call, tool_context or {})
@@ -460,9 +538,90 @@ def _call_openai(
     return _safe_strip(message.get("content", ""))
 
 
+def _latest_user_message_from(messages: List[Dict[str, Any]]) -> str:
+    for msg in reversed(messages or []):
+        if msg.get("role") == "user":
+            return _safe_strip(msg.get("content"))
+    return ""
+
+
+def _prepare_tool_context(
+    tool_context: Optional[Dict[str, Any]],
+    messages: List[Dict[str, str]],
+) -> Dict[str, Any]:
+    context = dict(tool_context or {})
+    if not context.get("latest_user_message"):
+        context["latest_user_message"] = _latest_user_message_from(messages)
+    context.setdefault("history", messages)
+    return context
+
+
+def _tool_call_limit() -> int:
+    """Return the maximum allowed tool recursion depth, or a negative value to disable."""
+    try:
+        limit = int(current_app.config.get("ASSISTANT_TOOL_CALL_DEPTH_LIMIT", 3))
+    except (TypeError, ValueError):
+        limit = 3
+    return limit
+
+
+def _execute_remote_openwebui_tool(
+    config: AssistantConfig,
+    tool_call: Dict[str, Any],
+) -> str:
+    base_url = (config.openwebui_base_url or "").rstrip("/")
+    if not base_url:
+        return "Remote tool execution failed: OpenWebUI base URL is missing."
+
+    function = tool_call.get("function") or {}
+    name = function.get("name")
+    raw_args = function.get("arguments")
+    try:
+        args = json.loads(raw_args) if isinstance(raw_args, str) and raw_args else raw_args or {}
+    except (ValueError, TypeError):
+        args = {"raw": raw_args}
+
+    endpoint = f"{base_url}/api/v1/tools/call"
+    headers = {"Content-Type": "application/json"}
+    if config.openwebui_api_key:
+        headers["Authorization"] = f"Bearer {config.openwebui_api_key}"
+
+    payload = {
+        "name": name,
+        "arguments": args,
+        "tool_call_id": tool_call.get("id"),
+    }
+
+    try:
+        response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
+    except requests.RequestException as exc:
+        return f"Remote tool execution failed for {name}: {exc}"
+
+    if response.status_code >= 400:
+        return _safe_strip(
+            _("Remote tool execution failed: %(status)s %(body)s", status=response.status_code, body=response.text)
+        )
+
+    try:
+        data = response.json()
+    except ValueError as exc:
+        return f"Remote tool execution returned invalid JSON: {exc}"
+
+    for key in ("result", "output", "reply", "content", "data"):
+        if key in data:
+            value = data[key]
+            if isinstance(value, (dict, list)):
+                return json.dumps(value)
+            return _safe_strip(str(value))
+
+    return "Remote tool execution succeeded but returned no result."
+
+
 def _call_openwebui(
     messages: List[Dict[str, str]],
     config: AssistantConfig,
+    tool_context: Optional[Dict[str, Any]] = None,
+    depth: int = 0,
 ) -> str:
     base_url = (config.openwebui_base_url or "").rstrip("/")
     if not base_url:
@@ -477,6 +636,30 @@ def _call_openwebui(
         "model": config.openwebui_model or "gpt-3.5-turbo",
         "messages": messages,
         "stream": False,
+        "tools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "query": {
+                                "type": "string",
+                                "description": (
+                                    "Natural language description of what to retrieve, including any filters "
+                                    "(ids, usernames, tags, statuses, dates, etc.)."
+                                ),
+                            }
+                        },
+                        "required": ["query"],
+                    },
+                },
+            }
+            for tool in LLM_TOOL_DEFINITIONS
+        ],
+        "tool_choice": "auto",
     }
 
     response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
@@ -487,7 +670,61 @@ def _call_openwebui(
     if not choices:
         return ""
     message = choices[0].get("message", {})
-    return _safe_strip(message.get("content", ""))
+    tool_calls = message.get("tool_calls") or []
+    if tool_calls:
+        limit = _tool_call_limit()
+        if limit >= 0 and depth >= limit:
+            fallback = "Remote tool execution limit reached. Please respond directly with the information gathered so far."
+            return _safe_strip(message.get("content", fallback)) or fallback
+        context = _prepare_tool_context(tool_context, messages)
+        new_messages = messages + [message]
+        local_tool_names = {tool["name"] for tool in LLM_TOOL_DEFINITIONS}
+        for call in tool_calls:
+            name = (call.get("function") or {}).get("name") or ""
+            if name in local_tool_names:
+                result = _execute_tool_call(call, context)
+            else:
+                result = _execute_remote_openwebui_tool(config, call)
+            new_messages.append(
+                {
+                    "role": "tool",
+                    "tool_call_id": call.get("id") or name,
+                    "content": result,
+                }
+            )
+        return _call_openwebui(new_messages, config, tool_context=context, depth=depth + 1)
+
+    content = _safe_strip(message.get("content", ""))
+    if content:
+        stripped = content.strip()
+        if stripped.startswith("{") and stripped.endswith("}"):
+            try:
+                tool_candidate = json.loads(stripped)
+            except ValueError:
+                tool_candidate = None
+            if isinstance(tool_candidate, dict) and "name" in tool_candidate:
+                name = tool_candidate.get("name") or ""
+                arguments = (
+                    tool_candidate.get("args")
+                    or tool_candidate.get("arguments")
+                    or tool_candidate.get("parameters")
+                    or {}
+                )
+                raw_arguments = json.dumps(arguments)
+                tool_call = {
+                    "id": tool_candidate.get("id") or name,
+                    "function": {
+                        "name": name,
+                        "arguments": raw_arguments,
+                    },
+                }
+                local_tool_names = {tool["name"] for tool in LLM_TOOL_DEFINITIONS}
+                context = _prepare_tool_context(tool_context, messages)
+                if name in local_tool_names:
+                    return _execute_tool_call(tool_call, context)
+                return _execute_remote_openwebui_tool(config, tool_call)
+        return content
+    return ""
 
 
 def _call_webhook(
@@ -598,30 +835,65 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
 
 
 def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
-    candidate = None
-    cidr_match = CIDR_PATTERN.search(message)
+    candidate: Optional[Network] = None
     query = Network.query.options(joinedload(Network.hosts))
+    networks_list = query.all()
+
+    cidr_match = CIDR_PATTERN.search(message)
 
     if cidr_match:
-        candidate = query.filter(func.lower(Network.cidr) == cidr_match.group(0).lower()).first()
+        cidr_value = cidr_match.group(0)
+        candidate = _find_network_by_cidr(networks_list, cidr_value)
 
     if not candidate:
         name_match = re.search(r"(?:network|subnet|vlan)\s+([a-z0-9_.\-\s]+)", lowered)
         if name_match:
-            name = _safe_strip(name_match.group(1))
-            candidate = query.filter(func.lower(Network.name) == name.lower()).first()
-            if not candidate:
-                candidate = query.filter(Network.name.ilike(f"%{name}%")).first()
+            raw_name = name_match.group(1) or ""
+            normalized = _normalize_network_name_hint(raw_name)
+            if normalized:
+                candidate = _match_network_by_normalized(networks_list, normalized)
+
+    if not candidate:
+        leading_match = re.search(r"([a-z0-9_.\-\s]+)\s+(?:network|subnet|vlan)", lowered)
+        if leading_match:
+            raw_name = leading_match.group(1) or ""
+            normalized = _normalize_network_name_hint(raw_name)
+            if normalized:
+                candidate = _match_network_by_normalized(networks_list, normalized)
+
+    if not candidate:
+        for phrase in _extract_candidate_phrases(message):
+            normalized = _normalize_network_name_hint(phrase)
+            if not normalized:
+                continue
+            candidate = _match_network_by_normalized(networks_list, normalized)
+            if candidate:
+                break
+
+    if not candidate and lowered.endswith(" network"):
+        suffix = lowered[:-8].strip()
+        normalized = _normalize_network_name_hint(suffix)
+        if normalized:
+            candidate = _match_network_by_normalized(networks_list, normalized)
+
+    if not candidate:
+        keywords = _extract_keywords(message, extra_stop=NETWORK_HINT_STOPWORDS)
+        if keywords:
+            for keyword in keywords[:3]:
+                candidate = _match_network_by_normalized(networks_list, keyword)
+                if candidate:
+                    break
 
     if not candidate:
         user_tokens = _extract_user_tokens(message)
+        host_tokens = _extract_network_host_tokens(message)
         user_usernames: List[str] = []
         if user and getattr(user, "username", None):
             user_usernames.append(user.username)
-        if user_tokens or user_usernames:
+        if user_tokens or user_usernames or host_tokens:
             conditions = []
             search_tokens: List[str] = []
-            for token in user_tokens:
+            for token in list(user_tokens) + list(host_tokens):
                 cleaned = _safe_strip(token)
                 if cleaned:
                     search_tokens.append(cleaned)
@@ -668,21 +940,32 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
                     if len(host_results) == 25:
                         lines.append("…limited to first 25 matches.")
                     return "Network matches:\n" + "\n".join(lines)
-                return "No network hosts matched that user name."
+                return "No network hosts matched those details."
 
         if any(term in lowered for term in NETWORK_KEYWORDS) or "cidr" in lowered or "ip" in lowered:
-            networks = query.order_by(Network.updated_at.desc()).limit(20).all()
+            networks = sorted(
+                networks_list,
+                key=lambda net: (net.updated_at or date.min),
+                reverse=True,
+            )[:20]
             if not networks:
                 return "No networks are currently registered in the database."
             lines = []
             for net in networks:
                 host_count = len(net.hosts)
-                site = net.site or "n/a"
-                vlan = net.vlan or "n/a"
-                summary = f"{(net.name or 'Unnamed network')} ({net.cidr}) — site {site}; VLAN {vlan}; hosts tracked {host_count}"
-                if getattr(net, "gateway", None):
-                    summary += f"; gateway {net.gateway}"
-                lines.append(summary)
+            site = net.site or "n/a"
+            vlan = net.vlan or "n/a"
+            gateway = net.gateway or "n/a"
+            summary = (
+                f"{(net.name or 'Unnamed network')} ({net.cidr}) — network {net.network_address or 'n/a'}; "
+                f"broadcast {net.broadcast_address or 'n/a'}; hosts tracked {host_count}; "
+                f"gateway {gateway}; site {site}; VLAN {vlan}"
+            )
+            if net.description:
+                summary += f"; description {_safe_strip(net.description)}"
+            if net.notes:
+                summary += f"; notes {_safe_strip(net.notes)}"
+            lines.append(summary)
             if len(networks) == 20:
                 lines.append("…showing latest 20 networks.")
             return "Tracked networks:\n" + "\n".join(lines)
@@ -699,6 +982,9 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
         host.ip_address for host in candidate.hosts if host.ip_address and getattr(host, "is_reserved", False)
     }
 
+    if any(token in lowered for token in ("list hosts", "show hosts", "all hosts", "hosts list", "detailed hosts", "host list")):
+        return _format_network_hosts(candidate, message, lowered, user)
+
     requested_single = any(token in lowered for token in ("first", "single", "one"))
     limit = 1 if requested_single else 5
     available: List[str] = []
@@ -710,7 +996,49 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
         if len(available) >= limit:
             break
 
+    requested_pairs: List[Tuple[str, str]] = []
+    host_count = len(candidate.hosts)
+
+    def _add_pair(label: str, value: Optional[str]):
+        requested_pairs.append((label, value or "n/a"))
+
+    if "gateway" in lowered:
+        _add_pair("Gateway", candidate.gateway)
+    if "vlan" in lowered:
+        _add_pair("VLAN", candidate.vlan)
+    if any(term in lowered for term in ("site", "location")):
+        _add_pair("Site", candidate.site)
+    if "cidr" in lowered or "subnet" in lowered or "range" in lowered:
+        _add_pair("CIDR", candidate.cidr)
+    if "network address" in lowered or "network ip" in lowered or "base address" in lowered:
+        _add_pair("Network", candidate.network_address)
+    if "broadcast" in lowered:
+        _add_pair("Broadcast", candidate.broadcast_address)
+    if any(term in lowered for term in ("host count", "hosts count", "number of hosts", "host capacity")):
+        _add_pair("Hosts tracked", str(host_count))
+    if "description" in lowered:
+        _add_pair("Description", _safe_strip(candidate.description))
+    if "note" in lowered:
+        _add_pair("Notes", _safe_strip(candidate.notes))
+    if "reserved" in lowered:
+        _add_pair("Reserved addresses tracked", str(len(reserved_addresses)))
+
     summary_lines = [f"Network {candidate.name} ({candidate.cidr})"]
+    location_bits = []
+    if candidate.site:
+        location_bits.append(f"site {candidate.site}")
+    if candidate.vlan:
+        location_bits.append(f"VLAN {candidate.vlan}")
+    if location_bits:
+        summary_lines.append("; ".join(location_bits))
+    if candidate.gateway:
+        summary_lines.append(f"Gateway: {candidate.gateway}")
+    summary_lines.append(f"Network: {candidate.network_address or 'n/a'}")
+    summary_lines.append(f"Broadcast: {candidate.broadcast_address or 'n/a'}")
+    if candidate.description:
+        summary_lines.append(f"Description: {_safe_strip(candidate.description)}")
+    if candidate.notes:
+        summary_lines.append(f"Notes: {_safe_strip(candidate.notes)}")
     summary_lines.append(f"Assigned/reserved addresses tracked: {len(used_addresses)}")
     if reserved_addresses:
         preview = ", ".join(sorted(reserved_addresses)[:5])
@@ -724,7 +1052,114 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
     else:
         summary_lines.append("No free addresses detected in this network.")
 
+    if requested_pairs:
+        detail_lines = [f"{candidate.name} ({candidate.cidr}) details:"]
+        for label, value in requested_pairs:
+            detail_lines.append(f"{label}: {value}")
+        if "reserved" in lowered:
+            detail_lines.append(f"Reserved addresses tracked: {len(reserved_addresses)}")
+            if reserved_addresses:
+                detail_lines.append("Reserved addresses: " + ", ".join(sorted(reserved_addresses)))
+            else:
+                detail_lines.append("No reserved addresses found in this network.")
+        if "hosts" in lowered and not any(label.startswith("Hosts") for label, _ in requested_pairs):
+            detail_lines.append(f"Hosts tracked: {host_count}")
+        if available and any(term in lowered for term in ("available ip", "free ip", "next ip", "next available")):
+            label = "Next available IP" if len(available) == 1 else "Next available IPs"
+            detail_lines.append(f"{label}: {', '.join(available)}")
+        return "\n".join(detail_lines)
+
     return "\n".join(summary_lines)
+
+
+def _format_network_hosts(network: Network, message: str, lowered: str, user) -> str:
+    hosts = list(network.hosts)
+    if not hosts:
+        return f"No hosts are registered under {network.name} ({network.cidr})."
+
+    # Filter hosts by intent
+    filters_applied: List[str] = []
+
+    if "reserved" in lowered and "available" not in lowered:
+        hosts = [h for h in hosts if h.is_reserved]
+        filters_applied.append("reserved")
+    elif "available" in lowered or "free" in lowered:
+        hosts = [h for h in hosts if not h.is_reserved]
+        filters_applied.append("available")
+
+    user_tokens = _extract_user_tokens(message)
+    if user_tokens:
+        lowered_users = {token.lower() for token in user_tokens}
+        hosts = [
+            h for h in hosts if h.assigned_to and h.assigned_to.lower() in lowered_users
+        ]
+        filters_applied.append("assigned to specified user")
+    elif any(term in lowered for term in ("assigned to me", "my hosts")) and user and getattr(user, "username", None):
+        hosts = [h for h in hosts if h.assigned_to and h.assigned_to.lower() == user.username.lower()]
+        filters_applied.append(f"assigned to {user.username}")
+
+    host_tokens = _extract_network_host_tokens(message)
+    if host_tokens:
+        normalized_tokens = []
+        for token in host_tokens:
+            cleaned = _safe_strip(token, " \"'.,:;!")
+            if cleaned:
+                normalized_tokens.append(cleaned.lower())
+
+        def matches_token(host: NetworkHost, token: str) -> bool:
+            token_plain = token.replace(":", "").replace("-", "")
+            mac_plain = (host.mac_address or "").replace(":", "").replace("-", "").lower()
+            return any(
+                (
+                    host.ip_address and token in host.ip_address.lower(),
+                    host.hostname and token in host.hostname.lower(),
+                    mac_plain and token_plain in mac_plain,
+                )
+            )
+
+        hosts = [h for h in hosts if any(matches_token(h, tok) for tok in normalized_tokens)]
+        filters_applied.append("matching provided identifiers")
+
+    device_match = re.search(r"(?:device|host)\\s+type\\s+([a-z0-9_.\\- ]+)", lowered)
+    if device_match:
+        device_value = _safe_strip(device_match.group(1))
+        hosts = [
+            h for h in hosts if h.device_type and device_value.lower() in h.device_type.lower()
+        ]
+        filters_applied.append(f"device type contains '{device_value}'")
+
+    description_match = re.search(r"(?:notes?|description)\\s+(?:contains\\s+)?([a-z0-9_.\\- ]+)", lowered)
+    if description_match:
+        desc_value = _safe_strip(description_match.group(1))
+        hosts = [
+            h for h in hosts if h.description and desc_value.lower() in h.description.lower()
+        ]
+        filters_applied.append(f"description contains '{desc_value}'")
+
+    if not hosts:
+        filter_text = "; ".join(filters_applied) if filters_applied else "specified criteria"
+        return f"No hosts matched {filter_text} under {network.name} ({network.cidr})."
+
+    hosts = sorted(hosts, key=lambda h: (h.ip_address or "", h.hostname or ""))
+    header = f"Hosts tracked for {network.name} ({network.cidr})"
+    if filters_applied:
+        header += f" — filters: {', '.join(filters_applied)}"
+    lines = [header + ":"]
+    for host in hosts[:25]:
+        ip_addr = host.ip_address or "n/a"
+        hostname = host.hostname or "—"
+        mac = host.mac_address or "—"
+        device_type = host.device_type or "—"
+        assigned = host.assigned_to or "Unassigned"
+        reserved = "Reserved" if host.is_reserved else "Available"
+        description = host.description or "—"
+        lines.append(
+            f"{ip_addr} — hostname {hostname}; MAC {mac}; type {device_type}; assigned to {assigned}; "
+            f"status {reserved}; description {description}"
+        )
+    if len(hosts) > 25:
+        lines.append("…limited to first 25 hosts.")
+    return "\n".join(lines)
 
 
 def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
@@ -1283,6 +1718,130 @@ def _extract_user_tokens(message: str) -> List[str]:
             seen.add(key)
             deduped.append(token)
     return deduped
+
+
+def _extract_network_host_tokens(message: str) -> List[str]:
+    tokens: List[str] = []
+
+    for match in HOSTNAME_QUERY_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(1))
+        if candidate:
+            tokens.append(candidate)
+
+    for match in MAC_QUERY_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(1))
+        if candidate:
+            tokens.append(candidate)
+
+    for match in IP_ADDRESS_PATTERN.finditer(message):
+        candidate = _safe_strip(match.group(0))
+        if candidate and "/" not in candidate:  # avoid double-counting CIDRs
+            tokens.append(candidate)
+
+    return tokens
+
+
+def _normalize_network_name_hint(raw: str) -> str:
+    text = _safe_strip(raw)
+    if not text:
+        return ""
+    breaker = NETWORK_HINT_BREAK_RE.search(text)
+
+    def _tokenize(segment: str) -> List[str]:
+        cleaned = re.sub(r"[^\w\s\-.:/]", " ", segment)
+        return [word for word in re.split(r"\s+", cleaned) if word and word.lower() not in NETWORK_HINT_STOPWORDS]
+
+    if breaker:
+        before = text[: breaker.start()]
+        after = text[breaker.end() :]
+        after_tokens = _tokenize(after)
+        before_tokens = _tokenize(before)
+        if after_tokens:
+            words = after_tokens
+        elif before_tokens:
+            words = before_tokens
+        else:
+            words = _tokenize(text)
+    else:
+        words = _tokenize(text)
+
+    if not words:
+        return ""
+    cleaned = re.sub(r"\s+", " ", " ".join(words[:6])).strip(" -_/")
+    return cleaned
+
+
+def _canonicalize_cidr(value: str) -> str:
+    try:
+        return str(ipaddress.ip_network(value, strict=False))
+    except ValueError:
+        return (value or "").strip().lower()
+
+
+def _find_network_by_cidr(networks: Iterable[Network], cidr_value: str) -> Optional[Network]:
+    canonical = _canonicalize_cidr(cidr_value)
+    for net in networks:
+        if _canonicalize_cidr(net.cidr or "") == canonical:
+            return net
+    for net in networks:
+        if canonical in (net.cidr or "").lower():
+            return net
+    return None
+
+
+def _normalize_label(value: str) -> str:
+    if not value:
+        return ""
+    cleaned = re.sub(r"[^a-z0-9]+", " ", value.lower())
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+    return cleaned
+
+
+def _match_network_by_normalized(networks: Iterable[Network], normalized: str) -> Optional[Network]:
+    if not normalized:
+        return None
+
+    lowered = normalized.lower().strip()
+    variations = {lowered}
+    if not lowered.endswith(" network"):
+        variations.add(f"{lowered} network")
+    if not lowered.endswith(" subnet"):
+        variations.add(f"{lowered} subnet")
+    if not lowered.endswith(" vlan"):
+        variations.add(f"{lowered} vlan")
+
+    for value in variations:
+        for net in networks:
+            if _normalize_label(net.name) == _normalize_label(value):
+                return net
+            if (net.name or "").strip().lower() == value:
+                return net
+
+    tokens = [token for token in re.split(r"\s+", normalized) if token]
+    if tokens:
+        best_match: Optional[Tuple[int, Network]] = None
+        for net in networks:
+            name_norm = _normalize_label(net.name)
+            token_hits = sum(1 for token in tokens if token in name_norm)
+            if token_hits <= 0:
+                continue
+            if not best_match or token_hits > best_match[0]:
+                best_match = (token_hits, net)
+        if best_match:
+            return best_match[1]
+
+    lowered_norm = _normalize_label(normalized)
+    for net in networks:
+        for field in (net.site, net.vlan, net.description, net.notes):
+            if lowered_norm and lowered_norm in _normalize_label(field or ""):
+                return net
+
+    for net in networks:
+        name_lower = (net.name or "").lower()
+        if lowered in name_lower:
+            return net
+
+    return None
 
 
 def _lookup_hardware_asset_by_identifier(message: str) -> Optional[HardwareAsset]:
