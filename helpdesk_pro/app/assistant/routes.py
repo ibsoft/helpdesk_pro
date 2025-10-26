@@ -15,8 +15,8 @@ import os
 import uuid
 import mimetypes
 import ipaddress
-from datetime import date, timedelta
-from typing import List, Dict, Any, Iterable, Optional, Tuple, Union, Sequence
+from datetime import date, datetime, timedelta
+from typing import List, Dict, Any, Iterable, Optional, Tuple, Union, Sequence, Set
 
 import requests
 from flask import Blueprint, jsonify, request, abort, current_app, url_for, send_from_directory
@@ -55,10 +55,34 @@ USER_REF_PATTERN = re.compile(
     r"(?:assigned to|for|owner|user|ip\s+of|για|σε)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
     re.IGNORECASE,
 )
+CREATED_BY_PATTERN = re.compile(
+    r"created by\s+([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
 ASSET_TAG_PATTERN = re.compile(r"(?:asset|ετικέτα)\s+tag\s+#?([a-z0-9_.\-]+)", re.IGNORECASE)
 HOSTNAME_PATTERN = re.compile(r"(?:hostname|όνομα\s+host)\s+([a-z0-9_.\-]+)", re.IGNORECASE)
 SERIAL_PATTERN = re.compile(r"(?:serial|σειριακό)\s+#?([a-z0-9_.\-]+)", re.IGNORECASE)
 SOFTWARE_TAG_PATTERN = re.compile(r"(?:license|software|app|άδεια|λογισμικό)\s+tag\s+#?([a-z0-9_.\-]+)", re.IGNORECASE)
+STATUS_PATTERN = re.compile(r"status\s*(?:is|=|:)?\s*([a-z0-9_\- ]+)", re.IGNORECASE)
+PRIORITY_PATTERN = re.compile(r"priority\s*(?:is|=|:)?\s*([a-z0-9_\- ]+)", re.IGNORECASE)
+CREATED_ON_PATTERN = re.compile(r"created\s+(?:on|at|=)\s+([0-9/\-]+)", re.IGNORECASE)
+CREATED_AFTER_PATTERN = re.compile(r"created\s+(?:after|since)\s+([0-9/\-]+)", re.IGNORECASE)
+CREATED_BEFORE_PATTERN = re.compile(r"created\s+(?:before|until|prior to)\s+([0-9/\-]+)", re.IGNORECASE)
+CREATED_BETWEEN_PATTERN = re.compile(
+    r"created\s+(?:between|from)\s+([0-9/\-]+)\s+(?:and|to)\s+([0-9/\-]+)",
+    re.IGNORECASE,
+)
+CLOSED_ON_PATTERN = re.compile(r"closed\s+(?:on|at|=)\s+([0-9/\-]+)", re.IGNORECASE)
+CLOSED_AFTER_PATTERN = re.compile(r"closed\s+(?:after|since)\s+([0-9/\-]+)", re.IGNORECASE)
+CLOSED_BEFORE_PATTERN = re.compile(r"closed\s+(?:before|until|prior to)\s+([0-9/\-]+)", re.IGNORECASE)
+CLOSED_BETWEEN_PATTERN = re.compile(
+    r"closed\s+(?:between|from)\s+([0-9/\-]+)\s+(?:and|to)\s+([0-9/\-]+)",
+    re.IGNORECASE,
+)
+SUBJECT_QUOTED_PATTERN = re.compile(r"subject\s*(?:is|=|contains|like|:)?\s*\"([^\"]+)\"", re.IGNORECASE)
+SUBJECT_SINGLE_QUOTED_PATTERN = re.compile(r"subject\s*(?:is|=|contains|like|:)?\s*'([^']+)'", re.IGNORECASE)
+DESCRIPTION_QUOTED_PATTERN = re.compile(r"description\s*(?:is|=|contains|like|:)?\s*\"([^\"]+)\"", re.IGNORECASE)
+DESCRIPTION_SINGLE_QUOTED_PATTERN = re.compile(r"description\s*(?:is|=|contains|like|:)?\s*'([^']+)'", re.IGNORECASE)
 
 STOP_WORDS = {
     "the",
@@ -69,6 +93,8 @@ STOP_WORDS = {
     "from",
     "this",
     "what",
+    "all",
+    "any",
     "where",
     "when",
     "which",
@@ -104,6 +130,31 @@ STOP_WORDS = {
 OPEN_STATUS_VALUES = ["open", "in progress", "pending", "new", "reopened"]
 CLOSED_STATUS_VALUES = ["closed", "resolved", "completed", "cancelled", "done"]
 PRIORITY_LEVELS = ["critical", "urgent", "high", "medium", "low"]
+
+USER_REFERENCE_DELIMITERS = (
+    " and ",
+    " with ",
+    " without ",
+    " where ",
+    " whose ",
+    " having ",
+    " status ",
+    " priority ",
+    " department ",
+    " created ",
+    " updated ",
+    " closed ",
+    " open ",
+    " reopened ",
+    " resolved ",
+    " pending ",
+    " tickets",
+    " ticket",
+    " incidents",
+    " incident",
+    " requests",
+    " request",
+)
 
 TICKET_KEYWORDS = {
     "ticket", "tickets", "incident", "case", "request",
@@ -1548,10 +1599,14 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
     filters: List[str] = []
     results: List[Ticket] = []
     total: Optional[int] = None
+    excluded_terms: Set[str] = set()
+    explicit_status = False
+    explicit_priority = False
 
     if any(token in lowered for token in ("assigned to me", "my ticket", "my tickets")) and user:
         base_query = base_query.filter(Ticket.assigned_to == user.id)
         filters.append(f"assigned to {user.username}")
+        excluded_terms.add(user.username.lower())
     else:
         assignee_match = USER_REF_PATTERN.search(message)
         if assignee_match:
@@ -1559,10 +1614,20 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
             if target:
                 base_query = base_query.filter(Ticket.assigned_to == target.id)
                 filters.append(f"assigned to {target.username}")
+                excluded_terms.add(target.username.lower())
+
+    creator_match = CREATED_BY_PATTERN.search(message)
+    if creator_match:
+        creator = _resolve_user_reference(creator_match.group(1))
+        if creator:
+            base_query = base_query.filter(Ticket.created_by == creator.id)
+            filters.append(f"created by {creator.username}")
+            excluded_terms.add(creator.username.lower())
 
     if "created by me" in lowered and user:
         base_query = base_query.filter(Ticket.created_by == user.id)
         filters.append("created by you")
+        excluded_terms.add(user.username.lower())
 
     if "today" in lowered:
         today = date.today()
@@ -1578,18 +1643,55 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
         base_query = base_query.filter(func.date(Ticket.created_at) == yesterday)
         filters.append("created yesterday")
 
-    if any(token in lowered for token in ("open", "pending", "progress", "unresolved")):
-        base_query = base_query.filter(func.lower(Ticket.status).in_(OPEN_STATUS_VALUES))
-        filters.append("status in open set")
-    elif any(token in lowered for token in ("closed", "resolved", "done", "completed", "cancelled")):
-        base_query = base_query.filter(func.lower(Ticket.status).in_(CLOSED_STATUS_VALUES))
-        filters.append("status closed")
+    subject_terms = _extract_field_terms(message, SUBJECT_QUOTED_PATTERN, SUBJECT_SINGLE_QUOTED_PATTERN)
+    for term in subject_terms:
+        base_query = base_query.filter(Ticket.subject.ilike(f"%{term}%"))
+        filters.append(f"subject contains \"{term}\"")
+        excluded_terms.add(term.lower())
 
-    for level in PRIORITY_LEVELS:
-        if f"{level} priority" in lowered or f"priority {level}" in lowered:
-            base_query = base_query.filter(func.lower(Ticket.priority) == level)
-            filters.append(f"priority {level}")
-            break
+    description_terms = _extract_field_terms(
+        message, DESCRIPTION_QUOTED_PATTERN, DESCRIPTION_SINGLE_QUOTED_PATTERN
+    )
+    for term in description_terms:
+        base_query = base_query.filter(Ticket.description.ilike(f"%{term}%"))
+        filters.append(f"description contains \"{term}\"")
+        excluded_terms.add(term.lower())
+
+    status_match = STATUS_PATTERN.search(message)
+    if status_match:
+        status_value = _safe_strip(status_match.group(1))
+        if status_value:
+            base_query = base_query.filter(func.lower(Ticket.status) == status_value.lower())
+            filters.append(f"status {status_value}")
+            excluded_terms.add(status_value.lower())
+            explicit_status = True
+
+    priority_match = PRIORITY_PATTERN.search(message)
+    if priority_match:
+        priority_value = _safe_strip(priority_match.group(1))
+        if priority_value:
+            base_query = base_query.filter(func.lower(Ticket.priority) == priority_value.lower())
+            filters.append(f"priority {priority_value}")
+            excluded_terms.add(priority_value.lower())
+            explicit_priority = True
+
+    if any(token in lowered for token in ("open", "pending", "progress", "unresolved")):
+        if not explicit_status:
+            base_query = base_query.filter(func.lower(Ticket.status).in_(OPEN_STATUS_VALUES))
+            filters.append("status in open set")
+    elif any(token in lowered for token in ("closed", "resolved", "done", "completed", "cancelled")):
+        if not explicit_status:
+            base_query = base_query.filter(func.lower(Ticket.status).in_(CLOSED_STATUS_VALUES))
+            filters.append("status closed")
+
+    if not explicit_priority:
+        for level in PRIORITY_LEVELS:
+            if f"{level} priority" in lowered or f"priority {level}" in lowered:
+                base_query = base_query.filter(func.lower(Ticket.priority) == level)
+                filters.append(f"priority {level}")
+                excluded_terms.add(level)
+                explicit_priority = True
+                break
 
     dept_match = re.search(r"department\s+([a-z0-9_\- ]+)", lowered)
     if dept_match:
@@ -1597,9 +1699,95 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
         base_query = base_query.filter(func.lower(Ticket.department) == dept.lower())
         filters.append(f"department {dept}")
 
+    created_between = CREATED_BETWEEN_PATTERN.search(message)
+    if created_between:
+        start = _parse_date_string(created_between.group(1))
+        end = _parse_date_string(created_between.group(2))
+        if start and end:
+            base_query = base_query.filter(
+                func.date(Ticket.created_at).between(start, end)
+            )
+            filters.append(f"created between {start.isoformat()} and {end.isoformat()}")
+
+    created_on = CREATED_ON_PATTERN.search(message)
+    if created_on:
+        target_date = _parse_date_string(created_on.group(1))
+        if target_date:
+            base_query = base_query.filter(func.date(Ticket.created_at) == target_date)
+            filters.append(f"created on {target_date.isoformat()}")
+
+    created_after = CREATED_AFTER_PATTERN.search(message)
+    if created_after:
+        target_date = _parse_date_string(created_after.group(1))
+        if target_date:
+            base_query = base_query.filter(func.date(Ticket.created_at) >= target_date)
+            filters.append(f"created after {target_date.isoformat()}")
+
+    created_before = CREATED_BEFORE_PATTERN.search(message)
+    if created_before:
+        target_date = _parse_date_string(created_before.group(1))
+        if target_date:
+            base_query = base_query.filter(func.date(Ticket.created_at) <= target_date)
+            filters.append(f"created before {target_date.isoformat()}")
+
+    if "closed today" in lowered:
+        today = date.today()
+        base_query = base_query.filter(Ticket.closed_at.isnot(None))
+        base_query = base_query.filter(func.date(Ticket.closed_at) == today)
+        filters.append("closed today")
+
+    if "closed yesterday" in lowered:
+        yesterday = date.today() - timedelta(days=1)
+        base_query = base_query.filter(Ticket.closed_at.isnot(None))
+        base_query = base_query.filter(func.date(Ticket.closed_at) == yesterday)
+        filters.append("closed yesterday")
+
+    closed_between = CLOSED_BETWEEN_PATTERN.search(message)
+    if closed_between:
+        start = _parse_date_string(closed_between.group(1))
+        end = _parse_date_string(closed_between.group(2))
+        if start and end:
+            base_query = base_query.filter(Ticket.closed_at.isnot(None))
+            base_query = base_query.filter(
+                func.date(Ticket.closed_at).between(start, end)
+            )
+            filters.append(f"closed between {start.isoformat()} and {end.isoformat()}")
+
+    closed_on = CLOSED_ON_PATTERN.search(message)
+    if closed_on:
+        target_date = _parse_date_string(closed_on.group(1))
+        if target_date:
+            base_query = base_query.filter(Ticket.closed_at.isnot(None))
+            base_query = base_query.filter(func.date(Ticket.closed_at) == target_date)
+            filters.append(f"closed on {target_date.isoformat()}")
+
+    closed_after = CLOSED_AFTER_PATTERN.search(message)
+    if closed_after:
+        target_date = _parse_date_string(closed_after.group(1))
+        if target_date:
+            base_query = base_query.filter(Ticket.closed_at.isnot(None))
+            base_query = base_query.filter(func.date(Ticket.closed_at) >= target_date)
+            filters.append(f"closed after {target_date.isoformat()}")
+
+    closed_before = CLOSED_BEFORE_PATTERN.search(message)
+    if closed_before:
+        target_date = _parse_date_string(closed_before.group(1))
+        if target_date:
+            base_query = base_query.filter(Ticket.closed_at.isnot(None))
+            base_query = base_query.filter(func.date(Ticket.closed_at) <= target_date)
+            filters.append(f"closed before {target_date.isoformat()}")
+
     need_total = "how many" in lowered or "count" in lowered
     used_content_filters = False
-    phrases = _extract_candidate_phrases(message)
+    phrases = []
+    for phrase in _extract_candidate_phrases(message):
+        phrase_lower = phrase.lower()
+        if phrase_lower in excluded_terms:
+            continue
+        tokens = set(re.findall(r"[a-z0-9]+", phrase_lower))
+        if tokens & excluded_terms:
+            continue
+        phrases.append(phrase)
     if phrases:
         used_content_filters = True
     for phrase in phrases:
@@ -1618,7 +1806,11 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
             break
 
     if not results:
-        keywords = _extract_keywords(message, extra_stop=TICKET_KEYWORDS | TICKET_TEXT_STOP)
+        keywords = [
+            keyword
+            for keyword in _extract_keywords(message, extra_stop=TICKET_KEYWORDS | TICKET_TEXT_STOP)
+            if keyword.lower() not in excluded_terms
+        ]
         if keywords:
             used_content_filters = True
         keyword_query = base_query
@@ -2028,8 +2220,58 @@ def _extract_keywords(text: str, extra_stop: Optional[Iterable[str]] = None) -> 
     return [word for word in words if word not in stops]
 
 
+DATE_PARSE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y")
+
+
+def _parse_date_string(raw: Optional[str]) -> Optional[date]:
+    if not raw:
+        return None
+    cleaned = _safe_strip(raw)
+    if not cleaned:
+        return None
+    for fmt in DATE_PARSE_FORMATS:
+        try:
+            return datetime.strptime(cleaned, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _extract_field_terms(message: str, *patterns: re.Pattern) -> List[str]:
+    terms: List[str] = []
+    for pattern in patterns:
+        if not pattern:
+            continue
+        for match in pattern.finditer(message):
+            term = _safe_strip(match.group(1))
+            if term:
+                terms.append(term)
+    deduped: List[str] = []
+    seen: Set[str] = set()
+    for term in terms:
+        key = term.lower()
+        if key not in seen:
+            seen.add(key)
+            deduped.append(term)
+    return deduped
+
+
+def _clean_user_identifier(identifier: str) -> str:
+    cleaned = _safe_strip(identifier, " \"'.,:;!?")
+    if not cleaned:
+        return ""
+    lowered = cleaned.lower()
+    for delimiter in USER_REFERENCE_DELIMITERS:
+        idx = lowered.find(delimiter)
+        if idx != -1:
+            cleaned = cleaned[:idx]
+            lowered = cleaned.lower()
+    cleaned = re.split(r"\s+(?:tickets?|incidents?|requests?)\b", cleaned, maxsplit=1)[0]
+    return _safe_strip(cleaned)
+
+
 def _resolve_user_reference(identifier: str) -> Optional[User]:
-    cleaned = _safe_strip(identifier).strip(".,:;!")
+    cleaned = _clean_user_identifier(identifier)
     if not cleaned:
         return None
     return User.query.filter(func.lower(User.username) == cleaned.lower()).first()
