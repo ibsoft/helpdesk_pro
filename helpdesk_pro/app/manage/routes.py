@@ -8,7 +8,7 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 
 from app import db
-from app.models import MenuPermission, AssistantConfig, ApiClient, User
+from app.models import MenuPermission, AssistantConfig, AuthConfig, ApiClient, User
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
     MENU_DEFINITIONS,
@@ -185,6 +185,33 @@ def assistant_settings():
         "manage/assistant_settings.html",
         config=config,
         headers_pretty=headers_pretty,
+    )
+
+
+@manage_bp.route("/auth", methods=["GET", "POST"])
+@login_required
+def auth_settings():
+    _require_admin()
+
+    config = AuthConfig.load()
+
+    if request.method == "POST":
+        config.allow_self_registration = bool(request.form.get("allow_self_registration"))
+        config.allow_password_reset = bool(request.form.get("allow_password_reset"))
+        default_role = (request.form.get("default_role") or "user").strip().lower()
+        if default_role not in AVAILABLE_ROLES:
+            default_role = "user"
+        config.default_role = default_role
+        config.ensure_valid_role()
+        db.session.add(config)
+        db.session.commit()
+        flash(_("Authentication settings saved."), "success")
+        return redirect(url_for("manage.auth_settings"))
+
+    return render_template(
+        "manage/auth_settings.html",
+        config=config,
+        roles=AVAILABLE_ROLES,
     )
 
 

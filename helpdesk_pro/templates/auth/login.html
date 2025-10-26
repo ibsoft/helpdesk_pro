@@ -132,10 +132,16 @@
       </button>
     </form>
 
-    <div class="text-center links">
-      <a href="{{ url_for('auth.forgot_password') }}">{{ _('Forgot password?') }}</a><br>
-      <a href="{{ url_for('auth.register') }}">{{ _('Create an account') }}</a>
-    </div>
+    {% if auth_config.allow_password_reset or auth_config.allow_self_registration %}
+      <div class="text-center links">
+        {% if auth_config.allow_password_reset %}
+          <a href="{{ url_for('auth.forgot_password') }}">{{ _('Forgot password?') }}</a>{% if auth_config.allow_self_registration %}<br>{% endif %}
+        {% endif %}
+        {% if auth_config.allow_self_registration %}
+          <a href="{{ url_for('auth.register') }}">{{ _('Create an account') }}</a>
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 </div>
 
