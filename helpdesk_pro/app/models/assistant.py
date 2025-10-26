@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Optional, Dict, Any
 
 from app import db
+from app.models.user import User
 
 
 LEGACY_SYSTEM_PROMPTS = {
@@ -143,3 +144,62 @@ class AssistantConfig(db.Model):
             return parsed if isinstance(parsed, dict) else {}
         except Exception:
             return {}
+
+
+class AssistantSession(db.Model):
+    __tablename__ = "assistant_session"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    title = db.Column(db.String(200))
+    is_archived = db.Column(db.Boolean, default=False, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = db.relationship("User", backref=db.backref("assistant_sessions", lazy="dynamic"))
+
+    def touch(self):
+        self.updated_at = datetime.utcnow()
+
+
+class AssistantMessage(db.Model):
+    __tablename__ = "assistant_message"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("assistant_session.id", ondelete="CASCADE"), nullable=False
+    )
+    role = db.Column(db.String(16), nullable=False)  # user | assistant | system
+    content = db.Column(db.Text, nullable=False)
+    token_usage = db.Column(db.Integer)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    session = db.relationship(
+        "AssistantSession",
+        backref=db.backref("messages", order_by="AssistantMessage.created_at", cascade="all, delete-orphan"),
+    )
+
+
+class AssistantDocument(db.Model):
+    __tablename__ = "assistant_document"
+
+    id = db.Column(db.Integer, primary_key=True)
+    session_id = db.Column(
+        db.Integer, db.ForeignKey("assistant_session.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id", ondelete="CASCADE"), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    stored_filename = db.Column(db.String(255), nullable=False)
+    mimetype = db.Column(db.String(120))
+    file_size = db.Column(db.BigInteger)
+    extracted_text = db.Column(db.Text)
+    status = db.Column(db.String(32), default="ready", nullable=False)
+    failure_reason = db.Column(db.String(255))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    session = db.relationship(
+        "AssistantSession",
+        backref=db.backref("documents", order_by="AssistantDocument.created_at", cascade="all, delete-orphan"),
+    )
+    user = db.relationship("User")

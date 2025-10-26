@@ -192,6 +192,120 @@
     top: -6px;
     right: -6px;
   }
+  .assistant-documents {
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    border-radius: 0.85rem;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    background: rgba(148, 163, 184, 0.1);
+  }
+  html[data-bs-theme="dark"] body .assistant-documents {
+    border-color: rgba(148, 163, 184, 0.35);
+    background: rgba(30, 41, 59, 0.35);
+  }
+  .assistant-documents.d-none {
+    display: none !important;
+  }
+  .assistant-documents-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #334155;
+  }
+  html[data-bs-theme="dark"] body .assistant-documents-header {
+    color: #cbd5f5;
+  }
+  .assistant-document-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    max-height: 120px;
+    overflow-y: auto;
+  }
+  .assistant-document-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.45rem 0.7rem;
+    border-radius: 0.7rem;
+    background: rgba(255, 255, 255, 0.65);
+    border: 1px solid rgba(148, 163, 184, 0.35);
+    font-size: 0.85rem;
+  }
+  html[data-bs-theme="dark"] body .assistant-document-pill {
+    background: rgba(15, 23, 42, 0.7);
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #e2e8f0;
+  }
+  .assistant-document-name {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .assistant-document-actions {
+    display: inline-flex;
+    gap: 0.35rem;
+  }
+  .assistant-document-actions .btn-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: rgba(99, 102, 241, 0.1);
+    color: #4338ca;
+  }
+  html[data-bs-theme="dark"] body .assistant-document-actions .btn-icon {
+    background: rgba(79, 70, 229, 0.35);
+    color: #cbd5f5;
+  }
+  .assistant-document-status {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 999px;
+    background: rgba(34, 197, 94, 0.15);
+    color: #166534;
+    border: 1px solid rgba(34, 197, 94, 0.25);
+    margin-right: 0.4rem;
+  }
+  html[data-bs-theme="dark"] body .assistant-document-status {
+    color: #bbf7d0;
+    background: rgba(22, 101, 52, 0.4);
+    border-color: rgba(22, 101, 52, 0.35);
+  }
+  .assistant-document-status.pending {
+    background: rgba(251, 191, 36, 0.15);
+    color: #b45309;
+    border-color: rgba(251, 191, 36, 0.35);
+  }
+  html[data-bs-theme="dark"] body .assistant-document-status.pending {
+    color: #fde68a;
+    background: rgba(180, 83, 9, 0.4);
+    border-color: rgba(180, 83, 9, 0.4);
+  }
+  .assistant-upload-btn {
+    background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(168, 85, 247, 0.2));
+    color: #6b21a8;
+    border: 1px solid rgba(168, 85, 247, 0.35);
+  }
+  html[data-bs-theme="dark"] body .assistant-upload-btn {
+    color: #f5d0fe;
+    border-color: rgba(192, 132, 252, 0.45);
+  }
+  .assistant-upload-btn.loading i {
+    animation: assistant-rotate 1.2s linear infinite;
+  }
+  @keyframes assistant-rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 </style>
 
 <div class="assistant-widget assistant-pos-{{ cfg.position }}" id="assistantWidgetRoot" data-provider="{{ cfg.provider }}">
@@ -220,9 +334,20 @@
       {% endif %}
     </div>
     <div class="card-footer">
+      <div class="assistant-documents d-none" id="assistantDocuments">
+        <div class="assistant-documents-header">
+          <span><i class="fa fa-paperclip me-1"></i> {{ _('Attached documents') }}</span>
+          <small class="text-muted">{{ _('Used as knowledge for this chat.') }}</small>
+        </div>
+        <div class="assistant-document-list" id="assistantDocumentList"></div>
+      </div>
       <form class="assistant-form" id="assistantForm">
         <textarea class="form-control" placeholder="{{ _('Type your message...') }}" id="assistantInput"></textarea>
         <div class="assistant-input-actions">
+          <label class="btn assistant-upload-btn" id="assistantUploadLabel" aria-label="{{ _('Attach document') }}" title="{{ _('Attach document') }}">
+            <i class="fa fa-paperclip"></i>
+            <input type="file" id="assistantFileInput" class="d-none" />
+          </label>
           <button type="button" class="btn assistant-mic-btn" id="assistantMic" aria-label="{{ _('Start voice input') }}" title="{{ _('Start voice input (GR → EN fallback)') }}">
             <i class="fa fa-microphone"></i>
           </button>
@@ -248,6 +373,10 @@
   const sendBtn = document.getElementById("assistantSend");
   const unreadBadge = document.getElementById("assistantUnreadBadge");
   const micBtn = document.getElementById("assistantMic");
+  const documentsSection = document.getElementById("assistantDocuments");
+  const documentListEl = document.getElementById("assistantDocumentList");
+  const fileInput = document.getElementById("assistantFileInput");
+  const uploadLabel = document.getElementById("assistantUploadLabel");
 
   const copyButtonLabel = "{{ _('Copy message') }}";
   const copySuccessLabel = "{{ _('Copied!') }}";
@@ -353,9 +482,11 @@
     return button;
   }
 
+  let currentSession = null;
   let history = [];
   let isOpen = false;
   let pending = false;
+  let sessionReadyPromise = null;
 
   function toggle(open) {
     isOpen = typeof open === "boolean" ? open : !isOpen;
@@ -365,6 +496,124 @@
       unreadBadge.classList.add("d-none");
       setTimeout(() => input.focus(), 150);
     }
+  }
+
+  function setUploadLoading(state) {
+    if (!uploadLabel) return;
+    uploadLabel.classList.toggle("loading", !!state);
+  }
+
+  function renderMessages(messages) {
+    if (!messagesEl) return;
+    messagesEl.innerHTML = "";
+    const list = Array.isArray(messages) ? messages : [];
+    if (!list.length) {
+      if (config.welcome_message) {
+        appendMessage("assistant", config.welcome_message, { copyText: config.welcome_message });
+      }
+      return;
+    }
+    list.forEach((msg) => {
+      appendMessage(msg.role, msg.content, { copyText: msg.content });
+    });
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  function renderDocuments(documents) {
+    if (!documentsSection || !documentListEl) return;
+    const list = Array.isArray(documents) ? documents : [];
+    if (!list.length) {
+      documentsSection.classList.add("d-none");
+      documentListEl.innerHTML = "";
+      return;
+    }
+    documentsSection.classList.remove("d-none");
+    documentListEl.innerHTML = "";
+    list.forEach((doc) => {
+      const row = document.createElement("div");
+      row.className = "assistant-document-pill";
+      row.dataset.documentId = doc.id;
+
+      const left = document.createElement("div");
+      left.className = "d-flex align-items-center flex-grow-1 gap-2 overflow-hidden";
+
+      const status = document.createElement("span");
+      status.className = "assistant-document-status" + (doc.status && doc.status !== "ready" ? " pending" : "");
+      status.textContent = (doc.status || "ready").replace(/_/g, " ").toUpperCase();
+
+      const name = document.createElement("span");
+      name.className = "assistant-document-name";
+      name.textContent = doc.filename || "{{ _('Document') }}";
+
+      left.appendChild(status);
+      left.appendChild(name);
+      row.appendChild(left);
+
+      const actions = document.createElement("div");
+      actions.className = "assistant-document-actions";
+
+      if (doc.download_url) {
+        const downloadLink = document.createElement("a");
+        downloadLink.href = doc.download_url;
+        downloadLink.className = "btn-icon";
+        downloadLink.target = "_blank";
+        downloadLink.rel = "noopener";
+        downloadLink.setAttribute("aria-label", "{{ _('Download') }}");
+        downloadLink.innerHTML = '<i class="fa fa-arrow-down"></i>';
+        actions.appendChild(downloadLink);
+      }
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.type = "button";
+      deleteBtn.className = "btn-icon";
+      deleteBtn.dataset.action = "delete";
+      deleteBtn.dataset.documentId = doc.id;
+      deleteBtn.setAttribute("aria-label", "{{ _('Remove document') }}");
+      deleteBtn.innerHTML = '<i class="fa fa-trash"></i>';
+      actions.appendChild(deleteBtn);
+
+      row.appendChild(actions);
+      documentListEl.appendChild(row);
+    });
+  }
+
+  function updateFromSessionPayload(payload) {
+    if (!payload) {
+      return;
+    }
+    currentSession = payload;
+    const messages = Array.isArray(payload.messages) ? payload.messages : [];
+    history = messages.map(({ role, content }) => ({ role, content }));
+    renderMessages(messages);
+    renderDocuments(payload.documents);
+  }
+
+  function bootstrapSession(sessionId) {
+    const body = sessionId ? { session_id: sessionId } : {};
+    sessionReadyPromise = fetch("{{ url_for('assistant.api_create_or_fetch_session') }}", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    })
+      .then((resp) => resp.json())
+      .then((data) => {
+        if (!data.success) {
+          showToast(data.message || "{{ _('Unable to start session.') }}", "danger");
+          return;
+        }
+        updateFromSessionPayload(data.session);
+      })
+      .catch(() => {
+        showToast("{{ _('Unable to start session.') }}", "danger");
+      });
+    return sessionReadyPromise;
+  }
+
+  function ensureSessionReady() {
+    if (currentSession) {
+      return Promise.resolve();
+    }
+    return sessionReadyPromise || bootstrapSession();
   }
 
   function appendMessage(role, content, options = {}) {
@@ -403,47 +652,50 @@
     return bubble;
   }
 
-  function submitMessage(message) {
+  async function submitMessage(message) {
     if (!message || pending) return;
+    await ensureSessionReady();
+    if (!currentSession) {
+      showToast("{{ _('Session not ready yet.') }}", "warning");
+      return;
+    }
     pending = true;
     sendBtn.disabled = true;
     input.value = "";
 
-    appendMessage("user", message);
-    history.push({ role: "user", content: message });
-
+    appendMessage("user", message, { copyText: message });
     const waitingIndicator = appendMessage("assistant", "{{ _('Thinking...') }}", { spinner: true });
 
-    fetch("{{ url_for('assistant.api_message') }}", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, history }),
-    })
-      .then(resp => resp.json())
-      .then(data => {
-        waitingIndicator.remove();
-        if (!data.success) {
-          showToast(data.message || "{{ _('Assistant error') }}", "danger");
-          history.pop(); // remove last user message for retry
-          appendMessage("assistant", "{{ _('Sorry, something went wrong.') }}");
-          return;
-        }
-        history = data.history || history;
-        appendMessage("assistant", data.reply || "");
-        if (!isOpen) {
-          unreadBadge.classList.remove("d-none");
-        }
-      })
-      .catch(() => {
-        waitingIndicator.remove();
-        history.pop();
-        appendMessage("assistant", "{{ _('Sorry, something went wrong.') }}");
-        showToast("{{ _('Connection error') }}", "danger");
-      })
-      .finally(() => {
-        pending = false;
-        sendBtn.disabled = false;
+    try {
+      const response = await fetch("{{ url_for('assistant.api_message') }}", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, session_id: currentSession.id }),
       });
+      const data = await response.json();
+      waitingIndicator.remove();
+      if (!response.ok || !data.success) {
+        showToast(data.message || "{{ _('Assistant error') }}", "danger");
+        renderMessages(history);
+        return;
+      }
+      if (data.session) {
+        updateFromSessionPayload(data.session);
+      } else if (Array.isArray(data.history)) {
+        history = data.history;
+        renderMessages(history);
+      }
+      if (!isOpen) {
+        unreadBadge.classList.remove("d-none");
+      }
+    } catch (error) {
+      waitingIndicator.remove();
+      showToast("{{ _('Connection error') }}", "danger");
+      renderMessages(history);
+    } finally {
+      pending = false;
+      sendBtn.disabled = false;
+    }
   }
 
   toggleBtn.addEventListener("click", () => toggle(true));
@@ -467,6 +719,87 @@
       toggle(false);
     }
   });
+
+  if (fileInput) {
+    fileInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+      ensureSessionReady().then(() => {
+        if (!currentSession) {
+          showToast("{{ _('Session not ready yet.') }}", "warning");
+          setUploadLoading(false);
+          return;
+        }
+        setUploadLoading(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        fetch(`{{ url_for('assistant.api_upload_document', session_id=0) }}`.replace("0", currentSession.id), {
+          method: "POST",
+          body: formData,
+        })
+          .then((resp) => resp.json())
+          .then((data) => {
+            if (!data.success) {
+              showToast(data.message || "{{ _('Upload failed.') }}", "danger");
+              return;
+            }
+            if (!currentSession) {
+              currentSession = { documents: [] };
+            }
+            currentSession.documents = currentSession.documents || [];
+            currentSession.documents = [
+              ...currentSession.documents.filter((doc) => doc.id !== data.document.id),
+              data.document,
+            ];
+            renderDocuments(currentSession.documents);
+          })
+          .catch(() => {
+            showToast("{{ _('Upload failed.') }}", "danger");
+          })
+          .finally(() => {
+            fileInput.value = "";
+            setUploadLoading(false);
+          });
+      });
+    });
+  }
+
+  if (documentListEl) {
+    documentListEl.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-action]");
+      if (!target) return;
+      const action = target.dataset.action;
+      const documentId = Number(target.dataset.documentId);
+      if (!documentId || !currentSession) {
+        return;
+      }
+      if (action === "delete") {
+        fetch(
+          `{{ url_for('assistant.api_delete_document', session_id=0, document_id=0) }}`.replace(
+            "0/0",
+            `${currentSession.id}/${documentId}`,
+          ),
+          { method: "DELETE" },
+        )
+          .then((resp) => resp.json())
+          .then((data) => {
+            if (!data.success) {
+              showToast(data.message || "{{ _('Unable to remove document.') }}", "warning");
+              return;
+            }
+            currentSession.documents = (currentSession.documents || []).filter((doc) => doc.id !== documentId);
+            renderDocuments(currentSession.documents);
+          })
+          .catch(() => {
+            showToast("{{ _('Unable to remove document.') }}", "warning");
+          });
+      }
+    });
+  }
+
+  bootstrapSession();
 
   // Upgrade existing static messages with copy buttons if missing
   messagesEl.querySelectorAll(".assistant-message").forEach((bubble) => {

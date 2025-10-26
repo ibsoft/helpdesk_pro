@@ -28,6 +28,7 @@ class Config:
     }
     KNOWLEDGE_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'knowledge_uploads')
     COLLAB_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'chat_uploads')
+    ASSISTANT_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'assistant_uploads')
 
     LANGUAGES = ['en', 'el']
     BABEL_DEFAULT_LOCALE = 'en'

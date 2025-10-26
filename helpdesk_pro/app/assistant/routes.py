@@ -11,20 +11,27 @@ This module now supports three providers:
 
 import json
 import re
+import os
+import uuid
+import mimetypes
 import ipaddress
 from datetime import date, timedelta
-from typing import List, Dict, Any, Iterable, Optional, Tuple, Union
+from typing import List, Dict, Any, Iterable, Optional, Tuple, Union, Sequence
 
 import requests
-from flask import Blueprint, jsonify, request, abort, current_app, url_for
+from flask import Blueprint, jsonify, request, abort, current_app, url_for, send_from_directory
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from sqlalchemy import func, or_, and_
 from sqlalchemy.orm import joinedload
+from werkzeug.utils import secure_filename
 
-from app import csrf
+from app import csrf, db
 from app.models import (
     AssistantConfig,
+    AssistantSession,
+    AssistantMessage,
+    AssistantDocument,
     Ticket,
     KnowledgeArticle,
     KnowledgeAttachment,
@@ -35,6 +42,7 @@ from app.models import (
     User,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
+from app import db
 from app.navigation import is_feature_allowed
 
 
@@ -289,6 +297,139 @@ def _load_config():
     return config
 
 
+def _assistant_upload_folder() -> str:
+    upload_folder = current_app.config.get("ASSISTANT_UPLOAD_FOLDER")
+    if not upload_folder:
+        upload_folder = os.path.join(current_app.instance_path, "assistant_uploads")
+        current_app.config["ASSISTANT_UPLOAD_FOLDER"] = upload_folder
+    os.makedirs(upload_folder, exist_ok=True)
+    return upload_folder
+
+
+def _extract_document_text(file_path: str, mimetype: Optional[str]) -> Optional[str]:
+    mimetype = (mimetype or "").lower()
+    try:
+        if mimetype.startswith("text/") or mimetype in {"application/json", "application/xml"}:
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as handle:
+                return handle.read()
+        if mimetype == "application/pdf":
+            try:
+                from pdfminer.high_level import extract_text
+
+                return extract_text(file_path)
+            except Exception:
+                return None
+        if mimetype in {
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/msword",
+        }:
+            try:
+                import docx
+
+                document = docx.Document(file_path)
+                return "\n".join(paragraph.text for paragraph in document.paragraphs)
+            except Exception:
+                return None
+    except Exception:
+        return None
+    return None
+
+
+def _serialize_message(message: AssistantMessage) -> Dict[str, Any]:
+    return {
+        "id": message.id,
+        "session_id": message.session_id,
+        "role": message.role,
+        "content": message.content,
+        "created_at": message.created_at.isoformat() if message.created_at else None,
+    }
+
+
+def _serialize_document(document: AssistantDocument) -> Dict[str, Any]:
+    return {
+        "id": document.id,
+        "session_id": document.session_id,
+        "filename": document.original_filename,
+        "mimetype": document.mimetype,
+        "size": document.file_size,
+        "status": document.status,
+        "created_at": document.created_at.isoformat() if document.created_at else None,
+        "download_url": url_for(
+            "assistant.download_document", session_id=document.session_id, document_id=document.id
+        ),
+    }
+
+
+def _serialize_session(session: AssistantSession) -> Dict[str, Any]:
+    return {
+        "id": session.id,
+        "title": session.title,
+        "created_at": session.created_at.isoformat() if session.created_at else None,
+        "updated_at": session.updated_at.isoformat() if session.updated_at else None,
+        "messages": [
+            _serialize_message(message)
+            for message in sorted(
+                session.messages,
+                key=lambda m: (m.created_at or date.min, m.id),
+            )
+        ],
+        "documents": [_serialize_document(doc) for doc in session.documents],
+    }
+
+
+def _ensure_session_for_user(session_id: int, user: User) -> Optional[AssistantSession]:
+    if not session_id:
+        return None
+    return AssistantSession.query.filter_by(id=session_id, user_id=user.id).first()
+
+
+def _create_session_for_user(user: User) -> AssistantSession:
+    session = AssistantSession(user_id=user.id)
+    db.session.add(session)
+    db.session.flush()
+    return session
+
+
+def _session_history(session: AssistantSession) -> List[Dict[str, str]]:
+    messages: Sequence[AssistantMessage] = (
+        AssistantMessage.query.filter_by(session_id=session.id)
+        .order_by(AssistantMessage.created_at.asc(), AssistantMessage.id.asc())
+        .all()
+    )
+    return [{"role": m.role, "content": m.content} for m in messages]
+
+
+def _compose_document_context(session: AssistantSession, max_chars: int = 8000) -> Optional[str]:
+    ready_documents = [
+        doc
+        for doc in session.documents
+        if doc.status == "ready" and doc.extracted_text and doc.extracted_text.strip()
+    ]
+    if not ready_documents:
+        return None
+    sorted_docs = sorted(ready_documents, key=lambda d: d.created_at or date.min, reverse=True)
+    remaining = max_chars
+    sections: List[str] = []
+    for doc in sorted_docs:
+        snippet = doc.extracted_text.strip()
+        if not snippet:
+            continue
+        if len(snippet) > remaining:
+            snippet = snippet[: remaining]
+        sections.append(
+            f"Document: {doc.original_filename}\nContent excerpt:\n{snippet.strip()}"
+        )
+        remaining -= len(snippet)
+        if remaining <= 0:
+            break
+    if not sections:
+        return None
+    return (
+        "The user has attached the following documents. Use them as primary context when answering:\n\n"
+        + "\n\n".join(sections)
+    )
+
+
 def _build_history(messages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     valid = []
     for msg in messages or []:
@@ -379,6 +520,174 @@ def _dispatch_module_query(tool_name: str, message: str, user) -> str:
     return "Unsupported tool call."
 
 
+def _session_response_payload(session: AssistantSession) -> Dict[str, Any]:
+    refreshed = (
+        AssistantSession.query.options(
+            joinedload(AssistantSession.messages),
+            joinedload(AssistantSession.documents),
+        )
+        .filter_by(id=session.id)
+        .first()
+    )
+    target = refreshed or session
+    return {
+        "session": _serialize_session(target),
+    }
+
+
+@assistant_bp.route("/api/session", methods=["POST"])
+@login_required
+def api_create_or_fetch_session():
+    if not is_feature_allowed("assistant_widget", current_user):
+        abort(403)
+
+    data = request.get_json(silent=True) or {}
+    session_id = data.get("session_id")
+    session: Optional[AssistantSession] = None
+
+    if session_id:
+        session = _ensure_session_for_user(session_id, current_user)
+        if not session:
+            return (
+                jsonify({"success": False, "message": _("Session not found.")}),
+                404,
+            )
+        session.touch()
+    else:
+        session = _create_session_for_user(current_user)
+
+    db.session.commit()
+    return jsonify({"success": True, **_session_response_payload(session)})
+
+
+@assistant_bp.route("/api/session/<int:session_id>", methods=["GET"])
+@login_required
+def api_get_session(session_id: int):
+    if not is_feature_allowed("assistant_widget", current_user):
+        abort(403)
+    session = _ensure_session_for_user(session_id, current_user)
+    if not session:
+        return (
+            jsonify({"success": False, "message": _("Session not found.")}),
+            404,
+        )
+    session.touch()
+    db.session.commit()
+    return jsonify({"success": True, **_session_response_payload(session)})
+
+
+@assistant_bp.route("/api/session/<int:session_id>/documents", methods=["POST"])
+@login_required
+def api_upload_document(session_id: int):
+    if not is_feature_allowed("assistant_widget", current_user):
+        abort(403)
+    session = _ensure_session_for_user(session_id, current_user)
+    if not session:
+        return (
+            jsonify({"success": False, "message": _("Session not found.")}),
+            404,
+        )
+
+    if "file" not in request.files:
+        return jsonify({"success": False, "message": _("No file provided.")}), 400
+    file = request.files["file"]
+    if not file or file.filename == "":
+        return jsonify({"success": False, "message": _("Please choose a file.")}), 400
+
+    filename = secure_filename(file.filename)
+    if not filename:
+        return jsonify({"success": False, "message": _("Invalid filename.")}), 400
+
+    upload_folder = _assistant_upload_folder()
+    unique_name = f"{uuid.uuid4().hex}_{filename}"
+    stored_path = os.path.join(upload_folder, unique_name)
+    file.save(stored_path)
+
+    mimetype = file.mimetype or mimetypes.guess_type(filename)[0] or ""
+    try:
+        file_size = os.path.getsize(stored_path)
+    except OSError:
+        file_size = None
+
+    extracted_text = _extract_document_text(stored_path, mimetype)
+    status = "ready" if extracted_text else "uploaded"
+
+    document = AssistantDocument(
+        session_id=session.id,
+        user_id=current_user.id,
+        original_filename=filename,
+        stored_filename=unique_name,
+        mimetype=mimetype,
+        file_size=file_size,
+        extracted_text=extracted_text,
+        status=status,
+    )
+    db.session.add(document)
+    session.touch()
+    db.session.commit()
+    return jsonify(
+        {
+            "success": True,
+            "document": _serialize_document(document),
+        }
+    )
+
+
+@assistant_bp.route(
+    "/api/session/<int:session_id>/documents/<int:document_id>", methods=["DELETE"]
+)
+@login_required
+def api_delete_document(session_id: int, document_id: int):
+    if not is_feature_allowed("assistant_widget", current_user):
+        abort(403)
+    session = _ensure_session_for_user(session_id, current_user)
+    if not session:
+        return (
+            jsonify({"success": False, "message": _("Session not found.")}),
+            404,
+        )
+    document = AssistantDocument.query.filter_by(
+        id=document_id, session_id=session.id
+    ).first()
+    if not document:
+        return (
+            jsonify({"success": False, "message": _("Document not found.")}),
+            404,
+        )
+    upload_folder = _assistant_upload_folder()
+    file_path = os.path.join(upload_folder, document.stored_filename)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except OSError:
+            current_app.logger.warning("Failed to remove assistant document %s", file_path)
+    db.session.delete(document)
+    session.touch()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@assistant_bp.route(
+    "/api/session/<int:session_id>/documents/<int:document_id>/download", methods=["GET"]
+)
+@login_required
+def download_document(session_id: int, document_id: int):
+    if not is_feature_allowed("assistant_widget", current_user):
+        abort(403)
+    session = _ensure_session_for_user(session_id, current_user)
+    if not session:
+        abort(404)
+    document = AssistantDocument.query.filter_by(
+        id=document_id, session_id=session.id
+    ).first()
+    if not document:
+        abort(404)
+    upload_folder = _assistant_upload_folder()
+    return send_from_directory(
+        upload_folder, document.stored_filename, as_attachment=True, download_name=document.original_filename
+    )
+
+
 @assistant_bp.route("/api/message", methods=["POST"])
 @login_required
 def api_message():
@@ -390,8 +699,17 @@ def api_message():
         return jsonify({"success": False, "message": _("Assistant is disabled.")}), 400
 
     data = request.get_json(silent=True) or {}
+    session_id = data.get("session_id")
+    session = None
+    if session_id:
+        session = _ensure_session_for_user(session_id, current_user)
+        if not session:
+            return jsonify({"success": False, "message": _("Session not found.")}), 404
+    else:
+        session = _create_session_for_user(current_user)
+        db.session.commit()
+
     message = _safe_strip(data.get("message"))
-    history = _build_history(data.get("history", []))
     if not message:
         return jsonify({"success": False, "message": _("Message cannot be empty.")}), 400
 
@@ -399,12 +717,25 @@ def api_message():
     message = normalized_message
 
     system_prompt = config.system_prompt or DEFAULT_SYSTEM_PROMPT
-    history.append({"role": "user", "content": message})
-    messages_for_model = [{"role": "system", "content": system_prompt}] + history if system_prompt else history
+    prior_history = _session_history(session)
+    user_history_entry = {"role": "user", "content": message}
+    history = prior_history + [user_history_entry]
+
+    document_context = _compose_document_context(session)
+    messages_for_model: List[Dict[str, str]] = []
+    if system_prompt:
+        messages_for_model.append({"role": "system", "content": system_prompt})
+    messages_for_model.extend(prior_history)
+    if document_context:
+        messages_for_model.append({"role": "system", "content": document_context})
+    messages_for_model.append(user_history_entry)
 
     reply: Optional[str] = None
     builtin_reply: Optional[str] = None
     used_llm_provider = False
+
+    user_message_row = AssistantMessage(session_id=session.id, role="user", content=message)
+    db.session.add(user_message_row)
 
     if config.provider in {"chatgpt", "chatgpt_hybrid"} and _should_force_builtin(message):
         builtin_reply = _call_builtin(message, history, current_user)
@@ -448,6 +779,7 @@ def api_message():
         except requests.RequestException as exc:
             return jsonify({"success": False, "message": _("Connection error: %(error)s", error=str(exc))}), 502
         except Exception as exc:  # pragma: no cover
+            db.session.rollback()
             return jsonify({"success": False, "message": str(exc)}), 500
 
     if not reply and config.provider in {"chatgpt", "chatgpt_hybrid", "openwebui"}:
@@ -463,10 +795,25 @@ def api_message():
             reply = override
 
     if not reply:
+        db.session.rollback()
         return jsonify({"success": False, "message": _("Assistant did not return a reply.")}), 502
 
+    assistant_message_row = AssistantMessage(session_id=session.id, role="assistant", content=reply)
+    db.session.add(assistant_message_row)
+    session.touch()
+    db.session.commit()
+
     history.append({"role": "assistant", "content": reply})
-    return jsonify({"success": True, "reply": reply, "history": history})
+    updated_session = AssistantSession.query.get(session.id)
+    session_payload = _session_response_payload(updated_session)
+    return jsonify(
+        {
+            "success": True,
+            "reply": reply,
+            "history": history,
+            **session_payload,
+        }
+    )
 
 
 def _call_openai(
