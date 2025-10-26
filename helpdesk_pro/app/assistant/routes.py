@@ -246,6 +246,13 @@ LLM_TOOL_DEFINITIONS = [
             "from the Helpdesk Pro inventory."
         ),
     },
+    {
+        "name": "query_network_inventory",
+        "description": (
+            "Retrieve network details, including CIDR blocks, available IPs, host reservations, and assignments "
+            "from the Helpdesk Pro network map."
+        ),
+    },
 ]
 
 PHRASE_PATTERN = re.compile(
@@ -349,6 +356,9 @@ def _dispatch_module_query(tool_name: str, message: str, user) -> str:
     if tool_name == "query_hardware_inventory":
         response = _answer_hardware_query(message, lowered, user)
         return response or "No hardware assets matched those filters."
+    if tool_name == "query_network_inventory":
+        response = _answer_network_query(message, lowered, user)
+        return response or "No network records matched those filters."
     return "Unsupported tool call."
 
 
@@ -493,8 +503,10 @@ def _call_openai(
     message = choices[0].get("message", {})
     tool_calls = message.get("tool_calls") if allow_tools else None
     if allow_tools and tool_calls:
-        if depth >= 3:
-            return _safe_strip(message.get("content", "Tool call limit reached.")) or "Tool call limit reached."
+        limit = _tool_call_limit()
+        if limit >= 0 and depth >= limit:
+            fallback = "Remote tool execution limit reached. Please respond directly with the information gathered so far."
+            return _safe_strip(message.get("content", fallback)) or fallback
         new_messages = messages + [message]
         for call in tool_calls:
             result = _execute_tool_call(call, tool_context or {})
@@ -525,6 +537,15 @@ def _prepare_tool_context(
         context["latest_user_message"] = _latest_user_message_from(messages)
     context.setdefault("history", messages)
     return context
+
+
+def _tool_call_limit() -> int:
+    """Return the maximum allowed tool recursion depth, or a negative value to disable."""
+    try:
+        limit = int(current_app.config.get("ASSISTANT_TOOL_CALL_DEPTH_LIMIT", 3))
+    except (TypeError, ValueError):
+        limit = 3
+    return limit
 
 
 def _execute_remote_openwebui_tool(
@@ -634,8 +655,10 @@ def _call_openwebui(
     message = choices[0].get("message", {})
     tool_calls = message.get("tool_calls") or []
     if tool_calls:
-        if depth >= 3:
-            return _safe_strip(message.get("content", "Tool call limit reached.")) or "Tool call limit reached."
+        limit = _tool_call_limit()
+        if limit >= 0 and depth >= limit:
+            fallback = "Remote tool execution limit reached. Please respond directly with the information gathered so far."
+            return _safe_strip(message.get("content", fallback)) or fallback
         context = _prepare_tool_context(tool_context, messages)
         new_messages = messages + [message]
         local_tool_names = {tool["name"] for tool in LLM_TOOL_DEFINITIONS}
