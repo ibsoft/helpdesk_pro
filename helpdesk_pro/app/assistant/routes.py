@@ -953,19 +953,19 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
             lines = []
             for net in networks:
                 host_count = len(net.hosts)
-            site = net.site or "n/a"
-            vlan = net.vlan or "n/a"
-            gateway = net.gateway or "n/a"
-            summary = (
-                f"{(net.name or 'Unnamed network')} ({net.cidr}) — network {net.network_address or 'n/a'}; "
-                f"broadcast {net.broadcast_address or 'n/a'}; hosts tracked {host_count}; "
-                f"gateway {gateway}; site {site}; VLAN {vlan}"
-            )
-            if net.description:
-                summary += f"; description {_safe_strip(net.description)}"
-            if net.notes:
-                summary += f"; notes {_safe_strip(net.notes)}"
-            lines.append(summary)
+                site = net.site or "n/a"
+                vlan = net.vlan or "n/a"
+                gateway = net.gateway or "n/a"
+                summary = (
+                    f"{(net.name or 'Unnamed network')} ({net.cidr}) — network {net.network_address or 'n/a'}; "
+                    f"broadcast {net.broadcast_address or 'n/a'}; hosts tracked {host_count}; "
+                    f"gateway {gateway}; site {site}; VLAN {vlan}"
+                )
+                if net.description:
+                    summary += f"; description {_safe_strip(net.description)}"
+                if net.notes:
+                    summary += f"; notes {_safe_strip(net.notes)}"
+                lines.append(summary)
             if len(networks) == 20:
                 lines.append("…showing latest 20 networks.")
             return "Tracked networks:\n" + "\n".join(lines)
@@ -982,7 +982,7 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
         host.ip_address for host in candidate.hosts if host.ip_address and getattr(host, "is_reserved", False)
     }
 
-    if any(token in lowered for token in ("list hosts", "show hosts", "all hosts", "hosts list", "detailed hosts", "host list")):
+    if any(token in lowered for token in ("list hosts", "show hosts", "all hosts", "hosts list", "detailed hosts", "host list", "ip status", "host status")) or _extract_network_host_tokens(message):
         return _format_network_hosts(candidate, message, lowered, user)
 
     requested_single = any(token in lowered for token in ("first", "single", "one"))
@@ -1141,6 +1141,21 @@ def _format_network_hosts(network: Network, message: str, lowered: str, user) ->
         return f"No hosts matched {filter_text} under {network.name} ({network.cidr})."
 
     hosts = sorted(hosts, key=lambda h: (h.ip_address or "", h.hostname or ""))
+
+    if len(hosts) == 1 and any(term in lowered for term in ("status", "reserved", "available")):
+        host = hosts[0]
+        status = "Reserved" if host.is_reserved else "Available"
+        hostname = host.hostname or "—"
+        assigned = host.assigned_to or "Unassigned"
+        details = [f"IP {host.ip_address} is {status} in {network.name} ({network.cidr})."]
+        details.append(f"Hostname: {hostname}.")
+        details.append(f"Assigned to: {assigned}.")
+        if host.device_type:
+            details.append(f"Device type: {host.device_type}.")
+        if host.description:
+            details.append(f"Notes: {host.description}.")
+        return " ".join(details)
+
     header = f"Hosts tracked for {network.name} ({network.cidr})"
     if filters_applied:
         header += f" — filters: {', '.join(filters_applied)}"

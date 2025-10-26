@@ -87,13 +87,95 @@
     border: none;
     text-align: center;
   }
+  .assistant-message {
+    position: relative;
+  }
+  .assistant-message .assistant-message-inner {
+    display: block;
+  }
+  .assistant-message .assistant-copy-btn {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #475569;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
+    opacity: 0.25;
+    transform: translateY(-4px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  html[data-bs-theme="dark"] body .assistant-message .assistant-copy-btn {
+    background: rgba(30, 41, 59, 0.85);
+    color: #cbd5f5;
+  }
+  .assistant-message:hover .assistant-copy-btn,
+  .assistant-message:focus-within .assistant-copy-btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .assistant-message .assistant-copy-btn.copied {
+    color: #22c55e;
+  }
   .assistant-form {
     display: flex;
     gap: 0.5rem;
+    align-items: stretch;
   }
   .assistant-form textarea {
     resize: none;
     min-height: 90px;
+    background: rgba(15, 23, 42, 0.03);
+    border-radius: 0.85rem;
+    border: 1px solid rgba(148,163,184,0.4);
+  }
+  html[data-bs-theme="dark"] body .assistant-form textarea {
+    background: rgba(15, 23, 42, 0.6);
+    color: #e2e8f0;
+    border-color: rgba(148,163,184,0.35);
+  }
+  .assistant-input-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+  }
+  .assistant-input-actions .btn {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.18);
+  }
+  .assistant-mic-btn {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(99,102,241,0.25));
+    color: #1e293b;
+    border: 1px solid rgba(99,102,241,0.35);
+  }
+  .assistant-mic-btn.active {
+    background: linear-gradient(135deg, rgba(34,197,94,0.85), rgba(16,185,129,0.85));
+    color: #ffffff;
+  }
+  html[data-bs-theme="dark"] body .assistant-mic-btn {
+    color: #e2e8f0;
+    border-color: rgba(165,180,252,0.35);
+  }
+  .assistant-mic-btn.assistant-mic-btn-disabled {
+    background: linear-gradient(135deg, rgba(148,163,184,0.15), rgba(148,163,184,0.25));
+    color: #475569;
+    border-color: rgba(148,163,184,0.35);
+  }
+  html[data-bs-theme="dark"] body .assistant-mic-btn.assistant-mic-btn-disabled {
+    color: #94a3b8;
+    border-color: rgba(71,85,105,0.45);
   }
   .assistant-spinner {
     display: inline-flex;
@@ -129,17 +211,25 @@
     </div>
     <div class="assistant-messages" id="assistantMessages">
       {% if cfg.welcome_message %}
-        <div class="assistant-message assistant-message-assistant">
-          {{ cfg.welcome_message }}
+        <div class="assistant-message assistant-message-assistant" data-raw="{{ cfg.welcome_message }}">
+          <div class="assistant-message-inner">{{ cfg.welcome_message }}</div>
+          <button type="button" class="assistant-copy-btn" aria-label="{{ _('Copy message') }}">
+            <i class="fa fa-copy"></i>
+          </button>
         </div>
       {% endif %}
     </div>
     <div class="card-footer">
       <form class="assistant-form" id="assistantForm">
         <textarea class="form-control" placeholder="{{ _('Type your message...') }}" id="assistantInput"></textarea>
-        <button type="submit" class="btn btn-primary" id="assistantSend">
-          <i class="fa fa-paper-plane"></i>
-        </button>
+        <div class="assistant-input-actions">
+          <button type="button" class="btn assistant-mic-btn" id="assistantMic" aria-label="{{ _('Start voice input') }}" title="{{ _('Start voice input (GR → EN fallback)') }}">
+            <i class="fa fa-microphone"></i>
+          </button>
+          <button type="submit" class="btn btn-primary" id="assistantSend" aria-label="{{ _('Send message') }}">
+            <i class="fa fa-paper-plane"></i>
+          </button>
+        </div>
       </form>
     </div>
   </div>
@@ -157,6 +247,13 @@
   const messagesEl = document.getElementById("assistantMessages");
   const sendBtn = document.getElementById("assistantSend");
   const unreadBadge = document.getElementById("assistantUnreadBadge");
+  const micBtn = document.getElementById("assistantMic");
+
+  const copyButtonLabel = "{{ _('Copy message') }}";
+  const copySuccessLabel = "{{ _('Copied!') }}";
+  const speechNotSupportedLabel = "{{ _('Speech recognition is not supported in this browser.') }}";
+  const speechStartLabel = "{{ _('Start voice input (GR → EN fallback)') }}";
+  const speechStopLabel = "{{ _('Stop listening') }}";
 
   if (!root || !form) return;
 
@@ -195,6 +292,67 @@
     return withAngleLinks.replace(/\n/g, "<br>");
   };
 
+  const plainText = (value) => {
+    const temp = document.createElement("div");
+    temp.innerHTML = value;
+    return temp.textContent || temp.innerText || "";
+  };
+
+  function handleCopy(bubble, button) {
+    const raw = bubble?.dataset?.raw || "";
+    const text = raw || plainText(bubble.querySelector(".assistant-message-inner")?.innerHTML || "");
+    if (!text) return;
+
+    const setCopiedState = () => {
+      button.classList.add("copied");
+      const originalHTML = button.dataset.icon || button.innerHTML;
+      button.dataset.icon = originalHTML;
+      button.innerHTML = '<i class="fa fa-check"></i>';
+      button.setAttribute("title", copySuccessLabel);
+      setTimeout(() => {
+        button.classList.remove("copied");
+        button.innerHTML = button.dataset.icon;
+        button.setAttribute("title", copyButtonLabel);
+      }, 1600);
+      showToast(copySuccessLabel, "success");
+    };
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(setCopiedState).catch(() => {
+        showToast("{{ _('Clipboard copy failed. Try again manually.') }}", "warning");
+      });
+    } else {
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "true");
+      textarea.style.position = "absolute";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand("copy");
+        setCopiedState();
+      } catch (err) {
+        showToast("{{ _('Clipboard copy failed. Try again manually.') }}", "warning");
+      }
+      document.body.removeChild(textarea);
+    }
+  }
+
+  function createCopyButton(bubble) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "assistant-copy-btn";
+    button.innerHTML = '<i class="fa fa-copy"></i>';
+    button.setAttribute("aria-label", copyButtonLabel);
+    button.setAttribute("title", copyButtonLabel);
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      handleCopy(bubble, button);
+    });
+    return button;
+  }
+
   let history = [];
   let isOpen = false;
   let pending = false;
@@ -218,9 +376,28 @@
     } else {
       bubble.className = "assistant-message assistant-message-system";
     }
-    bubble.innerHTML = options.spinner
+
+    bubble.dataset.role = role;
+    const rawValue = typeof options.copyText === "string"
+      ? options.copyText
+      : typeof content === "string"
+        ? content
+        : "";
+    if (rawValue) {
+      bubble.dataset.raw = rawValue;
+    }
+
+    const inner = document.createElement("div");
+    inner.className = "assistant-message-inner";
+    inner.innerHTML = options.spinner
       ? `<span class="assistant-spinner"><span class="spinner-border spinner-border-sm"></span> ${escapeHTML(content)}</span>`
       : renderAssistantContent(content);
+    bubble.appendChild(inner);
+
+    if (!options.spinner && role !== "system") {
+      bubble.appendChild(createCopyButton(bubble));
+    }
+
     messagesEl.appendChild(bubble);
     messagesEl.scrollTop = messagesEl.scrollHeight;
     return bubble;
@@ -290,5 +467,135 @@
       toggle(false);
     }
   });
+
+  // Upgrade existing static messages with copy buttons if missing
+  messagesEl.querySelectorAll(".assistant-message").forEach((bubble) => {
+    if (!bubble.querySelector(".assistant-message-inner")) {
+      const inner = document.createElement("div");
+      inner.className = "assistant-message-inner";
+      inner.innerHTML = bubble.innerHTML;
+      bubble.innerHTML = "";
+      bubble.appendChild(inner);
+    }
+    if (!bubble.dataset.raw) {
+      bubble.dataset.raw = plainText(bubble.querySelector(".assistant-message-inner")?.innerHTML || "");
+    }
+    if (!bubble.querySelector(".assistant-copy-btn") && bubble.dataset.role !== "system") {
+      bubble.appendChild(createCopyButton(bubble));
+    }
+  });
+
+  // Speech recognition setup
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const speechLanguages = ["el-GR", "en-US"];
+  let recognition = null;
+  let recognitionLanguageIndex = 0;
+  let isRecording = false;
+  let transcriptBuffer = "";
+
+  function resetMicState() {
+    if (!micBtn) return;
+    micBtn.classList.remove("active");
+    micBtn.innerHTML = '<i class="fa fa-microphone"></i>';
+    micBtn.setAttribute("title", speechStartLabel);
+    micBtn.setAttribute("aria-label", speechStartLabel);
+  }
+
+  function setMicActive() {
+    if (!micBtn) return;
+    micBtn.classList.add("active");
+    micBtn.innerHTML = '<i class="fa fa-stop"></i>';
+    micBtn.setAttribute("title", speechStopLabel);
+    micBtn.setAttribute("aria-label", speechStopLabel);
+  }
+
+  if (SpeechRecognition && micBtn) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
+      isRecording = true;
+      transcriptBuffer = "";
+      setMicActive();
+    };
+
+    recognition.onresult = (event) => {
+      let interimTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const transcript = result[0].transcript.trim();
+        if (result.isFinal) {
+          transcriptBuffer += transcript + " ";
+        } else {
+          interimTranscript += transcript + " ";
+        }
+      }
+      if (interimTranscript && input) {
+        input.placeholder = `${interimTranscript.trim()} …`;
+      }
+    };
+
+    recognition.onerror = (event) => {
+      if (recognitionLanguageIndex === 0 && event.error === "no-speech") {
+        recognitionLanguageIndex = 1;
+        recognition.lang = speechLanguages[recognitionLanguageIndex];
+        try {
+          recognition.start();
+        } catch (startErr) {
+          showToast("{{ _('Unable to start voice capture.') }}", "danger");
+          resetMicState();
+        }
+        return;
+      }
+      showToast(event.error === "not-allowed" ? "{{ _('Microphone permission denied.') }}" : event.error, "warning");
+      input.placeholder = "{{ _('Type your message...') }}";
+      resetMicState();
+    };
+
+    recognition.onend = () => {
+      isRecording = false;
+      resetMicState();
+      input.placeholder = "{{ _('Type your message...') }}";
+      const finalText = transcriptBuffer.trim();
+      if (!finalText && recognitionLanguageIndex === 0) {
+        recognitionLanguageIndex = 1;
+      }
+      if (finalText) {
+        if (input.value) {
+          input.value = `${input.value.trim()} ${finalText}`.trim() + " ";
+        } else {
+          input.value = finalText + " ";
+        }
+        input.focus();
+      }
+    };
+
+    function toggleRecognition() {
+      if (!recognition) return;
+      if (isRecording) {
+        recognition.stop();
+        return;
+      }
+      transcriptBuffer = "";
+      recognitionLanguageIndex = 0;
+      recognition.lang = speechLanguages[recognitionLanguageIndex];
+      setMicActive();
+      try {
+        recognition.start();
+      } catch (err) {
+        showToast("{{ _('Unable to start voice capture.') }}", "danger");
+        resetMicState();
+      }
+    }
+
+    micBtn.addEventListener("click", toggleRecognition);
+  } else if (micBtn) {
+    micBtn.classList.add("assistant-mic-btn-disabled");
+    micBtn.setAttribute("title", speechNotSupportedLabel);
+    micBtn.setAttribute("aria-label", speechNotSupportedLabel);
+    micBtn.addEventListener("click", () => showToast(speechNotSupportedLabel, "warning"));
+  }
 })();
 </script>
