@@ -8,7 +8,7 @@ import os
 import re
 import uuid
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 from flask import (
     Blueprint,
@@ -262,13 +262,21 @@ def _serialize_message(message):
             "youtube_id": youtube_id,
         }
 
+    created_at = message.created_at
+    if created_at:
+        if created_at.tzinfo is None:
+            created_at = created_at.replace(tzinfo=timezone.utc)
+        created_at_iso = created_at.isoformat()
+    else:
+        created_at_iso = None
+
     return {
         "id": message.id,
         "conversation_id": message.conversation_id,
         "sender_id": message.sender_id,
         "sender_name": User.query.get(message.sender_id).username if message.sender_id else _("Unknown"),
         "body": message.body or "",
-        "created_at": message.created_at.isoformat(),
+        "created_at": created_at_iso,
         "isMine": message.sender_id == current_user.id,
         "attachment": attachment_info,
     }
