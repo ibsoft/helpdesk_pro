@@ -1233,6 +1233,16 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
 
 
 def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
+    has_network_intent = (
+        any(term in lowered for term in NETWORK_KEYWORDS)
+        or CIDR_PATTERN.search(message) is not None
+        or IP_ADDRESS_PATTERN.search(message) is not None
+        or "host" in lowered
+        or "hosts" in lowered
+    )
+    if not has_network_intent:
+        return None
+
     candidate: Optional[Network] = None
     query = Network.query.options(joinedload(Network.hosts))
     networks_list = query.all()

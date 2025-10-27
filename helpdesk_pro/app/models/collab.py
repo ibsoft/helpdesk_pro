@@ -8,6 +8,7 @@ from datetime import datetime
 import os
 
 from app import db
+from app.utils.security import encrypt_secret, decrypt_secret
 
 
 class ChatConversation(db.Model):
@@ -69,7 +70,7 @@ class ChatMessage(db.Model):
         nullable=False,
     )
     sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    body = db.Column(db.Text)
+    _body = db.Column("body", db.Text)
     attachment_filename = db.Column(db.String(255))
     attachment_original = db.Column(db.String(255))
     attachment_mimetype = db.Column(db.String(120))
@@ -81,6 +82,24 @@ class ChatMessage(db.Model):
         cascade="all, delete-orphan",
         passive_deletes=True,
     )
+
+    @property
+    def body(self):
+        raw = self._body
+        if not raw:
+            return ""
+        try:
+            return decrypt_secret(raw)
+        except Exception:
+            return raw
+
+    @body.setter
+    def body(self, value):
+        if value is None:
+            self._body = None
+            return
+        text = value if isinstance(value, str) else str(value)
+        self._body = encrypt_secret(text)
 
     def attachment_path(self, upload_folder):
         if not self.attachment_filename:
