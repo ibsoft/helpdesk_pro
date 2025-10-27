@@ -90,6 +90,7 @@ HARDWARE_TYPES = [
     "Firewall",
     "UPS",
     "IoT Device",
+    "VOIP Phone",
     "Other",
 ]
 HARDWARE_STATUSES = [

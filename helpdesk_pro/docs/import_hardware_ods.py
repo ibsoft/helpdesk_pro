@@ -1,21 +1,19 @@
 # import_hardware_ods.py
 # -*- coding: utf-8 -*-
 """
-Import .ods σε PostgreSQL πίνακα hardware_asset με:
-- Auto-mapping (EL/EN) + χειροκίνητα overrides (--map/--map-file)
+Import .ods/.xlsx -> PostgreSQL hardware_asset χωρίς καμία «μοναδικότητα» στο asset_tag.
+- Ταυτοποίηση/Upsert με: serial_number → custom_tag (asset_tag δεν χρησιμοποιείται για ταυτοποίηση)
+- Δεν γίνεται έλεγχος uniqueness στο asset_tag
+- asset_tag: από Manufacturer+Model (ή διατηρείται αν υπάρχει)· επιλογή τρόπου με --asset-tag-mode
+- Εξαγωγή λογιστικού αριθμού από notes -> custom_tag (πρώτος ακέραιος ≥6 ψηφία), παλιό custom_tag → notes ως ext=<...>
+- Προσθήκη user=<...> από στήλη «ΟΝΟΜ/ΜΟ ΧΡΗΣΤΗ» στα notes
+- Καθάρισμα IPv4 από τιμές τύπου "192.168.10.141 - 7620"
 - Timezone-aware timestamps
-- Καθάρισμα IPv4 από πεδία τύπου '192.168.10.141 - 7620'
-- Εξαγωγή "custom serial" από notes (π.χ. '1408000314 ...' -> custom_tag) και μεταφορά παλιού custom_tag σε notes ως ext=...
-- Ενσωμάτωση «ΟΝΟΜ/ΜΟ ΧΡΗΣΤΗ» στα notes ως user=<...>
-- Παραγωγή asset_tag από Manufacturer+Model με σειριακή αρίθμηση ανά import: "<Manufacturer> <Model> #<n>"
-  ρυθμίσιμη με --asset-tag-seq-start και --asset-tag-seq-prefix
-- Χειρισμό UNIQUE στο custom_tag με πολιτική --custom-unique-mode (default: nullify)
-- Χειροκίνητο upsert χωρίς ON CONFLICT, key order: serial_number → custom_tag → asset_tag
-- Επιβολή status='In Service' σε όλες τις γραμμές
-- Per-row transactions ώστε να μην ακυρώνεται όλο το batch
-
-Απαιτήσεις:
-  pip install pandas odfpy sqlalchemy psycopg2-binary
+- Per-row transactions (ένα λάθος δεν ρίχνει όλο το batch)
+- --custom-unique-mode: update|nullify|skip  (default: nullify)
+- --category και --type για καθολική τιμή Category/Type ανά import
+- --map / --map-file για manual mapping
+Απαιτήσεις: pip install pandas odfpy openpyxl sqlalchemy psycopg2-binary
 """
 
 import argparse
@@ -33,7 +31,7 @@ from sqlalchemy import create_engine, text, Table, MetaData
 from sqlalchemy.engine import Engine
 
 # ----------------------------------------------------------------------
-# Config / Globals
+# Defaults / Columns
 # ----------------------------------------------------------------------
 DEFAULT_DB_URI = os.getenv(
     "SQLALCHEMY_DATABASE_URI",
@@ -108,12 +106,20 @@ RAW_SYNONYMS = {
 DATE_COLUMNS = {"purchase_date", "warranty_end", "assigned_on", "created_at", "updated_at"}
 KEY_COLUMNS_AS_TEXT = {"asset_tag", "custom_tag", "serial_number"}
 
-KEY_ORDER = ("serial_number", "custom_tag", "asset_tag")
-CUSTOM_UNIQUE_MODE = "nullify"  # update | nullify | skip
+# Ταυτοποίηση μόνο με αυτά τα δύο:
+KEY_ORDER = ("serial_number", "custom_tag")
+
+# Χειρισμός uniqueness μόνο για custom_tag (αν υπάρχει unique index στη ΒΔ)
+CUSTOM_UNIQUE_MODE = "nullify"  # update|nullify|skip
 
 ASSET_TAG_SEP = " "
 
-# Σειριακή αρίθμηση asset_tag
+# σταθερές τιμές Category/Type από CLI
+FIXED_CATEGORY: Optional[str] = None
+FIXED_TYPE: Optional[str] = None
+
+# asset_tag mode: keep | from-model | from-model-numbered
+ASSET_TAG_MODE = "keep"
 ASSET_TAG_SEQ_START = 1
 ASSET_TAG_SEQ_PREFIX = "#"
 
@@ -162,7 +168,7 @@ def map_header_to_column(h: str) -> Optional[str]:
 # Value coercion
 # ----------------------------------------------------------------------
 _ipv4_re = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
-_first_int_re = re.compile(r"\b(\d{6,})\b")  # πρώτο συνεχές ψηφίο ≥6
+_first_int_re = re.compile(r"\b(\d{6,})\b")  # πρώτος συνεχόμενος ακέραιος >= 6 ψηφία
 
 def parse_date(val: Any) -> Optional[date]:
     if val is None or (isinstance(val, float) and pd.isna(val)) or (isinstance(val, str) and not val.strip()):
@@ -214,7 +220,11 @@ def choose_conflict_target(row: Dict[str, Any]) -> Optional[str]:
 # I/O and mapping
 # ----------------------------------------------------------------------
 def load_ods(path: str, sheet: Optional[str]) -> pd.DataFrame:
-    return pd.read_excel(path, sheet_name=sheet if sheet else 0, engine="odf", dtype=object)
+    ext = os.path.splitext(path.lower())[1]
+    if ext == ".ods":
+        return pd.read_excel(path, sheet_name=sheet if sheet else 0, engine="odf", dtype=object)
+    else:
+        return pd.read_excel(path, sheet_name=sheet if sheet else 0, dtype=object)  # openpyxl για .xlsx
 
 def preview_columns(df: pd.DataFrame, sample_rows: int = 3) -> None:
     print("\n[columns] Εντοπίστηκαν στήλες:")
@@ -247,24 +257,25 @@ def apply_manual_map(header_map: Dict[str, str], manual_map: Dict[str, str], df:
                     break
     return header_map
 
-def compose_asset_base(row: Dict[str, Any]) -> Optional[str]:
-    manu = (row.get("manufacturer") or "").strip()
-    model = (row.get("model") or "").strip()
-    if manu and model:
-        return f"{manu}{ASSET_TAG_SEP}{model}".strip()
-    return (manu or model or None)
-
 def find_user_name_column(df: pd.DataFrame) -> Optional[str]:
-    targets = {"ονομ μο χρηστη", "ονομα χρηστη", "ονομα χρηστης", "χρηστης", "user", "user name", "username", "user full name"}
-    candidates = []
+    targets = {"ονομ μο χρηστη", "ονομα χρηστη", "ονομα χρηστης", "χρηστης",
+               "user", "user name", "username", "user full name"}
+    best = (0.0, None)
     for c in df.columns:
         cn = normalise_header(str(c))
         if cn in targets:
             return c
         score = max(SequenceMatcher(None, cn, t).ratio() for t in targets)
-        candidates.append((score, c))
-    best = max(candidates, default=(0, None))
+        if score > best[0]:
+            best = (score, c)
     return best[1] if best[0] >= 0.85 else None
+
+def compose_asset_from_model(row: Dict[str, Any]) -> Optional[str]:
+    manu = (row.get("manufacturer") or "").strip()
+    model = (row.get("model") or "").strip()
+    if manu and model:
+        return f"{manu}{ASSET_TAG_SEP}{model}".strip()
+    return (manu or model or None)
 
 def build_mapped_rows(df: pd.DataFrame, manual_map: Optional[Dict[str, str]] = None) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
     header_map: Dict[str, str] = {}
@@ -275,7 +286,9 @@ def build_mapped_rows(df: pd.DataFrame, manual_map: Optional[Dict[str, str]] = N
     if manual_map:
         header_map = apply_manual_map(header_map, manual_map, df)
     if not header_map:
-        print("[!] Δεν έγινε ταίριασμα καμίας στήλης. Έλεγξε τα headers ή χρησιμοποίησε --print-columns / --map.")
+        print("[!] Δεν έγινε ταίριασμα καμίας στήλης. Έλεγξε headers ή --print-columns/--map.")
+        return [], {}
+
     user_col_raw = find_user_name_column(df)
 
     mapped: List[Dict[str, Any]] = []
@@ -284,7 +297,17 @@ def build_mapped_rows(df: pd.DataFrame, manual_map: Optional[Dict[str, str]] = N
         row: Dict[str, Any] = {}
         for src, tgt in header_map.items():
             row[tgt] = coerce_value(tgt, r.get(src))
+
+        # σταθερές κατηγορίες/τύπος από CLI, αν δόθηκαν
+        if FIXED_CATEGORY:
+            row["category"] = FIXED_CATEGORY
+        if FIXED_TYPE:
+            row["type"] = FIXED_TYPE
+
+        # status
         row["status"] = "In Service"
+
+        # user -> notes
         if user_col_raw and user_col_raw in df.columns:
             uname = r.get(user_col_raw)
             uname = None if (pd.isna(uname) or uname is None) else str(uname).strip()
@@ -292,16 +315,19 @@ def build_mapped_rows(df: pd.DataFrame, manual_map: Optional[Dict[str, str]] = N
                 existing = (row.get("notes") or "").strip()
                 sep = " | " if existing else ""
                 row["notes"] = f"{existing}{sep}user={uname}"
+
+        # timestamps
         if not row.get("created_at"):
             row["created_at"] = now
         row["updated_at"] = now
+
         mapped.append(row)
 
     postprocess_rows(mapped)
     return mapped, header_map
 
 def postprocess_rows(rows: List[Dict[str, Any]]) -> None:
-    # Συμπλήρωσε manufacturer από model αν λείπει
+    # Συμπλήρωσε manufacturer από model, αν λείπει
     for row in rows:
         model = (row.get("model") or "").strip()
         manufacturer = (row.get("manufacturer") or "").strip()
@@ -311,29 +337,37 @@ def postprocess_rows(rows: List[Dict[str, Any]]) -> None:
                 row["manufacturer"] = parts[0]
                 row["model"] = " ".join(parts[1:])
 
-    # Εξαγωγή custom serial από notes
+    # Εξαγωγή λογιστικού αριθμού από notes -> custom_tag (και παλιό custom_tag -> notes ως ext=...)
     for row in rows:
         notes = (row.get("notes") or "").strip()
         m = _first_int_re.search(notes) if notes else None
         if m:
-            custom_serial = m.group(1)
-            current_ct = (row.get("custom_tag") or "").strip()
-            if current_ct and current_ct != custom_serial:
-                prefix = " | " if notes else ""
-                row["notes"] = f"{notes}{prefix}ext={current_ct}"
-            row["custom_tag"] = custom_serial
+            extracted = m.group(1)
+            prev_ct = (row.get("custom_tag") or "").strip()
+            if prev_ct and prev_ct != extracted:
+                sep = " | " if notes else ""
+                row["notes"] = f"{notes}{sep}ext={prev_ct}"
+            row["custom_tag"] = extracted
 
-    # Παραγωγή asset_tag βάσης από Manufacturer+Model
+    # Παραγωγή/Διατήρηση asset_tag
+    seq = ASSET_TAG_SEQ_START
     for row in rows:
-        base = compose_asset_base(row)
-        row["asset_tag"] = base or "Unknown"
+        mode = (ASSET_TAG_MODE or "keep").lower()
+        have = (row.get("asset_tag") or "").strip()
+        base = compose_asset_from_model(row)
 
-    # Σειριακή αρίθμηση asset_tag ανά import: "<base> #<n>"  (ΤΕΛΟΣ)
-    n = ASSET_TAG_SEQ_START
-    for row in rows:
-        base = (row.get("asset_tag") or "Unknown").strip()
-        row["asset_tag"] = f"{base} {ASSET_TAG_SEQ_PREFIX}{n}"
-        n += 1
+        if mode == "keep":
+            if not have and base:
+                row["asset_tag"] = base
+        elif mode == "from-model":
+            row["asset_tag"] = base or have or None
+        elif mode == "from-model-numbered":
+            numbered = base or have or "Unknown"
+            row["asset_tag"] = f"{numbered} {ASSET_TAG_SEQ_PREFIX}{seq}"
+            seq += 1
+        else:
+            if not have and base:
+                row["asset_tag"] = base
 
 # ----------------------------------------------------------------------
 # DB
@@ -342,18 +376,27 @@ def reflect_hardware_table(engine: Engine) -> Table:
     metadata = MetaData()
     return Table("hardware_asset", metadata, autoload_with=engine)
 
+def _safe_param_name(col: str) -> str:
+    # Απόφυγε δεσμευμένες λέξεις ως bind param names
+    if col == "type":
+        return "p_type"
+    return col
+
 def _update_by_id(conn, row_update: Dict[str, Any], rec_id: int) -> None:
     update_row = {k: v for k, v in row_update.items() if k not in ("id", "created_at")}
     if not update_row:
         return
-    set_clause = ", ".join([f"{k} = :{k}" for k in update_row.keys()])
-    params = dict(update_row)
-    params["id"] = rec_id
-    sql = text(f"UPDATE hardware_asset SET {set_clause} WHERE id = :id")
+    set_parts = []
+    params: Dict[str, Any] = {"id": rec_id}
+    for k, v in update_row.items():
+        p = _safe_param_name(k)
+        set_parts.append(f"{k} = :{p}")
+        params[p] = v
+    sql = text(f"UPDATE hardware_asset SET {', '.join(set_parts)} WHERE id = :id")
     conn.execute(sql, params)
 
 def manual_upsert(conn, table: Table, row: Dict[str, Any]) -> str:
-    """Χειροκίνητο upsert. Key order: serial_number → custom_tag → asset_tag."""
+    """Upsert με κλειδιά serial_number -> custom_tag. Καμία επιβολή για asset_tag."""
     valid_row = {k: v for k, v in row.items() if k in table.c}
 
     conflict_col = choose_conflict_target(valid_row)
@@ -370,9 +413,9 @@ def manual_upsert(conn, table: Table, row: Dict[str, Any]) -> str:
         _update_by_id(conn, valid_row, rec[0])
         return "update"
 
-    # Έλεγχος custom_tag collisions πριν το insert
+    # Προληπτικός χειρισμός μόνο για custom_tag uniqueness (αν υπάρχει μοναδικός δείκτης)
     ct = valid_row.get("custom_tag")
-    if ct is not None and str(ct).strip():
+    if ct:
         ct_rec = conn.execute(
             text("SELECT id FROM hardware_asset WHERE custom_tag::text = :c LIMIT 1"),
             {"c": str(ct).strip()}
@@ -390,10 +433,12 @@ def manual_upsert(conn, table: Table, row: Dict[str, Any]) -> str:
             elif modec == "skip":
                 return "skip"
 
-    cols = ", ".join(valid_row.keys())
-    vals = ", ".join([f":{k}" for k in valid_row.keys()])
-    sql = text(f"INSERT INTO hardware_asset ({cols}) VALUES ({vals})")
-    conn.execute(sql, valid_row)
+    cols = list(valid_row.keys())
+    vals = [f":{_safe_param_name(k)}" for k in cols]
+    params = { _safe_param_name(k): v for k, v in valid_row.items() }
+
+    sql = text(f"INSERT INTO hardware_asset ({', '.join(cols)}) VALUES ({', '.join(vals)})")
+    conn.execute(sql, params)
     return "insert"
 
 def upsert_rows(engine: Engine, table: Table, rows: List[Dict[str, Any]], dry_run: bool = False):
@@ -422,19 +467,19 @@ def upsert_rows(engine: Engine, table: Table, rows: List[Dict[str, Any]], dry_ru
                         updated += 1
                         continue
 
-                    # custom_tag collision
                     ct = valid_row.get("custom_tag")
-                    if ct is not None and str(ct).strip():
+                    if ct:
                         ct_rec = conn.execute(
                             text("SELECT 1 FROM hardware_asset WHERE custom_tag::text = :c LIMIT 1"),
                             {"c": str(ct).strip()}
                         ).fetchone()
                         if ct_rec:
-                            if (CUSTOM_UNIQUE_MODE or "nullify").lower() == "update":
+                            modec = (CUSTOM_UNIQUE_MODE or "nullify").lower()
+                            if modec == "update":
                                 print(f"[dry-run] update due to existing custom_tag='{ct}': {valid_row}")
                                 updated += 1
                                 continue
-                            elif (CUSTOM_UNIQUE_MODE or "nullify").lower() == "nullify":
+                            elif modec == "nullify":
                                 vr = dict(valid_row)
                                 n = (vr.get("notes") or "")
                                 sep = " | " if n else ""
@@ -473,7 +518,7 @@ def upsert_rows(engine: Engine, table: Table, rows: List[Dict[str, Any]], dry_ru
                 skipped += 1
                 print(f"[!] Σφάλμα στη γραμμή: {e} | row={row}")
 
-    print(f"[✓] Ολοκληρώθηκε: inserted={inserted}, updated={updated}, skipped={skipped}")
+    print(f"[✓] Ολοκληρώθηκε: inserted={inserted}, updated={updated}, skipped={skipped})")
 
 # ----------------------------------------------------------------------
 # CLI
@@ -497,37 +542,43 @@ def load_map_file(path: Optional[str]) -> Dict[str, str]:
     return {str(k): str(v) for k, v in data.items()}
 
 def main():
-    global KEY_ORDER, CUSTOM_UNIQUE_MODE, ASSET_TAG_SEQ_START, ASSET_TAG_SEQ_PREFIX, ASSET_TAG_SEP
+    global KEY_ORDER, CUSTOM_UNIQUE_MODE, ASSET_TAG_MODE, ASSET_TAG_SEQ_START, ASSET_TAG_SEQ_PREFIX, ASSET_TAG_SEP, FIXED_CATEGORY, FIXED_TYPE
 
-    parser = argparse.ArgumentParser(
-        description="Import .ods σε hardware_asset (PostgreSQL) με χειροκίνητο upsert."
-    )
-    parser.add_argument("ods_path", help="Μονοπάτι στο αρχείο .ods")
+    parser = argparse.ArgumentParser(description="Import .ods/.xlsx -> hardware_asset (PostgreSQL) χωρίς asset_tag uniqueness.")
+    parser.add_argument("ods_path", help="Μονοπάτι .ods/.xlsx")
     parser.add_argument("--db", dest="db_uri", default=DEFAULT_DB_URI, help="SQLAlchemy DB URI")
-    parser.add_argument("--sheet", dest="sheet", default=None, help="Όνομα ή index φύλλου (προεπιλογή: 0)")
-    parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="Χωρίς εγγραφή στη ΒΔ, μόνο προεπισκόπηση")
-    parser.add_argument("--print-columns", dest="print_cols", action="store_true", help="Εκτύπωση headers/δειγμάτων και έξοδος")
-    parser.add_argument("--map", dest="map_arg", default=None, help='Manual overrides, π.χ. --map "Extension=custom_tag, MAC=mac_address"')
-    parser.add_argument("--map-file", dest="map_file", default=None, help="JSON με manual mapping {source: target, ...}")
-    parser.add_argument("--key-order", dest="key_order", default="serial_number,custom_tag,asset_tag",
-                        help="Σειρά προτεραιότητας κλειδιών ταυτοποίησης (comma-sep).")
+    parser.add_argument("--sheet", dest="sheet", default=None, help="Όνομα ή index φύλλου (default 0)")
+    parser.add_argument("--dry-run", dest="dry_run", action="store_true", help="Προσομοίωση χωρίς εγγραφή")
+    parser.add_argument("--print-columns", dest="print_cols", action="store_true", help="Εκτύπωση headers/δειγμάτων")
+    parser.add_argument("--map", dest="map_arg", default=None, help='Overrides π.χ. --map "SERIAL NUMBER=serial_number, ΤΜΗΜΑ=location"')
+    parser.add_argument("--map-file", dest="map_file", default=None, help="JSON με mapping {source: target}")
+    parser.add_argument("--key-order", dest="key_order", default="serial_number,custom_tag",
+                        help="Σειρά ταυτοποίησης (asset_tag αγνοείται).")
     parser.add_argument("--custom-unique-mode", dest="custom_unique_mode",
                         choices=["update", "nullify", "skip"], default="nullify",
-                        help="Αν το custom_tag υπάρχει ήδη: update, nullify (default), ή skip.")
+                        help="Σύγκρουση σε custom_tag: update|nullify|skip.")
+    parser.add_argument("--asset-tag-mode", dest="asset_tag_mode",
+                        choices=["keep", "from-model", "from-model-numbered"], default="keep",
+                        help="Παραγωγή asset_tag.")
     parser.add_argument("--asset-tag-sep", dest="asset_tag_sep", default=" ",
                         help="Διαχωριστικό μεταξύ manufacturer και model.")
     parser.add_argument("--asset-tag-seq-start", dest="asset_tag_seq_start", type=int, default=1,
-                        help="Αρχικός αύξων αριθμός για το asset_tag (default: 1).")
+                        help="Αρχικός αύξων αριθμός για numbered mode.")
     parser.add_argument("--asset-tag-seq-prefix", dest="asset_tag_seq_prefix", default="#",
-                        help="Πρόθεμα αύξοντα (default: '#').")
+                        help="Πρόθεμα αύξοντα για numbered mode.")
+    parser.add_argument("--category", dest="fixed_category", default=None, help="Σταθερή Category για όλες τις εγγραφές.")
+    parser.add_argument("--type", dest="fixed_type", default=None, help="Σταθερό Type για όλες τις εγγραφές.")
 
     args = parser.parse_args()
 
     KEY_ORDER = tuple(x.strip() for x in (args.key_order or "").split(",") if x.strip()) or KEY_ORDER
     CUSTOM_UNIQUE_MODE = args.custom_unique_mode
+    ASSET_TAG_MODE = args.asset_tag_mode
     ASSET_TAG_SEP = args.asset_tag_sep
     ASSET_TAG_SEQ_START = int(args.asset_tag_seq_start or 1)
     ASSET_TAG_SEQ_PREFIX = args.asset_tag_seq_prefix or "#"
+    FIXED_CATEGORY = args.fixed_category
+    FIXED_TYPE = args.fixed_type
 
     ods_path = args.ods_path
     if not os.path.exists(ods_path):
@@ -538,7 +589,7 @@ def main():
     df = load_ods(ods_path, args.sheet)
 
     if df.empty:
-        print("[!] Το .ods δεν έχει δεδομένα.")
+        print("[!] Το αρχείο δεν έχει δεδομένα.")
         sys.exit(0)
 
     if args.print_cols:
@@ -569,4 +620,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
