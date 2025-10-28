@@ -3,12 +3,12 @@
 Manage blueprint routes (access control, admin utilities).
 """
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 
 from app import db
-from app.models import MenuPermission, AssistantConfig, AuthConfig, ApiClient, User
+from app.models import MenuPermission, AssistantConfig, AuthConfig, ApiClient, User, EmailIngestConfig
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
     MENU_DEFINITIONS,
@@ -306,3 +306,85 @@ def api_docs():
     _require_admin()
     spec_url = url_for("api.openapi_spec")
     return render_template("manage/api_docs.html", spec_url=spec_url)
+
+
+@manage_bp.route("/email-ingest", methods=["GET", "POST"])
+@login_required
+def email_ingest():
+    _require_admin()
+
+    config = EmailIngestConfig.load()
+    users = User.query.order_by(User.username.asc()).all()
+    table_missing = getattr(config, "_table_missing", False)
+
+    if request.method == "GET" and table_missing:
+        flash(
+            _(
+                "Email ingestion is temporarily unavailable because the database schema is out of date. "
+                "Please run the latest migrations and reload this page."
+            ),
+            "warning",
+        )
+
+    if request.method == "POST":
+        if table_missing:
+            flash(
+                _(
+                    "Unable to save email ingestion settings because the required database table "
+                    "is missing. Run the database migrations and try again."
+                ),
+                "danger",
+            )
+            return redirect(url_for("manage.email_ingest"))
+        action = (request.form.get("action") or "save").lower()
+        if action == "run":
+            from app.email2ticket.service import run_once
+            try:
+                processed = run_once(current_app)
+                if processed:
+                    flash(_("Processed %(count)s email(s) and created tickets.", count=processed), "success")
+                else:
+                    flash(_("Mailbox checked. No new emails were ingested."), "info")
+            except Exception as exc:
+                flash(_("Failed to process mailbox: %(error)s", error=str(exc)), "danger")
+            return redirect(url_for("manage.email_ingest"))
+
+        previous_creator = config.created_by_user_id
+        config.update_from_form(request.form)
+
+        validation_errors = []
+        if config.is_enabled:
+            if not config.host:
+                validation_errors.append(_("Mail server host is required when email ingestion is enabled."))
+            if not config.username:
+                validation_errors.append(_("Mailbox username is required when email ingestion is enabled."))
+            if not config.password:
+                validation_errors.append(_("Mailbox password is required when email ingestion is enabled."))
+
+        if validation_errors:
+            db.session.rollback()
+            config.created_by_user_id = previous_creator
+            for message in validation_errors:
+                flash(message, "danger")
+            return redirect(url_for("manage.email_ingest"))
+        if not config.created_by_user_id:
+            db.session.rollback()
+            config.created_by_user_id = previous_creator
+            flash(_("Please select a ticket creator account."), "warning")
+            return redirect(url_for("manage.email_ingest"))
+        db.session.add(config)
+        db.session.commit()
+
+        from app.email2ticket.service import ensure_worker_running
+
+        ensure_worker_running(current_app, reload_cfg=True)
+        flash(_("Email ingestion settings saved."), "success")
+        return redirect(url_for("manage.email_ingest"))
+
+    password_placeholder = "***" if config.password else ""
+    return render_template(
+        "manage/email_ingest.html",
+        config=config,
+        users=users,
+        password_placeholder=password_placeholder,
+    )

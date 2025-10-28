@@ -139,6 +139,10 @@ def create_app():
     app.register_blueprint(contracts_bp)
     app.register_blueprint(address_book_bp)
 
+    from app.email2ticket import init_app as init_email2ticket
+
+    init_email2ticket(app)
+
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)
     handler = RotatingFileHandler(
