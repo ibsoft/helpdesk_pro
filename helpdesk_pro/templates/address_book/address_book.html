@@ -1,0 +1,546 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .address-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(226, 232, 240, 0.9) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .address-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(10px);
+  }
+  .address-summary-card .metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .address-summary-card .metric-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  html[data-bs-theme="dark"] body .address-summary-card .metric-count {
+    box-shadow: inset 0 0 0 1px rgba(241, 245, 249, 0.08);
+  }
+  .address-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .address-summary-card .divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(148, 163, 184, 0.36);
+  }
+  @media (max-width: 767px) {
+    .address-summary-card .divider {
+      display: none;
+    }
+  }
+  .badge-soft {
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+  }
+  .datatable-nowrap th,
+  .datatable-nowrap td {
+    white-space: nowrap;
+  }
+  .dataTables_wrapper .dataTables_scroll {
+    overflow: auto;
+  }
+</style>
+
+{% set total_entries = entries|length %}
+
+<div class="card address-summary-card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="metric">
+        <span class="metric-count bg-primary-subtle text-primary-emphasis">
+          <i class="fa fa-address-book"></i> {{ total_entries }}
+        </span>
+        <span class="metric-label">{{ _('Total Contacts') }}</span>
+      </div>
+      {% for category, count in category_counts.items() if count %}
+      <div class="metric">
+        <span class="metric-count bg-info-subtle text-info-emphasis">
+          <i class="fa fa-tag"></i> {{ count }}
+        </span>
+        <span class="metric-label">{{ _(category) }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="fa fa-address-card"></i> {{ _('Address Book') }}</h4>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addressCreateModal">
+    <i class="fa fa-plus"></i> {{ _('New Contact') }}
+  </button>
+</div>
+
+<table id="addressBookTable" class="table table-striped table-hover align-middle w-100 datatable-nowrap">
+  <thead class="table-dark">
+    <tr>
+      <th>{{ _('Name') }}</th>
+      <th>{{ _('Category') }}</th>
+      <th>{{ _('Company') }}</th>
+      <th>{{ _('Job Title') }}</th>
+      <th>{{ _('Department') }}</th>
+      <th>{{ _('Email') }}</th>
+      <th>{{ _('Phone') }}</th>
+      <th>{{ _('Mobile') }}</th>
+      <th>{{ _('Website') }}</th>
+      <th>{{ _('Address') }}</th>
+      <th>{{ _('City') }}</th>
+      <th>{{ _('State') }}</th>
+      <th>{{ _('Postal Code') }}</th>
+      <th>{{ _('Country') }}</th>
+      <th>{{ _('Tags') }}</th>
+      <th>{{ _('Notes') }}</th>
+      <th>{{ _('Actions') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for entry in entries %}
+    <tr data-entry-id="{{ entry.id }}">
+      <td class="fw-semibold">{{ entry.name }}</td>
+      <td>{{ entry.category or '—' }}</td>
+      <td>{{ entry.company or '—' }}</td>
+      <td>{{ entry.job_title or '—' }}</td>
+      <td>{{ entry.department or '—' }}</td>
+      <td>
+        {% if entry.email %}
+          <a href="mailto:{{ entry.email }}">{{ entry.email }}</a>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ entry.phone or '—' }}</td>
+      <td>{{ entry.mobile or '—' }}</td>
+      <td>
+        {% if entry.website %}
+          <a href="{{ entry.website }}" target="_blank" rel="noopener">{{ _('Link') }}</a>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td>{{ entry.address_line or '—' }}</td>
+      <td>{{ entry.city or '—' }}</td>
+      <td>{{ entry.state or '—' }}</td>
+      <td>{{ entry.postal_code or '—' }}</td>
+      <td>{{ entry.country or '—' }}</td>
+      <td>{{ entry.tags or '—' }}</td>
+      <td class="text-truncate" style="max-width: 220px;">{{ (entry.notes or '')[:120] ~ ('…' if entry.notes and entry.notes|length > 120 else '') }}</td>
+      <td class="text-nowrap">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary edit-entry-btn"
+                data-id="{{ entry.id }}"
+                data-update-url="{{ url_for('address_book.update_entry', entry_id=entry.id) }}"
+                data-delete-url="{{ url_for('address_book.delete_entry', entry_id=entry.id) }}">
+          <i class="fa fa-edit"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger delete-entry-btn ms-1"
+                data-id="{{ entry.id }}"
+                data-delete-url="{{ url_for('address_book.delete_entry', entry_id=entry.id) }}"
+                data-name="{{ entry.name }}">
+          <i class="fa fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Create Modal -->
+<div class="modal fade" id="addressCreateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <form id="address-create-form" action="{{ url_for('address_book.create_entry') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-plus-circle me-2"></i>{{ _('New Contact') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Name') }}</label>
+              <input name="name" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Category') }}</label>
+              <select name="category" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for option in categories %}
+                  <option value="{{ option }}">{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Company') }}</label>
+              <input name="company" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Job Title') }}</label>
+              <input name="job_title" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Department') }}</label>
+              <input name="department" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Email') }}</label>
+              <input name="email" type="email" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Phone') }}</label>
+              <input name="phone" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Mobile') }}</label>
+              <input name="mobile" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Website') }}</label>
+              <input name="website" type="url" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Address') }}</label>
+              <input name="address_line" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('City') }}</label>
+              <input name="city" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('State') }}</label>
+              <input name="state" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Postal Code') }}</label>
+              <input name="postal_code" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Country') }}</label>
+              <input name="country" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Tags') }}</label>
+              <input name="tags" class="form-control" placeholder="{{ _('Comma separated') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes') }}</label>
+              <textarea name="notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fa fa-save"></i> {{ _('Save') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="addressEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <form id="address-edit-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-pen-to-square me-2"></i>{{ _('Edit Contact') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Name') }}</label>
+              <input name="name" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Category') }}</label>
+              <select name="category" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for option in categories %}
+                  <option value="{{ option }}">{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Company') }}</label>
+              <input name="company" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Job Title') }}</label>
+              <input name="job_title" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Department') }}</label>
+              <input name="department" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Email') }}</label>
+              <input name="email" type="email" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Phone') }}</label>
+              <input name="phone" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Mobile') }}</label>
+              <input name="mobile" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Website') }}</label>
+              <input name="website" type="url" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Address') }}</label>
+              <input name="address_line" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('City') }}</label>
+              <input name="city" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('State') }}</label>
+              <input name="state" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Postal Code') }}</label>
+              <input name="postal_code" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Country') }}</label>
+              <input name="country" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Tags') }}</label>
+              <input name="tags" class="form-control" placeholder="{{ _('Comma separated') }}">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes') }}</label>
+              <textarea name="notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger delete-entry-from-edit-btn">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-success">
+              <i class="fa fa-save"></i> {{ _('Save Changes') }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="addressDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="address-delete-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Contact') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ _('Are you sure you want to delete') }} <strong id="address-delete-name"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+  const addressTable = $('#addressBookTable').DataTable({
+    order: [[0, 'asc']],
+    pageLength: 25,
+    language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
+    scrollX: true,
+    scrollCollapse: true,
+    autoWidth: false,
+    dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row mt-3'<'col-12'Q>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      { extend: 'excelHtml5', text: '<i class=\"fa fa-file-excel\"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' },
+      { extend: 'searchBuilder', text: '<i class=\"fa fa-filter\"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ],
+    searchBuilder: {
+      columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+    }
+  });
+
+  function submitForm($form, modalId) {
+    const submitBtn = $form.find('button[type="submit"]');
+    const originalHtml = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    $.ajax({
+      url: $form.attr('action'),
+      type: 'POST',
+      data: $form.serialize(),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(res) {
+        if (!res || res.success === false) {
+          const msg = (res && res.message) ? res.message : '❌ {{ _("Unexpected error while saving.") }}';
+          const category = (res && res.category) ? res.category : 'danger';
+          showToast(msg, category);
+          submitBtn.prop('disabled', false).html(originalHtml);
+          return;
+        }
+        if (modalId) {
+          const modalEl = document.getElementById(modalId);
+          if (modalEl) {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+          }
+        }
+        showToast(res.message || '{{ _("Operation completed successfully") }}', res.category || 'success');
+        setTimeout(() => window.location.reload(), 400);
+      },
+      error: function(xhr) {
+        const data = xhr.responseJSON || {};
+        const msg = data.message || '❌ {{ _("Unexpected error while saving.") }}';
+        const category = data.category || 'danger';
+        showToast(msg, category);
+        submitBtn.prop('disabled', false).html(originalHtml);
+      }
+    });
+  }
+
+  $('#address-create-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'addressCreateModal');
+  });
+
+  $('#address-edit-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'addressEditModal');
+  });
+
+  $('#address-delete-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'addressDeleteModal');
+  });
+
+  const createModal = document.getElementById('addressCreateModal');
+  if (createModal) {
+    createModal.addEventListener('hidden.bs.modal', function() {
+      const form = this.querySelector('form');
+      if (form) form.reset();
+    });
+  }
+
+  function populateEntryForm(entry, updateUrl, deleteUrl) {
+    const form = $('#address-edit-form');
+    form.attr('action', updateUrl);
+    form.find('[name="name"]').val(entry.name);
+    form.find('[name="category"]').val(entry.category);
+    form.find('[name="company"]').val(entry.company);
+    form.find('[name="job_title"]').val(entry.job_title);
+    form.find('[name="department"]').val(entry.department);
+    form.find('[name="email"]').val(entry.email);
+    form.find('[name="phone"]').val(entry.phone);
+    form.find('[name="mobile"]').val(entry.mobile);
+    form.find('[name="website"]').val(entry.website);
+    form.find('[name="address_line"]').val(entry.address_line);
+    form.find('[name="city"]').val(entry.city);
+    form.find('[name="state"]').val(entry.state);
+    form.find('[name="postal_code"]').val(entry.postal_code);
+    form.find('[name="country"]').val(entry.country);
+    form.find('[name="tags"]').val(entry.tags);
+    form.find('[name="notes"]').val(entry.notes);
+
+    $('#address-delete-form').attr('action', deleteUrl);
+    $('#address-delete-name').text(entry.name);
+    $('.delete-entry-from-edit-btn').data('delete-url', deleteUrl).data('name', entry.name);
+  }
+
+  function openEntryEdit(btn) {
+    const entryId = btn.data('id');
+    if (!entryId) return;
+    $.get(`/address-book/${entryId}/details`, function(res) {
+      if (!res.success) {
+        showToast(res.message || '{{ _("Failed to load contact") }}', res.category || 'danger');
+        return;
+      }
+      populateEntryForm(res.entry, btn.data('update-url'), btn.data('delete-url'));
+      const modal = new bootstrap.Modal(document.getElementById('addressEditModal'));
+      modal.show();
+    }).fail(function() {
+      showToast('{{ _("Failed to load contact.") }}', 'danger');
+    });
+  }
+
+  $(document).on('click', '.edit-entry-btn', function() {
+    openEntryEdit($(this));
+  });
+
+  $(document).on('click', '.delete-entry-btn', function() {
+    const btn = $(this);
+    $('#address-delete-form').attr('action', btn.data('delete-url'));
+    $('#address-delete-name').text(btn.data('name'));
+    const modal = new bootstrap.Modal(document.getElementById('addressDeleteModal'));
+    modal.show();
+  });
+
+  $(document).on('click', '.delete-entry-from-edit-btn', function() {
+    const btn = $(this);
+    const deleteUrl = btn.data('delete-url');
+    const name = btn.data('name');
+    if (!deleteUrl) return;
+    $('#address-delete-form').attr('action', deleteUrl);
+    $('#address-delete-name').text(name);
+    const modal = new bootstrap.Modal(document.getElementById('addressDeleteModal'));
+    modal.show();
+  });
+
+  $('#addressBookTable tbody').on('dblclick', 'tr', function() {
+    const btn = $(this).find('.edit-entry-btn');
+    if (btn.length) {
+      openEntryEdit(btn);
+    }
+  });
+});
+</script>
+{% endblock %}

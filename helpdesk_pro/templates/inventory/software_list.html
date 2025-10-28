@@ -221,7 +221,9 @@
         <button type="button"
                 class="btn btn-sm btn-outline-primary edit-software-btn"
                 data-id="{{ asset.id }}"
-                data-update-url="{{ url_for('inventory.update_software', asset_id=asset.id) }}">
+                data-update-url="{{ url_for('inventory.update_software', asset_id=asset.id) }}"
+                data-delete-url="{{ url_for('inventory.delete_software', asset_id=asset.id) }}"
+                data-name="{{ asset.name }}">
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"
@@ -528,11 +530,16 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-          <button type="submit" class="btn btn-primary">
-            <i class="fa fa-save"></i> {{ _('Update') }}
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger delete-software-from-edit-btn">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
           </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-save"></i> {{ _('Update') }}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -653,7 +660,7 @@ $(function() {
     });
   }
 
-  function populateSoftwareForm(asset, updateUrl) {
+  function populateSoftwareForm(asset, updateUrl, deleteUrl) {
     const form = $('#software-edit-form');
     form.attr('action', updateUrl);
     form.find('[name="name"]').val(asset.name);
@@ -680,6 +687,12 @@ $(function() {
     form.find('[name="assigned_on"]').val(asset.assigned_on);
     form.find('[name="usage_scope"]').val(asset.usage_scope);
     form.find('[name="deployment_notes"]').val(asset.deployment_notes);
+
+    if (deleteUrl) {
+      $('#software-delete-form').attr('action', deleteUrl);
+      $('#software-delete-name').text(asset.name);
+      $('.delete-software-from-edit-btn').data('delete-url', deleteUrl).data('name', asset.name);
+    }
   }
 
   function openSoftwareEdit(btn) {
@@ -690,7 +703,7 @@ $(function() {
         showToast(res.message || '{{ _("Failed to load software asset") }}', res.category || 'danger');
         return;
       }
-      populateSoftwareForm(res.asset, btn.data('update-url'));
+      populateSoftwareForm(res.asset, btn.data('update-url'), btn.data('delete-url'));
       const modal = new bootstrap.Modal(document.getElementById('softwareEditModal'));
       modal.show();
     }).fail(function() {
@@ -709,6 +722,16 @@ $(function() {
     const modal = new bootstrap.Modal(modalEl);
     $('#software-delete-form').attr('action', btn.data('delete-url'));
     $('#software-delete-name').text(btn.data('name'));
+    modal.show();
+  });
+
+  $(document).on('click', '.delete-software-from-edit-btn', function() {
+    const btn = $(this);
+    const deleteUrl = btn.data('delete-url');
+    if (!deleteUrl) return;
+    $('#software-delete-form').attr('action', deleteUrl);
+    $('#software-delete-name').text(btn.data('name') || '');
+    const modal = new bootstrap.Modal(document.getElementById('softwareDeleteModal'));
     modal.show();
   });
 

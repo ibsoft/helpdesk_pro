@@ -121,8 +121,9 @@ def create_app():
     from app.collab.routes import collab_bp
     from app.knowledge.routes import knowledge_bp
     from app.manage.routes import manage_bp
-    from app.networks.routes import networks_bp
     from app.assistant.routes import assistant_bp
+    from app.contracts.routes import contracts_bp
+    from app.address_book.routes import address_book_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -135,6 +136,8 @@ def create_app():
     app.register_blueprint(manage_bp)
     app.register_blueprint(collab_bp)
     app.register_blueprint(assistant_bp)
+    app.register_blueprint(contracts_bp)
+    app.register_blueprint(address_book_bp)
 
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)

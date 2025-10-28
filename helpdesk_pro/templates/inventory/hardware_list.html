@@ -233,7 +233,9 @@
         <button type="button"
                 class="btn btn-sm btn-outline-primary edit-hardware-btn"
                 data-id="{{ asset.id }}"
-                data-update-url="{{ url_for('inventory.update_hardware', asset_id=asset.id) }}">
+                data-update-url="{{ url_for('inventory.update_hardware', asset_id=asset.id) }}"
+                data-delete-url="{{ url_for('inventory.delete_hardware', asset_id=asset.id) }}"
+                data-name="{{ asset.asset_tag }}">
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"
@@ -578,11 +580,16 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
-          <button type="submit" class="btn btn-primary">
-            <i class="fa fa-save"></i> {{ _('Update') }}
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger delete-hardware-from-edit-btn">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
           </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-save"></i> {{ _('Update') }}
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -703,7 +710,7 @@ $(function() {
     });
   }
 
-  function populateHardwareForm(asset, updateUrl) {
+  function populateHardwareForm(asset, updateUrl, deleteUrl) {
     const form = $('#hardware-edit-form');
     form.attr('action', updateUrl);
     form.find('[name="asset_tag"]').val(asset.asset_tag);
@@ -736,6 +743,12 @@ $(function() {
     form.find('[name="assigned_to"]').val(asset.assigned_to || '');
     form.find('[name="assigned_on"]').val(asset.assigned_on);
     form.find('[name="notes"]').val(asset.notes);
+
+    if (deleteUrl) {
+      $('#hardware-delete-form').attr('action', deleteUrl);
+      $('#hardware-delete-name').text(asset.asset_tag || asset.serial_number || '');
+      $('.delete-hardware-from-edit-btn').data('delete-url', deleteUrl).data('name', asset.asset_tag || asset.serial_number || '');
+    }
   }
 
   function openHardwareEdit(btn) {
@@ -746,7 +759,7 @@ $(function() {
         showToast(res.message || '{{ _("Failed to load hardware asset") }}', res.category || 'danger');
         return;
       }
-      populateHardwareForm(res.asset, btn.data('update-url'));
+      populateHardwareForm(res.asset, btn.data('update-url'), btn.data('delete-url'));
       const modal = new bootstrap.Modal(document.getElementById('hardwareEditModal'));
       modal.show();
     }).fail(() => {
@@ -771,6 +784,16 @@ $(function() {
     const modal = new bootstrap.Modal(modalEl);
     $('#hardware-delete-form').attr('action', btn.data('delete-url'));
     $('#hardware-delete-name').text(btn.data('name'));
+    modal.show();
+  });
+
+  $(document).on('click', '.delete-hardware-from-edit-btn', function() {
+    const btn = $(this);
+    const deleteUrl = btn.data('delete-url');
+    if (!deleteUrl) return;
+    $('#hardware-delete-form').attr('action', deleteUrl);
+    $('#hardware-delete-name').text(btn.data('name') || '');
+    const modal = new bootstrap.Modal(document.getElementById('hardwareDeleteModal'));
     modal.show();
   });
 });
