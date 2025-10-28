@@ -4,6 +4,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def _float_env(key: str, default: float) -> float:
+    try:
+        return float(os.getenv(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'changeme')
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
@@ -35,3 +42,7 @@ class Config:
     BABEL_TRANSLATION_DIRECTORIES = os.path.join(
         os.path.dirname(__file__), 'translations')
     APP_VERSION = os.getenv('APP_VERSION', '1.5.10')
+    UI_FONT_SCALE = _float_env('UI_FONT_SCALE', 1.1)
+    UI_NAVBAR_HEIGHT = _float_env('UI_NAVBAR_HEIGHT', 50.0)
+    UI_FOOTER_HEIGHT = _float_env('UI_FOOTER_HEIGHT', 64.0)
+    UI_DATATABLE_HEADER_FONT_SIZE = _float_env('UI_DATATABLE_HEADER_FONT_SIZE', 0.95)

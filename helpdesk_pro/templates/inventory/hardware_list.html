@@ -77,6 +77,12 @@
   .datatable-nowrap td {
     white-space: nowrap;
   }
+  @media (max-width: 991.98px) {
+    .datatable-nowrap th,
+    .datatable-nowrap td {
+      white-space: normal;
+    }
+  }
   .dataTables_wrapper .dataTables_scroll {
     overflow: auto;
   }
@@ -629,7 +635,12 @@ $(function() {
     order: [[0, 'asc']],
     pageLength: 25,
     language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
-    scrollX: true,
+    responsive: {
+      details: {
+        type: 'column',
+        target: 'tr'
+      }
+    },
     scrollCollapse: true,
     autoWidth: false,
     dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
@@ -642,7 +653,10 @@ $(function() {
       { extend: 'searchBuilder', text: '<i class=\"fa fa-filter\"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
     ],
     columnDefs: [
-      { targets: [19, 20, 23], type: 'date', searchBuilderType: 'date' }
+      { targets: [19, 20, 23], type: 'date', searchBuilderType: 'date' },
+      { targets: 0, responsivePriority: 1 },
+      { targets: -1, responsivePriority: 2 },
+      { targets: [1, 2, 3, 4, 5, 6], responsivePriority: 3 }
     ],
     searchBuilder: {
       columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27]
