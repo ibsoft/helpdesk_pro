@@ -252,6 +252,17 @@ Manage → API Keys provides:
 
 Keys are hashed using bcrypt and cannot be recovered once generated.
 
+### Email to Ticket
+
+Manage → Email to Ticket lets admins configure an IMAP/POP3 mailbox that will be polled and converted into new tickets. Required steps:
+
+1. Enable the service and provide host, port, protocol, credentials, and optional folder (IMAP).
+2. Choose the Helpdesk user that will be recorded as the ticket creator (and optionally an assignee).
+3. Set the poll interval (minimum 30 seconds) and defaults for priority/department.
+4. Save settings; the background worker starts automatically. Use “Run now” to trigger an immediate fetch after configuration.
+
+Each processed message becomes a ticket with the email subject/body. HTML bodies are cleaned into text; attachments are stored alongside the ticket. Successfully ingested emails are deleted from the mailbox.
+
 ### Localization
 
 App supports English and Greek. Locale is stored in session and can be toggled via query param `?lang=en|el`.
@@ -350,4 +361,3 @@ For manual checks:
 ---
 
 Happy troubleshooting! 🛠️ If you build additional modules or integrations, contribute back via pull requests or open issues for feature requests.
-

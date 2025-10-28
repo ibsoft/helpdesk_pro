@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <h1 class="mb-3"><i class="fa fa-envelope-open-text me-2"></i>{{ _("Email to Ticket") }}</h1>
+  <p class="text-muted">{{ _("Automatically convert incoming emails into Helpdesk tickets.") }}</p>
+
+  <form method="post" class="card shadow-sm">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3 form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="is_enabled" name="is_enabled" value="1" {% if config.is_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="is_enabled">{{ _("Enable polling service") }}</label>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="protocol">{{ _("Protocol") }}</label>
+          <select class="form-select" id="protocol" name="protocol">
+            <option value="imap" {% if config.protocol == "imap" %}selected{% endif %}>IMAP</option>
+            <option value="pop3" {% if config.protocol == "pop3" %}selected{% endif %}>POP3</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="mailbox">{{ _("Mailbox / Folder") }}</label>
+          <input class="form-control" id="mailbox" name="mailbox" value="{{ config.mailbox or 'INBOX' }}">
+          <small class="text-muted">{{ _("For IMAP this is the folder to monitor (default INBOX).") }}</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="host">{{ _("Mail server host") }}</label>
+          <input class="form-control" id="host" name="host" value="{{ config.host or '' }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="port">{{ _("Port") }}</label>
+          <input class="form-control" id="port" name="port" value="{{ config.port or '' }}" placeholder="{{ _('Auto') }}">
+        </div>
+        <div class="col-md-3 form-check form-switch">
+          <input class="form-check-input" type="checkbox" id="use_ssl" name="use_ssl" value="1" {% if config.use_ssl %}checked{% endif %}>
+          <label class="form-check-label" for="use_ssl">{{ _("Use SSL/TLS") }}</label>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="username">{{ _("Username") }}</label>
+          <input class="form-control" id="username" name="username" value="{{ config.username or '' }}" required>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="password">{{ _("Password") }}</label>
+          <input class="form-control" type="password" id="password" name="password" value="{{ password_placeholder }}">
+          <small class="text-muted">{{ _("Leave as *** to keep the stored password.") }}</small>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="poll_interval_seconds">{{ _("Poll interval (seconds)") }}</label>
+          <input class="form-control" id="poll_interval_seconds" name="poll_interval_seconds" value="{{ config.poll_interval_seconds or 300 }}" min="30">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="default_priority">{{ _("Default priority") }}</label>
+          <input class="form-control" id="default_priority" name="default_priority" value="{{ config.default_priority or '' }}">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="default_department">{{ _("Default department") }}</label>
+          <input class="form-control" id="default_department" name="default_department" value="{{ config.default_department or '' }}">
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="created_by_user_id">{{ _("Ticket creator") }}</label>
+          <select class="form-select" name="created_by_user_id" id="created_by_user_id" required>
+            <option value="">{{ _("Select user") }}</option>
+            {% for user in users %}
+            <option value="{{ user.id }}" {% if config.created_by_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.role|capitalize }})</option>
+            {% endfor %}
+          </select>
+          <small class="text-muted">{{ _("Tickets will be created under this user's account.") }}</small>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="assign_to_user_id">{{ _("Assign to (optional)") }}</label>
+          <select class="form-select" name="assign_to_user_id" id="assign_to_user_id">
+            <option value="">{{ _("Do not auto-assign") }}</option>
+            {% for user in users %}
+            <option value="{{ user.id }}" {% if config.assign_to_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.role|capitalize }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <hr class="my-4">
+      <div class="row">
+        <div class="col-md-6">
+          <p class="mb-1"><strong>{{ _("Last run") }}:</strong>
+            {% if config.last_run_at %}
+              {{ config.last_run_at }}
+            {% else %}
+              {{ _("Never") }}
+            {% endif %}
+          </p>
+          <p class="mb-0"><strong>{{ _("Last error") }}:</strong>
+            {% if config.last_error %}
+              <span class="text-danger">{{ config.last_error }}</span>
+            {% else %}
+              <span class="text-success">{{ _("None") }}</span>
+            {% endif %}
+          </p>
+        </div>
+        <div class="col-md-6 text-md-end mt-3 mt-md-0">
+          <button type="submit" name="action" value="save" class="btn btn-primary">
+            <i class="fa fa-save me-1"></i>{{ _("Save settings") }}
+          </button>
+          <button type="submit" name="action" value="run" class="btn btn-outline-secondary">
+            <i class="fa fa-play me-1"></i>{{ _("Run now") }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+{% endblock %}

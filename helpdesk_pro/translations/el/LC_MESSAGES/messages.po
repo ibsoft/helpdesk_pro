@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-28 14:50+0200\n"
+"POT-Creation-Date: 2025-10-28 16:05+0200\n"
 "PO-Revision-Date: 2025-10-18 23:43+0300\n"
 "Last-Translator: Ioannis Bouchras <ioannis.bouchras@unixfor.gr>\n"
 "Language: el\n"
@@ -52,48 +52,52 @@ msgstr "OpenAI API key"
 msgid "API Docs"
 msgstr ""
 
-#: app/navigation.py:81 templates/tickets/list.html:188
+#: app/navigation.py:79 templates/manage/email_ingest.html:5
+msgid "Email to Ticket"
+msgstr "Email σε Ticket"
+
+#: app/navigation.py:88 templates/tickets/list.html:188
 msgid "Tickets"
 msgstr "Αιτήματα"
 
-#: app/navigation.py:89 templates/knowledge/list.html:177
+#: app/navigation.py:96 templates/knowledge/list.html:177
 msgid "Knowledge Base"
 msgstr "Γνωσιακή βάση"
 
-#: app/navigation.py:97
+#: app/navigation.py:104
 msgid "Collaboration"
 msgstr "Συνεργασία"
 
-#: app/navigation.py:105
+#: app/navigation.py:112
 #, fuzzy
 msgid "IT Works"
 msgstr "Δίκτυα"
 
-#: app/navigation.py:112
+#: app/navigation.py:119
 msgid "Software"
 msgstr "Λογισμικό"
 
-#: app/navigation.py:119
+#: app/navigation.py:126
 msgid "Hardware"
 msgstr "Υλικό"
 
-#: app/navigation.py:126
+#: app/navigation.py:133
 msgid "Contracts"
 msgstr "Συμβάσεις"
 
-#: app/navigation.py:133 templates/address_book/address_book.html:90
+#: app/navigation.py:140 templates/address_book/address_book.html:90
 msgid "Address Book"
 msgstr "Βιβλίο διευθύνσεων"
 
-#: app/navigation.py:140 templates/networks/maps.html:97
+#: app/navigation.py:147 templates/networks/maps.html:97
 msgid "Network Maps"
 msgstr "Τοπολογία δικτύων"
 
-#: app/navigation.py:147
+#: app/navigation.py:154
 msgid "Network Tools"
 msgstr "Εργαλεία δικτύου"
 
-#: app/navigation.py:156 templates/manage/assistant_settings.html:26
+#: app/navigation.py:163 templates/manage/assistant_settings.html:26
 msgid "AI Assistant Widget"
 msgstr "Widget βοηθού AI"
 
@@ -452,6 +456,52 @@ msgstr "Σύμβαση υποστήριξης"
 #, python-format
 msgid "Error processing request: %(error)s"
 msgstr ""
+
+#: app/manage/routes.py:323
+msgid ""
+"Email ingestion is temporarily unavailable because the database schema is"
+" out of date. Please run the latest migrations and reload this page."
+msgstr ""
+
+#: app/manage/routes.py:333
+msgid ""
+"Unable to save email ingestion settings because the required database "
+"table is missing. Run the database migrations and try again."
+msgstr ""
+
+#: app/manage/routes.py:345
+#, python-format
+msgid "Processed %(count)s email(s) and created tickets."
+msgstr "Επεξεργάστηκε %(count)s email και δημιουργήθηκαν δελτία."
+
+#: app/manage/routes.py:347
+msgid "Mailbox checked. No new emails were ingested."
+msgstr "Ο λογαριασμός ελέγχθηκε. Δεν εισήχθησαν νέα email."
+
+#: app/manage/routes.py:349
+#, python-format
+msgid "Failed to process mailbox: %(error)s"
+msgstr "Αποτυχία επεξεργασίας γραμματοκιβωτίου: %(error)s"
+
+#: app/manage/routes.py:358
+msgid "Mail server host is required when email ingestion is enabled."
+msgstr ""
+
+#: app/manage/routes.py:360
+msgid "Mailbox username is required when email ingestion is enabled."
+msgstr ""
+
+#: app/manage/routes.py:362
+msgid "Mailbox password is required when email ingestion is enabled."
+msgstr ""
+
+#: app/manage/routes.py:373
+msgid "Please select a ticket creator account."
+msgstr "Επιλέξτε λογαριασμό χρήστη για τη δημιουργία δελτίων."
+
+#: app/manage/routes.py:381
+msgid "Email ingestion settings saved."
+msgstr "Οι ρυθμίσεις ανάκτησης email αποθηκεύτηκαν."
 
 #: templates/base.html:6
 msgid "Helpdesk Pro"
@@ -882,13 +932,15 @@ msgid "Your secure access to IT support and ticketing"
 msgstr "Η ασφαλής πρόσβασή σας στην υποστήριξη και το ticketing ΙΤ"
 
 #: templates/auth/login.html:117 templates/auth/register.html:18
-#: templates/auth/setup_admin.html:49 templates/users/list.html:31
-#: templates/users/list.html:93 templates/users/list.html:137
+#: templates/auth/setup_admin.html:49 templates/manage/email_ingest.html:41
+#: templates/users/list.html:31 templates/users/list.html:93
+#: templates/users/list.html:137
 msgid "Username"
 msgstr "Όνομα Χρήστη"
 
 #: templates/auth/login.html:122 templates/auth/register.html:28
-#: templates/auth/setup_admin.html:57 templates/users/list.html:143
+#: templates/auth/setup_admin.html:57 templates/manage/email_ingest.html:45
+#: templates/users/list.html:143
 msgid "Password"
 msgstr "Κωδικός"
 
@@ -2076,11 +2128,12 @@ msgid "No API clients yet. Generate one using the form above."
 msgstr ""
 
 #: templates/manage/api_keys.html:104 templates/manage/api_keys.html:191
+#: templates/manage/email_ingest.html:96
 #, fuzzy
 msgid "None"
 msgstr "Σημειώσεις"
 
-#: templates/manage/api_keys.html:112
+#: templates/manage/api_keys.html:112 templates/manage/email_ingest.html:89
 #, fuzzy
 msgid "Never"
 msgstr "Διακομιστής"
@@ -2353,9 +2406,94 @@ msgid "Choose the least-privileged role that should be assigned automatically."
 msgstr ""
 
 #: templates/manage/auth_settings.html:45
+#: templates/manage/email_ingest.html:102
 #, fuzzy
 msgid "Save settings"
 msgstr "Αποθήκευση ρυθμίσεων"
+
+#: templates/manage/email_ingest.html:6
+msgid "Automatically convert incoming emails into Helpdesk tickets."
+msgstr "Μετατρέψτε αυτόματα τα εισερχόμενα emails σε δελτία υποστήριξης."
+
+#: templates/manage/email_ingest.html:14
+msgid "Enable polling service"
+msgstr "Ενεργοποίηση υπηρεσίας ελέγχου"
+
+#: templates/manage/email_ingest.html:17 templates/networks/tools.html:176
+msgid "Protocol"
+msgstr "Πρωτόκολλο"
+
+#: templates/manage/email_ingest.html:24
+msgid "Mailbox / Folder"
+msgstr "Γραμματοκιβώτιο / Φάκελος"
+
+#: templates/manage/email_ingest.html:26
+msgid "For IMAP this is the folder to monitor (default INBOX)."
+msgstr "Για IMAP αυτός είναι ο φάκελος που θα παρακολουθείται (προεπιλογή INBOX)."
+
+#: templates/manage/email_ingest.html:29
+msgid "Mail server host"
+msgstr "Διεύθυνση διακομιστή email"
+
+#: templates/manage/email_ingest.html:33
+msgid "Port"
+msgstr "Θύρα"
+
+#: templates/manage/email_ingest.html:34
+msgid "Auto"
+msgstr "Αυτόματο"
+
+#: templates/manage/email_ingest.html:38
+msgid "Use SSL/TLS"
+msgstr "Χρήση SSL/TLS"
+
+#: templates/manage/email_ingest.html:47
+msgid "Leave as *** to keep the stored password."
+msgstr "Αφήστε *** για να διατηρηθεί ο αποθηκευμένος κωδικός."
+
+#: templates/manage/email_ingest.html:50
+msgid "Poll interval (seconds)"
+msgstr "Συχνότητα ελέγχου (δευτερόλεπτα)"
+
+#: templates/manage/email_ingest.html:54
+msgid "Default priority"
+msgstr "Προεπιλεγμένη προτεραιότητα"
+
+#: templates/manage/email_ingest.html:58
+msgid "Default department"
+msgstr "Προεπιλεγμένο τμήμα"
+
+#: templates/manage/email_ingest.html:62
+msgid "Ticket creator"
+msgstr "Δημιουργός δελτίου"
+
+#: templates/manage/email_ingest.html:64
+msgid "Select user"
+msgstr "Επιλέξτε χρήστη"
+
+#: templates/manage/email_ingest.html:69
+msgid "Tickets will be created under this user's account."
+msgstr "Τα δελτία θα δημιουργούνται με τον λογαριασμό αυτού του χρήστη."
+
+#: templates/manage/email_ingest.html:72
+msgid "Assign to (optional)"
+msgstr "Ανάθεση σε (προαιρετικό)"
+
+#: templates/manage/email_ingest.html:74
+msgid "Do not auto-assign"
+msgstr "Να μην γίνει αυτόματη ανάθεση"
+
+#: templates/manage/email_ingest.html:85
+msgid "Last run"
+msgstr "Τελευταία εκτέλεση"
+
+#: templates/manage/email_ingest.html:92
+msgid "Last error"
+msgstr "Τελευταίο σφάλμα"
+
+#: templates/manage/email_ingest.html:105
+msgid "Run now"
+msgstr "Εκτέλεση τώρα"
 
 #: templates/networks/hosts.html:71 templates/networks/maps.html:108
 msgid "Network"
@@ -2651,10 +2789,6 @@ msgstr "Έλεγχος κατάστασης θυρών TCP/UDP (προσομοι
 #: templates/networks/tools.html:172
 msgid "Ports (e.g. 22,80,443)"
 msgstr "Θύρες (π.χ. 22,80,443)"
-
-#: templates/networks/tools.html:176
-msgid "Protocol"
-msgstr "Πρωτόκολλο"
 
 #: templates/networks/tools.html:184
 msgid "Scan Ports"

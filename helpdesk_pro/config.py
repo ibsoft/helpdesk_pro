@@ -34,4 +34,4 @@ class Config:
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_TRANSLATION_DIRECTORIES = os.path.join(
         os.path.dirname(__file__), 'translations')
-    APP_VERSION = os.getenv('APP_VERSION', '1.1.10')
+    APP_VERSION = os.getenv('APP_VERSION', '1.5.10')

@@ -10,3 +10,4 @@ from .menu import MenuPermission
 from .assistant import AssistantConfig, AssistantSession, AssistantMessage, AssistantDocument
 from .auth_config import AuthConfig
 from .api import ApiClient
+from .email_ingest import EmailIngestConfig
