@@ -16,6 +16,7 @@ import uuid
 import mimetypes
 import ipaddress
 from datetime import date, datetime, timedelta
+from decimal import Decimal, InvalidOperation
 from typing import List, Dict, Any, Iterable, Optional, Tuple, Union, Sequence, Set
 
 import requests
@@ -33,12 +34,18 @@ from app.models import (
     AssistantMessage,
     AssistantDocument,
     Ticket,
+    TicketComment,
+    Attachment as TicketAttachment,
+    AuditLog,
     KnowledgeArticle,
+    KnowledgeArticleVersion,
     KnowledgeAttachment,
     HardwareAsset,
     SoftwareAsset,
     Network,
     NetworkHost,
+    Contract,
+    AddressBookEntry,
     User,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
@@ -79,10 +86,44 @@ CLOSED_BETWEEN_PATTERN = re.compile(
     r"closed\s+(?:between|from)\s+([0-9/\-]+)\s+(?:and|to)\s+([0-9/\-]+)",
     re.IGNORECASE,
 )
+GENERIC_BETWEEN_PATTERN = re.compile(
+    r"(?:between|from)\s+([0-9/\-]+)\s+(?:and|to)\s+([0-9/\-]+)",
+    re.IGNORECASE,
+)
+CONTRACT_NUMBER_PATTERN = re.compile(
+    r"(?:contract(?:\s+(?:number|no\.?|#))?|συμβ(?:όλαιο|ολαιο|άση|αση)\s*(?:αριθ(?:μός|μος)?|#)?)\s*[:#]?\s*([a-z0-9\-_/]+)",
+    re.IGNORECASE,
+)
+DATE_BY_PATTERN = re.compile(r"(?:by|before|until|έως|εως|μέχρι|μεχρι)\s+([0-9/\-]+)", re.IGNORECASE)
+AMOUNT_THRESHOLD_PATTERN = re.compile(r"(?:over|greater than|above|άνω των|ανω των)\s*[$€]?\s*([0-9.,]+)", re.IGNORECASE)
+VENDOR_PATTERN = re.compile(
+    r"(?:vendor|προμηθευτ[ήςη])\s+(?:is|=|:|for|με|του|τον|την)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
+CONTRACT_FROM_PATTERN = re.compile(
+    r"contracts?\s+(?:from|by)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
+CONTRACT_TYPE_PATTERN = re.compile(r"(?:type|τύπος|τυπος)\s+(?:is|=|:)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
+COMPANY_PATTERN = re.compile(r"(?:company|εταιρεία|εταιρεια)\s+(?:is|=|:|at|στο|στη|στην|στης)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
+DEPARTMENT_PATTERN = re.compile(r"(?:department|dept|τμήμα|τμημα)\s+(?:is|=|:|στο|στη|στην|στον|σε)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
+CITY_PATTERN = re.compile(r"(?:city|πόλη|πολη)\s+(?:is|=|:|στο|στη|στην)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
+TAG_PATTERN = re.compile(r"(?:tag|ετικέτα|ετικετα)\s+(?:is|=|:)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
+LOCATION_PATTERN = re.compile(r"(?:location|τοποθεσία|τοποθεσια)\s+(?:is|=|:|στο|στη|στην|στον|σε)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
+EMAIL_DOMAIN_PATTERN = re.compile(r"(?:@|domain\s+)([a-z0-9_.\-]+\.[a-z]{2,})", re.IGNORECASE)
+PHONE_PATTERN = re.compile(r"(?:phone|τηλέφωνο|τηλεφωνο)\s*(?:is|=|:)?\s*([+0-9()\s\-]{6,})", re.IGNORECASE)
+CONTACT_NAME_PATTERN = re.compile(
+    r"(?:contact|επάφη|επαφή|επαφη)\s+(?:details\s+for|for|named|=|:)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
 SUBJECT_QUOTED_PATTERN = re.compile(r"subject\s*(?:is|=|contains|like|:)?\s*\"([^\"]+)\"", re.IGNORECASE)
 SUBJECT_SINGLE_QUOTED_PATTERN = re.compile(r"subject\s*(?:is|=|contains|like|:)?\s*'([^']+)'", re.IGNORECASE)
 DESCRIPTION_QUOTED_PATTERN = re.compile(r"description\s*(?:is|=|contains|like|:)?\s*\"([^\"]+)\"", re.IGNORECASE)
 DESCRIPTION_SINGLE_QUOTED_PATTERN = re.compile(r"description\s*(?:is|=|contains|like|:)?\s*'([^']+)'", re.IGNORECASE)
+SITE_FILTER_PATTERN = re.compile(
+    r"(?:site|location)\s+(?:is|=|:|at|στο|στη|στην|στον|στης)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
 
 STOP_WORDS = {
     "the",
@@ -184,6 +225,143 @@ NETWORK_KEYWORDS = {
     "network", "subnet", "cidr", "vlan", "ip", "wifi",
     "δίκτυο", "υποδίκτυο", "cidr", "vlan", "ip", "ίπ", "δικτυο",
     "networks", "subnets"
+}
+
+CONTRACT_KEYWORDS = {
+    "contract", "contracts", "renewal", "renewals", "vendor", "support", "coverage", "auto-renew", "auto renew",
+    "agreement", "po", "purchase order", "sla", "service level", "value", "amount",
+    "συμβαση", "συμβάση", "συμβασεις", "συμβάσεις", "ανανεωση", "ανανεώσεις", "προμηθευτη", "προμηθευτή",
+    "υποστήριξη", "υποστηριξη", "τυπος", "τύπος", "συμβολαιο", "συμβόλαιο"
+}
+
+ADDRESS_BOOK_KEYWORDS = {
+    "contact", "contacts", "address book", "directory", "phone", "mobile", "email", "company", "department", "city", "tag",
+    "vendor", "partner", "stakeholder",
+    "επαφη", "επαφή", "επαφες", "επαφές", "τηλεφωνο", "κινητο", "email", "εταιρεια", "εταιρεία",
+    "τμημα", "τμήμα", "πολη", "πόλη", "ετικετα", "ετικέτα", "συνεργατες", "συνεργάτες", "προμηθευτες", "προμηθευτές"
+}
+
+MESSAGE_ALIAS_MAP = {
+    "σήμερα": "today",
+    "σημερα": "today",
+    "χτες": "yesterday",
+    "χθες": "yesterday",
+    "ενημερώθηκαν": "updated",
+    "ενημερωθηκαν": "updated",
+    "δημιουργήθηκαν": "created",
+    "δημιουργηθηκαν": "created",
+    "δημιουργημένα": "created",
+    "δημιουργημενα": "created",
+    "δημιουργημένα από": "created by",
+    "δημιουργημενα απο": "created by",
+    "έκλεισαν": "closed",
+    "εκλεισαν": "closed",
+    "ανοικτά": "open",
+    "ανοιχτά": "open",
+    "ανοικτα": "open",
+    "ανοιχτα": "open",
+    "κλειστά": "closed",
+    "κλειστα": "closed",
+    "υψηλής προτεραιότητας": "high priority",
+    "υψηλης προτεραιοτητας": "high priority",
+    "μη ανατεθειμένα": "unassigned",
+    "μη ανατεθειμενα": "unassigned",
+    "χωρίς ανάθεση": "unassigned",
+    "χωρις αναθεση": "unassigned",
+    "ανατεθειμένα στον": "assigned to",
+    "ανατεθειμενα στον": "assigned to",
+    "ανατεθειμένα στη": "assigned to",
+    "ανατεθειμενα στη": "assigned to",
+    "εκπρόθεσμα": "overdue",
+    "εκπροθεσμα": "overdue",
+    "συνημμένα": "attachments",
+    "συνημμενα": "attachments",
+    "σχόλια": "comments",
+    "σχολια": "comments",
+    "ιστορικό ενεργειών": "audit log",
+    "ιστορικο ενεργειων": "audit log",
+    "τμήμα": "department",
+    "τμημα": "department",
+    "τοποθεσία": "location",
+    "τοποθεσια": "location",
+    "κατάσταση": "status",
+    "κατασταση": "status",
+    "ανανεώσεις": "renewals",
+    "ανανεωση": "renewals",
+    "λήγουν": "ending",
+    "ληγουν": "ending",
+    "αυτόματη ανανέωση": "auto-renew",
+    "αυτοματη ανανεωση": "auto-renew",
+    "επανάνοιγμα": "reopen",
+    "επαννοιγμα": "reopen",
+    "δεσμευμένες": "reserved",
+    "δεσμευμενες": "reserved",
+    "χωρίς ανάθεση": "unassigned",
+    "χωρις αναθεση": "unassigned",
+    "επαφή": "contact",
+    "επαφη": "contact",
+    "επαφές": "contacts",
+    "επαφες": "contacts",
+    "εταιρεία": "company",
+    "εταιρεια": "company",
+    "πόλη": "city",
+    "πολη": "city",
+    "ετικέτα": "tag",
+    "ετικετα": "tag",
+    "συμβάσεις": "contracts",
+    "συμβασεις": "contracts",
+    "συμβόλαιο": "contract",
+    "συμβολαιο": "contract",
+    "υποστήριξη": "support",
+    "υποστηριξη": "support",
+    "προμηθευτή": "vendor",
+    "προμηθευτη": "vendor",
+    "διαδικασίες": "procedures",
+    "διαδικασιες": "procedures",
+    "άρθρα": "articles",
+    "αρθρα": "articles",
+    "άρθρο": "article",
+    "αρθρο": "article",
+    "δημοσιευμένων": "published",
+    "δημοσιευμενων": "published",
+    "πρόχειρων": "draft",
+    "προχειρων": "draft",
+    "εγγύηση": "warranty",
+    "εγγυηση": "warranty",
+    "λήγει": "expiring",
+    "ληγει": "expiring",
+    "εκτός εγγύησης": "out of warranty",
+    "εκτος εγγυησης": "out of warranty",
+    "αποσύρμενα": "decommissioned",
+    "αποσυρμενα": "decommissioned",
+    "εγκατάστασης": "deployment",
+    "εγκαταστασης": "deployment",
+    "δεσμευμένες ip": "reserved ips",
+    "χωρίς ανάθεση hosts": "unassigned hosts",
+    "μεταξύ": "between",
+    "μεταξυ": "between",
+    "έως": "to",
+    "εως": "to",
+    "ως": "to",
+    "αναζήτηση": "search",
+    "αναζητηση": "search",
+    "εμφάνισε": "show",
+    "εμφανισε": "show",
+    "δείξε": "show",
+    "δειξε": "show",
+    "λίστα": "list",
+    "λιστα": "list",
+    "βρες": "find",
+    "άδειες": "licenses",
+    "αδειες": "licenses",
+    "συνδρομητικές": "subscription",
+    "συνδρομητικες": "subscription",
+    "διαχρονικές": "perpetual",
+    "διαχρονικες": "perpetual",
+    "τελευταίες 7 μέρες": "last 7 days",
+    "τελευταιες 7 μερες": "last 7 days",
+    "τελευταίων 7 ημερών": "last 7 days",
+    "τελευταιων 7 ημερων": "last 7 days",
 }
 
 NETWORK_HINT_STOPWORDS = {
@@ -327,6 +505,18 @@ LLM_TOOL_DEFINITIONS = [
         "description": (
             "Retrieve network details, including CIDR blocks, available IPs, host reservations, and assignments "
             "from the Helpdesk Pro network map."
+        ),
+    },
+    {
+        "name": "query_contracts",
+        "description": (
+            "Retrieve contract records, renewal schedules, support contacts, and financial details from the Helpdesk Pro contracts registry."
+        ),
+    },
+    {
+        "name": "query_address_book",
+        "description": (
+            "Lookup contacts in the Helpdesk Pro address book by name, company, department, tags, or other attributes."
         ),
     },
 ]
@@ -500,7 +690,15 @@ def _normalize_message_text(message: str) -> str:
         "‘": "'",
         "’": "'",
     }
-    return message.translate(str.maketrans(replacements))
+    normalized = message.translate(str.maketrans(replacements))
+    lowered = normalized.lower()
+    additions: Set[str] = set()
+    for alias, replacement in MESSAGE_ALIAS_MAP.items():
+        if alias in lowered and replacement not in lowered:
+            additions.add(replacement)
+    if additions:
+        normalized = f"{normalized} {' '.join(sorted(additions))}"
+    return normalized
 
 
 def _safe_strip(value: Union[str, None], chars: Optional[str] = None) -> str:
@@ -550,6 +748,28 @@ def _maybe_builtin_override(
     return None
 
 
+def _should_replace_with_builtin(message: str, reply: str) -> bool:
+    lowered_reply = (reply or "").lower()
+    if not lowered_reply:
+        return False
+    lowered_message = (message or "").lower()
+    domain_markers = {
+        "ticket": ("no tickets", "no results for ticket"),
+        "contract": ("no contracts", "no contract"),
+        "hardware": ("no hardware", "no devices", "no asset"),
+        "software": ("no software", "no license"),
+        "network": ("no network", "no hosts"),
+        "knowledge": ("no article", "no knowledge"),
+        "contact": ("no contact", "no address book"),
+    }
+    for marker, phrases in domain_markers.items():
+        if marker in lowered_message:
+            for phrase in phrases:
+                if phrase in lowered_reply:
+                    return True
+    return False
+
+
 def _dispatch_module_query(tool_name: str, message: str, user) -> str:
     message = _normalize_message_text(message)
     lowered = message.lower()
@@ -568,6 +788,12 @@ def _dispatch_module_query(tool_name: str, message: str, user) -> str:
     if tool_name == "query_network_inventory":
         response = _answer_network_query(message, lowered, user)
         return response or "No network records matched those filters."
+    if tool_name == "query_contracts":
+        response = _answer_contract_query(message, lowered, user)
+        return response or "No contracts matched those filters."
+    if tool_name == "query_address_book":
+        response = _answer_address_book_query(message, lowered, user)
+        return response or "No contacts matched those filters."
     return "Unsupported tool call."
 
 
@@ -794,6 +1020,13 @@ def api_message():
             current_app.logger.info("Assistant bypassed LLM for sensitive software query.")
             reply = builtin_reply
 
+    if reply is None and config.provider == "chatgpt":
+        builtin_prefill = _call_builtin(message, history, current_user)
+        if _is_meaningful_builtin_reply(builtin_prefill):
+            current_app.logger.info("Assistant satisfied request using builtin handler (chatgpt provider without tools).")
+            reply = builtin_prefill
+            builtin_reply = builtin_prefill
+
     if reply is None:
         try:
             if config.provider == "chatgpt":
@@ -844,6 +1077,13 @@ def api_message():
         override = _maybe_builtin_override(message, history, current_user, reply, cached=builtin_reply)
         if override:
             reply = override
+        elif _should_replace_with_builtin(message, reply):
+            builtin_fallback = builtin_reply if _is_meaningful_builtin_reply(builtin_reply) else None
+            if not builtin_fallback:
+                builtin_fallback = _call_builtin(message, history, current_user)
+            if _is_meaningful_builtin_reply(builtin_fallback):
+                current_app.logger.info("Assistant override: replacing LLM response with builtin database answer.")
+                reply = builtin_fallback
 
     if not reply:
         db.session.rollback()
@@ -1203,10 +1443,25 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
     if network_response:
         return network_response
 
+    cross_response = _answer_cross_module_query(message, lowered, user)
+    if cross_response:
+        return cross_response
+
     has_ticket = any(keyword in lowered for keyword in TICKET_KEYWORDS)
     has_knowledge = any(keyword in lowered for keyword in KNOWLEDGE_KEYWORDS)
     has_hardware = any(keyword in lowered for keyword in HARDWARE_KEYWORDS)
     has_software = any(keyword in lowered for keyword in SOFTWARE_KEYWORDS)
+    has_contracts = (
+        "contract" in lowered
+        or "συμβ" in lowered
+        or any(keyword in lowered for keyword in CONTRACT_KEYWORDS)
+    )
+    has_contacts = (
+        "contact" in lowered
+        or "address book" in lowered
+        or "επαφ" in lowered
+        or any(keyword in lowered for keyword in ADDRESS_BOOK_KEYWORDS)
+    )
     force_software = _should_force_builtin(message)
 
     if has_ticket:
@@ -1229,6 +1484,16 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
         if hardware_response:
             return hardware_response
 
+    if has_contracts:
+        contract_response = _answer_contract_query(message, lowered, user)
+        if contract_response:
+            return contract_response
+
+    if has_contacts:
+        contacts_response = _answer_address_book_query(message, lowered, user)
+        if contacts_response:
+            return contacts_response
+
     return BUILTIN_DEFAULT_RESPONSE
 
 
@@ -1246,6 +1511,44 @@ def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
     candidate: Optional[Network] = None
     query = Network.query.options(joinedload(Network.hosts))
     networks_list = query.all()
+
+    site_filter_value: Optional[str] = None
+    site_match = SITE_FILTER_PATTERN.search(message)
+    if site_match:
+        site_filter_value = _safe_strip(site_match.group(1))
+    else:
+        at_site_match = re.search(r"networks?\s+at\s+(?:the\s+)?([a-z0-9_.\-\s]+)", lowered)
+        if at_site_match:
+            candidate_site = _safe_strip(at_site_match.group(1))
+            if candidate_site:
+                if candidate_site.endswith(" site"):
+                    candidate_site = candidate_site[:-5].strip()
+                site_filter_value = candidate_site
+
+    if site_filter_value:
+        normalized_site = site_filter_value.lower()
+        site_matches = [
+            net
+            for net in networks_list
+            if normalized_site in (net.site or "").lower()
+        ]
+        if site_matches:
+            if len(site_matches) == 1:
+                candidate = site_matches[0]
+            else:
+                display_label = site_filter_value
+                lines = [f"Networks at site {display_label}:"]
+                for net in sorted(site_matches, key=lambda n: (n.name or "", n.cidr or "")):
+                    name = net.name or net.cidr or f"Network #{net.id}"
+                    cidr = net.cidr or "n/a"
+                    vlan = net.vlan or "n/a"
+                    gateway = net.gateway or "n/a"
+                    site_label = net.site or display_label
+                    lines.append(
+                        f"- {name} ({cidr}) | Site: {site_label} | VLAN: {vlan} | Gateway: {gateway}"
+                    )
+                return "\n".join(lines)
+            # fall through with single match
 
     cidr_match = CIDR_PATTERN.search(message)
 
@@ -1588,14 +1891,74 @@ def _format_network_hosts(network: Network, message: str, lowered: str, user) ->
 def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
     id_match = TICKET_ID_PATTERN.search(message)
     if id_match:
-        ticket_id = int(id_match.group(1))
-        ticket = (
-            Ticket.query.options(joinedload(Ticket.assignee))
-            .filter(Ticket.id == ticket_id)
-            .first()
-        )
+        ticket_id_raw = id_match.group(1) or id_match.group(2)
+        try:
+            ticket_id = int(ticket_id_raw)
+        except (TypeError, ValueError):
+            ticket_id = None
+        ticket = None
+        if ticket_id is not None:
+            ticket = (
+                Ticket.query.options(joinedload(Ticket.assignee))
+                .filter(Ticket.id == ticket_id)
+                .first()
+            )
         if not ticket:
-            return f"Ticket #{ticket_id} was not found."
+            return f"Ticket #{ticket_id_raw} was not found."
+
+        wants_comments = "comment" in lowered or "comments" in lowered
+        wants_attachments = "attachment" in lowered or "attachments" in lowered
+        wants_audit = "audit" in lowered or "history" in lowered or "log" in lowered
+
+        if wants_comments:
+            comments = (
+                TicketComment.query.filter_by(ticket_id=ticket.id)
+                .order_by(TicketComment.created_at.asc())
+                .limit(50)
+                .all()
+            )
+            if not comments:
+                return f"Ticket #{ticket.id} has no recorded comments."
+            lines = [
+                f"{idx + 1}. {comment.user or 'Unknown'} — {comment.comment or '—'} "
+                f"({comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else 'n/a'})"
+                for idx, comment in enumerate(comments)
+            ]
+            return "Comments for ticket #{0}:\n{1}".format(ticket.id, "\n".join(lines))
+
+        if wants_attachments:
+            attachments = (
+                TicketAttachment.query.filter_by(ticket_id=ticket.id)
+                .order_by(TicketAttachment.uploaded_at.asc())
+                .limit(50)
+                .all()
+            )
+            if not attachments:
+                return f"Ticket #{ticket.id} has no attachments."
+            lines = [
+                f"{idx + 1}. {attachment.filename or attachment.filepath or 'Attachment'} "
+                f"(uploaded by {attachment.uploaded_by or 'unknown'} on "
+                f"{attachment.uploaded_at.strftime('%Y-%m-%d %H:%M') if attachment.uploaded_at else 'n/a'})"
+                for idx, attachment in enumerate(attachments)
+            ]
+            return "Attachments for ticket #{0}:\n{1}".format(ticket.id, "\n".join(lines))
+
+        if wants_audit:
+            logs = (
+                AuditLog.query.filter_by(ticket_id=ticket.id)
+                .order_by(AuditLog.timestamp.desc())
+                .limit(50)
+                .all()
+            )
+            if not logs:
+                return f"No audit log entries were found for ticket #{ticket.id}."
+            lines = [
+                f"{log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else 'n/a'} — "
+                f"{log.username or 'system'}: {log.action or '—'}"
+                for log in logs
+            ]
+            return "Audit log for ticket #{0}:\n{1}".format(ticket.id, "\n".join(lines))
+
         assignee = ticket.assignee.username if ticket.assignee else "Unassigned"
         created = ticket.created_at.strftime("%Y-%m-%d %H:%M") if ticket.created_at else "—"
         updated = ticket.updated_at.strftime("%Y-%m-%d %H:%M") if ticket.updated_at else "—"
@@ -1626,6 +1989,10 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
                 filters.append(f"assigned to {target.username}")
                 excluded_terms.add(target.username.lower())
 
+    if "unassigned" in lowered:
+        base_query = base_query.filter(Ticket.assigned_to.is_(None))
+        filters.append("unassigned")
+
     creator_match = CREATED_BY_PATTERN.search(message)
     if creator_match:
         creator = _resolve_user_reference(creator_match.group(1))
@@ -1638,6 +2005,17 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
         base_query = base_query.filter(Ticket.created_by == user.id)
         filters.append("created by you")
         excluded_terms.add(user.username.lower())
+
+    dept_match = re.search(r"(?:department|dept|τμήμα|τμημα)\s+(?:is|=|:|στο|στην|στον|σε)?\s*([a-z0-9_.\-άέήίόύώ\s]+)", lowered)
+    if dept_match:
+        department_value = _safe_strip(dept_match.group(1))
+        if department_value:
+            department_value = re.split(r"\b(?:tickets?|incidents?|requests?)\b", department_value, 1)[0]
+            department_value = _safe_strip(re.split(r"\b(?:with|and|or|,|where)\b", department_value, 1)[0])
+            if department_value:
+                base_query = base_query.filter(func.lower(Ticket.department) == department_value.lower())
+                filters.append(f"department {department_value}")
+                excluded_terms.add(department_value.lower())
 
     if "today" in lowered:
         today = date.today()
@@ -1694,6 +2072,22 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
             base_query = base_query.filter(func.lower(Ticket.status).in_(CLOSED_STATUS_VALUES))
             filters.append("status closed")
 
+    if "overdue" in lowered:
+        overdue_threshold = date.today() - timedelta(days=7)
+        base_query = base_query.filter(Ticket.closed_at.is_(None))
+        base_query = base_query.filter(func.date(Ticket.created_at) <= overdue_threshold)
+        filters.append("overdue (>7 days open)")
+
+    if "reopen" in lowered or "re-open" in lowered:
+        recent_threshold = date.today() - timedelta(days=7)
+        base_query = base_query.filter(Ticket.closed_at.isnot(None))
+        base_query = base_query.filter(func.date(Ticket.closed_at) >= recent_threshold)
+        filters.append("closed within last 7 days")
+
+    if ("attachment" in lowered or "attachments" in lowered) and "with attachments" not in filters:
+        base_query = base_query.filter(Ticket.attachments.any())
+        filters.append("with attachments")
+
     if not explicit_priority:
         for level in PRIORITY_LEVELS:
             if f"{level} priority" in lowered or f"priority {level}" in lowered:
@@ -1702,12 +2096,6 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
                 excluded_terms.add(level)
                 explicit_priority = True
                 break
-
-    dept_match = re.search(r"department\s+([a-z0-9_\- ]+)", lowered)
-    if dept_match:
-        dept = _safe_strip(dept_match.group(1))
-        base_query = base_query.filter(func.lower(Ticket.department) == dept.lower())
-        filters.append(f"department {dept}")
 
     created_between = CREATED_BETWEEN_PATTERN.search(message)
     if created_between:
@@ -1718,6 +2106,16 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
                 func.date(Ticket.created_at).between(start, end)
             )
             filters.append(f"created between {start.isoformat()} and {end.isoformat()}")
+    else:
+        generic_between = GENERIC_BETWEEN_PATTERN.search(lowered)
+        if generic_between and "created" not in lowered and "closed" not in lowered and "updated" not in lowered:
+            start = _parse_date_string(generic_between.group(1))
+            end = _parse_date_string(generic_between.group(2))
+            if start and end:
+                base_query = base_query.filter(
+                    func.date(Ticket.created_at).between(start, end)
+                )
+                filters.append(f"created between {start.isoformat()} and {end.isoformat()}")
 
     created_on = CREATED_ON_PATTERN.search(message)
     if created_on:
@@ -1872,9 +2270,66 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
 
 
 def _answer_knowledge_query(message: str) -> Optional[str]:
-    keywords = _extract_keywords(message)
-    if not keywords:
-        return None
+    lowered = message.lower()
+    filters: List[str] = []
+
+    article_id = None
+    article_match = re.search(r"article\s+#?(\d+)", lowered)
+    if article_match:
+        try:
+            article_id = int(article_match.group(1))
+        except (TypeError, ValueError):
+            article_id = None
+
+    if article_id is not None:
+        if "latest version" in lowered:
+            version = (
+                KnowledgeArticleVersion.query.filter_by(article_id=article_id)
+                .order_by(KnowledgeArticleVersion.version_number.desc())
+                .first()
+            )
+            if not version:
+                return f"No version history recorded for article {article_id}."
+            created_at = version.created_at.strftime("%Y-%m-%d %H:%M") if version.created_at else "n/a"
+            return (
+                f"Article {article_id} latest version v{version.version_number}: {version.title}\n"
+                f"Created by user #{version.created_by} on {created_at}."
+            )
+
+        if "version history" in lowered:
+            versions = (
+                KnowledgeArticleVersion.query.filter_by(article_id=article_id)
+                .order_by(KnowledgeArticleVersion.version_number.desc())
+                .limit(15)
+                .all()
+            )
+            if not versions:
+                return f"No version history recorded for article {article_id}."
+            lines = [
+                f"v{version.version_number} — {version.title} (created {version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else 'n/a'} by user #{version.created_by})"
+                for version in versions
+            ]
+            return f"Version history for article {article_id}:\n" + "\n".join(lines)
+
+        if "attachment" in lowered or "attachments" in lowered:
+            attachments = (
+                KnowledgeAttachment.query.filter_by(article_id=article_id)
+                .order_by(KnowledgeAttachment.uploaded_at.desc())
+                .limit(25)
+                .all()
+            )
+            if not attachments:
+                return f"No attachments are linked to article {article_id}."
+            lines = [
+                f"{att.original_filename} ({att.mimetype or 'unknown'}; uploaded {att.uploaded_at.strftime('%Y-%m-%d %H:%M') if att.uploaded_at else 'n/a'})"
+                for att in attachments
+            ]
+            return f"Attachments for article {article_id}:\n" + "\n".join(lines)
+
+    if "draft vs" in lowered or "draft versus" in lowered:
+        published = KnowledgeArticle.query.filter(KnowledgeArticle.is_published.is_(True)).count()
+        drafts = KnowledgeArticle.query.filter(KnowledgeArticle.is_published.is_(False)).count()
+        return f"Knowledge base totals — Published: {published}, Draft: {drafts}."
 
     query = (
         KnowledgeArticle.query.outerjoin(
@@ -1882,29 +2337,85 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
             KnowledgeAttachment.article_id == KnowledgeArticle.id,
         )
         .options(joinedload(KnowledgeArticle.attachments))
-        .filter(KnowledgeArticle.is_published.is_(True))
         .distinct()
     )
 
-    conditions = []
+    if "published" in lowered and "list" in lowered:
+        query = query.filter(KnowledgeArticle.is_published.is_(True))
+        filters.append("published")
+    elif "draft" in lowered and ("list" in lowered or "show" in lowered):
+        query = query.filter(KnowledgeArticle.is_published.is_(False))
+        filters.append("draft")
+    else:
+        query = query.filter(KnowledgeArticle.is_published.is_(True))
+
+    tag_match = TAG_PATTERN.search(message)
+    if tag_match:
+        tag_value = _safe_strip(tag_match.group(1))
+        if tag_value:
+            like = f"%{tag_value}%"
+            query = query.filter(KnowledgeArticle.tags.ilike(like))
+            filters.append(f"tag {tag_value}")
+
+    dept_match = DEPARTMENT_PATTERN.search(message)
+    if dept_match:
+        dept_value = _safe_strip(dept_match.group(1))
+        if dept_value:
+            like = f"%{dept_value}%"
+            query = query.filter(
+                or_(
+                    KnowledgeArticle.category.ilike(like),
+                    KnowledgeArticle.tags.ilike(like),
+                    KnowledgeArticle.summary.ilike(like),
+                )
+            )
+            filters.append(f"context {dept_value}")
+
+    if "recently updated" in lowered or ("recent" in lowered and "updated" in lowered):
+        recent_threshold = datetime.utcnow() - timedelta(days=14)
+        query = query.filter(KnowledgeArticle.updated_at >= recent_threshold)
+        filters.append("updated last 14 days")
+
+    if "updated" in lowered:
+        between_match = GENERIC_BETWEEN_PATTERN.search(lowered)
+        if between_match:
+            start = _parse_date_string(between_match.group(1))
+            end = _parse_date_string(between_match.group(2))
+            if start and end:
+                query = query.filter(
+                    KnowledgeArticle.updated_at.isnot(None),
+                    func.date(KnowledgeArticle.updated_at).between(start, end),
+                )
+                filters.append(f"updated between {start} and {end}")
+
+    keywords = _extract_keywords(message, extra_stop={"knowledge", "article", "articles", "guide", "manual", "procedure"})
+    keyword_conditions = []
     for keyword in keywords[:6]:
         like = f"%{keyword}%"
-        conditions.extend(
-            [
+        keyword_conditions.append(
+            or_(
                 KnowledgeArticle.title.ilike(like),
                 KnowledgeArticle.summary.ilike(like),
                 KnowledgeArticle.tags.ilike(like),
                 KnowledgeArticle.content.ilike(like),
                 KnowledgeAttachment.original_filename.ilike(like),
                 KnowledgeAttachment.extracted_text.ilike(like),
-            ]
+            )
         )
 
-    if conditions:
-        query = query.filter(or_(*conditions))
+    if keyword_conditions:
+        query = query.filter(and_(*keyword_conditions))
+
+    if not filters and not keyword_conditions and article_id is None:
+        # no clear intent
+        keywords_raw = _extract_keywords(message)
+        if not keywords_raw:
+            return None
 
     results = query.order_by(KnowledgeArticle.updated_at.desc()).limit(10).all()
     if not results:
+        if filters or keyword_conditions:
+            return "No knowledge items matched those filters."
         return None
 
     lines = []
@@ -1918,11 +2429,475 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
         except RuntimeError:
             link = ""
         link_part = f" | link: <{link}>" if link else ""
+        status_part = "draft" if not article.is_published else "published"
         lines.append(
-            f"#{article.id} {article.title} — tags: {tags}; updated {updated}{attachment_part}{link_part}"
+            f"#{article.id} {article.title} — {status_part}; tags: {tags}; updated {updated}{attachment_part}{link_part}"
         )
 
-    return "Top knowledge base matches:\n" + "\n".join(lines)
+    header = "Knowledge base matches"
+    if filters:
+        header += f" ({', '.join(filters)})"
+    return header + ":\n" + "\n".join(lines)
+
+
+def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
+    base_query = Contract.query.options(joinedload(Contract.owner))
+    filters: List[str] = []
+    need_total = "how many" in lowered or "count" in lowered
+    show_support = "support" in lowered
+    suppressed_keywords: Set[str] = set()
+
+    if "active" in lowered or "ενεργ" in lowered:
+        base_query = base_query.filter(func.lower(Contract.status) == "active")
+        filters.append("status active")
+        suppressed_keywords.add("active")
+
+    if "auto-renew" in lowered or "auto renew" in lowered:
+        base_query = base_query.filter(Contract.auto_renew.is_(True))
+        filters.append("auto-renew")
+        suppressed_keywords.update({"autorenew", "auto", "renew"})
+
+    if show_support:
+        suppressed_keywords.add("support")
+
+    vendor_value: Optional[str] = None
+    normalized_vendor: Optional[str] = None
+    vendor_match = VENDOR_PATTERN.search(message)
+    if vendor_match:
+        vendor_value = _safe_strip(vendor_match.group(1))
+    else:
+        inferred_match = CONTRACT_FROM_PATTERN.search(lowered)
+        if inferred_match:
+            vendor_value = _safe_strip(inferred_match.group(1))
+    if vendor_value:
+        vendor_value = re.split(r"\b(?:contracts?|support|and|,|with)\b", vendor_value, 1)[0]
+        vendor_value = _safe_strip(vendor_value)
+        if vendor_value:
+            clean_vendor = vendor_value.lower()
+            base_query = base_query.filter(func.lower(func.trim(Contract.vendor)) == clean_vendor)
+            filters.append(f"vendor {vendor_value}")
+            suppressed_keywords.add(clean_vendor)
+            normalized_vendor = clean_vendor
+
+    number_match = CONTRACT_NUMBER_PATTERN.search(message)
+    if number_match:
+        number_value = _safe_strip(number_match.group(1))
+        if number_value:
+            invalid_tokens = {"from", "for", "by", "with"}
+            lower_number = number_value.lower()
+            if lower_number in invalid_tokens or (
+                normalized_vendor
+                and (
+                    lower_number == normalized_vendor
+                    or normalized_vendor.startswith(lower_number)
+                    or lower_number.startswith(normalized_vendor)
+                )
+            ):
+                number_value = ""
+            elif len(number_value) <= 2 and not re.search(r"[0-9]", number_value):
+                number_value = ""
+        if number_value:
+            contract = (
+                base_query.filter(func.lower(Contract.contract_number) == number_value.lower())
+                .order_by(Contract.id.asc())
+                .first()
+            )
+            if not contract:
+                return f"Contract number {number_value} was not found."
+            return _format_contract_detail(contract, include_support=True)
+
+    type_match = CONTRACT_TYPE_PATTERN.search(message)
+    if type_match:
+        type_value = _safe_strip(type_match.group(1))
+        if type_value:
+            base_query = base_query.filter(func.lower(func.trim(Contract.contract_type)) == type_value.lower())
+            filters.append(f"type {type_value}")
+            suppressed_keywords.add(type_value.lower())
+
+    owner_filtered = False
+    if "owner" in lowered or "υπεύθ" in lowered:
+        owner_match = USER_REF_PATTERN.search(message)
+        if owner_match:
+            owner_user = _resolve_user_reference(owner_match.group(1))
+            if owner_user:
+                base_query = base_query.filter(Contract.owner_id == owner_user.id)
+                filters.append(f"owner {owner_user.username}")
+                suppressed_keywords.add(owner_user.username.lower())
+                owner_filtered = True
+    if not owner_filtered and user and any(
+        phrase in lowered for phrase in ("my contract", "my contracts", "assigned to me", "for me")
+    ):
+        base_query = base_query.filter(Contract.owner_id == user.id)
+        filters.append(f"owner {user.username}")
+        suppressed_keywords.add(user.username.lower())
+
+    if "renewal" in lowered or "renewals" in lowered:
+        date_by_match = DATE_BY_PATTERN.search(lowered)
+        if date_by_match:
+            target_date = _parse_date_string(date_by_match.group(1))
+            if target_date:
+                base_query = base_query.filter(Contract.renewal_date.isnot(None))
+                base_query = base_query.filter(Contract.renewal_date <= target_date)
+                filters.append(f"renewal by {target_date.isoformat()}")
+                suppressed_keywords.add(str(target_date.year))
+
+    if any(term in lowered for term in ("ending", "end date", "λήγουν", "ληγουν")):
+        between_match = GENERIC_BETWEEN_PATTERN.search(lowered)
+        if between_match:
+            start = _parse_date_string(between_match.group(1))
+            end = _parse_date_string(between_match.group(2))
+            if start and end:
+                base_query = base_query.filter(Contract.end_date.isnot(None))
+                base_query = base_query.filter(Contract.end_date.between(start, end))
+                filters.append(f"ending between {start.isoformat()} and {end.isoformat()}")
+                suppressed_keywords.update({str(start.year), str(end.year)})
+        else:
+            end_by_match = DATE_BY_PATTERN.search(lowered)
+            if end_by_match:
+                target_date = _parse_date_string(end_by_match.group(1))
+                if target_date:
+                    base_query = base_query.filter(Contract.end_date.isnot(None))
+                    base_query = base_query.filter(Contract.end_date <= target_date)
+                    filters.append(f"ending by {target_date.isoformat()}")
+                    suppressed_keywords.add(str(target_date.year))
+
+    if any(term in lowered for term in ("high-value", "high value", "over", "άνω των", "ανω των")):
+        amount_match = AMOUNT_THRESHOLD_PATTERN.search(lowered)
+        if amount_match:
+            amount_value = _parse_decimal(amount_match.group(1))
+            if amount_value is not None:
+                base_query = base_query.filter(Contract.value.isnot(None))
+                base_query = base_query.filter(Contract.value >= amount_value)
+                filters.append(f"value ≥ {amount_value}")
+                digits_only = re.sub(r"\D", "", str(amount_value))
+                if digits_only:
+                    suppressed_keywords.add(digits_only)
+
+    keywords = _extract_keywords(message, extra_stop={"contract", "contracts", "renewal", "renewals"})
+    keywords = [
+        keyword
+        for keyword in keywords
+        if keyword not in suppressed_keywords
+    ]
+    keyword_conditions = []
+    for keyword in keywords[:5]:
+        like = f"%{keyword}%"
+        keyword_conditions.append(
+            or_(
+                Contract.name.ilike(like),
+                Contract.vendor.ilike(like),
+                Contract.coverage_scope.ilike(like),
+                Contract.notes.ilike(like),
+            )
+        )
+
+    filtered_query = base_query.filter(and_(*keyword_conditions)) if keyword_conditions else base_query
+    results = filtered_query.order_by(Contract.end_date.asc(), Contract.name.asc()).limit(20).all()
+    total = filtered_query.count() if need_total else len(results)
+
+    if not results:
+        if filters or keyword_conditions:
+            return "No contracts matched those filters."
+        return None
+
+    lines = []
+    for contract in results:
+        end_date = contract.end_date.strftime("%Y-%m-%d") if contract.end_date else "n/a"
+        renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
+        owner_name = contract.owner.username if contract.owner else "n/a"
+        support_info = _support_contact_snippet(contract) if show_support else ""
+        line = (
+            f"{contract.name} — {contract.contract_type}; vendor {contract.vendor or 'n/a'}; "
+            f"status {contract.status or 'n/a'}; end {end_date}; renewal {renewal}; "
+            f"auto-renew {'yes' if contract.auto_renew else 'no'}; owner {owner_name}"
+        )
+        if support_info:
+            line += f"; support {support_info}"
+        lines.append(line)
+
+    header = f"Found {total} contract(s)"
+    if filters:
+        header += f" ({', '.join(filters)})"
+    return header + ":\n" + "\n".join(lines)
+
+
+def _answer_address_book_query(message: str, lowered: str, user) -> Optional[str]:
+    base_query = AddressBookEntry.query
+    filters: List[str] = []
+    need_total = "how many" in lowered or "count" in lowered
+
+    if "vendor" in lowered and "contact" in lowered:
+        base_query = base_query.filter(func.lower(AddressBookEntry.category) == "vendor")
+        filters.append("category Vendor")
+    elif "partner" in lowered:
+        base_query = base_query.filter(func.lower(AddressBookEntry.category) == "partner")
+        filters.append("category Partner")
+    elif "customer" in lowered:
+        base_query = base_query.filter(func.lower(AddressBookEntry.category) == "customer")
+        filters.append("category Customer")
+
+    company_match = COMPANY_PATTERN.search(message)
+    if company_match:
+        company_value = _safe_strip(company_match.group(1))
+        if company_value:
+            base_query = base_query.filter(func.lower(AddressBookEntry.company) == company_value.lower())
+            filters.append(f"company {company_value}")
+
+    dept_match = DEPARTMENT_PATTERN.search(message)
+    if dept_match:
+        dept_value = _safe_strip(dept_match.group(1))
+        if dept_value:
+            base_query = base_query.filter(func.lower(AddressBookEntry.department) == dept_value.lower())
+            filters.append(f"department {dept_value}")
+
+    city_match = CITY_PATTERN.search(message)
+    if city_match:
+        city_value = _safe_strip(city_match.group(1))
+        if city_value:
+            base_query = base_query.filter(func.lower(AddressBookEntry.city) == city_value.lower())
+            filters.append(f"city {city_value}")
+
+    tag_match = TAG_PATTERN.search(message)
+    if tag_match:
+        tag_value = _safe_strip(tag_match.group(1))
+        if tag_value:
+            base_query = base_query.filter(AddressBookEntry.tags.ilike(f"%{tag_value}%"))
+            filters.append(f"tag {tag_value}")
+
+    domain_match = EMAIL_DOMAIN_PATTERN.search(message)
+    if domain_match:
+        domain_value = domain_match.group(1).lstrip("@")
+        base_query = base_query.filter(
+            or_(
+                AddressBookEntry.email.ilike(f"%@{domain_value}%"),
+                AddressBookEntry.website.ilike(f"%{domain_value}%"),
+            )
+        )
+        filters.append(f"domain {domain_value}")
+
+    phone_match = PHONE_PATTERN.search(message)
+    if phone_match:
+        phone_value = re.sub(r"[^0-9+]", "", phone_match.group(1) or "")
+        if phone_value:
+            base_query = base_query.filter(
+                or_(
+                    AddressBookEntry.phone.ilike(f"%{phone_value}%"),
+                    AddressBookEntry.mobile.ilike(f"%{phone_value}%"),
+                )
+            )
+            filters.append(f"phone {phone_value}")
+
+    detail_candidates: List[str] = []
+    contact_match = CONTACT_NAME_PATTERN.search(message)
+    if contact_match:
+        detail_candidates.append(contact_match.group(1))
+    if "contact details" in lowered or "show contact" in lowered or "find contact" in lowered:
+        detail_candidates.extend(_extract_candidate_phrases(message))
+
+    cleaned_candidates: List[str] = []
+    seen_candidates: Set[str] = set()
+    for candidate in detail_candidates:
+        cleaned = _safe_strip(candidate)
+        if cleaned and cleaned.lower() not in seen_candidates:
+            seen_candidates.add(cleaned.lower())
+            cleaned_candidates.append(cleaned)
+
+    for candidate in cleaned_candidates:
+        entry = (
+            base_query.filter(AddressBookEntry.name.ilike(f"%{candidate}%"))
+            .order_by(AddressBookEntry.name.asc())
+            .first()
+        )
+        if entry:
+            return _format_contact_detail(entry)
+
+    keywords = _extract_keywords(message, extra_stop={"contact", "contacts", "address", "book", "list", "show"})
+    keyword_conditions = []
+    for keyword in keywords[:6]:
+        like = f"%{keyword}%"
+        keyword_conditions.append(
+            or_(
+                AddressBookEntry.name.ilike(like),
+                AddressBookEntry.company.ilike(like),
+                AddressBookEntry.department.ilike(like),
+                AddressBookEntry.job_title.ilike(like),
+                AddressBookEntry.tags.ilike(like),
+                AddressBookEntry.notes.ilike(like),
+                AddressBookEntry.city.ilike(like),
+            )
+        )
+
+    filtered_query = base_query.filter(and_(*keyword_conditions)) if keyword_conditions else base_query
+    results = filtered_query.order_by(AddressBookEntry.name.asc()).limit(25).all()
+    total = filtered_query.count() if need_total else len(results)
+
+    if not results:
+        if filters or keyword_conditions:
+            return "No contacts matched those filters."
+        return None
+
+    lines = []
+    for entry in results:
+        company = entry.company or "n/a"
+        email = entry.email or "n/a"
+        phone = entry.phone or entry.mobile or "n/a"
+        location_bits = [bit for bit in [entry.city, entry.country] if bit]
+        location = ", ".join(location_bits) if location_bits else "n/a"
+        tags = entry.tags or "n/a"
+        lines.append(
+            f"{entry.name} — {company}; email {email}; phone {phone}; location {location}; tags {tags}"
+        )
+
+    header = f"Found {total} contact(s)"
+    if filters:
+        header += f" ({', '.join(filters)})"
+    return header + ":\n" + "\n".join(lines)
+
+
+def _answer_cross_module_query(message: str, lowered: str, user) -> Optional[str]:
+    # Tickets referencing an asset
+    if "ticket" in lowered and "asset" in lowered:
+        asset = _lookup_hardware_asset_by_identifier(message)
+        if not asset:
+            for phrase in _extract_candidate_phrases(message):
+                fallback = (
+                    HardwareAsset.query.filter(
+                        or_(
+                            HardwareAsset.asset_tag.ilike(f"%{phrase}%"),
+                            HardwareAsset.hostname.ilike(f"%{phrase}%"),
+                            HardwareAsset.serial_number.ilike(f"%{phrase}%"),
+                            HardwareAsset.custom_tag.ilike(f"%{phrase}%"),
+                        )
+                    )
+                    .order_by(HardwareAsset.updated_at.desc())
+                    .first()
+                )
+                if fallback:
+                    asset = fallback
+                    break
+        if asset:
+            search_terms = {term for term in [asset.asset_tag, asset.serial_number, asset.hostname, asset.custom_tag] if term}
+            if search_terms:
+                conditions = []
+                for term in list(search_terms)[:5]:
+                    like = f"%{term}%"
+                    conditions.append(Ticket.subject.ilike(like))
+                    conditions.append(Ticket.description.ilike(like))
+                ticket_query = Ticket.query.options(joinedload(Ticket.assignee)).filter(or_(*conditions))
+                tickets = ticket_query.order_by(Ticket.created_at.desc()).limit(15).all()
+                if tickets:
+                    lines = []
+                    for t in tickets:
+                        assignee = t.assignee.username if t.assignee else "Unassigned"
+                        status = t.status or "Unknown"
+                        lines.append(f"#{t.id} {t.subject} — {status}; assigned to {assignee}")
+                    asset_label = asset.asset_tag or asset.hostname or asset.serial_number or asset.model or f"Hardware #{asset.id}"
+                    return f"Tickets referencing asset {asset_label}:\n" + "\n".join(lines)
+                asset_label = asset.asset_tag or asset.hostname or asset.serial_number or asset.model or f"Hardware #{asset.id}"
+                return f"No tickets reference asset {asset_label}."
+
+    # Knowledge articles tied to software
+    if "article" in lowered and "software" in lowered:
+        software = _lookup_software_asset_by_identifier(message)
+        if not software:
+            for phrase in _extract_candidate_phrases(message):
+                software = SoftwareAsset.query.filter(SoftwareAsset.name.ilike(f"%{phrase}%")).first()
+                if software:
+                    break
+        if software and software.name:
+            like = f"%{software.name}%"
+            kb_query = KnowledgeArticle.query.filter(
+                or_(
+                    KnowledgeArticle.title.ilike(like),
+                    KnowledgeArticle.summary.ilike(like),
+                    KnowledgeArticle.tags.ilike(like),
+                    KnowledgeArticle.content.ilike(like),
+                )
+            ).order_by(KnowledgeArticle.updated_at.desc())
+            articles = kb_query.limit(10).all()
+            if articles:
+                lines = [f"#{article.id} {article.title} — updated {article.updated_at.strftime('%Y-%m-%d') if article.updated_at else 'n/a'}" for article in articles]
+                return f"Knowledge articles referencing {software.name}:\n" + "\n".join(lines)
+            return f"No knowledge base articles reference {software.name}."
+
+    # Contracts and support for vendor
+    if "contract" in lowered and "support" in lowered and "vendor" in lowered:
+        vendor_match = VENDOR_PATTERN.search(message)
+        if vendor_match:
+            vendor_value = _safe_strip(vendor_match.group(1))
+            if vendor_value:
+                contracts = (
+                    Contract.query.filter(func.lower(Contract.vendor) == vendor_value.lower())
+                    .order_by(Contract.end_date.asc(), Contract.name.asc())
+                    .limit(10)
+                    .all()
+                )
+                if contracts:
+                    lines = []
+                    for contract in contracts:
+                        support = _support_contact_snippet(contract) or "n/a"
+                        renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
+                        lines.append(
+                            f"{contract.name} — support {support}; renewal {renewal}; auto-renew {'yes' if contract.auto_renew else 'no'}"
+                        )
+                    return f"Contracts and support for vendor {vendor_value}:\n" + "\n".join(lines)
+                return f"No contracts found for vendor {vendor_value}."
+
+    # Assignment lookup by IP
+    if "assigned" in lowered and "ip" in lowered:
+        ip_match = IP_ADDRESS_PATTERN.search(message)
+        if ip_match:
+            ip_value = ip_match.group(0)
+            lines = []
+            host = NetworkHost.query.filter(func.lower(NetworkHost.ip_address) == ip_value.lower()).first()
+            if host:
+                host_assignee = host.assigned_to or "Unassigned"
+                lines.append(
+                    f"Network host {ip_value}: hostname {host.hostname or 'n/a'}, assigned to {host_assignee}, reserved {'yes' if host.is_reserved else 'no'}"
+                )
+            asset = HardwareAsset.query.filter(func.lower(HardwareAsset.ip_address) == ip_value.lower()).first()
+            if asset:
+                assignee = asset.assignee.username if asset.assignee else "Unassigned"
+                label = asset.asset_tag or asset.hostname or asset.serial_number or asset.model or f"Hardware #{asset.id}"
+                lines.append(f"Hardware asset {label}: assigned to {assignee}")
+            if lines:
+                return f"Assignment details for IP {ip_value}:\n" + "\n".join(lines)
+            return f"No assignment information found for IP {ip_value}."
+
+    # Combined hardware/software summary for user
+    if "hardware" in lowered and "software" in lowered and "user" in lowered:
+        target_user = None
+        user_match = USER_REF_PATTERN.search(message)
+        if user_match:
+            target_user = _resolve_user_reference(user_match.group(1))
+        elif any(term in lowered for term in ("my hardware", "my software", "for me")) and user:
+            target_user = user
+        if target_user:
+            hardware_assets = HardwareAsset.query.filter(HardwareAsset.assigned_to == target_user.id).all()
+            software_assets = SoftwareAsset.query.filter(SoftwareAsset.assigned_to == target_user.id).all()
+            lines = [
+                f"Hardware assigned: {len(hardware_assets)}",
+                f"Software assigned: {len(software_assets)}",
+            ]
+            if hardware_assets:
+                preview = ", ".join(
+                    (asset.asset_tag or asset.hostname or asset.serial_number or f"HW#{asset.id}")
+                    for asset in hardware_assets[:5]
+                )
+                if len(hardware_assets) > 5:
+                    preview += "…"
+                lines.append(f"Hardware preview: {preview}")
+            if software_assets:
+                preview = ", ".join(
+                    (asset.name or asset.custom_tag or f"SW#{asset.id}")
+                    for asset in software_assets[:5]
+                )
+                if len(software_assets) > 5:
+                    preview += "…"
+                lines.append(f"Software preview: {preview}")
+            return f"Assignments for {target_user.username}:\n" + "\n".join(lines)
+
+    return None
 
 
 def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
@@ -1948,11 +2923,53 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
         base_query = base_query.filter(HardwareAsset.assigned_to.is_(None))
         filters.append("unassigned")
 
-    loc_match = re.search(r"location\s+([a-z0-9_\- ]+)", lowered)
+    loc_match = LOCATION_PATTERN.search(message)
     if loc_match:
         location = _safe_strip(loc_match.group(1))
-        base_query = base_query.filter(func.lower(HardwareAsset.location) == location.lower())
-        filters.append(f"location {location}")
+        if location:
+            base_query = base_query.filter(func.lower(HardwareAsset.location) == location.lower())
+            filters.append(f"location {location}")
+
+    status_match = STATUS_PATTERN.search(message)
+    if status_match:
+        status_value = _safe_strip(status_match.group(1))
+        if status_value:
+            base_query = base_query.filter(func.lower(HardwareAsset.status) == status_value.lower())
+            filters.append(f"status {status_value}")
+
+    if any(term in lowered for term in ("decommissioned", "retired", "disposed")):
+        base_query = base_query.filter(
+            or_(
+                func.lower(HardwareAsset.status) == "retired",
+                func.lower(HardwareAsset.status) == "disposed",
+                func.lower(HardwareAsset.status) == "decommissioned",
+            )
+        )
+        filters.append("status decommissioned")
+
+    if "warranty" in lowered or "εγγύηση" in lowered:
+        if "out of warranty" in lowered or "εκτός εγγύησης" in lowered:
+            base_query = base_query.filter(HardwareAsset.warranty_end.isnot(None))
+            base_query = base_query.filter(HardwareAsset.warranty_end < date.today())
+            filters.append("out of warranty")
+        else:
+            date_match = DATE_BY_PATTERN.search(lowered)
+            if date_match:
+                target_date = _parse_date_string(date_match.group(1))
+                if target_date:
+                    base_query = base_query.filter(HardwareAsset.warranty_end.isnot(None))
+                    base_query = base_query.filter(HardwareAsset.warranty_end <= target_date)
+                    filters.append(f"warranty ends by {target_date.isoformat()}")
+            elif any(term in lowered for term in ("expiring", "λήγει", "ληγει")):
+                window = date.today() + timedelta(days=60)
+                base_query = base_query.filter(HardwareAsset.warranty_end.isnot(None))
+                base_query = base_query.filter(HardwareAsset.warranty_end <= window)
+                filters.append("warranty expiring within 60 days")
+
+    if any(term in lowered for term in ("networked", "have ip", "with ip", "ip address")):
+        base_query = base_query.filter(HardwareAsset.ip_address.isnot(None))
+        base_query = base_query.filter(HardwareAsset.ip_address != "")
+        filters.append("with IP address")
 
     keywords = _extract_keywords(message, extra_stop={"hardware", "device", "devices", "asset", "assets"})
     need_total = "how many" in lowered or "count" in lowered
@@ -1988,6 +3005,9 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
                         HardwareAsset.asset_tag.ilike(like),
                         HardwareAsset.serial_number.ilike(like),
                         HardwareAsset.custom_tag.ilike(like),
+                        HardwareAsset.location.ilike(like),
+                        HardwareAsset.notes.ilike(like),
+                        HardwareAsset.ip_address.ilike(like),
                     )
                 )
                 .order_by(HardwareAsset.updated_at.desc())
@@ -2012,6 +3032,9 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
                     HardwareAsset.asset_tag.ilike(like),
                     HardwareAsset.serial_number.ilike(like),
                     HardwareAsset.custom_tag.ilike(like),
+                    HardwareAsset.location.ilike(like),
+                    HardwareAsset.notes.ilike(like),
+                    HardwareAsset.ip_address.ilike(like),
                 )
             )
 
@@ -2064,6 +3087,15 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
         current_app.logger.info("Assistant software query matched specific asset id=%s", specific.id)
         return _format_software_detail(specific)
 
+    if ("perpetual" in lowered and "subscription" in lowered) and ("vs" in lowered or "versus" in lowered):
+        total = SoftwareAsset.query.count()
+        total_perpetual = SoftwareAsset.query.filter(func.lower(SoftwareAsset.license_type) == "perpetual").count()
+        total_subscription = SoftwareAsset.query.filter(func.lower(SoftwareAsset.license_type) == "subscription").count()
+        other = max(total - (total_perpetual + total_subscription), 0)
+        return (
+            f"License types: Perpetual {total_perpetual}, Subscription {total_subscription}, Other {other}, Total {total}."
+        )
+
     base_query = SoftwareAsset.query.options(joinedload(SoftwareAsset.assignee))
     filters: List[str] = []
     keywords = _extract_keywords(message, extra_stop={"software", "license", "licence", "application", "app", "subscription"})
@@ -2097,6 +3129,14 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
             filters.append(f"vendor {vendor_value}")
             field_filters_applied = True
 
+    tag_match = TAG_PATTERN.search(message)
+    if tag_match:
+        tag_value = _safe_strip(tag_match.group(1))
+        if tag_value:
+            base_query = base_query.filter(SoftwareAsset.custom_tag.ilike(f"%{tag_value}%"))
+            filters.append(f"tag {tag_value}")
+            field_filters_applied = True
+
     if any(token in lowered for token in ("assigned to me", "my software", "my license", "my licences")) and user:
         base_query = base_query.filter(SoftwareAsset.assigned_to == user.id)
         filters.append(f"assigned to {user.username}")
@@ -2115,7 +3155,18 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
         filters.append("unassigned")
         field_filters_applied = True
 
-    if "expir" in lowered:
+    expiration_date_match = None
+    if any(term in lowered for term in ("expir", "expires", "λήγει", "ληγει")):
+        expiration_date_match = DATE_BY_PATTERN.search(lowered)
+
+    if expiration_date_match:
+        target_date = _parse_date_string(expiration_date_match.group(1))
+        if target_date:
+            base_query = base_query.filter(SoftwareAsset.expiration_date.isnot(None))
+            base_query = base_query.filter(SoftwareAsset.expiration_date <= target_date)
+            filters.append(f"expires by {target_date.isoformat()}")
+            field_filters_applied = True
+    elif any(term in lowered for term in ("expir", "expires", "λήγει", "ληγει")):
         today = date.today()
         window = today + timedelta(days=60)
         base_query = base_query.filter(
@@ -2123,6 +3174,7 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
             SoftwareAsset.expiration_date <= window,
         )
         filters.append("expiring within 60 days")
+        field_filters_applied = True
 
     results: List[SoftwareAsset] = []
     if request_all and not field_filters_applied:
@@ -2245,6 +3297,73 @@ def _parse_date_string(raw: Optional[str]) -> Optional[date]:
         except ValueError:
             continue
     return None
+
+
+def _parse_decimal(raw: Optional[str]) -> Optional[Decimal]:
+    if not raw:
+        return None
+    cleaned = _safe_strip(raw)
+    if not cleaned:
+        return None
+    normalized = cleaned.replace(" ", "").replace(",", "")
+    try:
+        return Decimal(normalized)
+    except (InvalidOperation, ValueError):
+        return None
+
+
+def _support_contact_snippet(contract: Contract) -> str:
+    parts: List[str] = []
+    if contract.support_email:
+        parts.append(f"email {contract.support_email}")
+    if contract.support_phone:
+        parts.append(f"phone {contract.support_phone}")
+    if contract.support_url:
+        parts.append(f"url {contract.support_url}")
+    return ", ".join(parts)
+
+
+def _format_contract_detail(contract: Contract, include_support: bool = False) -> str:
+    owner_name = contract.owner.username if contract.owner else "n/a"
+    start_date = contract.start_date.strftime("%Y-%m-%d") if contract.start_date else "n/a"
+    end_date = contract.end_date.strftime("%Y-%m-%d") if contract.end_date else "n/a"
+    renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
+    value = f"{contract.value} {contract.currency}" if contract.value else "n/a"
+    lines = [
+        f"Contract #{contract.id}: {contract.name}",
+        f"Type: {contract.contract_type} | Status: {contract.status or 'n/a'} | Vendor: {contract.vendor or 'n/a'}",
+        f"Contract number: {contract.contract_number or 'n/a'} | PO: {contract.po_number or 'n/a'} | Owner: {owner_name}",
+        f"Start: {start_date} | End: {end_date} | Renewal: {renewal} | Auto-renew: {'yes' if contract.auto_renew else 'no'}",
+        f"Value: {value}",
+    ]
+    support_info = _support_contact_snippet(contract)
+    if include_support or support_info:
+        lines.append(f"Support: {support_info or 'n/a'}")
+    if contract.coverage_scope:
+        lines.append(f"Coverage: {contract.coverage_scope}")
+    if contract.notes:
+        lines.append(f"Notes: {contract.notes}")
+    return "\n".join(lines)
+
+
+def _format_contact_detail(entry: AddressBookEntry) -> str:
+    lines = [
+        f"Contact #{entry.id}: {entry.name}",
+        f"Company: {entry.company or 'n/a'} | Department: {entry.department or 'n/a'} | Job title: {entry.job_title or 'n/a'}",
+        f"Email: {entry.email or 'n/a'} | Phone: {entry.phone or 'n/a'} | Mobile: {entry.mobile or 'n/a'}",
+        f"Category: {entry.category or 'n/a'} | City: {entry.city or 'n/a'} | Country: {entry.country or 'n/a'}",
+    ]
+    if entry.tags:
+        lines.append(f"Tags: {entry.tags}")
+    if entry.notes:
+        lines.append(f"Notes: {entry.notes}")
+    if entry.website:
+        lines.append(f"Website: {entry.website}")
+    if entry.address_line or entry.postal_code or entry.state:
+        address_bits = [bit for bit in [entry.address_line, entry.state, entry.postal_code] if bit]
+        if address_bits:
+            lines.append("Address: " + ", ".join(address_bits))
+    return "\n".join(lines)
 
 
 def _extract_field_terms(message: str, *patterns: re.Pattern) -> List[str]:
@@ -2473,6 +3592,14 @@ def _lookup_hardware_asset_by_identifier(message: str) -> Optional[HardwareAsset
                 asset = query.filter(func.lower(column) == value.lower()).first()
                 if asset:
                     return asset
+
+    ip_match = IP_ADDRESS_PATTERN.search(message)
+    if ip_match:
+        value = _safe_strip(ip_match.group(0))
+        if value:
+            asset = query.filter(func.lower(HardwareAsset.ip_address) == value.lower()).first()
+            if asset:
+                return asset
 
     return None
 
