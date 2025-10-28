@@ -205,3 +205,10 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+helpdesk_pro/docs/Servers.ods
+helpdesk_pro/docs/VoipPhones.ods
+helpdesk_pro/docs/Ε-013.xlsx
+helpdesk_pro/docs/software_asset_template.xlsx
+helpdesk_pro/docs/import_software_ods.py
+helpdesk_pro/docs/import_hardware_ods.py
+helpdesk_pro/docs/hardware_asset_template.xlsx
