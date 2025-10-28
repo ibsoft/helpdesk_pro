@@ -99,6 +99,61 @@ def network_hosts(network_id):
         total_hosts=total_hosts,
     )
 
+@networks_bp.route("/maps/<int:network_id>/hosts.json", methods=["GET"])
+@login_required
+def network_hosts_json(network_id):
+    _require_admin()
+    network = Network.query.get_or_404(network_id)
+
+    hosts = (
+        NetworkHost.query.filter_by(network_id=network.id)
+        .order_by(NetworkHost.ip_address.asc())
+        .all()
+    )
+    host_entries = []
+    truncated = False
+
+    if hosts:
+        host_entries = [
+            {"ip": host.ip_address, "reserved": bool(host.is_reserved)}
+            for host in hosts
+        ]
+    else:
+        ip_net = network.ip_network
+        if not ip_net:
+            return _json_response(False, "Invalid network definition.", "danger", 400)
+
+        limit = 1024 if ip_net.version == 4 else 512
+        produced = 0
+
+        if isinstance(ip_net, ipaddress.IPv4Network):
+            iterable = ip_net.hosts() if ip_net.prefixlen <= 30 else ip_net
+        else:
+            iterable = ip_net.hosts()
+
+        for ip in iterable:
+            host_entries.append({"ip": str(ip), "reserved": False})
+            produced += 1
+            if produced >= limit:
+                truncated = ip_net.num_addresses > limit
+                break
+
+        if not host_entries and ip_net.prefixlen >= 31:
+            host_entries = [{"ip": str(ip), "reserved": False} for ip in ip_net][:limit]
+            truncated = len(host_entries) == limit and ip_net.num_addresses > limit
+
+    if not hosts and network.host_capacity and len(host_entries) < network.host_capacity:
+        truncated = True
+
+    return jsonify(
+        success=True,
+        hosts=host_entries,
+        truncated=truncated,
+        host_count=len(host_entries),
+        capacity=network.host_capacity,
+        network=network.as_dict(),
+    )
+
 
 @networks_bp.route("/maps/<int:network_id>/generate-hosts", methods=["POST"])
 @login_required

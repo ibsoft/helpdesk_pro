@@ -1,6 +1,8 @@
 from .user import User
 from .ticket import Ticket, TicketComment, Attachment, AuditLog
 from .inventory import SoftwareAsset, HardwareAsset
+from .contracts import Contract
+from .address_book import AddressBookEntry
 from .network import Network, NetworkHost
 from .knowledge import KnowledgeArticle, KnowledgeArticleVersion, KnowledgeAttachment
 from .collab import ChatConversation, ChatMembership, ChatMessage, ChatMessageRead, ChatFavorite

@@ -1,23 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
 
+<style>
+  .kb-version-content {
+    white-space: pre-wrap;   /* διατήρηση line breaks */
+    word-break: break-word;  /* ασφαλές wrapping για μεγάλες λέξεις/URLs */
+  }
+  .kb-version-summary {
+    white-space: pre-wrap;
+  }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-3">
   <div>
-    <h4 class="mb-0"><i class="fa fa-clock-rotate-left"></i> {{ _('Version') }} v{{ version.version_number }}</h4>
-    <small class="text-muted">{{ _('Created') }} {{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else _('n/a') }}</small>
+    <h4 class="mb-0">
+      <i class="fa fa-clock-rotate-left"></i>
+      {{ _('Version') }} v{{ version.version_number }}
+    </h4>
+    <small class="text-muted">
+      {{ _('Created') }}
+      {{ version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else _('n/a') }}
+    </small>
   </div>
-  <a href="{{ url_for('knowledge.view_article', article_id=article.id) }}" class="btn btn-outline-secondary">
+  <a href="{{ url_for('knowledge.view_article', article_id=article.id) }}"
+     class="btn btn-outline-secondary">
     <i class="fa fa-arrow-left"></i> {{ _('Back to Article') }}
   </a>
 </div>
 
 <div class="card shadow-sm mb-3">
   <div class="card-body">
-    <h5>{{ version.title }}</h5>
+    <h5 class="mb-3">{{ version.title }}</h5>
+
     {% if version.summary %}
-      <div class="alert alert-secondary">{{ version.summary }}</div>
+      <div class="alert alert-secondary kb-version-summary">{{ version.summary | e }}</div>
     {% endif %}
-    <div>{{ version.content | safe }}</div>
+
+    {% if version_html is defined and version_html %}
+      <div>{{ version_html | safe }}</div>
+    {% else %}
+      <div class="kb-version-content">{{ version.content | e | urlize(target='_blank', rel='noopener') | safe }}</div>
+    {% endif %}
   </div>
 </div>
 

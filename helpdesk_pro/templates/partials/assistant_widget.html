@@ -328,6 +328,10 @@
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
   }
+
+  :root { --assistant-top-safety: 0.5cm; }
+  .assistant-panel { max-height: calc(var(--assistant-max-height, 70vh) - var(--assistant-top-safety)); }
+
 </style>
 
 <div class="assistant-widget assistant-pos-{{ cfg.position }}" id="assistantWidgetRoot" data-provider="{{ cfg.provider }}">

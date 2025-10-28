@@ -286,6 +286,26 @@
   </div>
 </div>
 
+<!-- Host Preview Modal -->
+<div class="modal fade" id="networkHostPreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title" id="network-host-preview-title">
+          <i class="fa fa-list-ol me-2"></i>{{ _('Network Hosts') }}
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="network-host-preview-meta" class="small text-muted mb-3"></div>
+        <div id="network-host-preview-body" class="d-flex flex-wrap gap-2">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -412,6 +432,84 @@ $(function() {
     $('#network-delete-form').data('id', btn.data('id'));
     $('#network-delete-name').text(btn.data('name'));
     modal.show();
+  });
+
+  $('#networkTable tbody').on('dblclick', 'tr', function() {
+    const networkId = $(this).data('id');
+    const payloadStr = $(this).attr('data-network');
+    if (!networkId) return;
+
+    const modalEl = document.getElementById('networkHostPreviewModal');
+    if (!modalEl) return;
+
+    const modal = new bootstrap.Modal(modalEl);
+    const $body = $('#network-host-preview-body');
+    const $meta = $('#network-host-preview-meta');
+    const $title = $('#network-host-preview-title');
+
+    let payload = {};
+    if (payloadStr) {
+      try {
+        payload = JSON.parse(payloadStr);
+      } catch (err) {
+        console.error('Failed to parse network payload', err);
+      }
+    }
+
+    $title.text(`${payload.name || '{{ _("Network Hosts") }}'}`);
+    $meta.text('');
+    $body
+      .removeClass('justify-content-center')
+      .html('<div class="w-100 text-center py-4"><i class="fa fa-spinner fa-spin fa-2x"></i></div>');
+
+    modal.show();
+
+    fetch(`/networks/maps/${networkId}/hosts.json`, {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    })
+      .then(resp => resp.json())
+      .then(data => {
+        if (!data || data.success === false) {
+          const message = (data && data.message) ? data.message : '{{ _("Unable to load host list.") }}';
+          $body.addClass('justify-content-center').html(`<div class="alert alert-danger w-100 mb-0">${message}</div>`);
+          showToast(message, (data && data.category) || 'danger');
+          return;
+        }
+
+        const hosts = Array.isArray(data.hosts) ? data.hosts : [];
+        const capacity = data.capacity ?? hosts.length;
+        const truncated = !!data.truncated;
+        const reservedCount = hosts.filter(item => item && item.reserved === true).length;
+
+        $title.text(`${data.network?.name || payload.name || '{{ _("Network Hosts") }}'}`);
+        const countText = `${hosts.length} {{ _('addresses listed') }}`;
+        const capacityText = capacity ? ` / ${capacity} {{ _('capacity') }}` : '';
+        const reservedText = reservedCount ? ` · ${reservedCount} {{ _('reserved') }}` : '';
+        $meta.text(`${countText}${capacityText}${reservedText}${truncated ? ' · {{ _("Partial list") }}' : ''}`);
+
+        if (!hosts.length) {
+          $body.addClass('justify-content-center').html('<div class="alert alert-warning w-100 mb-0">{{ _("No IP addresses available for this network yet.") }}</div>');
+          return;
+        }
+
+        const chips = hosts.map(item => {
+          const ip = typeof item === 'string' ? item : item.ip;
+          const reserved = typeof item === 'object' && item ? item.reserved === true : false;
+          const badgeClass = reserved ? 'bg-danger-subtle text-danger-emphasis' : 'bg-secondary-subtle text-secondary-emphasis';
+          const icon = reserved ? '<i class="fa fa-lock me-1"></i>' : '<i class="fa fa-circle me-1 text-muted"></i>';
+          return `<span class="badge rounded-pill ${badgeClass} px-3 py-2 d-flex align-items-center gap-1">${icon}<span>${ip}</span></span>`;
+        });
+        $body.removeClass('justify-content-center').html(chips.join(''));
+
+        if (truncated) {
+          $body.append('<div class="alert alert-info w-100 mt-3 mb-0">{{ _("Showing a partial list. Generate hosts for the full set.") }}</div>');
+        }
+      })
+      .catch(() => {
+        const message = '{{ _("Failed to load host list.") }}';
+        $body.addClass('justify-content-center').html(`<div class="alert alert-danger w-100 mb-0">${message}</div>`);
+        showToast(message, 'danger');
+      });
   });
 });
 </script>

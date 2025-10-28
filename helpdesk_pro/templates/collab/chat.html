@@ -202,7 +202,7 @@
     border: 1px solid rgba(148, 163, 184, 0.25);
     background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(219, 234, 254, 0.9) 55%, rgba(224, 231, 255, 0.88) 100%);
     color: #0f172a;
-    overflow: hidden;
+
   }
   html[data-bs-theme="dark"] body .collab-summary-card {
     background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 55%, rgba(30, 41, 59, 0.74) 100%);
@@ -214,6 +214,7 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    text-align: center;
   }
   .collab-summary-card .collab-metric-count {
     display: inline-flex;
@@ -233,6 +234,7 @@
     font-size: 0.68rem;
     letter-spacing: 0.08em;
     opacity: 0.75;
+    white-space: nowrap;
   }
   html[data-bs-theme="dark"] body .collab-summary-card .collab-metric-label {
     opacity: 0.85;
@@ -253,7 +255,7 @@
 <div class="collab-page">
   <div class="card collab-summary-card border-0 shadow-sm">
     <div class="card-body py-3">
-      <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="d-flex flex-wrap align-items-center justify-content-left gap-4">
         <div class="collab-metric">
           <span class="collab-metric-count bg-primary-subtle text-primary-emphasis">
             <i class="fa fa-comments"></i> {{ stats.total }}
@@ -542,7 +544,7 @@
     const names = list
       .map(person => person.name || person.username || '')
       .filter(Boolean);
-    let label = typingFallbackText;
+    let label = {{ _("'Someone is typing'")|tojson }};
     if (names.length) {
       const joined = names.join(', ');
       label = `${joined} ${names.length > 1 ? typingPluralText : typingSingleText}`;
@@ -800,7 +802,6 @@
               renderTypingIndicator([]);
               loadMessages(currentConversationId);
             } else {
-              // if another conversation is open, keep view untouched but refresh the general badge counts
               updateUnreadCount();
             }
             refreshConversations();

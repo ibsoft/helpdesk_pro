@@ -1,0 +1,641 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .contracts-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 50%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .contracts-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(10px);
+  }
+  .contracts-summary-card .metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .contracts-summary-card .metric-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  html[data-bs-theme="dark"] body .contracts-summary-card .metric-count {
+    box-shadow: inset 0 0 0 1px rgba(241, 245, 249, 0.08);
+  }
+  .contracts-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .contracts-summary-card .divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(148, 163, 184, 0.36);
+  }
+  @media (max-width: 767px) {
+    .contracts-summary-card .divider {
+      display: none;
+    }
+  }
+  .badge-soft {
+    border-radius: 999px;
+    padding: 0.25rem 0.7rem;
+    font-size: 0.75rem;
+  }
+  .datatable-nowrap th,
+  .datatable-nowrap td {
+    white-space: nowrap;
+  }
+  .dataTables_wrapper .dataTables_scroll {
+    overflow: auto;
+  }
+</style>
+
+{% set total_contracts = contracts|length %}
+{% set active_count = status_summary.get('Active', 0) %}
+{% set pending_count = status_summary.get('Pending', 0) %}
+
+<div class="card contracts-summary-card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="metric">
+        <span class="metric-count bg-primary-subtle text-primary-emphasis">
+          <i class="fa fa-file-contract"></i> {{ total_contracts }}
+        </span>
+        <span class="metric-label">{{ _('Total Contracts') }}</span>
+      </div>
+      <div class="divider d-none d-md-block"></div>
+      <div class="metric">
+        <span class="metric-count bg-success-subtle text-success-emphasis">
+          <i class="fa fa-circle-check"></i> {{ active_count }}
+        </span>
+        <span class="metric-label">{{ _('Active') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-secondary-subtle text-secondary-emphasis">
+          <i class="fa fa-hourglass-half"></i> {{ pending_count }}
+        </span>
+        <span class="metric-label">{{ _('Pending') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-warning-subtle text-warning-emphasis">
+          <i class="fa fa-triangle-exclamation"></i> {{ expiring_soon }}
+        </span>
+        <span class="metric-label">{{ _('Expiring Soon') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-danger-subtle text-danger-emphasis">
+          <i class="fa fa-calendar-times"></i> {{ expired_count }}
+        </span>
+        <span class="metric-label">{{ _('Expired') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h4 class="mb-0"><i class="fa fa-file-contract"></i> {{ _('Contract Registry') }}</h4>
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contractCreateModal">
+    <i class="fa fa-plus"></i> {{ _('New Contract') }}
+  </button>
+</div>
+
+<table id="contractsTable" class="table table-striped table-hover align-middle w-100 datatable-nowrap">
+  <thead class="table-dark">
+    <tr>
+      <th>{{ _('Name') }}</th>
+      <th>{{ _('Type') }}</th>
+      <th>{{ _('Status') }}</th>
+      <th>{{ _('Vendor') }}</th>
+      <th>{{ _('Contract #') }}</th>
+      <th>{{ _('PO #') }}</th>
+      <th>{{ _('Value') }}</th>
+      <th>{{ _('Currency') }}</th>
+      <th>{{ _('Start Date') }}</th>
+      <th>{{ _('End Date') }}</th>
+      <th>{{ _('Renewal Date') }}</th>
+      <th>{{ _('Auto Renew') }}</th>
+      <th>{{ _('Notice Period (days)') }}</th>
+      <th>{{ _('Coverage Scope') }}</th>
+      <th>{{ _('Owner') }}</th>
+      <th>{{ _('Support Email') }}</th>
+      <th>{{ _('Support Phone') }}</th>
+      <th>{{ _('Support URL') }}</th>
+      <th>{{ _('Notes') }}</th>
+      <th>{{ _('Actions') }}</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for contract in contracts %}
+    <tr data-contract-id="{{ contract.id }}">
+      <td class="fw-semibold">{{ contract.name }}</td>
+      <td>{{ contract.contract_type }}</td>
+      <td>
+        {% if contract.status == 'Active' %}
+          <span class="badge-soft bg-success-subtle text-success-emphasis">{{ _('Active') }}</span>
+        {% elif contract.status == 'Expiring Soon' %}
+          <span class="badge-soft bg-warning-subtle text-warning-emphasis">{{ _('Expiring Soon') }}</span>
+        {% elif contract.status == 'Expired' %}
+          <span class="badge-soft bg-danger-subtle text-danger-emphasis">{{ _('Expired') }}</span>
+        {% elif contract.status == 'Pending' %}
+          <span class="badge-soft bg-secondary-subtle text-secondary-emphasis">{{ _('Pending') }}</span>
+        {% elif contract.status == 'Terminated' %}
+          <span class="badge-soft bg-dark-subtle text-dark-emphasis">{{ _('Terminated') }}</span>
+        {% else %}
+          <span class="badge-soft bg-light text-body-secondary">{{ contract.status or _('Unknown') }}</span>
+        {% endif %}
+      </td>
+      <td>{{ contract.vendor or '—' }}</td>
+      <td>{{ contract.contract_number or '—' }}</td>
+      <td>{{ contract.po_number or '—' }}</td>
+      <td data-order="{{ contract.value or 0 }}">{{ contract.value or '—' }}</td>
+      <td>{{ contract.currency or '—' }}</td>
+      <td data-order="{{ contract.start_date.isoformat() if contract.start_date else '' }}">{{ contract.start_date.strftime('%Y-%m-%d') if contract.start_date else '—' }}</td>
+      <td data-order="{{ contract.end_date.isoformat() if contract.end_date else '' }}">{{ contract.end_date.strftime('%Y-%m-%d') if contract.end_date else '—' }}</td>
+      <td data-order="{{ contract.renewal_date.isoformat() if contract.renewal_date else '' }}">{{ contract.renewal_date.strftime('%Y-%m-%d') if contract.renewal_date else '—' }}</td>
+      <td>
+        {% if contract.auto_renew %}
+          <span class="badge-soft bg-success-subtle text-success-emphasis">{{ _('Yes') }}</span>
+        {% else %}
+          <span class="badge-soft bg-secondary-subtle text-secondary-emphasis">{{ _('No') }}</span>
+        {% endif %}
+      </td>
+      <td>{{ contract.notice_period_days or '—' }}</td>
+      <td>{{ contract.coverage_scope or '—' }}</td>
+      <td>{{ contract.owner.username if contract.owner else '—' }}</td>
+      <td>{{ contract.support_email or '—' }}</td>
+      <td>{{ contract.support_phone or '—' }}</td>
+      <td>
+        {% if contract.support_url %}
+          <a href="{{ contract.support_url }}" target="_blank" rel="noopener">{{ _('Link') }}</a>
+        {% else %}
+          —
+        {% endif %}
+      </td>
+      <td class="text-truncate" style="max-width: 220px;">{{ (contract.notes or '')[:120] ~ ('…' if contract.notes and contract.notes|length > 120 else '') }}</td>
+      <td class="text-nowrap">
+        <button type="button"
+                class="btn btn-sm btn-outline-primary edit-contract-btn"
+                data-id="{{ contract.id }}"
+                data-update-url="{{ url_for('contracts.update_contract', contract_id=contract.id) }}">
+          <i class="fa fa-edit"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger delete-contract-btn ms-1"
+                data-id="{{ contract.id }}"
+                data-delete-url="{{ url_for('contracts.delete_contract', contract_id=contract.id) }}"
+                data-name="{{ contract.name }}">
+          <i class="fa fa-trash"></i>
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Create Modal -->
+<div class="modal fade" id="contractCreateModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <form id="contract-create-form" action="{{ url_for('contracts.create_contract') }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-plus-circle me-2"></i>{{ _('New Contract') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label">{{ _('Name') }}</label>
+              <input name="name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Type') }}</label>
+              <select name="contract_type" class="form-select" required>
+                <option value="">{{ _('Select...') }}</option>
+                {% for option in contract_types %}
+                  <option value="{{ option }}">{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Status') }}</label>
+              <select name="status" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for option in contract_statuses %}
+                  <option value="{{ option }}">{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Vendor') }}</label>
+              <input name="vendor" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Contract Number') }}</label>
+              <input name="contract_number" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('PO Number') }}</label>
+              <input name="po_number" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Contract Value') }}</label>
+              <input name="value" type="number" step="0.01" min="0" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">{{ _('Currency') }}</label>
+              <input name="currency" class="form-control" maxlength="8">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Start Date') }}</label>
+              <input name="start_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('End Date') }}</label>
+              <input name="end_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Renewal Date') }}</label>
+              <input name="renewal_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Notice Period (days)') }}</label>
+              <input name="notice_period_days" type="number" min="0" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Owner') }}</label>
+              <select name="owner_id" class="form-select">
+                <option value="">{{ _('Unassigned') }}</option>
+                {% for user in users %}
+                  <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="contract-auto-renew" name="auto_renew">
+                <label class="form-check-label" for="contract-auto-renew">{{ _('Auto Renew') }}</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Coverage Scope') }}</label>
+              <input name="coverage_scope" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Support Email') }}</label>
+              <input name="support_email" type="email" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Support Phone') }}</label>
+              <input name="support_phone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Support URL') }}</label>
+              <input name="support_url" type="url" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes') }}</label>
+              <textarea name="notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fa fa-save"></i> {{ _('Save') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="modal fade" id="contractEditModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl">
+    <div class="modal-content">
+      <form id="contract-edit-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-pen-to-square me-2"></i>{{ _('Edit Contract') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-5">
+              <label class="form-label">{{ _('Name') }}</label>
+              <input name="name" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Type') }}</label>
+              <select name="contract_type" class="form-select" required>
+                <option value="">{{ _('Select...') }}</option>
+                {% for option in contract_types %}
+                  <option value="{{ option }}">{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Status') }}</label>
+              <select name="status" class="form-select">
+                <option value="">{{ _('Select...') }}</option>
+                {% for option in contract_statuses %}
+                  <option value="{{ option }}">{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Vendor') }}</label>
+              <input name="vendor" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Contract Number') }}</label>
+              <input name="contract_number" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('PO Number') }}</label>
+              <input name="po_number" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Contract Value') }}</label>
+              <input name="value" type="number" step="0.01" min="0" class="form-control">
+            </div>
+            <div class="col-md-2">
+              <label class="form-label">{{ _('Currency') }}</label>
+              <input name="currency" class="form-control" maxlength="8">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Start Date') }}</label>
+              <input name="start_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('End Date') }}</label>
+              <input name="end_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Renewal Date') }}</label>
+              <input name="renewal_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Notice Period (days)') }}</label>
+              <input name="notice_period_days" type="number" min="0" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Owner') }}</label>
+              <select name="owner_id" class="form-select">
+                <option value="">{{ _('Unassigned') }}</option>
+                {% for user in users %}
+                  <option value="{{ user.id }}">{{ user.username }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="contract-auto-renew-edit" name="auto_renew">
+                <label class="form-check-label" for="contract-auto-renew-edit">{{ _('Auto Renew') }}</label>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Coverage Scope') }}</label>
+              <input name="coverage_scope" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Support Email') }}</label>
+              <input name="support_email" type="email" class="form-control">
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">{{ _('Support Phone') }}</label>
+              <input name="support_phone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Support URL') }}</label>
+              <input name="support_url" type="url" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes') }}</label>
+              <textarea name="notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer justify-content-between">
+          <button type="button" class="btn btn-outline-danger delete-contract-from-edit-btn">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
+          </button>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-success">
+              <i class="fa fa-save"></i> {{ _('Save Changes') }}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal fade" id="contractDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="contract-delete-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Contract') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ _('Are you sure you want to delete') }} <strong id="contract-delete-name"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa fa-trash"></i> {{ _('Delete') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(function() {
+  const contractsTable = $('#contractsTable').DataTable({
+    order: [[8, 'asc']],
+    pageLength: 25,
+    language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
+    scrollX: true,
+    scrollCollapse: true,
+    autoWidth: false,
+    dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row mt-3'<'col-12'Q>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      { extend: 'excelHtml5', text: '<i class=\"fa fa-file-excel\"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+      { extend: 'print', text: '<i class=\"fa fa-print\"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' },
+      { extend: 'searchBuilder', text: '<i class=\"fa fa-filter\"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ],
+    columnDefs: [
+      { targets: [8, 9, 10], type: 'date', searchBuilderType: 'date' },
+      { targets: [6], render: $.fn.dataTable.render.number(',', '.', 2, '') }
+    ],
+    searchBuilder: {
+      columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+    }
+  });
+
+  function submitForm($form, modalId) {
+    const submitBtn = $form.find('button[type="submit"]');
+    const originalHtml = submitBtn.html();
+    submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    $.ajax({
+      url: $form.attr('action'),
+      type: 'POST',
+      data: $form.serialize(),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success: function(res) {
+        if (!res || res.success === false) {
+          const msg = (res && res.message) ? res.message : '❌ {{ _("Unexpected error while saving.") }}';
+          const category = (res && res.category) ? res.category : 'danger';
+          showToast(msg, category);
+          submitBtn.prop('disabled', false).html(originalHtml);
+          return;
+        }
+        if (modalId) {
+          const modalEl = document.getElementById(modalId);
+          if (modalEl) {
+            const instance = bootstrap.Modal.getInstance(modalEl);
+            if (instance) instance.hide();
+          }
+        }
+        showToast(res.message || '{{ _("Operation completed successfully") }}', res.category || 'success');
+        setTimeout(() => window.location.reload(), 400);
+      },
+      error: function(xhr) {
+        const data = xhr.responseJSON || {};
+        const msg = data.message || '❌ {{ _("Unexpected error while saving.") }}';
+        const category = data.category || 'danger';
+        showToast(msg, category);
+        submitBtn.prop('disabled', false).html(originalHtml);
+      }
+    });
+  }
+
+  $('#contract-create-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'contractCreateModal');
+  });
+
+  $('#contract-edit-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'contractEditModal');
+  });
+
+  $('#contract-delete-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'contractDeleteModal');
+  });
+
+  const createModal = document.getElementById('contractCreateModal');
+  if (createModal) {
+    createModal.addEventListener('hidden.bs.modal', function() {
+      const form = this.querySelector('form');
+      if (form) {
+        form.reset();
+      }
+    });
+  }
+
+  function populateContractForm(contract, updateUrl, deleteUrl) {
+    const form = $('#contract-edit-form');
+    form.attr('action', updateUrl);
+    form.find('[name="name"]').val(contract.name);
+    form.find('[name="contract_type"]').val(contract.contract_type);
+    form.find('[name="status"]').val(contract.status);
+    form.find('[name="vendor"]').val(contract.vendor);
+    form.find('[name="contract_number"]').val(contract.contract_number);
+    form.find('[name="po_number"]').val(contract.po_number);
+    form.find('[name="value"]').val(contract.value);
+    form.find('[name="currency"]').val(contract.currency);
+    form.find('[name="start_date"]').val(contract.start_date);
+    form.find('[name="end_date"]').val(contract.end_date);
+    form.find('[name="renewal_date"]').val(contract.renewal_date);
+    form.find('[name="notice_period_days"]').val(contract.notice_period_days);
+    form.find('[name="owner_id"]').val(contract.owner_id || '');
+    form.find('[name="coverage_scope"]').val(contract.coverage_scope);
+    form.find('[name="support_email"]').val(contract.support_email);
+    form.find('[name="support_phone"]').val(contract.support_phone);
+    form.find('[name="support_url"]').val(contract.support_url);
+    form.find('[name="notes"]').val(contract.notes);
+    form.find('[name="auto_renew"]').prop('checked', contract.auto_renew);
+
+    $('#contract-delete-form').attr('action', deleteUrl);
+    $('#contract-delete-name').text(contract.name);
+    $('.delete-contract-from-edit-btn').data('delete-url', deleteUrl).data('name', contract.name);
+  }
+
+  function openContractEdit(btn) {
+    const contractId = btn.data('id');
+    if (!contractId) return;
+    $.get(`/contracts/${contractId}/details`, function(res) {
+      if (!res.success) {
+        showToast(res.message || '{{ _("Failed to load contract") }}', res.category || 'danger');
+        return;
+      }
+      populateContractForm(res.contract, btn.data('update-url'), btn.data('delete-url'));
+      const modal = new bootstrap.Modal(document.getElementById('contractEditModal'));
+      modal.show();
+    }).fail(function() {
+      showToast('{{ _("Failed to load contract.") }}', 'danger');
+    });
+  }
+
+  $(document).on('click', '.edit-contract-btn', function() {
+    openContractEdit($(this));
+  });
+
+  $(document).on('click', '.delete-contract-btn', function() {
+    const btn = $(this);
+    $('#contract-delete-form').attr('action', btn.data('delete-url'));
+    $('#contract-delete-name').text(btn.data('name'));
+    const modal = new bootstrap.Modal(document.getElementById('contractDeleteModal'));
+    modal.show();
+  });
+
+  $(document).on('click', '.delete-contract-from-edit-btn', function() {
+    const btn = $(this);
+    const deleteUrl = btn.data('delete-url');
+    const name = btn.data('name');
+    if (!deleteUrl) return;
+    $('#contract-delete-form').attr('action', deleteUrl);
+    $('#contract-delete-name').text(name);
+    const modal = new bootstrap.Modal(document.getElementById('contractDeleteModal'));
+    modal.show();
+  });
+
+  $('#contractsTable tbody').on('dblclick', 'tr', function() {
+    const btn = $(this).find('.edit-contract-btn');
+    if (btn.length) {
+      openContractEdit(btn);
+    }
+  });
+});
+</script>
+{% endblock %}
