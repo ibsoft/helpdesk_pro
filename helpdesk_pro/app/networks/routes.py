@@ -24,9 +24,17 @@ from app.models import Network, NetworkHost
 networks_bp = Blueprint("networks", __name__, url_prefix="/networks")
 
 
-def _require_admin():
-    if not current_user.is_authenticated or current_user.role != "admin":
+def _require_roles(*roles):
+    if not current_user.is_authenticated:
         abort(403)
+    user_role = (current_user.role or "").lower()
+    allowed = {role.lower() for role in roles}
+    if user_role not in allowed:
+        abort(403)
+
+
+def _require_admin():
+    _require_roles("admin")
 
 
 def _json_response(success, message, category="info", status=200, **extra):
@@ -38,7 +46,7 @@ def _json_response(success, message, category="info", status=200, **extra):
 @networks_bp.route("/maps")
 @login_required
 def network_maps():
-    _require_admin()
+    _require_roles("admin", "technician")
     networks = Network.query.order_by(Network.name.asc()).all()
     total_hosts = sum(n.host_capacity for n in networks)
     return render_template(
@@ -86,7 +94,7 @@ def _generate_hosts_for_network(network: Network):
 @networks_bp.route("/maps/<int:network_id>")
 @login_required
 def network_hosts(network_id):
-    _require_admin()
+    _require_roles("admin", "technician")
     network = Network.query.get_or_404(network_id)
     hosts = NetworkHost.query.filter_by(network_id=network.id).order_by(NetworkHost.ip_address.asc()).all()
     can_generate = len(hosts) == 0
@@ -102,7 +110,7 @@ def network_hosts(network_id):
 @networks_bp.route("/maps/<int:network_id>/hosts.json", methods=["GET"])
 @login_required
 def network_hosts_json(network_id):
-    _require_admin()
+    _require_roles("admin", "technician")
     network = Network.query.get_or_404(network_id)
 
     hosts = (
@@ -294,5 +302,5 @@ def delete_host(network_id, host_id):
 @networks_bp.route("/tools")
 @login_required
 def network_tools():
-    _require_admin()
+    _require_roles("admin", "technician")
     return render_template("networks/tools.html")
