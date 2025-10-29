@@ -49,20 +49,28 @@
       display: none;
     }
   }
-  .badge-soft {
-    border-radius: 999px;
-    padding: 0.25rem 0.7rem;
-    font-size: 0.75rem;
-  }
-  .datatable-nowrap th,
+.badge-soft {
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+}
+.btn-readonly {
+  opacity: 0.55;
+}
+.datatable-nowrap th,
   .datatable-nowrap td {
     white-space: nowrap;
   }
-  .dataTables_wrapper .dataTables_scroll {
-    overflow: auto;
-  }
+.dataTables_wrapper .dataTables_scroll {
+  overflow: auto;
+}
+.btn-readonly {
+  opacity: 0.55;
+}
 </style>
 
+{% set module_access = module_access if module_access is defined else 'write' %}
+{% set can_write = module_access == 'write' %}
 {% set total_contracts = contracts|length %}
 {% set active_count = status_summary.get('Active', 0) %}
 {% set pending_count = status_summary.get('Pending', 0) %}
@@ -107,7 +115,15 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0"><i class="fa fa-file-contract"></i> {{ _('Contract Registry') }}</h4>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contractCreateModal">
+  <button type="button"
+          class="btn btn-primary {% if not can_write %}btn-readonly{% endif %}"
+          {% if can_write %}
+            data-bs-toggle="modal"
+            data-bs-target="#contractCreateModal"
+          {% else %}
+            data-readonly="true"
+            title="{{ _('Read-only access. Contact an administrator for write permissions.') }}"
+          {% endif %}>
     <i class="fa fa-plus"></i> {{ _('New Contract') }}
   </button>
 </div>
@@ -187,17 +203,19 @@
       <td class="text-truncate" style="max-width: 220px;">{{ (contract.notes or '')[:120] ~ ('…' if contract.notes and contract.notes|length > 120 else '') }}</td>
       <td class="text-nowrap">
         <button type="button"
-                class="btn btn-sm btn-outline-primary edit-contract-btn"
+                class="btn btn-sm btn-outline-primary edit-contract-btn {% if not can_write %}btn-readonly{% endif %}"
                 data-id="{{ contract.id }}"
                 data-update-url="{{ url_for('contracts.update_contract', contract_id=contract.id) }}"
-                data-delete-url="{{ url_for('contracts.delete_contract', contract_id=contract.id) }}">
+                data-delete-url="{{ url_for('contracts.delete_contract', contract_id=contract.id) }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"
-                class="btn btn-sm btn-outline-danger delete-contract-btn ms-1"
+                class="btn btn-sm btn-outline-danger delete-contract-btn ms-1 {% if not can_write %}btn-readonly{% endif %}"
                 data-id="{{ contract.id }}"
                 data-delete-url="{{ url_for('contracts.delete_contract', contract_id=contract.id) }}"
-                data-name="{{ contract.name }}">
+                data-name="{{ contract.name }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-trash"></i>
         </button>
       </td>
@@ -206,6 +224,7 @@
   </tbody>
 </table>
 
+{% if can_write %}
 <!-- Create Modal -->
 <div class="modal fade" id="contractCreateModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -471,11 +490,14 @@
   </div>
 </div>
 
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
 $(function() {
+  const moduleAccess = "{{ module_access|default('write') }}";
+  const canWrite = moduleAccess === "write";
   const contractsTable = $('#contractsTable').DataTable({
     order: [[8, 'asc']],
     pageLength: 25,
@@ -505,6 +527,12 @@ $(function() {
     const submitBtn = $form.find('button[type="submit"]');
     const originalHtml = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    if (!canWrite) {
+      submitBtn.prop('disabled', false).html(originalHtml);
+      showToast('{{ _("Read-only access. Changes cannot be saved.") }}', 'info');
+      return;
+    }
 
     $.ajax({
       url: $form.attr('action'),
@@ -609,10 +637,18 @@ $(function() {
   }
 
   $(document).on('click', '.edit-contract-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
+      return;
+    }
     openContractEdit($(this));
   });
 
   $(document).on('click', '.delete-contract-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     $('#contract-delete-form').attr('action', btn.data('delete-url'));
     $('#contract-delete-name').text(btn.data('name'));
@@ -621,6 +657,10 @@ $(function() {
   });
 
   $(document).on('click', '.delete-contract-from-edit-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const deleteUrl = btn.data('delete-url');
     const name = btn.data('name');
@@ -633,9 +673,17 @@ $(function() {
 
   $('#contractsTable tbody').on('dblclick', 'tr', function() {
     const btn = $(this).find('.edit-contract-btn');
-    if (btn.length) {
-      openContractEdit(btn);
+    if (!btn.length) return;
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
+      return;
     }
+    openContractEdit(btn);
+  });
+
+  $(document).on('click', '[data-readonly="true"]', function(e) {
+    e.preventDefault();
+    showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
   });
 });
 </script>

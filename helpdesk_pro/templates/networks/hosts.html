@@ -59,7 +59,13 @@
     align-items: center;
     gap: 0.3rem;
   }
+  .btn-readonly {
+    opacity: 0.55;
+  }
 </style>
+
+{% set module_access = module_access if module_access is defined else 'write' %}
+{% set can_manage_networks = can_manage_networks if can_manage_networks is defined else (current_user.is_authenticated and current_user.role == 'admin') %}
 
 <div class="card host-summary-card border-0 shadow-sm mb-3">
   <div class="card-body py-3">
@@ -98,13 +104,17 @@
     <a href="{{ url_for('networks.network_maps') }}?lang={{ g.locale }}" class="btn btn-outline-secondary">
       <i class="fa fa-arrow-left"></i> {{ _('Back to Networks') }}
     </a>
-    {% if can_generate %}
+    {% if can_generate and can_manage_networks %}
     <form id="generate-hosts-form" action="{{ url_for('networks.generate_hosts', network_id=network.id) }}" method="post" class="d-inline">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="btn btn-primary">
         <i class="fa fa-magic me-1"></i>{{ _('Generate Hosts') }}
       </button>
     </form>
+    {% elif can_generate %}
+    <button type="button" class="btn btn-primary btn-readonly" data-readonly="true" title="{{ _('Read-only access') }}">
+      <i class="fa fa-magic me-1"></i>{{ _('Generate Hosts') }}
+    </button>
     {% endif %}
   </div>
 </div>
@@ -148,14 +158,16 @@
       <td class="text-truncate notes-cell">{{ host.description or '—' }}</td>
       <td class="text-nowrap">
         <button type="button"
-                class="btn btn-sm btn-outline-primary edit-host-btn"
-                data-update-url="{{ url_for('networks.update_host', network_id=network.id, host_id=host.id) }}">
+                class="btn btn-sm btn-outline-primary edit-host-btn {% if not can_manage_networks %}btn-readonly{% endif %}"
+                data-update-url="{{ url_for('networks.update_host', network_id=network.id, host_id=host.id) }}"
+                {% if not can_manage_networks %}data-readonly="true"{% endif %}>
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"
-                class="btn btn-sm btn-outline-danger delete-host-btn ms-1"
+                class="btn btn-sm btn-outline-danger delete-host-btn ms-1 {% if not can_manage_networks %}btn-readonly{% endif %}"
                 data-delete-url="{{ url_for('networks.delete_host', network_id=network.id, host_id=host.id) }}"
-                data-ip="{{ host.ip_address }}">
+                data-ip="{{ host.ip_address }}"
+                {% if not can_manage_networks %}data-readonly="true"{% endif %}>
           <i class="fa fa-trash"></i>
         </button>
       </td>
@@ -164,6 +176,7 @@
   </tbody>
 </table>
 
+{% if can_manage_networks %}
 <!-- Edit Host Modal -->
 <div class="modal fade" id="hostEditModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
@@ -249,11 +262,14 @@
   </div>
 </div>
 
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
 $(function() {
+  const moduleAccessValue = "{{ module_access|default('write') }}";
+  const canManage = moduleAccessValue === "write" && {{ 'true' if can_manage_networks else 'false' }};
   const hostTable = $('#hostTable').DataTable({
     order: [[0, 'asc']],
     pageLength: 50,
@@ -279,6 +295,12 @@ $(function() {
     const submitBtn = $form.find('button[type="submit"]');
     const originalHtml = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    if (!canManage) {
+      submitBtn.prop('disabled', false).html(originalHtml);
+      showToast('{{ _("Read-only access. Changes cannot be saved.") }}', 'info');
+      return;
+    }
 
     $.ajax({
       url: $form.attr('action'),
@@ -324,6 +346,10 @@ $(function() {
   });
 
   $(document).on('click', '.edit-host-btn', function() {
+    if (!canManage) {
+      showToast('{{ _("You have read-only access to Network Maps.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const row = btn.closest('tr');
     const payloadStr = row.attr('data-host');
@@ -349,12 +375,21 @@ $(function() {
   });
 
   $(document).on('click', '.delete-host-btn', function() {
+    if (!canManage) {
+      showToast('{{ _("You have read-only access to Network Maps.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const modalEl = document.getElementById('hostDeleteModal');
     const modal = new bootstrap.Modal(modalEl);
     $('#host-delete-form').attr('action', btn.data('delete-url'));
     $('#host-delete-ip').text(btn.data('ip'));
     modal.show();
+  });
+
+  $(document).on('click', '[data-readonly="true"]', function(e) {
+    e.preventDefault();
+    showToast('{{ _("You have read-only access to Network Maps.") }}', 'info');
   });
 });
 </script>

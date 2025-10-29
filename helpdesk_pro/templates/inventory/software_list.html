@@ -61,12 +61,12 @@
   .dt-searchBuilder button.btn {
     border-radius: 0.5rem;
   }
-  html[data-bs-theme="dark"] body .dt-searchBuilder button.btn,
-  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-secondary,
-  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-primary,
-  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-info {
+html[data-bs-theme="dark"] body .dt-searchBuilder button.btn,
+html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-secondary,
+html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-primary,
+html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-info {
     color: #f8fafc;
-  }
+}
   .badge-soft {
     border-radius: 999px;
     padding: 0.25rem 0.7rem;
@@ -76,11 +76,16 @@
   .datatable-nowrap td {
     white-space: nowrap;
   }
-  .dataTables_wrapper .dataTables_scroll {
-    overflow: auto;
-  }
+.dataTables_wrapper .dataTables_scroll {
+  overflow: auto;
+}
+.btn-readonly {
+  opacity: 0.55;
+}
 </style>
 
+{% set module_access = module_access if module_access is defined else 'write' %}
+{% set can_write = module_access == 'write' %}
 {% set total_assets = assets|length %}
 {% set assigned_count = assets|selectattr('assignee', 'ne', None)|list|length %}
 {% set unassigned_count = total_assets - assigned_count %}
@@ -133,7 +138,15 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0"><i class="fa fa-code-branch"></i> {{ _('Software Inventory') }}</h4>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#softwareCreateModal">
+  <button type="button"
+          class="btn btn-primary {% if not can_write %}btn-readonly{% endif %}"
+          {% if can_write %}
+            data-bs-toggle="modal"
+            data-bs-target="#softwareCreateModal"
+          {% else %}
+            data-readonly="true"
+            title="{{ _('Read-only access. Contact an administrator for write permissions.') }}"
+          {% endif %}>
     <i class="fa fa-plus"></i> {{ _('New Software Asset') }}
   </button>
 </div>
@@ -219,18 +232,20 @@
       <td class="text-truncate" style="max-width: 220px;">{{ (asset.deployment_notes or '')[:120] ~ ('…' if asset.deployment_notes and asset.deployment_notes|length > 120 else '') }}</td>
       <td class="text-nowrap">
         <button type="button"
-                class="btn btn-sm btn-outline-primary edit-software-btn"
+                class="btn btn-sm btn-outline-primary edit-software-btn {% if not can_write %}btn-readonly{% endif %}"
                 data-id="{{ asset.id }}"
                 data-update-url="{{ url_for('inventory.update_software', asset_id=asset.id) }}"
                 data-delete-url="{{ url_for('inventory.delete_software', asset_id=asset.id) }}"
-                data-name="{{ asset.name }}">
+                data-name="{{ asset.name }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"
-                class="btn btn-sm btn-outline-danger delete-software-btn ms-1"
+                class="btn btn-sm btn-outline-danger delete-software-btn ms-1 {% if not can_write %}btn-readonly{% endif %}"
                 data-id="{{ asset.id }}"
                 data-delete-url="{{ url_for('inventory.delete_software', asset_id=asset.id) }}"
-                data-name="{{ asset.name }}">
+                data-name="{{ asset.name }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-trash"></i>
         </button>
       </td>
@@ -239,6 +254,7 @@
   </tbody>
 </table>
 
+{% if can_write %}
 <!-- Create Modal -->
 <div class="modal fade" id="softwareCreateModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -389,6 +405,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Edit Modal -->
 <div class="modal fade" id="softwareEditModal" tabindex="-1" aria-hidden="true">
@@ -575,6 +592,8 @@
 {% block extra_js %}
 <script>
 $(function() {
+  const moduleAccess = "{{ module_access|default('write') }}";
+  const canWrite = moduleAccess === "write";
   const softwareTable = $('#softwareTable').DataTable({
     order: [[0, 'desc']],
     pageLength: 25,
@@ -603,6 +622,12 @@ $(function() {
     const submitBtn = $form.find('button[type="submit"]');
     const originalHtml = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    if (!canWrite) {
+      submitBtn.prop('disabled', false).html(originalHtml);
+      showToast('{{ _("Read-only access. Changes cannot be saved.") }}', 'info');
+      return;
+    }
 
     $.ajax({
       url: $form.attr('action'),
@@ -712,10 +737,18 @@ $(function() {
   }
 
   $(document).on('click', '.edit-software-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Software Inventory.") }}', 'info');
+      return;
+    }
     openSoftwareEdit($(this));
   });
 
   $(document).on('click', '.delete-software-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Software Inventory.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const modalEl = document.getElementById('softwareDeleteModal');
     if (!modalEl) return;
@@ -726,6 +759,10 @@ $(function() {
   });
 
   $(document).on('click', '.delete-software-from-edit-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Software Inventory.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const deleteUrl = btn.data('delete-url');
     if (!deleteUrl) return;
@@ -737,9 +774,17 @@ $(function() {
 
   $('#softwareTable tbody').on('dblclick', 'tr', function() {
     const btn = $(this).find('.edit-software-btn');
-    if (btn.length) {
-      openSoftwareEdit(btn);
+    if (!btn.length) return;
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Software Inventory.") }}', 'info');
+      return;
     }
+    openSoftwareEdit(btn);
+  });
+
+  $(document).on('click', '[data-readonly="true"]', function(e) {
+    e.preventDefault();
+    showToast('{{ _("You have read-only access to Software Inventory.") }}', 'info');
   });
 });
 </script>

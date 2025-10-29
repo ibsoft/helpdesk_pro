@@ -24,12 +24,10 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
         user = User.query.filter_by(username=username).first()
-        if not user:
-            flash(_("User not found."), "danger")
+        if not user or not user.active or not user.check_password(password):
+            flash(_("Incorrect credentials."), "danger")
         elif not user.active:
             flash(_("Account is disabled."), "danger")
-        elif not user.check_password(password):
-            flash(_("Incorrect password."), "danger")
         else:
             remember = bool(request.form.get("remember"))
             login_user(user, remember=remember)

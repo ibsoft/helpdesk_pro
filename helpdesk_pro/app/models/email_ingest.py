@@ -8,6 +8,8 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import inspect
+from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 
 from app import db
 
@@ -33,6 +35,9 @@ class EmailIngestConfig(db.Model):
     assign_to_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     default_priority = db.Column(db.String(50))
     default_department = db.Column(db.String(120))
+    subject_filter_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    subject_filter_patterns = db.Column(db.Text)
+    subject_filter_delete_non_matching = db.Column(db.Boolean, default=False, nullable=False)
 
     last_run_at = db.Column(db.DateTime)
     last_error = db.Column(db.Text)
@@ -52,7 +57,15 @@ class EmailIngestConfig(db.Model):
             instance._table_missing = True
             return instance
 
-        instance: Optional["EmailIngestConfig"] = cls.query.order_by(cls.id.asc()).first()
+        cls._ensure_subject_filter_columns(engine)
+
+        try:
+            instance: Optional["EmailIngestConfig"] = cls.query.order_by(cls.id.asc()).first()
+        except ProgrammingError:
+            # The underlying table is missing the new subject filter columns.
+            db.session.rollback()
+            cls._ensure_subject_filter_columns(engine)
+            instance = cls.query.order_by(cls.id.asc()).first()
         if not instance:
             instance = cls()
             db.session.add(instance)
@@ -71,7 +84,38 @@ class EmailIngestConfig(db.Model):
             instance.poll_interval_seconds = 300
             db.session.add(instance)
             db.session.commit()
+        if instance.subject_filter_enabled is None:
+            instance.subject_filter_enabled = False
+            db.session.add(instance)
+            db.session.commit()
+        if instance.subject_filter_delete_non_matching is None:
+            instance.subject_filter_delete_non_matching = False
+            db.session.add(instance)
+            db.session.commit()
         return instance
+
+    @classmethod
+    def _ensure_subject_filter_columns(cls, engine) -> None:
+        insp = inspect(engine)
+        column_names = {col["name"] for col in insp.get_columns(cls.__tablename__)}
+        statements: list[str] = []
+        if "subject_filter_enabled" not in column_names:
+            statements.append(
+                f"ALTER TABLE {cls.__tablename__} ADD COLUMN IF NOT EXISTS subject_filter_enabled BOOLEAN NOT NULL DEFAULT false"
+            )
+        if "subject_filter_patterns" not in column_names:
+            statements.append(
+                f"ALTER TABLE {cls.__tablename__} ADD COLUMN IF NOT EXISTS subject_filter_patterns TEXT"
+            )
+        if "subject_filter_delete_non_matching" not in column_names:
+            statements.append(
+                f"ALTER TABLE {cls.__tablename__} ADD COLUMN IF NOT EXISTS subject_filter_delete_non_matching BOOLEAN NOT NULL DEFAULT false"
+            )
+        if not statements:
+            return
+        with engine.begin() as conn:
+            for statement in statements:
+                conn.execute(text(statement))
 
     def update_from_form(self, form_data) -> None:
         self.is_enabled = bool(form_data.get("is_enabled"))
@@ -101,3 +145,16 @@ class EmailIngestConfig(db.Model):
         assign_to = form_data.get("assign_to_user_id")
         self.created_by_user_id = int(created_by) if created_by and str(created_by).isdigit() else None
         self.assign_to_user_id = int(assign_to) if assign_to and str(assign_to).isdigit() else None
+        self.subject_filter_enabled = bool(form_data.get("subject_filter_enabled"))
+        patterns_raw = (form_data.get("subject_filter_patterns") or "").strip()
+        self.subject_filter_patterns = patterns_raw or None
+        self.subject_filter_delete_non_matching = bool(form_data.get("subject_filter_delete_non_matching"))
+
+    def get_subject_patterns(self) -> list[str]:
+        if not self.subject_filter_patterns:
+            return []
+        return [
+            line.strip()
+            for line in self.subject_filter_patterns.splitlines()
+            if line.strip()
+        ]

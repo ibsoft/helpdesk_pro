@@ -65,7 +65,7 @@
   html[data-bs-theme="dark"] body .dt-searchBuilder button.btn,
   html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-secondary,
   html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-primary,
-  html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-info {
+html[data-bs-theme="light"] body .dt-searchBuilder .btn-outline-info {
     color: #f8fafc;
   }
   .badge-soft {
@@ -83,11 +83,16 @@
       white-space: normal;
     }
   }
-  .dataTables_wrapper .dataTables_scroll {
-    overflow: auto;
-  }
+.dataTables_wrapper .dataTables_scroll {
+  overflow: auto;
+}
+.btn-readonly {
+  opacity: 0.55;
+}
 </style>
 
+{% set module_access = module_access if module_access is defined else 'write' %}
+{% set can_write = module_access == 'write' %}
 {% set total_assets = assets|length %}
 {% set assigned_count = assets|selectattr('assignee', 'ne', None)|list|length %}
 {% set unassigned_count = total_assets - assigned_count %}
@@ -141,7 +146,15 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0"><i class="fa fa-microchip"></i> {{ _('Hardware Inventory') }}</h4>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#hardwareCreateModal">
+  <button type="button"
+          class="btn btn-primary {% if not can_write %}btn-readonly{% endif %}"
+          {% if can_write %}
+            data-bs-toggle="modal"
+            data-bs-target="#hardwareCreateModal"
+          {% else %}
+            data-readonly="true"
+            title="{{ _('Read-only access. Contact an administrator for write permissions.') }}"
+          {% endif %}>
     <i class="fa fa-plus"></i> {{ _('New Hardware Asset') }}
   </button>
 </div>
@@ -237,18 +250,20 @@
       <td class="text-truncate" style="max-width: 220px;">{{ (asset.notes or '')[:120] ~ ('…' if asset.notes and asset.notes|length > 120 else '') }}</td>
       <td class="text-nowrap">
         <button type="button"
-                class="btn btn-sm btn-outline-primary edit-hardware-btn"
+                class="btn btn-sm btn-outline-primary edit-hardware-btn {% if not can_write %}btn-readonly{% endif %}"
                 data-id="{{ asset.id }}"
                 data-update-url="{{ url_for('inventory.update_hardware', asset_id=asset.id) }}"
                 data-delete-url="{{ url_for('inventory.delete_hardware', asset_id=asset.id) }}"
-                data-name="{{ asset.asset_tag }}">
+                data-name="{{ asset.asset_tag }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"
-                class="btn btn-sm btn-outline-danger delete-hardware-btn ms-1"
+                class="btn btn-sm btn-outline-danger delete-hardware-btn ms-1 {% if not can_write %}btn-readonly{% endif %}"
                 data-id="{{ asset.id }}"
                 data-delete-url="{{ url_for('inventory.delete_hardware', asset_id=asset.id) }}"
-                data-name="{{ asset.asset_tag }}">
+                data-name="{{ asset.asset_tag }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-trash"></i>
         </button>
       </td>
@@ -257,6 +272,7 @@
   </tbody>
 </table>
 
+{% if can_write %}
 <!-- Create Modal -->
 <div class="modal fade" id="hardwareCreateModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -424,9 +440,8 @@
         </div>
       </form>
     </div>
-  </div>
 </div>
-
+</div>
 <!-- Edit Modal -->
 <div class="modal fade" id="hardwareEditModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
@@ -601,6 +616,7 @@
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Delete Modal -->
 <div class="modal fade" id="hardwareDeleteModal" tabindex="-1" aria-hidden="true">
@@ -631,6 +647,8 @@
 {% block extra_js %}
 <script>
 $(function() {
+  const moduleAccess = "{{ module_access|default('write') }}";
+  const canWrite = moduleAccess === "write";
   const hardwareTable = $('#hardwareTable').DataTable({
     order: [[0, 'asc']],
     pageLength: 25,
@@ -667,6 +685,12 @@ $(function() {
     const submitBtn = $form.find('button[type="submit"]');
     const originalHtml = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    if (!canWrite) {
+      submitBtn.prop('disabled', false).html(originalHtml);
+      showToast('{{ _("Read-only access. Changes cannot be saved.") }}', 'info');
+      return;
+    }
 
     $.ajax({
       url: $form.attr('action'),
@@ -758,7 +782,7 @@ $(function() {
     form.find('[name="assigned_on"]').val(asset.assigned_on);
     form.find('[name="notes"]').val(asset.notes);
 
-    if (deleteUrl) {
+  if (deleteUrl) {
       $('#hardware-delete-form').attr('action', deleteUrl);
       $('#hardware-delete-name').text(asset.asset_tag || asset.serial_number || '');
       $('.delete-hardware-from-edit-btn').data('delete-url', deleteUrl).data('name', asset.asset_tag || asset.serial_number || '');
@@ -781,18 +805,30 @@ $(function() {
     });
   }
 
+  if (canWrite) {
   $(document).on('click', '.edit-hardware-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Hardware Inventory.") }}', 'info');
+      return;
+    }
     openHardwareEdit($(this));
   });
 
   $('#hardwareTable tbody').on('dblclick', 'tr', function() {
     const btn = $(this).find('.edit-hardware-btn');
-    if (btn.length) {
-      openHardwareEdit(btn);
+    if (!btn.length) return;
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Hardware Inventory.") }}', 'info');
+      return;
     }
+    openHardwareEdit(btn);
   });
 
   $(document).on('click', '.delete-hardware-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Hardware Inventory.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const modalEl = document.getElementById('hardwareDeleteModal');
     const modal = new bootstrap.Modal(modalEl);
@@ -802,6 +838,10 @@ $(function() {
   });
 
   $(document).on('click', '.delete-hardware-from-edit-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Hardware Inventory.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const deleteUrl = btn.data('delete-url');
     if (!deleteUrl) return;
@@ -810,6 +850,12 @@ $(function() {
     const modal = new bootstrap.Modal(document.getElementById('hardwareDeleteModal'));
     modal.show();
   });
+
+  $(document).on('click', '[data-readonly="true"]', function(e) {
+    e.preventDefault();
+    showToast('{{ _("You have read-only access to Hardware Inventory.") }}', 'info');
+  });
+  }
 });
 </script>
 

@@ -77,6 +77,37 @@
             {% endfor %}
           </select>
         </div>
+        <div class="col-12">
+          <div class="card bg-body-tertiary border-0 shadow-sm">
+            <div class="card-body">
+              <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" id="subject_filter_enabled" name="subject_filter_enabled" value="1" {% if config.subject_filter_enabled %}checked{% endif %}>
+                <label class="form-check-label" for="subject_filter_enabled">{{ _("Only create tickets when the email subject matches one of these patterns") }}</label>
+              </div>
+              <label class="form-label" for="subject_filter_patterns">{{ _("Subject patterns (one per line)") }}</label>
+              <textarea class="form-control" id="subject_filter_patterns" name="subject_filter_patterns" rows="4" placeholder="[1234]\nInvoice *\nPROD-*" {% if not config.subject_filter_enabled %}disabled{% endif %}>{{ config.subject_filter_patterns or '' }}</textarea>
+              <small class="text-muted d-block mt-2">
+                {{ _("Use simple text, * wildcards, or prefix with regex: to run a regular expression. Patterns are compared case-insensitively.") }}
+              </small>
+              <div class="alert alert-info py-2 px-3 mt-3 mb-0">
+                <strong class="d-block mb-1">{{ _("Sample patterns") }}</strong>
+                <ul class="mb-0 ps-3">
+                  <li><code>[1234]</code> — {{ _("only accept subjects that include the exact tag `[1234]`.") }}</li>
+                  <li><code>[INV-*]</code> — {{ _("match subjects such as `[INV-001]` where the wildcard fills in the rest.") }}</li>
+                  <li><code>Invoice *2024</code> — {{ _("allow any prefix but require the suffix `2024`.") }}</li>
+                  <li><code>PROD-*</code> — {{ _("match any subject that starts with `PROD-`.") }}</li>
+                  <li><code>regex:\[\d{4}\]</code> — {{ _("match subjects containing a four-digit code in square brackets (regular expression).") }}</li>
+                </ul>
+              </div>
+              <div class="form-check mt-3">
+                <input class="form-check-input" type="checkbox" id="subject_filter_delete_non_matching" name="subject_filter_delete_non_matching" value="1" {% if config.subject_filter_delete_non_matching %}checked{% endif %} {% if not config.subject_filter_enabled %}disabled{% endif %}>
+                <label class="form-check-label" for="subject_filter_delete_non_matching">
+                  {{ _("Delete emails that do not match any pattern (skipped emails will not remain unread).") }}
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <hr class="my-4">
@@ -109,4 +140,25 @@
     </div>
   </form>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+  const toggle = document.getElementById("subject_filter_enabled");
+  const textbox = document.getElementById("subject_filter_patterns");
+  const deleteToggle = document.getElementById("subject_filter_delete_non_matching");
+  if (!toggle || !textbox) return;
+  const sync = () => {
+    const enabled = toggle.checked;
+    textbox.disabled = !enabled;
+    if (deleteToggle) {
+      deleteToggle.disabled = !enabled;
+      if (!enabled) deleteToggle.checked = false;
+    }
+  };
+  toggle.addEventListener("change", sync);
+  sync();
+});
+</script>
 {% endblock %}

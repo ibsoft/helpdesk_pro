@@ -17,10 +17,11 @@ from flask import (
     url_for,
     flash,
 )
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from app.models import Contract, User
+from app.permissions import get_module_access, require_module_write
 
 contracts_bp = Blueprint("contracts", __name__)
 
@@ -99,6 +100,7 @@ def list_contracts():
         1 for contract in contracts if contract.end_date and contract.end_date < today
     )
 
+    module_access = get_module_access(current_user, "contracts")
     return render_template(
         "contracts/contract_list.html",
         contracts=contracts,
@@ -109,12 +111,14 @@ def list_contracts():
         expiring_soon=expiring_soon,
         expired_count=expired_count,
         today=today,
+        module_access=module_access,
     )
 
 
 @contracts_bp.route("/contracts/create", methods=["POST"])
 @login_required
 def create_contract():
+    require_module_write("contracts")
     try:
         name = _clean_str("name")
         if not name:
@@ -158,6 +162,7 @@ def create_contract():
 @login_required
 def update_contract(contract_id):
     contract = Contract.query.get_or_404(contract_id)
+    require_module_write("contracts")
     try:
         name = _clean_str("name")
         if name:
@@ -203,6 +208,7 @@ def contract_details(contract_id):
 @login_required
 def delete_contract(contract_id):
     contract = Contract.query.get_or_404(contract_id)
+    require_module_write("contracts")
     try:
         name = contract.name
         db.session.delete(contract)

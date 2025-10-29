@@ -17,10 +17,11 @@ from flask import (
     url_for,
     flash,
 )
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from app.models import SoftwareAsset, HardwareAsset, User
+from app.permissions import get_module_access, require_module_write
 
 inventory_bp = Blueprint("inventory", __name__)
 
@@ -156,6 +157,7 @@ def software_list():
     expired_count = sum(
         1 for asset in assets if asset.expiration_date and asset.expiration_date <= datetime.utcnow().date()
     )
+    module_access = get_module_access(current_user, "software")
     return render_template(
         "inventory/software_list.html",
         assets=assets,
@@ -167,12 +169,14 @@ def software_list():
         environments=SOFTWARE_ENVIRONMENTS,
         platforms=SOFTWARE_PLATFORMS,
         statuses=SOFTWARE_STATUSES,
+        module_access=module_access,
     )
 
 
 @inventory_bp.route("/inventory/software/create", methods=["POST"])
 @login_required
 def create_software():
+    require_module_write("software")
     try:
         name = _clean_str("name")
         if not name:
@@ -224,6 +228,7 @@ def create_software():
 @login_required
 def update_software(asset_id):
     asset = SoftwareAsset.query.get_or_404(asset_id)
+    require_module_write("software")
     try:
         asset.name = _clean_str("name") or asset.name
         asset.category = _clean_str("category")
@@ -274,6 +279,7 @@ def software_details(asset_id):
 @login_required
 def delete_software(asset_id):
     asset = SoftwareAsset.query.get_or_404(asset_id)
+    require_module_write("software")
     try:
         name = asset.name
         db.session.delete(asset)
@@ -290,6 +296,7 @@ def hardware_list():
     assets = HardwareAsset.query.order_by(HardwareAsset.asset_tag.asc()).all()
     users = User.query.filter_by(active=True).order_by(User.username.asc()).all()
     status_summary = Counter(asset.status or "Unspecified" for asset in assets)
+    module_access = get_module_access(current_user, "hardware")
     return render_template(
         "inventory/hardware_list.html",
         assets=assets,
@@ -299,12 +306,14 @@ def hardware_list():
         hardware_types=HARDWARE_TYPES,
         statuses=HARDWARE_STATUSES,
         conditions=HARDWARE_CONDITIONS,
+        module_access=module_access,
     )
 
 
 @inventory_bp.route("/inventory/hardware/create", methods=["POST"])
 @login_required
 def create_hardware():
+    require_module_write("hardware")
     try:
         asset_tag = _clean_str("asset_tag")
         if not asset_tag:
@@ -362,6 +371,7 @@ def create_hardware():
 @login_required
 def update_hardware(asset_id):
     asset = HardwareAsset.query.get_or_404(asset_id)
+    require_module_write("hardware")
     try:
         asset.asset_tag = _clean_str("asset_tag") or asset.asset_tag
         asset.serial_number = _clean_str("serial_number")
@@ -418,6 +428,7 @@ def hardware_details(asset_id):
 @login_required
 def delete_hardware(asset_id):
     asset = HardwareAsset.query.get_or_404(asset_id)
+    require_module_write("hardware")
     try:
         asset_tag = asset.asset_tag
         db.session.delete(asset)

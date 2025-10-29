@@ -61,18 +61,22 @@
   .dataTables_wrapper .dataTables_scroll {
     overflow: auto;
   }
-  .badge-soft {
-    border-radius: 999px;
-    padding: 0.25rem 0.7rem;
-    font-size: 0.75rem;
-  }
-  .notes-cell {
-    max-width: 280px;
-  }
+.badge-soft {
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.75rem;
+}
+.notes-cell {
+  max-width: 280px;
+}
+.btn-readonly {
+  opacity: 0.55;
+}
 </style>
 
 {% set total_networks = networks|length %}
-{% set can_manage_networks = current_user.is_authenticated and current_user.role == 'admin' %}
+{% set module_access = module_access if module_access is defined else 'write' %}
+{% set can_manage_networks = can_manage_networks if can_manage_networks is defined else (current_user.is_authenticated and current_user.role == 'admin') %}
 
 <div class="card network-summary-card border-0 shadow-sm mb-3">
   <div class="card-body py-3">
@@ -96,11 +100,17 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0"><i class="fa fa-sitemap"></i> {{ _('Network Maps') }}</h4>
-  {% if can_manage_networks %}
-    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#networkCreateModal">
-      <i class="fa fa-plus"></i> {{ _('Add Network') }}
-    </button>
-  {% endif %}
+  <button type="button"
+          class="btn btn-primary {% if not can_manage_networks %}btn-readonly{% endif %}"
+          {% if can_manage_networks %}
+            data-bs-toggle="modal"
+            data-bs-target="#networkCreateModal"
+          {% else %}
+            data-readonly="true"
+            title="{{ _('Read-only access. Contact an administrator for write permissions.') }}"
+          {% endif %}>
+    <i class="fa fa-plus"></i> {{ _('Add Network') }}
+  </button>
 </div>
 
 <table id="networkTable" class="table table-striped table-hover align-middle w-100 datatable-nowrap">
@@ -140,29 +150,29 @@
         <a href="{{ url_for('networks.network_hosts', network_id=net.id) }}?lang={{ g.locale }}" class="btn btn-sm btn-outline-info">
           <i class="fa fa-eye"></i>
         </a>
-        {% if can_manage_networks %}
-          <button type="button"
-                  class="btn btn-sm btn-outline-primary edit-network-btn"
-                  data-id="{{ net.id }}"
-                  data-update-url="{{ url_for('networks.update_network', network_id=net.id) }}">
-            <i class="fa fa-edit"></i>
-          </button>
-          <button type="button"
-                  class="btn btn-sm btn-outline-danger delete-network-btn ms-1"
-                  data-id="{{ net.id }}"
-                  data-delete-url="{{ url_for('networks.delete_network', network_id=net.id) }}"
-                  data-name="{{ net.name }}">
-            <i class="fa fa-trash"></i>
-          </button>
-        {% endif %}
+        <button type="button"
+                class="btn btn-sm btn-outline-primary edit-network-btn {% if not can_manage_networks %}btn-readonly{% endif %}"
+                data-id="{{ net.id }}"
+                data-update-url="{{ url_for('networks.update_network', network_id=net.id) }}"
+                {% if not can_manage_networks %}data-readonly="true"{% endif %}>
+          <i class="fa fa-edit"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-danger delete-network-btn ms-1 {% if not can_manage_networks %}btn-readonly{% endif %}"
+                data-id="{{ net.id }}"
+                data-delete-url="{{ url_for('networks.delete_network', network_id=net.id) }}"
+                data-name="{{ net.name }}"
+                {% if not can_manage_networks %}data-readonly="true"{% endif %}>
+          <i class="fa fa-trash"></i>
+        </button>
       </td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
 
-<!-- Create Modal -->
 {% if can_manage_networks %}
+<!-- Create Modal -->
 <div class="modal fade" id="networkCreateModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -318,6 +328,8 @@
 {% block extra_js %}
 <script>
 $(function() {
+  const moduleAccessValue = "{{ module_access|default('write') }}";
+  const canManage = moduleAccessValue === "write" && {{ 'true' if can_manage_networks else 'false' }};
   const networkTable = $('#networkTable').DataTable({
     order: [[0, 'asc']],
     pageLength: 25,
@@ -343,6 +355,12 @@ $(function() {
     const submitBtn = $form.find('button[type="submit"]');
     const originalHtml = submitBtn.html();
     submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Saving...") }}');
+
+    if (!canManage) {
+      submitBtn.prop('disabled', false).html(originalHtml);
+      showToast('{{ _("Read-only access. Changes cannot be saved.") }}', 'info');
+      return;
+    }
 
     $.ajax({
       url: $form.attr('action'),
@@ -413,6 +431,10 @@ $(function() {
   }
 
   $(document).on('click', '.edit-network-btn', function() {
+    if (!canManage) {
+      showToast('{{ _("You have read-only access to Network Maps.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const row = btn.closest('tr');
     const updateUrl = btn.data('update-url');
@@ -431,6 +453,10 @@ $(function() {
   });
 
   $(document).on('click', '.delete-network-btn', function() {
+    if (!canManage) {
+      showToast('{{ _("You have read-only access to Network Maps.") }}', 'info');
+      return;
+    }
     const btn = $(this);
     const modalEl = document.getElementById('networkDeleteModal');
     if (!modalEl) return;
@@ -439,6 +465,11 @@ $(function() {
     $('#network-delete-form').data('id', btn.data('id'));
     $('#network-delete-name').text(btn.data('name'));
     modal.show();
+  });
+
+  $(document).on('click', '[data-readonly="true"]', function(e) {
+    e.preventDefault();
+    showToast('{{ _("You have read-only access to Network Maps.") }}', 'info');
   });
 
   $('#networkTable tbody').on('dblclick', 'tr', function() {
