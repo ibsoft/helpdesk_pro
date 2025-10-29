@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<style>
+  .backup-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 50%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .backup-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .backup-summary-card .metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .backup-summary-card .metric-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  html[data-bs-theme="dark"] body .backup-summary-card .metric-count {
+    box-shadow: inset 0 0 0 1px rgba(241, 245, 249, 0.08);
+  }
+  .backup-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .backup-summary-card .divider {
+    width: 1px;
+    height: 38px;
+    background: rgba(148, 163, 184, 0.36);
+  }
+  @media (max-width: 767px) {
+    .backup-summary-card .divider {
+      display: none;
+    }
+  }
+  .backup-section-card {
+    border-radius: 1rem;
+  }
+  .badge-pill {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  .table thead th {
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+  }
+  .quick-actions label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+</style>
+
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="mb-1">
+        <i class="fa fa-database me-2"></i>{{ _("Backup Monitor") }}
+      </h1>
+      <p class="text-muted mb-0">{{ _("Track LTO tape cartridges, backup jobs, storage locations, and custody history for audit-ready traceability.") }}</p>
+    </div>
+  </div>
+
+  <div class="card backup-summary-card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap align-items-center gap-4">
+        <div class="metric">
+          <span class="metric-count bg-primary-subtle text-primary-emphasis">
+            <i class="fa fa-layer-group"></i> {{ tapes|length }}
+          </span>
+          <span class="metric-label">{{ _("Total Tapes") }}</span>
+        </div>
+        <div class="divider d-none d-md-block"></div>
+        <div class="metric">
+          <span class="metric-count bg-success-subtle text-success-emphasis">
+            <i class="fa fa-clipboard-check"></i> {{ jobs|length }}
+          </span>
+          <span class="metric-label">{{ _("Recent Jobs (100)") }}</span>
+        </div>
+        <div class="divider d-none d-md-block"></div>
+        <div class="metric flex-wrap gap-2">
+          {% for key, label in tape_status_choices %}
+          <span class="badge-pill bg-secondary-subtle text-secondary-emphasis">
+            {{ label }}: {{ status_summary[key]|default(0) }}
+          </span>
+          {% endfor %}
+        </div>
+        <div class="divider d-none d-md-block"></div>
+        <div class="metric flex-wrap gap-2">
+          {% for key, label in location_type_choices %}
+          <span class="badge-pill bg-info-subtle text-info-emphasis">
+            {{ label }}: {{ location_summary[key]|default(0) }}
+          </span>
+          {% endfor %}
+          <span class="badge-pill bg-warning-subtle text-warning-emphasis">
+            {{ _("Unassigned") }}: {{ location_summary["unassigned"]|default(0) }}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if module_access == "write" %}
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-body-tertiary">
+      <h2 class="h5 mb-0">{{ _("Quick Actions") }}</h2>
+    </div>
+    <div class="card-body">
+      <div class="row g-4">
+        <div class="col-lg-6">
+          <h3 class="h6 text-uppercase text-muted">{{ _("Register Tape Cartridge") }}</h3>
+          <form method="post" action="{{ url_for('backup.create_tape') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-2">
+              <label class="form-label" for="barcode">{{ _("Barcode") }}</label>
+              <input class="form-control" id="barcode" name="barcode" required>
+            </div>
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <label class="form-label" for="lto_generation">{{ _("LTO Generation") }}</label>
+                <input class="form-control" id="lto_generation" name="lto_generation" placeholder="LTO-9">
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label" for="nominal_capacity_tb">{{ _("Nominal TB") }}</label>
+                <input class="form-control" id="nominal_capacity_tb" name="nominal_capacity_tb" type="number" step="0.01">
+              </div>
+              <div class="col-sm-3">
+                <label class="form-label" for="usable_capacity_tb">{{ _("Usable TB") }}</label>
+                <input class="form-control" id="usable_capacity_tb" name="usable_capacity_tb" type="number" step="0.01">
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-sm-6">
+                <label class="form-label" for="status">{{ _("Status") }}</label>
+                <select class="form-select" id="status" name="status">
+                  {% for key, label in tape_status_choices %}
+                  <option value="{{ key }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="last_inventory_at">{{ _("Last Inventory Check") }}</label>
+                <input class="form-control" type="date" id="last_inventory_at" name="last_inventory_at">
+              </div>
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="usage_tags">{{ _("Usage Tags (comma separated)") }}</label>
+              <input class="form-control" id="usage_tags" name="usage_tags" placeholder="Vault, Weekly, Finance">
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="notes">{{ _("Notes") }}</label>
+              <textarea class="form-control" id="notes" name="notes" rows="2"></textarea>
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-primary" type="submit">
+                <i class="fa fa-plus-circle me-1"></i>{{ _("Add Tape") }}
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="col-lg-6">
+          <h3 class="h6 text-uppercase text-muted">{{ _("Log Backup Job") }}</h3>
+          <form method="post" action="{{ url_for('backup.create_job') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-2">
+              <label class="form-label" for="job_name">{{ _("Job Name") }}</label>
+              <input class="form-control" id="job_name" name="name" required>
+            </div>
+            <div class="row g-2">
+              <div class="col-sm-6">
+                <label class="form-label" for="job_date">{{ _("Job Date") }}</label>
+                <input class="form-control" type="datetime-local" id="job_date" name="job_date">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="retention_days">{{ _("Retention (days)") }}</label>
+                <input class="form-control" type="number" min="1" id="retention_days" name="retention_days" value="30">
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-sm-6">
+                <label class="form-label" for="total_files">{{ _("Total Files") }}</label>
+                <input class="form-control" type="number" id="total_files" name="total_files" min="0">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="total_size_bytes">{{ _("Total Size (bytes)") }}</label>
+                <input class="form-control" type="number" id="total_size_bytes" name="total_size_bytes" min="0">
+              </div>
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="verify_result">{{ _("Verify Result") }}</label>
+              <select class="form-select" id="verify_result" name="verify_result">
+                <option value="">{{ _("Select...") }}</option>
+                {% for key, label in verify_result_choices %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="source_system">{{ _("Source System") }}</label>
+              <input class="form-control" id="source_system" name="source_system">
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="responsible_user_id">{{ _("Responsible Technician") }}</label>
+              <select class="form-select" id="responsible_user_id" name="responsible_user_id">
+                <option value="">{{ _("Unassigned") }}</option>
+                {% for user in users %}
+                <option value="{{ user.id }}">{{ user.username }} ({{ user.role|capitalize }})</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="job_tapes">{{ _("Target Tape(s)") }}</label>
+              <select class="form-select" id="job_tapes" name="tape_ids" multiple>
+                {% for tape in tapes %}
+                <option value="{{ tape.id }}">{{ tape.barcode }} — {{ tape.lto_generation }}</option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">{{ _("Hold Ctrl/Cmd to select multiple tapes when a job spans cartridges.") }}</small>
+            </div>
+            <div class="mt-2">
+              <label class="form-label" for="job_notes">{{ _("Notes") }}</label>
+              <textarea class="form-control" id="job_notes" name="notes" rows="2"></textarea>
+            </div>
+            <div class="mt-3">
+              <button class="btn btn-success" type="submit">
+                <i class="fa fa-save me-1"></i>{{ _("Save Job") }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+      <h2 class="h5 mb-0">{{ _("Tape Inventory") }}</h2>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('backup.monitor') }}"><i class="fa fa-rotate"></i></a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover table-striped mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>{{ _("Barcode") }}</th>
+              <th>{{ _("LTO Generation") }}</th>
+              <th>{{ _("Status") }}</th>
+              <th>{{ _("Location") }}</th>
+              <th>{{ _("Usage Tags") }}</th>
+              <th>{{ _("Last Inventory") }}</th>
+              <th>{{ _("Updated") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for tape in tapes %}
+            <tr>
+              <td><a href="{{ url_for('backup.tape_detail', tape_id=tape.id) }}">{{ tape.barcode }}</a></td>
+              <td>{{ tape.lto_generation }}</td>
+              <td>
+                {% set status_label = tape.status %}
+                {% for key, label in tape_status_choices %}
+                  {% if key == tape.status %}
+                    {% set status_label = label %}
+                  {% endif %}
+                {% endfor %}
+                <span class="badge bg-primary-subtle text-primary">{{ status_label }}</span>
+              </td>
+              <td>
+                {% if tape.current_location %}
+                  {% set loc_label = tape.current_location.location_type %}
+                  {% for key, label in location_type_choices %}
+                    {% if key == tape.current_location.location_type %}
+                      {% set loc_label = label %}
+                    {% endif %}
+                  {% endfor %}
+                  <span class="badge bg-info-subtle text-info">{{ loc_label }}</span>
+                  {% if tape.current_location.site_name %}
+                    <div class="text-muted small">{{ tape.current_location.site_name }}</div>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted">{{ _("Unassigned") }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if tape.usage_tag_list() %}
+                  {% for tag in tape.usage_tag_list() %}
+                  <span class="badge bg-dark-subtle text-dark me-1">{{ tag }}</span>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if tape.last_inventory_at %}
+                  {{ tape.last_inventory_at.strftime("%Y-%m-%d") }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>{{ tape.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="7" class="text-center py-4 text-muted">{{ _("No tapes registered yet.") }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+      <h2 class="h5 mb-0">{{ _("Recent Backup Jobs") }}</h2>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('backup.monitor') }}"><i class="fa fa-rotate"></i></a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>{{ _("Job Name") }}</th>
+              <th>{{ _("Date") }}</th>
+              <th>{{ _("Retention") }}</th>
+              <th>{{ _("Expires") }}</th>
+              <th>{{ _("Source System") }}</th>
+              <th>{{ _("Verify") }}</th>
+              <th>{{ _("Tapes") }}</th>
+              <th>{{ _("Owner") }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for job in jobs %}
+            <tr>
+              <td><a href="{{ url_for('backup.job_detail', job_id=job.id) }}">{{ job.name }}</a></td>
+              <td>{{ job.job_date.strftime("%Y-%m-%d %H:%M") }}</td>
+              <td>{{ job.retention_days }} {{ _("days") }}</td>
+              <td>
+                {% if job.expires_at %}
+                  {{ job.expires_at.strftime("%Y-%m-%d") }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>{{ job.source_system or "—" }}</td>
+              <td>
+                {% set verify_label = job.verify_result or "pending" %}
+                {% for key, label in verify_result_choices %}
+                  {% if key == job.verify_result %}
+                    {% set verify_label = label %}
+                  {% endif %}
+                {% endfor %}
+                <span class="badge bg-success-subtle text-success">{{ verify_label }}</span>
+              </td>
+              <td>
+                {% if job.tapes %}
+                  {% for tape in job.tapes %}
+                  <a class="badge bg-secondary text-white text-decoration-none" href="{{ url_for('backup.tape_detail', tape_id=tape.id) }}">{{ tape.barcode }}</a>
+                  {% endfor %}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if job.responsible_user %}
+                  {{ job.responsible_user.username }}
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% else %}
+            <tr>
+              <td colspan="8" class="text-center py-4 text-muted">{{ _("No jobs logged yet.") }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -156,6 +156,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
                 "endpoint": "networks.network_tools",
             },
+            {
+                "key": "backup_monitor",
+                "label": _("Backup Monitor"),
+                "icon": "fa fa-database text-primary",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "backup.monitor",
+            },
         ],
     },
     {

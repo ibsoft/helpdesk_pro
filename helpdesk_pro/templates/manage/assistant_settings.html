@@ -1,51 +1,134 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% set is_enabled = config.is_enabled %}
+{% set provider = config.provider or 'builtin' %}
+
 <style>
-  .assistant-card {
-    max-width: 960px;
-    margin: 0 auto;
+  .assistant-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .assistant-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .assistant-summary-card .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .assistant-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .assistant-summary-card .metric-value {
+    font-size: 1.05rem;
+    font-weight: 600;
   }
   .assistant-provider-option {
     border: 1px solid rgba(148, 163, 184, 0.3);
-    border-radius: 0.75rem;
+    border-radius: 0.85rem;
     padding: 1rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    height: 100%;
   }
   .assistant-provider-option.active {
     border-color: #0d6efd;
     box-shadow: 0 0 0 2px rgba(13,110,253,0.15);
+  }
+  .badge-chip {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  .form-label {
+    text-transform: uppercase;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
   }
   textarea.form-control {
     min-height: 120px;
   }
 </style>
 
-<div class="assistant-card">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0"><i class="fa fa-robot"></i> {{ _('AI Assistant Widget') }}</h4>
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="mb-1"><i class="fa fa-robot me-2"></i>{{ _('AI Assistant Widget') }}</h1>
+      <p class="text-muted mb-0">{{ _('Configure the floating assistant widget and provider credentials.') }}</p>
+    </div>
     <a href="{{ url_for('manage.access') }}?lang={{ g.locale }}" class="btn btn-outline-secondary">
-      <i class="fa fa-key"></i> {{ _('Access Control') }}
+      <i class="fa fa-key me-1"></i>{{ _('Access Control') }}
     </a>
   </div>
 
-  <div class="alert alert-info shadow-sm">
-    <i class="fa fa-info-circle"></i>
-    {{ _('Configure the floating assistant widget. Use the Access page to limit visibility to specific roles.') }}
+  <div class="card assistant-summary-card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Status') }}</span>
+            <span class="metric-value">
+              <span class="badge-chip {% if is_enabled %}bg-success-subtle text-success-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">
+                <i class="fa {% if is_enabled %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-1"></i>
+                {% if is_enabled %}{{ _('Enabled') }}{% else %}{{ _('Disabled') }}{% endif %}
+              </span>
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Provider') }}</span>
+            <span class="metric-value">
+              <i class="fa fa-plug me-1"></i>{{ provider|replace('_', ' ')|title }}
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Button label') }}</span>
+            <span class="metric-value"><i class="fa fa-comment-dots me-1"></i>{{ config.button_label }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Button position') }}</span>
+            <span class="metric-value">
+              <i class="fa fa-arrows-alt-h me-1"></i>
+              {% if config.position == 'left' %}{{ _('Bottom left') }}{% else %}{{ _('Bottom right') }}{% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-info shadow-sm mb-4 d-flex align-items-start gap-2">
+    <i class="fa fa-info-circle fa-lg pt-1"></i>
+    <div>
+      {{ _('Use the Access Control page to choose which roles can see the assistant widget (menu entry “AI Assistant Widget”).') }}
+    </div>
   </div>
 
   <form method="post">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="card shadow-sm">
-      <div class="card-header">
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-body-tertiary">
         <strong>{{ _('Widget Appearance') }}</strong>
       </div>
       <div class="card-body">
         <div class="form-check form-switch mb-3">
-          <input class="form-check-input" type="checkbox" role="switch" id="is_enabled" name="is_enabled" {% if config.is_enabled %}checked{% endif %}>
-          <label class="form-check-label" for="is_enabled">
-            {{ _('Enable assistant widget') }}
-          </label>
+          <input class="form-check-input" type="checkbox" role="switch" id="is_enabled" name="is_enabled" {% if is_enabled %}checked{% endif %}>
+          <label class="form-check-label" for="is_enabled">{{ _('Enable assistant widget') }}</label>
         </div>
 
         <div class="row g-3">
@@ -57,16 +140,14 @@
             <label class="form-label">{{ _('Window title') }}</label>
             <input type="text" class="form-control" name="window_title" value="{{ config.window_title }}">
           </div>
-          <div class="col-md-12">
+          <div class="col-12">
             <label class="form-label">{{ _('Welcome message') }}</label>
             <textarea class="form-control" name="welcome_message">{{ config.welcome_message or '' }}</textarea>
           </div>
-          <div class="col-md-12">
+          <div class="col-12">
             <label class="form-label">{{ _('System prompt / instructions') }}</label>
             <textarea class="form-control" name="system_prompt" placeholder="{{ _('Describe how the assistant should behave') }}">{{ config.system_prompt or '' }}</textarea>
-            <small class="text-muted">
-              {{ _('Used as the system message so the assistant behaves like your IT expert with PostgreSQL module context.') }}
-            </small>
+            <small class="text-muted">{{ _('Used as the system message so the assistant behaves like your IT expert with PostgreSQL module context.') }}</small>
           </div>
           <div class="col-md-6">
             <label class="form-label">{{ _('Button position') }}</label>
@@ -79,44 +160,40 @@
       </div>
     </div>
 
-    <div class="card shadow-sm mt-3">
-      <div class="card-header">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-body-tertiary">
         <strong>{{ _('Provider') }}</strong>
       </div>
       <div class="card-body">
         <div class="row g-3">
           <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if config.provider == 'chatgpt' %}active{% endif %}">
+            <div class="assistant-provider-option {% if provider == 'chatgpt' %}active{% endif %}">
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_chatgpt" value="chatgpt" {% if config.provider == 'chatgpt' %}checked{% endif %}>
+                <input class="form-check-input" type="radio" name="provider" id="provider_chatgpt" value="chatgpt" {% if provider == 'chatgpt' %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="provider_chatgpt">
-                  <i class="fa fa-brain text-primary"></i> {{ _('OpenAI ChatGPT API') }}
+                  <i class="fa fa-brain text-primary me-1"></i>{{ _('OpenAI ChatGPT API') }}
                 </label>
               </div>
-              <p class="text-muted small mt-3 mb-0">
-                {{ _('Sends the full conversation to OpenAI and returns their response. Requires an API key below.') }}
-              </p>
+              <p class="text-muted small mt-3 mb-0">{{ _('Sends the full conversation to OpenAI and returns their response. Requires an API key below.') }}</p>
             </div>
           </div>
           <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if config.provider == 'chatgpt_hybrid' %}active{% endif %}">
+            <div class="assistant-provider-option {% if provider == 'chatgpt_hybrid' %}active{% endif %}">
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_chatgpt_hybrid" value="chatgpt_hybrid" {% if config.provider == 'chatgpt_hybrid' %}checked{% endif %}>
+                <input class="form-check-input" type="radio" name="provider" id="provider_chatgpt_hybrid" value="chatgpt_hybrid" {% if provider == 'chatgpt_hybrid' %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="provider_chatgpt_hybrid">
-                  <i class="fa fa-robot text-warning"></i> {{ _('OpenAI + DB Tools') }}
+                  <i class="fa fa-robot text-warning me-1"></i>{{ _('OpenAI + DB Tools') }}
                 </label>
               </div>
-              <p class="text-muted small mt-3 mb-0">
-                {{ _('Uses OpenAI with tool-calling to query the database via the built-in helpers. Configure the OpenAI credentials below.') }}
-              </p>
+              <p class="text-muted small mt-3 mb-0">{{ _('Adds tool-calling to query the database via built-in helpers. Configure OpenAI credentials below.') }}</p>
             </div>
           </div>
           <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if config.provider == 'openwebui' %}active{% endif %}">
+            <div class="assistant-provider-option {% if provider == 'openwebui' %}active{% endif %}">
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_openwebui" value="openwebui" {% if config.provider == 'openwebui' %}checked{% endif %}>
+                <input class="form-check-input" type="radio" name="provider" id="provider_openwebui" value="openwebui" {% if provider == 'openwebui' %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="provider_openwebui">
-                  <i class="fa fa-terminal text-info"></i> {{ _('OpenWebUI API') }}
+                  <i class="fa fa-terminal text-info me-1"></i>{{ _('OpenWebUI API') }}
                 </label>
               </div>
               <div class="mt-3">
@@ -131,35 +208,26 @@
                 <label class="form-label">{{ _('Model') }}</label>
                 <input type="text" class="form-control" name="openwebui_model" value="{{ config.openwebui_model or 'gpt-3.5-turbo' }}" placeholder="llama3:latest">
               </div>
-              <p class="text-muted small mt-3 mb-0">
-                {{ _('Uses an OpenAI-compatible endpoint exposed by OpenWebUI. Ensure the base URL points to `/api/v1/chat/completions`.') }}
-              </p>
+              <p class="text-muted small mt-3 mb-0">{{ _('Uses an OpenAI-compatible endpoint exposed by OpenWebUI. Ensure the base URL points to `/api/v1/chat/completions`.') }}</p>
             </div>
           </div>
           <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if config.provider == 'builtin' %}active{% endif %}">
+            <div class="assistant-provider-option {% if provider == 'builtin' %}active{% endif %}">
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_builtin" value="builtin" {% if config.provider == 'builtin' %}checked{% endif %}>
+                <input class="form-check-input" type="radio" name="provider" id="provider_builtin" value="builtin" {% if provider == 'builtin' %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="provider_builtin">
-                  <i class="fa fa-database text-info"></i> {{ _('Built-in (direct database lookup)') }}
+                  <i class="fa fa-database text-info me-1"></i>{{ _('Built-in (direct database lookup)') }}
                 </label>
               </div>
-              <div class="mt-3">
-                <p class="text-muted mb-1 small">
-                  {{ _('Responds by querying the Tickets, Knowledge Base, Inventory, and Network tables in read-only mode.') }}
-                </p>
-                <p class="text-muted small mb-0">
-                  {{ _('Relies on the system prompt above for behaviour—no external services or API keys required.') }}
-                </p>
-              </div>
+              <p class="text-muted small mt-3 mb-0">{{ _('Responds by querying the Tickets, Knowledge Base, Inventory, and Network tables in read-only mode.') }}</p>
             </div>
           </div>
           <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if config.provider == 'webhook' %}active{% endif %}">
+            <div class="assistant-provider-option {% if provider == 'webhook' %}active{% endif %}">
               <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_webhook" value="webhook" {% if config.provider == 'webhook' %}checked{% endif %}>
+                <input class="form-check-input" type="radio" name="provider" id="provider_webhook" value="webhook" {% if provider == 'webhook' %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="provider_webhook">
-                  <i class="fa fa-diagram-project text-success"></i> {{ _('Custom webhook (n8n, etc.)') }}
+                  <i class="fa fa-diagram-project text-success me-1"></i>{{ _('Custom webhook (n8n, etc.)') }}
                 </label>
               </div>
               <div class="mt-3">
@@ -177,13 +245,12 @@
                 <label class="form-label">{{ _('Custom headers (JSON)') }}</label>
                 <textarea class="form-control" name="webhook_headers" placeholder='{"Authorization": "Bearer ..."}'>{{ headers_pretty }}</textarea>
               </div>
-              <small class="text-muted d-block mt-2">
-                {{ _('The webhook receives JSON payloads with the current message, history, and user context. It must return JSON with a "reply" field.') }}
-              </small>
+              <small class="text-muted d-block mt-2">{{ _('The webhook receives JSON payloads with the current message, history, and user context. It must return JSON with a “reply” field.') }}</small>
             </div>
           </div>
         </div>
-        <div class="row g-3 mt-2">
+
+        <div class="row g-3 mt-3">
           <div class="col-md-6">
             <label class="form-label">{{ _('OpenAI API key') }}</label>
             <input type="password" class="form-control" name="openai_api_key" value="{{ config.openai_api_key or '' }}" placeholder="sk-***">
@@ -193,29 +260,25 @@
             <input type="text" class="form-control" name="openai_model" value="{{ config.openai_model or 'gpt-3.5-turbo' }}">
           </div>
           <div class="col-12">
-            <small class="text-muted">
-              {{ _('These credentials are required for the OpenAI-based providers. OpenWebUI fields are used when that provider is selected.') }}
-            </small>
+            <small class="text-muted">{{ _('These credentials are required for the OpenAI-based providers. OpenWebUI fields are used when that provider is selected.') }}</small>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="card shadow-sm mt-3">
+    <div class="card shadow-sm border-0">
       <div class="card-body">
         <div class="d-flex align-items-start gap-3">
-          <i class="fa fa-shield-halved text-warning fa-2x"></i>
+          <i class="fa fa-shield-halved text-warning fa-lg pt-1"></i>
           <div>
             <strong>{{ _('Role visibility') }}</strong>
-            <p class="mb-0 text-muted">
-              {{ _('Use the Access Control page to choose which roles can see the assistant widget (entry: "AI Assistant Widget").') }}
-            </p>
+            <p class="mb-0 text-muted">{{ _('Use the Access Control page to limit which roles can open the assistant widget.') }}</p>
           </div>
         </div>
       </div>
-      <div class="card-footer text-end">
+      <div class="card-footer bg-body-tertiary text-end">
         <button type="submit" class="btn btn-primary">
-          <i class="fa fa-save me-1"></i> {{ _('Save Settings') }}
+          <i class="fa fa-save me-1"></i>{{ _('Save Settings') }}
         </button>
       </div>
     </div>

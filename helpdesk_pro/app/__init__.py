@@ -5,6 +5,7 @@ Full multilingual (English / Greek) support, Flask-Babel 3.x compatible.
 """
 
 import os
+import sys
 import logging
 from datetime import datetime
 from flask import (
@@ -124,6 +125,7 @@ def create_app():
     from app.assistant.routes import assistant_bp
     from app.contracts.routes import contracts_bp
     from app.address_book.routes import address_book_bp
+    from app.backup.routes import backup_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -138,11 +140,34 @@ def create_app():
     app.register_blueprint(assistant_bp)
     app.register_blueprint(contracts_bp)
     app.register_blueprint(address_book_bp)
+    app.register_blueprint(backup_bp)
 
     with app.app_context():
         from app.models.module_permission import ModulePermission
+        from app.models.backup import (
+            TapeCartridge,
+            BackupJob,
+            TapeLocation,
+            TapeCustodyEvent,
+            BackupAuditLog,
+            BackupJobTape,
+        )
 
         ModulePermission.__table__.create(bind=db.engine, checkfirst=True)
+
+        should_autocreate_backup = True
+        if len(sys.argv) > 1 and sys.argv[0].endswith("flask"):
+            subcommand = sys.argv[1]
+            if subcommand in {"db", "upgrade", "downgrade", "migrate", "stamp", "revision"}:
+                should_autocreate_backup = False
+
+        if should_autocreate_backup:
+            TapeCartridge.__table__.create(bind=db.engine, checkfirst=True)
+            BackupJob.__table__.create(bind=db.engine, checkfirst=True)
+            TapeLocation.__table__.create(bind=db.engine, checkfirst=True)
+            TapeCustodyEvent.__table__.create(bind=db.engine, checkfirst=True)
+            BackupAuditLog.__table__.create(bind=db.engine, checkfirst=True)
+            BackupJobTape.__table__.create(bind=db.engine, checkfirst=True)
 
     from app.email2ticket import init_app as init_email2ticket
 
