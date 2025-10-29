@@ -14,11 +14,13 @@ from flask import (
     flash,
     redirect,
     url_for,
+    current_app,
 )
 from flask_login import login_required, current_user
 
 from app import db
 from app.models import Network, NetworkHost
+from app.permissions import get_module_access, require_module_write
 
 
 networks_bp = Blueprint("networks", __name__, url_prefix="/networks")
@@ -27,14 +29,10 @@ networks_bp = Blueprint("networks", __name__, url_prefix="/networks")
 def _require_roles(*roles):
     if not current_user.is_authenticated:
         abort(403)
-    user_role = (current_user.role or "").lower()
-    allowed = {role.lower() for role in roles}
+    user_role = (current_user.role or "").strip().lower()
+    allowed = {role.strip().lower() for role in roles}
     if user_role not in allowed:
         abort(403)
-
-
-def _require_admin():
-    _require_roles("admin")
 
 
 def _json_response(success, message, category="info", status=200, **extra):
@@ -49,10 +47,14 @@ def network_maps():
     _require_roles("admin", "technician")
     networks = Network.query.order_by(Network.name.asc()).all()
     total_hosts = sum(n.host_capacity for n in networks)
+    module_access = get_module_access(current_user, "networks")
+    can_manage = module_access == "write"
     return render_template(
         "networks/maps.html",
         networks=networks,
         total_hosts=total_hosts,
+        module_access=module_access,
+        can_manage_networks=can_manage,
     )
 
 
@@ -99,12 +101,16 @@ def network_hosts(network_id):
     hosts = NetworkHost.query.filter_by(network_id=network.id).order_by(NetworkHost.ip_address.asc()).all()
     can_generate = len(hosts) == 0
     total_hosts = len(hosts)
+    module_access = get_module_access(current_user, "networks")
+    can_manage = module_access == "write"
     return render_template(
         "networks/hosts.html",
         network=network,
         hosts=hosts,
         can_generate=can_generate,
         total_hosts=total_hosts,
+        module_access=module_access,
+        can_manage_networks=can_manage,
     )
 
 @networks_bp.route("/maps/<int:network_id>/hosts.json", methods=["GET"])
@@ -166,7 +172,7 @@ def network_hosts_json(network_id):
 @networks_bp.route("/maps/<int:network_id>/generate-hosts", methods=["POST"])
 @login_required
 def generate_hosts(network_id):
-    _require_admin()
+    require_module_write("networks")
     network = Network.query.get_or_404(network_id)
     if network.hosts:
         flash("Hosts already exist for this network.", "warning")
@@ -182,7 +188,7 @@ def generate_hosts(network_id):
 @networks_bp.route("/maps/create", methods=["POST"])
 @login_required
 def create_network():
-    _require_admin()
+    require_module_write("networks")
     name = (request.form.get("name") or "").strip()
     cidr = (request.form.get("cidr") or "").strip()
     if not name or not cidr:
@@ -214,7 +220,7 @@ def create_network():
 @networks_bp.route("/maps/<int:network_id>/update", methods=["POST"])
 @login_required
 def update_network(network_id):
-    _require_admin()
+    require_module_write("networks")
     network = Network.query.get_or_404(network_id)
 
     name = (request.form.get("name") or "").strip()
@@ -247,7 +253,7 @@ def update_network(network_id):
 @networks_bp.route("/maps/<int:network_id>/delete", methods=["POST"])
 @login_required
 def delete_network(network_id):
-    _require_admin()
+    require_module_write("networks")
     network = Network.query.get_or_404(network_id)
     db.session.delete(network)
     db.session.commit()
@@ -257,7 +263,7 @@ def delete_network(network_id):
 @networks_bp.route("/maps/<int:network_id>/hosts/<int:host_id>/update", methods=["POST"])
 @login_required
 def update_host(network_id, host_id):
-    _require_admin()
+    require_module_write("networks")
     network = Network.query.get_or_404(network_id)
     host = NetworkHost.query.filter_by(id=host_id, network_id=network.id).first_or_404()
 
@@ -292,7 +298,7 @@ def update_host(network_id, host_id):
 @networks_bp.route("/maps/<int:network_id>/hosts/<int:host_id>/delete", methods=["POST"])
 @login_required
 def delete_host(network_id, host_id):
-    _require_admin()
+    require_module_write("networks")
     host = NetworkHost.query.filter_by(id=host_id, network_id=network_id).first_or_404()
     db.session.delete(host)
     db.session.commit()
@@ -303,4 +309,5 @@ def delete_host(network_id, host_id):
 @login_required
 def network_tools():
     _require_roles("admin", "technician")
-    return render_template("networks/tools.html")
+    module_access = get_module_access(current_user, "networks")
+    return render_template("networks/tools.html", module_access=module_access)

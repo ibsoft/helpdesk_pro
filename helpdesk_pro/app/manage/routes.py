@@ -8,7 +8,15 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 
 from app import db
-from app.models import MenuPermission, AssistantConfig, AuthConfig, ApiClient, User, EmailIngestConfig
+from app.models import (
+    MenuPermission,
+    ModulePermission,
+    AssistantConfig,
+    AuthConfig,
+    ApiClient,
+    User,
+    EmailIngestConfig,
+)
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
     MENU_DEFINITIONS,
@@ -16,6 +24,11 @@ from app.navigation import (
     flatten_menu,
     default_allowed,
     definition_map,
+)
+from app.permissions import (
+    MODULE_ACCESS_DEFINITIONS,
+    MODULE_ACCESS_LEVELS,
+    clear_access_cache,
 )
 
 
@@ -37,29 +50,58 @@ def access():
     definition_lookup = definition_map()
 
     if request.method == "POST":
+        form_type = request.form.get("form_type", "menu")
         updated = False
-        for item in flat_items:
-            item_key = item["key"]
-            definition = definition_lookup.get(item_key, {})
-            for role in AVAILABLE_ROLES:
-                field_name = f"perm_{item_key}_{role}"
-                selected = field_name in request.form
-                default = default_allowed(definition, type("obj", (object,), {"role": role})())
-                perm = MenuPermission.query.filter_by(menu_key=item_key, role=role, user_id=None).first()
-                if selected == default:
-                    if perm:
-                        db.session.delete(perm)
-                        updated = True
-                else:
-                    if perm:
-                        if perm.allowed != selected:
-                            perm.allowed = selected
+        module_updated = False
+        if form_type in {"menu", "all"}:
+            for item in flat_items:
+                item_key = item["key"]
+                definition = definition_lookup.get(item_key, {})
+                for role in AVAILABLE_ROLES:
+                    field_name = f"perm_{item_key}_{role}"
+                    selected = field_name in request.form
+                    default = default_allowed(definition, type("obj", (object,), {"role": role})())
+                    perm = MenuPermission.query.filter_by(menu_key=item_key, role=role, user_id=None).first()
+                    if selected == default:
+                        if perm:
+                            db.session.delete(perm)
                             updated = True
                     else:
-                        db.session.add(MenuPermission(menu_key=item_key, role=role, allowed=selected))
-                        updated = True
+                        if perm:
+                            if perm.allowed != selected:
+                                perm.allowed = selected
+                                updated = True
+                        else:
+                            db.session.add(MenuPermission(menu_key=item_key, role=role, allowed=selected))
+                            updated = True
+        if form_type in {"module", "all"}:
+            for module_key in MODULE_ACCESS_DEFINITIONS.keys():
+                default_level = "write"
+                for role in AVAILABLE_ROLES:
+                    field_name = f"module_perm_{module_key}_{role}"
+                    level = request.form.get(field_name, default_level)
+                    if level not in MODULE_ACCESS_LEVELS:
+                        level = default_level
+                    perm = ModulePermission.query.filter_by(module_key=module_key, role=role).first()
+                    if level == default_level:
+                        if perm:
+                            db.session.delete(perm)
+                            module_updated = True
+                    else:
+                        if perm:
+                            if perm.access_level != level:
+                                perm.access_level = level
+                                module_updated = True
+                        else:
+                            db.session.add(
+                                ModulePermission(module_key=module_key, role=role, access_level=level)
+                            )
+                            module_updated = True
+            if module_updated:
+                updated = True
         if updated:
             db.session.commit()
+            clear_access_cache()
             flash(_("Access settings updated."), "success")
         else:
             flash(_("No changes were necessary."), "info")
@@ -86,10 +128,32 @@ def access():
             })
         display_items.append(entry)
 
+    module_items = []
+    for module_key, meta in MODULE_ACCESS_DEFINITIONS.items():
+        module_entry = {
+            "key": module_key,
+            "label": meta.get("label", module_key.title()),
+            "roles": [],
+        }
+        default_level = "write"
+        for role in AVAILABLE_ROLES:
+            perm = ModulePermission.query.filter_by(module_key=module_key, role=role).first()
+            current = perm.access_level if perm is not None else default_level
+            if current not in MODULE_ACCESS_LEVELS:
+                current = default_level
+            module_entry["roles"].append({
+                "role": role,
+                "current": current,
+                "default": default_level,
+            })
+        module_items.append(module_entry)
+
     return render_template(
         "manage/access.html",
         menu_items=display_items,
         roles=AVAILABLE_ROLES,
+        module_items=module_items,
+        module_levels=MODULE_ACCESS_LEVELS,
     )
 
 

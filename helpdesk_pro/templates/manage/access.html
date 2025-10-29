@@ -36,6 +36,7 @@
 
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="menu">
   <div class="card shadow-sm">
     <div class="card-header">
       <strong>{{ _('Menu Permissions') }}</strong>
@@ -62,6 +63,68 @@
                   <td class="text-center">
                     <div class="form-check d-inline-flex justify-content-center">
                       <input class="form-check-input" type="checkbox" name="perm_{{ item.key }}_{{ role.role }}" id="perm_{{ item.key }}_{{ role.role }}" {% if role.current %}checked{% endif %}>
+                    </div>
+                  </td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card-footer text-end">
+      <button type="submit" class="btn btn-primary"><i class="fa fa-save me-1"></i>{{ _('Save Changes') }}</button>
+    </div>
+  </div>
+</form>
+
+<div class="alert alert-warning shadow-sm mt-4">
+  <i class="fa fa-shield-alt"></i>
+  {{ _('Define read or read/write permissions for sensitive modules. Admins always retain full access.') }}
+</div>
+
+<form method="post">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <input type="hidden" name="form_type" value="module">
+  <div class="card shadow-sm">
+    <div class="card-header">
+      <strong>{{ _('Module Permissions') }}</strong>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0 access-table">
+          <thead class="table-dark">
+            <tr>
+              <th>{{ _('Module') }}</th>
+              {% for role in roles %}
+                <th class="text-center access-role-header">{{ role|capitalize }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for module in module_items %}
+              <tr>
+                <td class="menu-label">
+                  <i class="fa fa-cube text-primary opacity-75"></i> {{ _(module.label) }}
+                </td>
+                {% for role in module.roles %}
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="{{ role.role }} {{ module.key }} access">
+                      <input type="radio"
+                             class="btn-check"
+                             name="module_perm_{{ module.key }}_{{ role.role }}"
+                             id="module_perm_{{ module.key }}_{{ role.role }}_read"
+                             value="read"
+                             {% if role.current == 'read' %}checked{% endif %}>
+                      <label class="btn btn-outline-secondary" for="module_perm_{{ module.key }}_{{ role.role }}_read">{{ _('Read') }}</label>
+
+                      <input type="radio"
+                             class="btn-check"
+                             name="module_perm_{{ module.key }}_{{ role.role }}"
+                             id="module_perm_{{ module.key }}_{{ role.role }}_write"
+                             value="write"
+                             {% if role.current != 'read' %}checked{% endif %}>
+                      <label class="btn btn-outline-secondary" for="module_perm_{{ module.key }}_{{ role.role }}_write">{{ _('Read / Write') }}</label>
                     </div>
                   </td>
                 {% endfor %}

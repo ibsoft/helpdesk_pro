@@ -139,6 +139,11 @@ def create_app():
     app.register_blueprint(contracts_bp)
     app.register_blueprint(address_book_bp)
 
+    with app.app_context():
+        from app.models.module_permission import ModulePermission
+
+        ModulePermission.__table__.create(bind=db.engine, checkfirst=True)
+
     from app.email2ticket import init_app as init_email2ticket
 
     init_email2ticket(app)

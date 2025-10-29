@@ -160,9 +160,14 @@ class EmailToTicketWorker:
                 if typ != "OK":
                     continue
                 try:
-                    if EmailToTicketWorker._store_message(msg_data[0][1], cfg, app):
+                    result = EmailToTicketWorker._store_message(msg_data[0][1], cfg, app)
+                    if result is True:
                         imap.store(msg_id, "+FLAGS", r"(\Deleted)")
                         processed += 1
+                    elif result is False and cfg.subject_filter_delete_non_matching:
+                        imap.store(msg_id, "+FLAGS", r"(\Deleted)")
+                    else:
+                        imap.store(msg_id, "+FLAGS", r"(\Seen)")
                 except Exception as exc:  # pragma: no cover
                     app.logger.exception("Failed to ingest email via IMAP: %s", exc)
             if processed:
@@ -191,9 +196,12 @@ class EmailToTicketWorker:
                     continue
                 message_bytes = b"\r\n".join(lines)
                 try:
-                    if EmailToTicketWorker._store_message(message_bytes, cfg, app):
-                        pop.dele(index + 1)
-                        processed += 1
+                    result = EmailToTicketWorker._store_message(message_bytes, cfg, app)
+                    if result is not None:
+                        if result or cfg.subject_filter_delete_non_matching:
+                            pop.dele(index + 1)
+                        if result:
+                            processed += 1
                 except Exception as exc:  # pragma: no cover
                     app.logger.exception("Failed to ingest email via POP3: %s", exc)
             pop.quit()
@@ -205,7 +213,7 @@ class EmailToTicketWorker:
                 pass
 
     @staticmethod
-    def _store_message(message_bytes: bytes, cfg: EmailIngestConfig, app) -> bool:
+    def _store_message(message_bytes: bytes, cfg: EmailIngestConfig, app) -> Optional[bool]:
         email_message = message_from_bytes(message_bytes)
         subject = _decode_header(email_message.get("Subject")) or app.config.get(
             "EMAIL2TICKET_DEFAULT_SUBJECT", "Email request"
@@ -213,6 +221,12 @@ class EmailToTicketWorker:
         from_header = _decode_header(email_message.get("From") or "")
         sender_name, sender_email = parseaddr(from_header)
         body, attachments = _extract_content(email_message, app)
+
+        if cfg.subject_filter_enabled:
+            patterns = cfg.get_subject_patterns()
+            if patterns and not _subject_matches_patterns(subject, patterns):
+                app.logger.debug("Skipping email with subject '%s' (no pattern matched).", subject)
+                return False
 
         created_by_id = cfg.created_by_user_id or _find_fallback_user_id()
         if not created_by_id:
@@ -249,6 +263,35 @@ class EmailToTicketWorker:
         )
         db.session.commit()
         return True
+
+
+def _subject_matches_patterns(subject: Optional[str], patterns: List[str]) -> bool:
+    """Return True when the subject matches at least one configured pattern."""
+    subject_text = subject or ""
+    subject_lower = subject_text.lower()
+    for raw_pattern in patterns:
+        pattern = (raw_pattern or "").strip()
+        if not pattern:
+            continue
+        lowered = pattern.lower()
+        if lowered.startswith("regex:"):
+            expr = pattern.split(":", 1)[1].strip()
+            if not expr:
+                continue
+            try:
+                if re.search(expr, subject_text, re.IGNORECASE):
+                    return True
+            except re.error:
+                continue
+            continue
+        if "*" in pattern:
+            wildcard_regex = re.escape(pattern).replace(r"\*", ".*")
+            if re.search(wildcard_regex, subject_text, re.IGNORECASE):
+                return True
+            continue
+        if pattern.lower() in subject_lower:
+            return True
+    return False
 
 
 def _decode_header(value: Optional[str]) -> str:
