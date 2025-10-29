@@ -146,11 +146,9 @@ def create_app():
         from app.models.module_permission import ModulePermission
         from app.models.backup import (
             TapeCartridge,
-            BackupJob,
             TapeLocation,
             TapeCustodyEvent,
             BackupAuditLog,
-            BackupJobTape,
         )
 
         ModulePermission.__table__.create(bind=db.engine, checkfirst=True)
@@ -163,11 +161,9 @@ def create_app():
 
         if should_autocreate_backup:
             TapeCartridge.__table__.create(bind=db.engine, checkfirst=True)
-            BackupJob.__table__.create(bind=db.engine, checkfirst=True)
             TapeLocation.__table__.create(bind=db.engine, checkfirst=True)
             TapeCustodyEvent.__table__.create(bind=db.engine, checkfirst=True)
             BackupAuditLog.__table__.create(bind=db.engine, checkfirst=True)
-            BackupJobTape.__table__.create(bind=db.engine, checkfirst=True)
 
     from app.email2ticket import init_app as init_email2ticket
 

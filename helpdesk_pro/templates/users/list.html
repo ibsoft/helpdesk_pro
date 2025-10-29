@@ -189,6 +189,15 @@
 
                     <label class="form-label">{{ _('Password (leave blank to keep unchanged)') }}</label>
                     <input type="password" name="password" class="form-control mb-2" placeholder="••••••">
+
+                    <label class="form-label">{{ _('Confirm Password') }}</label>
+                    <input type="password" name="password_confirm" class="form-control mb-2" placeholder="••••••">
+
+                    <input type="hidden" name="active" value="0">
+                    <div class="form-check form-switch mt-3">
+                      <input class="form-check-input" type="checkbox" role="switch" id="editActive{{ u.id }}" name="active" value="1" {% if u.active %}checked{% endif %}>
+                      <label class="form-check-label" for="editActive{{ u.id }}">{{ _('Active account') }}</label>
+                    </div>
                   </div>
                   <div class="modal-footer">
                     <button type="submit" class="btn btn-success"><i class="fa fa-save"></i> {{ _('Save') }}</button>
@@ -226,6 +235,9 @@
             <label class="form-label">{{ _('Password') }}</label>
             <input name="password" type="password" class="form-control mb-2" required>
 
+            <label class="form-label">{{ _('Confirm Password') }}</label>
+            <input name="password_confirm" type="password" class="form-control mb-2" required>
+
             <label class="form-label">{{ _('Role') }}</label>
             <select name="role" class="form-select mb-2" required>
               <option value="user">{{ _('User') }}</option>
@@ -236,6 +248,12 @@
 
             <label class="form-label">{{ _('Department') }}</label>
             <input name="department" class="form-control mb-2">
+
+            <input type="hidden" name="active" value="0">
+            <div class="form-check form-switch mt-3">
+              <input class="form-check-input" type="checkbox" role="switch" id="addActive" name="active" value="1" checked>
+              <label class="form-check-label" for="addActive">{{ _('Active account') }}</label>
+            </div>
           </div>
           <div class="modal-footer">
             <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> {{ _('Create') }}</button>
@@ -280,14 +298,16 @@
     const table = $('#usersTable').DataTable({
       order: [[0, 'desc']],
       pageLength: 10,
-      dom: "<'row mb-2'<'col-md-6 text-start'B><'col-md-6 text-end'f>>" +
-           "<'row'<'col-12'tr>>" +
-           "<'row mt-2'<'col-md-5'i><'col-md-7 text-end'p>>",
+      language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
+      dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
+           "<'row'<'col-sm-12'tr>>" +
+           "<'row mt-3'<'col-12'Q>>" +
+           "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
       buttons: [
         {
-          extend: 'csvHtml5',
-          className: 'btn btn-outline-secondary btn-sm',
-          text: '<i class="fa fa-file-csv"></i> CSV',
+          extend: 'excelHtml5',
+          className: 'btn btn-success btn-sm mx-1',
+          text: '<i class="fa fa-file-excel"></i> {{ _("Excel") }}',
           title: 'helpdesk_users',
           exportOptions: {
             columns: ':not(:last-child)'
@@ -295,7 +315,7 @@
         },
         {
           extend: 'print',
-          className: 'btn btn-outline-secondary btn-sm',
+          className: 'btn btn-secondary btn-sm mx-1',
           text: '<i class="fa fa-print"></i> {{ _("Print") }}',
           exportOptions: {
             columns: ':not(:last-child)'
@@ -304,8 +324,20 @@
           customize: function (win) {
             $(win.document.body).addClass('printable');
           }
+        },
+        {
+          extend: 'searchBuilder',
+          className: 'btn btn-secondary btn-sm mx-1',
+          text: '<i class="fa fa-filter"></i> {{ _("Advanced Filters") }}'
         }
-      ]
+      ],
+      columnDefs: [
+        { targets: [6], type: 'date', searchBuilderType: 'date' },
+        { targets: -1, orderable: false, searchable: false }
+      ],
+      searchBuilder: {
+        columns: [0, 1, 2, 3, 4, 5, 6]
+      }
     });
 
     let deleteUserId = null;
@@ -324,6 +356,96 @@
       }).always(function () {
         bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
         deleteUserId = null;
+      });
+    });
+
+    function setSubmitting($btn, isSubmitting, label) {
+      if (isSubmitting) {
+        $btn.data('original-html', $btn.html());
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>' + (label || '{{ _("Saving...") }}'));
+      } else {
+        const original = $btn.data('original-html');
+        if (original) {
+          $btn.html(original);
+        }
+        $btn.prop('disabled', false);
+      }
+    }
+
+    $('.ajax-add-form').on('submit', function (event) {
+      event.preventDefault();
+      const $form = $(this);
+      const password = $form.find('input[name="password"]').val();
+      const confirm = $form.find('input[name="password_confirm"]').val();
+      if (password !== confirm) {
+        showToast('{{ _("Passwords do not match.") }}', 'warning');
+        return;
+      }
+      const $btn = $form.find('button[type="submit"]');
+      setSubmitting($btn, true, '{{ _("Creating...") }}');
+      $.ajax({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success: function (res) {
+          if (!res || res.success === false) {
+            const message = (res && (res.message || res.error)) || '{{ _("Failed to create user.") }}';
+            showToast(message, 'danger');
+            return;
+          }
+          showToast(res.message || '{{ _("User created successfully.") }}', 'success');
+          setTimeout(function () { window.location.reload(); }, 400);
+        },
+        error: function (xhr) {
+          const data = xhr.responseJSON || {};
+          const message = data.message || data.error || '{{ _("Failed to create user.") }}';
+          showToast(message, 'danger');
+        },
+        complete: function () {
+          setSubmitting($btn, false);
+        }
+      });
+    });
+
+    $('.ajax-edit-form').on('submit', function (event) {
+      event.preventDefault();
+      const $form = $(this);
+      const password = $form.find('input[name="password"]').val();
+      const confirm = $form.find('input[name="password_confirm"]').val();
+      if (password && password !== confirm) {
+        showToast('{{ _("Passwords do not match.") }}', 'warning');
+        return;
+      }
+      const $btn = $form.find('button[type="submit"]');
+      setSubmitting($btn, true, '{{ _("Saving...") }}');
+      $.ajax({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success: function (res) {
+          if (!res || res.success === false) {
+            const message = (res && (res.message || res.error)) || '{{ _("Failed to update user.") }}';
+            showToast(message, 'danger');
+            return;
+          }
+          showToast(res.message || '{{ _("User updated successfully.") }}', 'success');
+          const modalEl = $form.closest('.modal')[0];
+          if (modalEl) {
+            const modalInstance = bootstrap.Modal.getInstance(modalEl);
+            if (modalInstance) modalInstance.hide();
+          }
+          setTimeout(function () { window.location.reload(); }, 400);
+        },
+        error: function (xhr) {
+          const data = xhr.responseJSON || {};
+          const message = data.message || data.error || '{{ _("Failed to update user.") }}';
+          showToast(message, 'danger');
+        },
+        complete: function () {
+          setSubmitting($btn, false);
+        }
       });
     });
   });

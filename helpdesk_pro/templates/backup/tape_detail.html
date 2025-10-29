@@ -43,18 +43,35 @@
     </div>
     {% if module_access == 'write' %}
     <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteTapeModal">
-      <i class="fa fa-trash"></i> {{ _('Delete Tape') }}
+      <i class="fa fa-trash"></i> {{ _('Delete Storage Medium') }}
     </button>
     {% endif %}
   </div>
-  <p class="text-muted mb-4">{{ _("Detailed traceability for the selected tape cartridge.") }}</p>
+  <p class="text-muted mb-4">{{ _("Detailed traceability for the selected storage medium, including retention status and custody history.") }}</p>
 
   <div class="row g-3 mb-4">
     <div class="col-md-4">
       <div class="card backup-detail-summary shadow-sm border-0 h-100">
         <div class="card-body">
-          <h2 class="h5">{{ _('Tape Overview') }}</h2>
+          <h2 class="h5">{{ _('Storage Medium Overview') }}</h2>
           <dl class="row mb-0">
+            <dt class="col-5 text-muted">{{ _('Medium type') }}</dt>
+            <dd class="col-7">
+              {% if tape.medium_type == 'disk' %}
+                <span class="badge bg-secondary-subtle text-secondary">{{ _('External Disk') }}</span>
+              {% else %}
+                <span class="badge bg-primary-subtle text-primary">{{ _('Tape Cartridge') }}</span>
+              {% endif %}
+              {% if tape.lto_generation %}
+                <div class="text-muted small">{{ tape.lto_generation }}</div>
+              {% elif tape.model_name %}
+                <div class="text-muted small">{{ tape.model_name }}</div>
+              {% endif %}
+            </dd>
+            <dt class="col-5 text-muted">{{ _('Manufacturer') }}</dt>
+            <dd class="col-7">{{ tape.manufacturer or "—" }}</dd>
+            <dt class="col-5 text-muted">{{ _('Serial number') }}</dt>
+            <dd class="col-7">{{ tape.serial_number or "—" }}</dd>
             <dt class="col-5 text-muted">{{ _('Status') }}</dt>
             <dd class="col-7">
               {% set status_label = tape.status %}
@@ -69,6 +86,22 @@
             <dd class="col-7">{{ tape.nominal_capacity_tb or "—" }} TB</dd>
             <dt class="col-5 text-muted">{{ _('Usable capacity') }}</dt>
             <dd class="col-7">{{ tape.usable_capacity_tb or "—" }} TB</dd>
+            <dt class="col-5 text-muted">{{ _('Retention') }}</dt>
+            <dd class="col-7">
+              {% if tape.retention_days %}
+                {{ tape.retention_days }} {{ _('days') }}
+                {% if tape.retention_until %}
+                  <div class="text-muted small">{{ _('Ends %(date)s', date=tape.retention_until.strftime("%Y-%m-%d %H:%M")) }}</div>
+                  {% if retention_state %}
+                    <span class="badge bg-info-subtle text-info">{{ retention_state }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning">{{ _('Set retention start date') }}</span>
+                {% endif %}
+              {% else %}
+                <span class="text-muted">{{ _('Not set') }}</span>
+              {% endif %}
+            </dd>
             <dt class="col-5 text-muted">{{ _('Last inventory check') }}</dt>
             <dd class="col-7">
               {% if tape.last_inventory_at %}
@@ -112,13 +145,30 @@
     <div class="col-md-8">
       <div class="card shadow-sm border-0 h-100">
         <div class="card-body">
-          <h2 class="h5">{{ _('Update Tape Details') }}</h2>
+          <h2 class="h5">{{ _('Update Storage Medium') }}</h2>
           <form method="post" action="{{ url_for('backup.update_tape', tape_id=tape.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="row g-2">
               <div class="col-sm-4">
-                <label class="form-label" for="lto_generation">{{ _('LTO Generation') }}</label>
+                <label class="form-label" for="medium_type">{{ _('Medium Type') }}</label>
+                <select class="form-select" id="medium_type" name="medium_type">
+                  <option value="tape" {% if tape.medium_type == 'tape' %}selected{% endif %}>{{ _('Tape Cartridge') }}</option>
+                  <option value="disk" {% if tape.medium_type == 'disk' %}selected{% endif %}>{{ _('External Disk') }}</option>
+                </select>
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="lto_generation">{{ _('Generation / Model') }}</label>
                 <input class="form-control" id="lto_generation" name="lto_generation" value="{{ tape.lto_generation }}">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="serial_number">{{ _('Serial Number') }}</label>
+                <input class="form-control" id="serial_number" name="serial_number" value="{{ tape.serial_number }}">
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-sm-4">
+                <label class="form-label" for="manufacturer">{{ _('Manufacturer') }}</label>
+                <input class="form-control" id="manufacturer" name="manufacturer" value="{{ tape.manufacturer }}">
               </div>
               <div class="col-sm-4">
                 <label class="form-label" for="nominal_capacity_tb">{{ _('Nominal TB') }}</label>
@@ -130,7 +180,7 @@
               </div>
             </div>
             <div class="row g-2 mt-2">
-              <div class="col-sm-6">
+              <div class="col-sm-4">
                 <label class="form-label" for="status">{{ _('Status') }}</label>
                 <select class="form-select" id="status" name="status">
                   {% for key, label in tape_status_choices %}
@@ -138,9 +188,23 @@
                   {% endfor %}
                 </select>
               </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="retention_days">{{ _('Retention (days)') }}</label>
+                <input class="form-control" type="number" min="0" id="retention_days" name="retention_days" value="{{ tape.retention_days }}">
+              </div>
+              <div class="col-sm-4">
+                <label class="form-label" for="retention_start_at">{{ _('Retention Start') }}</label>
+                <input class="form-control" type="datetime-local" id="retention_start_at" name="retention_start_at" value="{{ tape.retention_start_at.strftime('%Y-%m-%dT%H:%M') if tape.retention_start_at }}">
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
               <div class="col-sm-6">
                 <label class="form-label" for="last_inventory_at">{{ _('Last Inventory Check') }}</label>
                 <input class="form-control" type="date" id="last_inventory_at" name="last_inventory_at" value="{{ tape.last_inventory_at.strftime('%Y-%m-%d') if tape.last_inventory_at }}">
+              </div>
+              <div class="col-sm-6">
+                <label class="form-label" for="model_name">{{ _('Model') }}</label>
+                <input class="form-control" id="model_name" name="model_name" value="{{ tape.model_name }}">
               </div>
             </div>
             <div class="mt-2">
@@ -395,42 +459,6 @@
     </div>
   </div>
 
-  <div class="card shadow-sm border-0 mb-4">
-    <div class="card-header bg-body-tertiary">
-      <h2 class="h5 mb-0">{{ _('Related Backup Jobs') }}</h2>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-striped table-sm align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>{{ _('Job Name') }}</th>
-              <th>{{ _('Date') }}</th>
-              <th>{{ _('Retention') }}</th>
-              <th>{{ _('Expires') }}</th>
-              <th>{{ _('Verify') }}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for job in jobs %}
-            <tr>
-              <td><a href="{{ url_for('backup.job_detail', job_id=job.id) }}">{{ job.name }}</a></td>
-              <td>{{ job.job_date.strftime("%Y-%m-%d %H:%M") }}</td>
-              <td>{{ job.retention_days }} {{ _('days') }}</td>
-              <td>{{ job.expires_at.strftime("%Y-%m-%d") if job.expires_at else "—" }}</td>
-              <td>{{ job.verify_result|default(_("Pending"))|capitalize }}</td>
-            </tr>
-            {% else %}
-            <tr>
-              <td colspan="5" class="text-center text-muted py-3">{{ _('No backup jobs linked to this tape yet.') }}</td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   <div class="card shadow-sm border-0">
     <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
       <h2 class="h5 mb-0">{{ _('Audit Trail') }}</h2>
@@ -448,13 +476,13 @@
             </tr>
           </thead>
           <tbody>
-            {% for entry in audit_entries %}
+            {% for row in audit_rows %}
             <tr>
-              <td>{{ entry.created_at.strftime("%Y-%m-%d %H:%M") }}</td>
-              <td>{{ entry.field_name or _("Event") }}</td>
-              <td>{{ entry.old_value or "—" }}</td>
-              <td>{{ entry.new_value or "—" }}</td>
-              <td>{{ entry.changed_by_username or "—" }}</td>
+              <td>{{ row.timestamp }}</td>
+              <td>{{ row.field }}</td>
+              <td>{{ row.old }}</td>
+              <td>{{ row.new }}</td>
+              <td>{{ row.by }}</td>
             </tr>
             {% else %}
             <tr>
@@ -473,11 +501,11 @@
       <form method="post" action="{{ url_for('backup.delete_tape', tape_id=tape.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header bg-danger text-white">
-          <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Delete Tape') }}</h5>
+          <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Delete Storage Medium') }}</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <p class="mb-0">{{ _('Delete tape “%(barcode)s”? All related locations, custody, and job links will be removed.', barcode=tape.barcode) }}</p>
+          <p class="mb-0">{{ _('Delete storage medium “%(barcode)s”? All related locations and custody records will be removed.', barcode=tape.barcode) }}</p>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>

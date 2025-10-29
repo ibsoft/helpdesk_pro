@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
 Backup Monitor blueprint routes.
-Provides CRUD operations for LTO tape cartridges, backup jobs, storage locations,
-custody events, and auditing for Helpdesk Pro.
+Provides CRUD operations for removable storage media (tapes & disks), storage
+locations, custody events, and auditing for Helpdesk Pro.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections import Counter
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
-from typing import Iterable, Optional
+from typing import Optional
 
 from flask import (
     Blueprint,
@@ -27,12 +27,9 @@ from flask_babel import gettext as _
 from app import db
 from app.models import (
     TapeCartridge,
-    BackupJob,
     TapeLocation,
     TapeCustodyEvent,
     BackupAuditLog,
-    BackupJobTape,
-    User,
 )
 from app.permissions import get_module_access, require_module_write
 
@@ -52,15 +49,10 @@ LOCATION_TYPE_CHOICES = [
     ("off_site", _("Off-Site")),
 ]
 
-VERIFY_RESULT_CHOICES = [
-    ("pending", _("Pending")),
-    ("success", _("Success")),
-    ("failed", _("Failed")),
-]
-
 TAPE_STATUS_VALUES = {value for value, _ in TAPE_STATUS_CHOICES}
 LOCATION_TYPE_VALUES = {value for value, _ in LOCATION_TYPE_CHOICES}
-VERIFY_RESULT_VALUES = {value for value, _ in VERIFY_RESULT_CHOICES}
+STATUS_LABELS = {key: label for key, label in TAPE_STATUS_CHOICES}
+LOCATION_LABELS = {key: label for key, label in LOCATION_TYPE_CHOICES}
 
 
 def _clean_str(field: str) -> Optional[str]:
@@ -112,6 +104,128 @@ def _parse_tags(raw: Optional[str]) -> list[str]:
     return [token.strip() for token in raw.split(",") if token.strip()]
 
 
+def _value_is_blank(value: Optional[str]) -> bool:
+    if value is None:
+        return True
+    if isinstance(value, str) and value.strip() in {"", "None", "null"}:
+        return True
+    return False
+
+
+def _describe_location(location_id: Optional[str]) -> str:
+    if _value_is_blank(location_id):
+        return _("Unassigned")
+    try:
+        numeric_id = int(location_id)
+    except (TypeError, ValueError):
+        return str(location_id)
+    location = db.session.get(TapeLocation, numeric_id)
+    if not location:
+        return str(location_id)
+    loc_label = LOCATION_LABELS.get(location.location_type, location.location_type.replace("_", " ").title())
+    details = [part for part in (
+        location.site_name,
+        location.shelf_code,
+        location.locker_code,
+        location.custody_holder,
+    ) if part]
+    if details:
+        return f"{loc_label} ({', '.join(details)})"
+    return loc_label
+
+
+def _describe_status(value: Optional[str]) -> str:
+    if _value_is_blank(value):
+        return _("—")
+    return STATUS_LABELS.get(value, value.replace("_", " ").title())
+
+
+def _describe_medium_type(value: Optional[str]) -> str:
+    if _value_is_blank(value):
+        return _("—")
+    if value == "disk":
+        return _("External Disk")
+    if value == "tape":
+        return _("Tape Cartridge")
+    return value.replace("_", " ").title()
+
+
+def _describe_retention_days(value: Optional[str]) -> str:
+    if _value_is_blank(value):
+        return _("Not set")
+    return _("%(days)s day(s)", days=value)
+
+
+def _describe_timestamp(value: Optional[str]) -> str:
+    if _value_is_blank(value):
+        return _("—")
+    try:
+        parsed = datetime.fromisoformat(value)
+        return parsed.strftime("%Y-%m-%d %H:%M")
+    except ValueError:
+        return value
+
+
+def _friendly_field_label(field_name: Optional[str]) -> str:
+    if not field_name:
+        return _("Event")
+    mapping = {
+        "create": _("Event"),
+        "current_location_id": _("Current location"),
+        "status": _("Status"),
+        "usage_tags": _("Usage tags"),
+        "notes": _("Notes"),
+        "medium_type": _("Medium type"),
+        "lto_generation": _("Generation / Model"),
+        "serial_number": _("Serial number"),
+        "manufacturer": _("Manufacturer"),
+        "model_name": _("Model"),
+        "retention_days": _("Retention (days)"),
+        "retention_start_at": _("Retention start"),
+        "retention_until": _("Retention end"),
+        "last_inventory_at": _("Last inventory check"),
+    }
+    return mapping.get(field_name, field_name.replace("_", " ").title())
+
+
+def _format_audit_value(field_name: Optional[str], value: Optional[str]) -> str:
+    if field_name == "current_location_id":
+        return _describe_location(value)
+    if field_name == "status":
+        return _describe_status(value)
+    if field_name == "medium_type":
+        return _describe_medium_type(value)
+    if field_name in {"retention_days"}:
+        if _value_is_blank(value):
+            return _("Not set")
+        return _("%(days)s day(s)", days=value)
+    if field_name in {"retention_start_at", "retention_until", "last_inventory_at"}:
+        return _describe_timestamp(value)
+    if field_name == "usage_tags":
+        if _value_is_blank(value):
+            return _("—")
+        return value
+    if _value_is_blank(value):
+        return _("—")
+    return value
+
+
+def _present_audit_entry(entry: BackupAuditLog) -> dict[str, str]:
+    field_name = entry.field_name
+    field_label = _friendly_field_label(field_name)
+    old_display = _format_audit_value(field_name, entry.old_value)
+    new_display = _format_audit_value(field_name, entry.new_value)
+    timestamp = entry.created_at.strftime("%Y-%m-%d %H:%M") if entry.created_at else "—"
+    actor = entry.changed_by_username or _("—")
+    return {
+        "timestamp": timestamp,
+        "field": field_label,
+        "old": old_display,
+        "new": new_display,
+        "by": actor,
+    }
+
+
 def _respond(success: bool, message: str, category: str, redirect_url: str):
     if request.headers.get("X-Requested-With") == "XMLHttpRequest":
         status = 200 if success else 400
@@ -144,28 +258,52 @@ def _record_audit(
 @backup_bp.route("/backup")
 @login_required
 def monitor():
-    tapes = TapeCartridge.query.order_by(TapeCartridge.barcode.asc()).all()
-    jobs = BackupJob.query.order_by(BackupJob.job_date.desc()).limit(100).all()
-    users = User.query.filter_by(active=True).order_by(User.username.asc()).all()
+    media_items = TapeCartridge.query.order_by(TapeCartridge.barcode.asc()).all()
 
-    status_summary = Counter(tape.status or "unknown" for tape in tapes)
+    status_summary = Counter(item.status or "unknown" for item in media_items)
     location_summary = Counter(
-        (tape.current_location.location_type if tape.current_location else "unassigned")
-        for tape in tapes
+        (item.current_location.location_type if item.current_location else "unassigned")
+        for item in media_items
+    )
+    type_summary = Counter((item.medium_type or "tape") for item in media_items)
+
+    retention_summary = {"overdue": 0, "due_soon": 0, "ok": 0, "unset": 0}
+    now = datetime.utcnow()
+    for medium in media_items:
+        if medium.retention_until and medium.retention_days:
+            delta = medium.retention_until - now
+            if delta.total_seconds() <= 0:
+                retention_summary["overdue"] += 1
+            elif delta.days <= 7:
+                retention_summary["due_soon"] += 1
+            else:
+                retention_summary["ok"] += 1
+        else:
+            retention_summary["unset"] += 1
+
+    attention_media = sorted(
+        [
+            medium
+            for medium in media_items
+            if medium.retention_until
+            and medium.retention_days
+            and (medium.retention_until <= now or (medium.retention_until - now).days <= 7)
+        ],
+        key=lambda item: item.retention_until or now,
     )
 
     module_access = get_module_access(current_user, "backup")
     return render_template(
         "backup/monitor.html",
-        tapes=tapes,
-        jobs=jobs,
-        users=users,
+        media=media_items,
         module_access=module_access,
         status_summary=status_summary,
         location_summary=location_summary,
+        medium_type_summary=type_summary,
+        retention_summary=retention_summary,
         tape_status_choices=TAPE_STATUS_CHOICES,
         location_type_choices=LOCATION_TYPE_CHOICES,
-        verify_result_choices=VERIFY_RESULT_CHOICES,
+        attention_media=attention_media,
     )
 
 
@@ -174,48 +312,33 @@ def monitor():
 def tape_detail(tape_id: int):
     tape = TapeCartridge.query.get_or_404(tape_id)
     module_access = get_module_access(current_user, "backup")
-    related_jobs = [jt.job for jt in tape.tape_jobs]
     audit_entries = (
         BackupAuditLog.query.filter(BackupAuditLog.entity_type == "tape", BackupAuditLog.entity_id == tape.id)
         .order_by(BackupAuditLog.created_at.desc())
         .limit(100)
         .all()
     )
+    audit_rows = [_present_audit_entry(entry) for entry in audit_entries]
+    retention_state = None
+    if tape.retention_days and tape.retention_until:
+        delta = tape.retention_until - datetime.utcnow()
+        if delta.total_seconds() <= 0:
+            retention_state = _("Expired")
+        elif delta.days <= 7:
+            retention_state = _("Due in %(days)s day(s)", days=max(delta.days, 0))
+        else:
+            retention_state = _("Active (%(days)s days remaining)", days=delta.days)
+
     return render_template(
         "backup/tape_detail.html",
         tape=tape,
         module_access=module_access,
         tape_status_choices=TAPE_STATUS_CHOICES,
         location_type_choices=LOCATION_TYPE_CHOICES,
-        verify_result_choices=VERIFY_RESULT_CHOICES,
-        jobs=related_jobs,
         audit_entries=audit_entries,
+        audit_rows=audit_rows,
+        retention_state=retention_state,
     )
-
-
-@backup_bp.route("/backup/jobs/<int:job_id>")
-@login_required
-def job_detail(job_id: int):
-    job = BackupJob.query.get_or_404(job_id)
-    module_access = get_module_access(current_user, "backup")
-    audit_entries = (
-        BackupAuditLog.query.filter(BackupAuditLog.entity_type == "job", BackupAuditLog.entity_id == job.id)
-        .order_by(BackupAuditLog.created_at.desc())
-        .limit(100)
-        .all()
-    )
-    tapes = TapeCartridge.query.order_by(TapeCartridge.barcode.asc()).all()
-    users = User.query.filter_by(active=True).order_by(User.username.asc()).all()
-    return render_template(
-        "backup/job_detail.html",
-        job=job,
-        module_access=module_access,
-        tapes=tapes,
-        users=users,
-        verify_result_choices=VERIFY_RESULT_CHOICES,
-        audit_entries=audit_entries,
-    )
-
 
 @backup_bp.route("/backup/tapes", methods=["POST"])
 @login_required
@@ -228,16 +351,28 @@ def create_tape():
 
     existing = TapeCartridge.query.filter_by(barcode=barcode).first()
     if existing:
-        flash(_("A tape with this barcode already exists."), "danger")
+        flash(_("A storage medium with this barcode already exists."), "danger")
         return redirect(url_for("backup.monitor"))
+
+    medium_type = _clean_str("medium_type") or "tape"
+    if medium_type not in {"tape", "disk"}:
+        medium_type = "tape"
 
     status = _clean_str("status") or "empty"
     if status not in TAPE_STATUS_VALUES:
         status = "empty"
 
+    lto_generation = _clean_str("lto_generation")
+    if medium_type == "tape" and not lto_generation:
+        lto_generation = "LTO-9"
+
     tape = TapeCartridge(
         barcode=barcode,
-        lto_generation=_clean_str("lto_generation") or "LTO-9",
+        lto_generation=lto_generation,
+        medium_type=medium_type,
+        serial_number=_clean_str("serial_number"),
+        manufacturer=_clean_str("manufacturer"),
+        model_name=_clean_str("model_name"),
         nominal_capacity_tb=_parse_decimal("nominal_capacity_tb"),
         usable_capacity_tb=_parse_decimal("usable_capacity_tb"),
         status=status,
@@ -248,11 +383,20 @@ def create_tape():
     if inventory_date:
         tape.last_inventory_at = inventory_date
 
+    retention_days = _parse_int("retention_days")
+    retention_start = _parse_datetime("retention_start_at")
+    tape.retention_days = retention_days
+    if retention_start:
+        tape.retention_start_at = retention_start
+    elif retention_days:
+        tape.retention_start_at = datetime.utcnow()
+    tape.sync_retention()
+
     db.session.add(tape)
     db.session.flush()
-    _record_audit("tape", tape.id, "create", None, f"Created tape {tape.barcode}")
+    _record_audit("tape", tape.id, "create", None, f"Created {tape.medium_type} {tape.barcode}")
     db.session.commit()
-    flash(_("Tape cartridge “%(barcode)s” created.", barcode=tape.barcode), "success")
+    flash(_("Storage medium “%(barcode)s” created.", barcode=tape.barcode), "success")
     return redirect(url_for("backup.monitor"))
 
 
@@ -293,6 +437,14 @@ def update_tape(tape_id: int):
 
     _update_field("lto_generation")
     _update_field("notes")
+    _update_field("serial_number")
+    _update_field("manufacturer")
+    _update_field("model_name")
+
+    medium_type_value = _clean_str("medium_type")
+    if medium_type_value and medium_type_value in {"tape", "disk"} and medium_type_value != tape.medium_type:
+        changes.append(("medium_type", tape.medium_type, medium_type_value))
+        tape.medium_type = medium_type_value
 
     status_value = _clean_str("status")
     if status_value:
@@ -328,164 +480,44 @@ def update_tape(tape_id: int):
             changes.append(("last_inventory_at", old_val, inventory_date))
             tape.last_inventory_at = inventory_date
 
+    retention_updated = False
+    old_retention_until = tape.retention_until
+
+    retention_days_raw = request.form.get("retention_days")
+    if retention_days_raw is not None:
+        retention_days_value = _parse_int("retention_days")
+        if retention_days_raw.strip() == "":
+            retention_days_value = None
+        if retention_days_value != tape.retention_days:
+            changes.append(("retention_days", tape.retention_days, retention_days_value))
+            tape.retention_days = retention_days_value
+            retention_updated = True
+
+    retention_start_raw = request.form.get("retention_start_at")
+    if retention_start_raw is not None:
+        retention_start_value = _parse_datetime("retention_start_at")
+        if retention_start_raw.strip() == "":
+            retention_start_value = None
+        if retention_start_value != tape.retention_start_at:
+            changes.append(("retention_start_at", tape.retention_start_at, retention_start_value))
+            tape.retention_start_at = retention_start_value
+            retention_updated = True
+
+    if retention_updated:
+        tape.sync_retention()
+        if tape.retention_until != old_retention_until:
+            changes.append(("retention_until", old_retention_until, tape.retention_until))
+
     if not changes:
-        flash(_("No changes detected for the tape."), "info")
+        flash(_("No changes detected for the storage medium."), "info")
         return redirect(request.referrer or url_for("backup.tape_detail", tape_id=tape.id))
 
     db.session.add(tape)
     for field, old_val, new_val in changes:
         _record_audit("tape", tape.id, field, str(old_val) if old_val is not None else None, str(new_val) if new_val is not None else None)
     db.session.commit()
-    flash(_("Tape cartridge updated."), "success")
+    flash(_("Storage medium updated."), "success")
     return redirect(request.referrer or url_for("backup.tape_detail", tape_id=tape.id))
-
-
-@backup_bp.route("/backup/jobs", methods=["POST"])
-@login_required
-def create_job():
-    require_module_write("backup")
-    name = _clean_str("name")
-    if not name:
-        flash(_("Job name is required."), "warning")
-        return redirect(url_for("backup.monitor"))
-
-    retention = _parse_int("retention_days") or 30
-    job_date = _parse_datetime("job_date") or datetime.utcnow()
-
-    verify_result = _clean_str("verify_result")
-    if verify_result not in VERIFY_RESULT_VALUES:
-        verify_result = None
-
-    job = BackupJob(
-        name=name,
-        job_date=job_date,
-        retention_days=retention,
-        total_files=_parse_int("total_files"),
-        total_size_bytes=_parse_int("total_size_bytes"),
-        verify_result=verify_result,
-        source_system=_clean_str("source_system"),
-        responsible_user_id=_parse_int("responsible_user_id"),
-        notes=_clean_str("notes"),
-    )
-    job.sync_expiration()
-    db.session.add(job)
-    tape_ids = request.form.getlist("tape_ids")
-    _apply_job_tape_membership(job, tape_ids)
-    db.session.flush()
-    _record_audit("job", job.id, "create", None, f"Created job {job.name}")
-    db.session.commit()
-    flash(_("Backup job “%(name)s” created.", name=job.name), "success")
-    return redirect(url_for("backup.monitor"))
-
-
-@backup_bp.route("/backup/jobs/<int:job_id>/update", methods=["POST"])
-@login_required
-def update_job(job_id: int):
-    job = BackupJob.query.get_or_404(job_id)
-    require_module_write("backup")
-    changes = []
-
-    def _update(field, parser=None):
-        value = request.form.get(field)
-        new_val = parser(field) if parser else _clean_str(field)
-        if parser in {_parse_int} and value not in (None, "") and new_val is None:
-            return
-        old_val = getattr(job, field)
-        if new_val == old_val or (new_val is None and old_val is None):
-            return
-        setattr(job, field, new_val)
-        changes.append((field, old_val, new_val))
-
-    _update("name")
-    _update("retention_days", _parse_int)
-    _update("total_files", _parse_int)
-    _update("total_size_bytes", _parse_int)
-    _update("source_system")
-    _update("notes")
-
-    verify_result = _clean_str("verify_result")
-    if verify_result not in VERIFY_RESULT_VALUES:
-        verify_result = None
-    if verify_result != job.verify_result:
-        changes.append(("verify_result", job.verify_result, verify_result))
-        job.verify_result = verify_result
-
-    job_date = _parse_datetime("job_date")
-    if job_date:
-        changes.append(("job_date", job.job_date, job_date))
-        job.job_date = job_date
-
-    user_id = _parse_int("responsible_user_id")
-    if user_id != job.responsible_user_id:
-        changes.append(("responsible_user_id", job.responsible_user_id, user_id))
-        job.responsible_user_id = user_id
-
-    old_expires = job.expires_at
-    job.sync_expiration()
-    if old_expires != job.expires_at:
-        changes.append(("expires_at", old_expires, job.expires_at))
-
-    tape_ids = request.form.getlist("tape_ids")
-    if tape_ids:
-        before = [assoc.tape_id for assoc in job.job_tapes]
-        after_ids = _apply_job_tape_membership(job, tape_ids)
-        if before != after_ids:
-            changes.append(("tape_bindings", str(before), str(after_ids)))
-    else:
-        if job.job_tapes:
-            before = [assoc.tape_id for assoc in job.job_tapes]
-            for assoc in list(job.job_tapes):
-                db.session.delete(assoc)
-            changes.append(("tape_bindings", str(before), "[]"))
-
-    if not changes:
-        flash(_("No changes detected for the backup job."), "info")
-        return redirect(request.referrer or url_for("backup.job_detail", job_id=job.id))
-
-    db.session.add(job)
-    for field, old_val, new_val in changes:
-        _record_audit(
-            "job",
-            job.id,
-            field,
-            str(old_val) if old_val is not None else None,
-            str(new_val) if new_val is not None else None,
-        )
-    db.session.commit()
-    flash(_("Backup job updated."), "success")
-    return redirect(request.referrer or url_for("backup.job_detail", job_id=job.id))
-
-
-def _apply_job_tape_membership(job: BackupJob, tape_ids: Iterable[str]) -> list[int]:
-    valid_ids = []
-    if not tape_ids:
-        return valid_ids
-    seen = set()
-    sequence = 1
-    for raw in tape_ids:
-        try:
-            tape_id = int(raw)
-        except (TypeError, ValueError):
-            continue
-        if tape_id in seen:
-            continue
-        seen.add(tape_id)
-        tape = TapeCartridge.query.get(tape_id)
-        if not tape:
-            continue
-        assoc = next((jt for jt in job.job_tapes if jt.tape_id == tape_id), None)
-        if not assoc:
-            assoc = BackupJobTape(tape=tape, job=job)
-            job.job_tapes.append(assoc)
-        assoc.sequence = sequence
-        valid_ids.append(tape_id)
-        sequence += 1
-    # Remove stale associations
-    for assoc in list(job.job_tapes):
-        if assoc.tape_id not in valid_ids:
-            job.job_tapes.remove(assoc)
-    return valid_ids
-
 
 @backup_bp.route("/backup/tapes/<int:tape_id>/locations", methods=["POST"])
 @login_required
@@ -586,17 +618,19 @@ def audit_trail(entity_type: str, entity_id: int):
         .limit(250)
         .all()
     )
-    data = [
-        {
-            "field": entry.field_name,
-            "old": entry.old_value,
-            "new": entry.new_value,
-            "by": entry.changed_by_username,
-            "timestamp": entry.created_at.isoformat(),
-            "reason": entry.reason,
-        }
-        for entry in entries
-    ]
+    data = []
+    for entry in entries:
+        friendly = _present_audit_entry(entry)
+        data.append(
+            {
+                "field": friendly["field"],
+                "old": friendly["old"],
+                "new": friendly["new"],
+                "by": friendly["by"],
+                "timestamp": entry.created_at.isoformat() if entry.created_at else None,
+                "reason": entry.reason,
+            }
+        )
     return jsonify({"entries": data})
 
 
@@ -611,7 +645,7 @@ def delete_tape(tape_id: int):
         db.session.commit()
         return _respond(
             True,
-            _("Tape “%(barcode)s” deleted.", barcode=barcode),
+            _("Storage medium “%(barcode)s” deleted.", barcode=barcode),
             "success",
             url_for("backup.monitor"),
         )
@@ -619,32 +653,7 @@ def delete_tape(tape_id: int):
         db.session.rollback()
         return _respond(
             False,
-            _("Failed to delete tape: %(error)s", error=str(exc)),
+            _("Failed to delete storage medium: %(error)s", error=str(exc)),
             "danger",
             url_for("backup.tape_detail", tape_id=tape_id),
-        )
-
-
-@backup_bp.route("/backup/jobs/<int:job_id>/delete", methods=["POST"])
-@login_required
-def delete_job(job_id: int):
-    job = BackupJob.query.get_or_404(job_id)
-    require_module_write("backup")
-    name = job.name
-    try:
-        db.session.delete(job)
-        db.session.commit()
-        return _respond(
-            True,
-            _("Backup job “%(name)s” deleted.", name=name),
-            "success",
-            url_for("backup.monitor"),
-        )
-    except Exception as exc:  # pragma: no cover
-        db.session.rollback()
-        return _respond(
-            False,
-            _("Failed to delete backup job: %(error)s", error=str(exc)),
-            "danger",
-            url_for("backup.job_detail", job_id=job_id),
         )

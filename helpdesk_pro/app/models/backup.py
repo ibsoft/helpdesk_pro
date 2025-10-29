@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 """
 Data models for the Backup Monitor module.
-Handles LTO tape cartridges, backup jobs, storage locations, custody history,
-and auditing of status/location/retention changes.
+Handles removable storage media (tape cartridges and external disks),
+storage locations, custody history, and auditing of status/location/retention
+changes.
 """
 
 from __future__ import annotations
@@ -10,8 +11,7 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from typing import Optional, Sequence
 
-from sqlalchemy import event, and_
-from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy import and_
 from sqlalchemy.orm import foreign
 
 from app import db
@@ -22,13 +22,20 @@ class TapeCartridge(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     barcode = db.Column(db.String(64), nullable=False, unique=True)
-    lto_generation = db.Column(db.String(16), nullable=False)
+    lto_generation = db.Column(db.String(16), nullable=True)
+    medium_type = db.Column(db.String(20), nullable=False, default="tape")
+    serial_number = db.Column(db.String(120), nullable=True)
+    manufacturer = db.Column(db.String(120), nullable=True)
+    model_name = db.Column(db.String(120), nullable=True)
     nominal_capacity_tb = db.Column(db.Numeric(10, 2), nullable=True)
     usable_capacity_tb = db.Column(db.Numeric(10, 2), nullable=True)
     status = db.Column(db.String(32), nullable=False, default="empty")
     usage_tags = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     last_inventory_at = db.Column(db.DateTime, nullable=True)
+    retention_days = db.Column(db.Integer, nullable=True)
+    retention_start_at = db.Column(db.DateTime, nullable=True)
+    retention_until = db.Column(db.DateTime, nullable=True)
 
     current_location_id = db.Column(
         db.Integer,
@@ -64,13 +71,6 @@ class TapeCartridge(db.Model):
         foreign_keys="TapeCustodyEvent.tape_id",
         cascade="all, delete-orphan",
     )
-    tape_jobs = db.relationship(
-        "BackupJobTape",
-        back_populates="tape",
-        cascade="all, delete-orphan",
-    )
-    jobs = association_proxy("tape_jobs", "job")
-
     def usage_tag_list(self) -> list[str]:
         if not self.usage_tags:
             return []
@@ -80,80 +80,25 @@ class TapeCartridge(db.Model):
         cleaned = [t.strip() for t in tags if t and t.strip()]
         self.usage_tags = ", ".join(sorted(set(cleaned)))
 
-    def __repr__(self) -> str:  # pragma: no cover - debug helper
-        return f"<TapeCartridge {self.barcode} status={self.status}>"
-
-
-class BackupJob(db.Model):
-    __tablename__ = "backup_job"
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    job_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    retention_days = db.Column(db.Integer, nullable=False, default=30)
-    expires_at = db.Column(db.DateTime, nullable=True)
-    total_files = db.Column(db.Integer, nullable=True)
-    total_size_bytes = db.Column(db.BigInteger, nullable=True)
-    verify_result = db.Column(db.String(32), nullable=True)
-    source_system = db.Column(db.String(120), nullable=True)
-    responsible_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
-    notes = db.Column(db.Text, nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
-    )
-
-    responsible_user = db.relationship("User")
-    job_tapes = db.relationship(
-        "BackupJobTape",
-        back_populates="job",
-        order_by="BackupJobTape.sequence.asc()",
-        cascade="all, delete-orphan",
-    )
-    tapes = association_proxy("job_tapes", "tape")
-    audit_entries = db.relationship(
-        "BackupAuditLog",
-        primaryjoin=lambda: and_(
-            BackupAuditLog.entity_type == "job",
-            foreign(BackupAuditLog.entity_id) == BackupJob.id,
-        ),
-        viewonly=True,
-        order_by="BackupAuditLog.created_at.desc()",
-    )
-
-    def sync_expiration(self) -> None:
-        if not self.job_date:
-            self.job_date = datetime.utcnow()
-        days = self.retention_days or 0
+    def sync_retention(self) -> None:
+        if not self.retention_days:
+            self.retention_until = None
+            return
+        start = self.retention_start_at or datetime.utcnow()
         try:
-            self.expires_at = self.job_date + timedelta(days=days)
-        except OverflowError:
-            self.expires_at = None
+            self.retention_until = start + timedelta(days=self.retention_days)
+        except OverflowError:  # pragma: no cover
+            self.retention_until = None
 
-    def __repr__(self) -> str:  # pragma: no cover
-        return f"<BackupJob {self.name} retention={self.retention_days}>"
+    def retention_remaining_days(self) -> Optional[int]:
+        if not self.retention_until:
+            return None
+        today = datetime.utcnow().date()
+        remaining = (self.retention_until.date() - today).days
+        return remaining
 
-
-class BackupJobTape(db.Model):
-    __tablename__ = "backup_job_tape"
-
-    job_id = db.Column(
-        db.Integer,
-        db.ForeignKey("backup_job.id", name="fk_backup_job_tape_job", ondelete="CASCADE"),
-        primary_key=True,
-    )
-    tape_id = db.Column(
-        db.Integer,
-        db.ForeignKey(
-            "backup_tape_cartridge.id", name="fk_backup_job_tape_tape", ondelete="CASCADE"
-        ),
-        primary_key=True,
-    )
-    sequence = db.Column(db.Integer, nullable=False, default=1)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
-
-    job = db.relationship("BackupJob", back_populates="job_tapes")
-    tape = db.relationship("TapeCartridge", back_populates="tape_jobs")
+    def __repr__(self) -> str:  # pragma: no cover - debug helper
+        return f"<TapeCartridge {self.barcode} type={self.medium_type} status={self.status}>"
 
 
 class TapeLocation(db.Model):
@@ -264,9 +209,3 @@ class BackupAuditLog(db.Model):
 
     def __repr__(self) -> str:  # pragma: no cover
         return f"<BackupAuditLog {self.entity_type}#{self.entity_id} {self.field_name}>"
-
-
-@event.listens_for(BackupJob, "before_insert")
-@event.listens_for(BackupJob, "before_update")
-def _backupjob_sync_expiration(mapper, connection, target: BackupJob) -> None:
-    target.sync_expiration()
