@@ -36,9 +36,16 @@
     </ol>
   </nav>
 
-  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-    <h1 class="mb-0"><i class="fa fa-tag me-2"></i>{{ tape.barcode }}</h1>
-    <span class="badge-chip bg-primary-subtle text-primary-emphasis">{{ tape.lto_generation }}</span>
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h1 class="mb-0"><i class="fa fa-tag me-2"></i>{{ tape.barcode }}</h1>
+      <span class="badge-chip bg-primary-subtle text-primary-emphasis">{{ tape.lto_generation }}</span>
+    </div>
+    {% if module_access == 'write' %}
+    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteTapeModal">
+      <i class="fa fa-trash"></i> {{ _('Delete Tape') }}
+    </button>
+    {% endif %}
   </div>
   <p class="text-muted mb-4">{{ _("Detailed traceability for the selected tape cartridge.") }}</p>
 
@@ -459,5 +466,28 @@
       </div>
     </div>
   </div>
+{% if module_access == 'write' %}
+<div class="modal fade" id="deleteTapeModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('backup.delete_tape', tape_id=tape.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Delete Tape') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ _('Delete tape “%(barcode)s”? All related locations, custody, and job links will be removed.', barcode=tape.barcode) }}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 </div>
 {% endblock %}

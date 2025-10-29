@@ -3,6 +3,8 @@
 Manage blueprint routes (access control, admin utilities).
 """
 
+from datetime import datetime, timedelta
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
@@ -148,12 +150,26 @@ def access():
             })
         module_items.append(module_entry)
 
+    menu_override_count = MenuPermission.query.filter_by(user_id=None).count()
+    module_override_count = ModulePermission.query.count()
+    module_read_only = ModulePermission.query.filter_by(access_level="read").count()
+
     return render_template(
         "manage/access.html",
         menu_items=display_items,
         roles=AVAILABLE_ROLES,
         module_items=module_items,
         module_levels=MODULE_ACCESS_LEVELS,
+        menu_stats={
+            "total_items": len(display_items),
+            "overrides": menu_override_count,
+            "roles": len(AVAILABLE_ROLES),
+        },
+        module_stats={
+            "total_modules": len(module_items),
+            "overrides": module_override_count,
+            "read_only": module_read_only,
+        },
     )
 
 
@@ -355,12 +371,28 @@ def api_keys():
 
     clients = ApiClient.query.order_by(ApiClient.created_at.desc()).all()
     users = User.query.order_by(User.username.asc()).all()
+    total_clients = len(clients)
+    active_clients = sum(1 for client in clients if client.is_active())
+    revoked_clients = total_clients - active_clients
+    recent_threshold = datetime.utcnow() - timedelta(days=30)
+    recently_used = sum(
+        1
+        for client in clients
+        if client.last_used_at and client.last_used_at >= recent_threshold
+    )
 
     return render_template(
         "manage/api_keys.html",
         clients=clients,
         users=users,
         new_key_value=new_key_value,
+        api_stats={
+            "total": total_clients,
+            "active": active_clients,
+            "revoked": revoked_clients,
+            "recent": recently_used,
+            "recent_days": 30,
+        },
     )
 
 

@@ -112,6 +112,14 @@ def _parse_tags(raw: Optional[str]) -> list[str]:
     return [token.strip() for token in raw.split(",") if token.strip()]
 
 
+def _respond(success: bool, message: str, category: str, redirect_url: str):
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        status = 200 if success else 400
+        return jsonify(success=success, message=message, category=category), status
+    flash(message, category)
+    return redirect(redirect_url)
+
+
 def _record_audit(
     entity_type: str,
     entity_id: int,
@@ -476,7 +484,6 @@ def _apply_job_tape_membership(job: BackupJob, tape_ids: Iterable[str]) -> list[
     for assoc in list(job.job_tapes):
         if assoc.tape_id not in valid_ids:
             job.job_tapes.remove(assoc)
-            db.session.delete(assoc)
     return valid_ids
 
 
@@ -591,3 +598,53 @@ def audit_trail(entity_type: str, entity_id: int):
         for entry in entries
     ]
     return jsonify({"entries": data})
+
+
+@backup_bp.route("/backup/tapes/<int:tape_id>/delete", methods=["POST"])
+@login_required
+def delete_tape(tape_id: int):
+    tape = TapeCartridge.query.get_or_404(tape_id)
+    require_module_write("backup")
+    barcode = tape.barcode
+    try:
+        db.session.delete(tape)
+        db.session.commit()
+        return _respond(
+            True,
+            _("Tape “%(barcode)s” deleted.", barcode=barcode),
+            "success",
+            url_for("backup.monitor"),
+        )
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        return _respond(
+            False,
+            _("Failed to delete tape: %(error)s", error=str(exc)),
+            "danger",
+            url_for("backup.tape_detail", tape_id=tape_id),
+        )
+
+
+@backup_bp.route("/backup/jobs/<int:job_id>/delete", methods=["POST"])
+@login_required
+def delete_job(job_id: int):
+    job = BackupJob.query.get_or_404(job_id)
+    require_module_write("backup")
+    name = job.name
+    try:
+        db.session.delete(job)
+        db.session.commit()
+        return _respond(
+            True,
+            _("Backup job “%(name)s” deleted.", name=name),
+            "success",
+            url_for("backup.monitor"),
+        )
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        return _respond(
+            False,
+            _("Failed to delete backup job: %(error)s", error=str(exc)),
+            "danger",
+            url_for("backup.job_detail", job_id=job_id),
+        )

@@ -270,6 +270,7 @@
               <th>{{ _("Usage Tags") }}</th>
               <th>{{ _("Last Inventory") }}</th>
               <th>{{ _("Updated") }}</th>
+              <th class="text-end">{{ _("Actions") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -319,10 +320,19 @@
                 {% endif %}
               </td>
               <td>{{ tape.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+              <td class="text-end">
+                {% if module_access == 'write' %}
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-tape-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteTape" data-action="{{ url_for('backup.delete_tape', tape_id=tape.id) }}" data-message="{{ _('Delete tape “%(barcode)s”? All associated jobs, locations, and custody events will also be removed.', barcode=tape.barcode) }}">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="7" class="text-center py-4 text-muted">{{ _("No tapes registered yet.") }}</td>
+              <td colspan="8" class="text-center py-4 text-muted">{{ _("No tapes registered yet.") }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -349,6 +359,7 @@
               <th>{{ _("Verify") }}</th>
               <th>{{ _("Tapes") }}</th>
               <th>{{ _("Owner") }}</th>
+              <th class="text-end">{{ _("Actions") }}</th>
             </tr>
           </thead>
           <tbody>
@@ -390,10 +401,19 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
+              <td class="text-end">
+                {% if module_access == 'write' %}
+                  <button type="button" class="btn btn-sm btn-outline-danger delete-job-btn" data-bs-toggle="modal" data-bs-target="#confirmDeleteJob" data-action="{{ url_for('backup.delete_job', job_id=job.id) }}" data-message="{{ _('Delete job “%(name)s”? Tape assignments will be removed but cartridges remain available.', name=job.name) }}">
+                    <i class="fa fa-trash"></i>
+                  </button>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
             </tr>
             {% else %}
             <tr>
-              <td colspan="8" class="text-center py-4 text-muted">{{ _("No jobs logged yet.") }}</td>
+              <td colspan="9" class="text-center py-4 text-muted">{{ _("No jobs logged yet.") }}</td>
             </tr>
             {% endfor %}
           </tbody>
@@ -402,4 +422,78 @@
     </div>
   </div>
 </div>
+
+{% if module_access == 'write' %}
+<!-- Delete Tape Modal -->
+<div class="modal fade" id="confirmDeleteTape" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="deleteTapeForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Delete Tape') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteTapeMessage" class="mb-0"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Job Modal -->
+<div class="modal fade" id="confirmDeleteJob" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="deleteJobForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Delete Backup Job') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p id="deleteJobMessage" class="mb-0"></p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const tapeModal = document.getElementById('confirmDeleteTape');
+  const tapeForm = document.getElementById('deleteTapeForm');
+  const tapeMessage = document.getElementById('deleteTapeMessage');
+  if (tapeModal && tapeForm && tapeMessage) {
+    tapeModal.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget;
+      if (!button) return;
+      tapeForm.setAttribute('action', button.getAttribute('data-action'));
+      tapeMessage.textContent = button.getAttribute('data-message');
+    });
+  }
+
+  const jobModal = document.getElementById('confirmDeleteJob');
+  const jobForm = document.getElementById('deleteJobForm');
+  const jobMessage = document.getElementById('deleteJobMessage');
+  if (jobModal && jobForm && jobMessage) {
+    jobModal.addEventListener('show.bs.modal', event => {
+      const button = event.relatedTarget;
+      if (!button) return;
+      jobForm.setAttribute('action', button.getAttribute('data-action'));
+      jobMessage.textContent = button.getAttribute('data-message');
+    });
+  }
+});
+</script>
+{% endif %}
 {% endblock %}

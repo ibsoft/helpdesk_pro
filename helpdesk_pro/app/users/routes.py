@@ -12,7 +12,18 @@ users_bp = Blueprint("users", __name__)
 @role_required('admin', 'manager')
 def list_users():
     users = User.query.order_by(User.id.desc()).all()
-    return render_template("users/list.html", users=users)
+    total_users = len(users)
+    active_users = sum(1 for user in users if user.active)
+    inactive_users = total_users - active_users
+    role_breakdown = {role: sum(1 for user in users if (user.role or "").lower() == role) for role in ['admin', 'manager', 'technician', 'user']}
+    return render_template(
+        "users/list.html",
+        users=users,
+        total_users=total_users,
+        active_users=active_users,
+        inactive_users=inactive_users,
+        role_breakdown=role_breakdown,
+    )
 
 
 @csrf.exempt

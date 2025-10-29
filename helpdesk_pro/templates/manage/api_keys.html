@@ -14,205 +14,276 @@
   html[data-bs-theme="dark"] tr.collapse.show td {
     background-color: rgba(24, 32, 45, 0.75);
   }
+  .api-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .api-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .api-summary-card .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .api-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .api-summary-card .metric-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .badge-chip {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h3 class="mb-0"><i class="fa fa-key text-primary"></i> {{ _('API Keys') }}</h3>
-  <a href="{{ url_for('manage.api_keys') }}" class="btn btn-outline-secondary btn-sm">
-    <i class="fa fa-rotate"></i> {{ _('Refresh') }}
-  </a>
-</div>
-
-{% if new_key_value %}
-  <div class="alert alert-warning border-warning shadow-sm">
-    <h5 class="alert-heading"><i class="fa fa-exclamation-triangle"></i> {{ _('New API key generated') }}</h5>
-    <p class="mb-1">{{ _('Copy this key now. For security reasons it will not be shown again.') }}</p>
-    <pre class="mb-0 bg-dark text-warning p-3 rounded small">{{ new_key_value }}</pre>
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="mb-1"><i class="fa fa-key me-2 text-primary"></i>{{ _('API Keys') }}</h1>
+      <p class="text-muted mb-0">{{ _('Generate, rotate, and revoke REST API credentials for trusted integrations.') }}</p>
+    </div>
+    <a href="{{ url_for('manage.api_keys') }}" class="btn btn-outline-secondary btn-sm">
+      <i class="fa fa-rotate"></i> {{ _('Refresh') }}
+    </a>
   </div>
-{% endif %}
 
-<div class="card shadow-sm mb-4">
-  <div class="card-header bg-primary-subtle text-primary-emphasis">
-    <strong><i class="fa fa-plus-circle"></i> {{ _('Create API Client') }}</strong>
+  <div class="card api-summary-card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+      <div class="row g-3 align-items-center">
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Clients') }}</span>
+            <span class="metric-value"><i class="fa fa-layer-group me-1"></i>{{ api_stats.total }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Active') }}</span>
+            <span class="metric-value text-success"><i class="fa fa-check-circle me-1"></i>{{ api_stats.active }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Revoked') }}</span>
+            <span class="metric-value text-danger"><i class="fa fa-ban me-1"></i>{{ api_stats.revoked }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Used in last %(days)s days', days=api_stats.recent_days) }}</span>
+            <span class="metric-value text-info"><i class="fa fa-bolt me-1"></i>{{ api_stats.recent }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
-  <form method="post" class="card-body row g-3">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <input type="hidden" name="action" value="create">
-    <div class="col-md-4">
-      <label class="form-label">{{ _('Integration name') }}</label>
-      <input type="text" class="form-control" name="name" placeholder="{{ _('e.g. ServiceNow bridge') }}">
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">{{ _('Default user context') }}</label>
-      <select class="form-select" name="default_user_id">
-        <option value="">{{ _('None (API must supply actor)') }}</option>
-        {% for user in users %}
-          <option value="{{ user.id }}">{{ user.username }} ({{ user.role }})</option>
-        {% endfor %}
-      </select>
-      <div class="form-text">{{ _('Used when requests omit created_by / updated_by.') }}</div>
-    </div>
-    <div class="col-md-4">
-      <label class="form-label">{{ _('Description (optional)') }}</label>
-      <input type="text" class="form-control" name="description">
-    </div>
-    <div class="col-12 text-end">
-      <button type="submit" class="btn btn-primary"><i class="fa fa-key"></i> {{ _('Generate Key') }}</button>
-    </div>
-  </form>
-</div>
 
-<div class="card shadow-sm">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
-    <strong><i class="fa fa-database"></i> {{ _('Existing API Clients') }}</strong>
-    <span class="small text-muted">{{ clients|length }} {{ _('client(s) total') }}</span>
+  {% if new_key_value %}
+    <div class="alert alert-warning border-warning shadow-sm">
+      <h5 class="alert-heading"><i class="fa fa-exclamation-triangle"></i> {{ _('New API key generated') }}</h5>
+      <p class="mb-1">{{ _('Copy this key now. For security reasons it will not be shown again.') }}</p>
+      <pre class="mb-0 bg-dark text-warning p-3 rounded small">{{ new_key_value }}</pre>
+    </div>
+  {% endif %}
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-primary-subtle text-primary-emphasis">
+      <strong><i class="fa fa-plus-circle"></i> {{ _('Create API Client') }}</strong>
+    </div>
+    <form method="post" class="card-body row g-3">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <input type="hidden" name="action" value="create">
+      <div class="col-md-4">
+        <label class="form-label">{{ _('Integration name') }}</label>
+        <input type="text" class="form-control" name="name" placeholder="{{ _('e.g. ServiceNow bridge') }}">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ _('Default user context') }}</label>
+        <select class="form-select" name="default_user_id">
+          <option value="">{{ _('None (API must supply actor)') }}</option>
+          {% for user in users %}
+            <option value="{{ user.id }}">{{ user.username }} ({{ user.role }})</option>
+          {% endfor %}
+        </select>
+        <div class="form-text">{{ _('Used when requests omit created_by / updated_by.') }}</div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">{{ _('Description (optional)') }}</label>
+        <input type="text" class="form-control" name="description">
+      </div>
+      <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary"><i class="fa fa-key"></i> {{ _('Generate Key') }}</button>
+      </div>
+    </form>
   </div>
-  <div class="table-responsive">
-    <table class="table align-middle mb-0" id="apiClientsTable">
-      <thead class="table-light">
-        <tr>
-          <th>{{ _('Name') }}</th>
-          <th>{{ _('Prefix') }}</th>
-          <th>{{ _('Default User') }}</th>
-          <th>{{ _('Created') }}</th>
-          <th>{{ _('Last used') }}</th>
-          <th>{{ _('Status') }}</th>
-          <th class="text-end">{{ _('Actions') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% if not clients %}
+
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+      <strong><i class="fa fa-database"></i> {{ _('Existing API Clients') }}</strong>
+      <span class="small text-muted">{{ clients|length }} {{ _('client(s) total') }}</span>
+    </div>
+    <div class="table-responsive">
+      <table class="table align-middle mb-0" id="apiClientsTable">
+        <thead class="table-light">
           <tr>
-            <td colspan="7" class="text-center text-muted py-4">
-              <i class="fa fa-circle-info"></i> {{ _('No API clients yet. Generate one using the form above.') }}
-            </td>
+            <th>{{ _('Name') }}</th>
+            <th>{{ _('Prefix') }}</th>
+            <th>{{ _('Default User') }}</th>
+            <th>{{ _('Created') }}</th>
+            <th>{{ _('Last used') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th class="text-end">{{ _('Actions') }}</th>
           </tr>
-        {% else %}
-          {% for client in clients %}
+        </thead>
+        <tbody>
+          {% if not clients %}
             <tr>
-              <td>
-                <strong>{{ client.name }}</strong>
-                {% if client.description %}
-                  <div class="text-muted small">{{ client.description }}</div>
-                {% endif %}
+              <td colspan="7" class="text-center text-muted py-4">
+                <i class="fa fa-circle-info"></i> {{ _('No API clients yet. Generate one using the form above.') }}
               </td>
-              <td><code>{{ client.prefix }}</code></td>
-              <td>
-                {% if client.default_user %}
-                  <span class="badge bg-primary-subtle text-primary-emphasis"><i class="fa fa-user"></i> {{ client.default_user }}</span>
-                {% else %}
-                  <span class="text-muted small">{{ _('None') }}</span>
-                {% endif %}
-              </td>
-              <td class="small text-muted">{{ client.created_at.strftime('%Y-%m-%d %H:%M') if client.created_at else '—' }}</td>
-              <td class="small text-muted">
-                {% if client.last_used_at %}
-                  {{ client.last_used_at.strftime('%Y-%m-%d %H:%M') }}
-                {% else %}
-                  <span class="text-muted">{{ _('Never') }}</span>
-                {% endif %}
-              </td>
-              <td>
-                {% if client.revoked_at %}
-                  <span class="badge bg-danger"><i class="fa fa-ban"></i> {{ _('Revoked') }}</span>
-                {% else %}
-                  <span class="badge bg-success"><i class="fa fa-check"></i> {{ _('Active') }}</span>
-                {% endif %}
-              </td>
-              <td class="text-end">
-                <div class="d-flex gap-1 justify-content-end flex-wrap">
-                  <button
-                    type="button"
-                    class="btn btn-outline-secondary btn-sm"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#clientEditor{{ client.id }}"
-                    aria-expanded="false"
-                    aria-controls="clientEditor{{ client.id }}">
-                    <i class="fa fa-pen"></i> {{ _('Edit') }}
-                  </button>
-                  <form method="post" onsubmit="return confirm('{{ _('Rotate key for this client? The previous key will stop working immediately.') }}');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="action" value="rotate">
-                    <input type="hidden" name="client_id" value="{{ client.id }}">
-                    <button type="submit" class="btn btn-outline-primary btn-sm">
-                      <i class="fa fa-sync"></i> {{ _('Rotate') }}
-                    </button>
-                  </form>
+            </tr>
+          {% else %}
+            {% for client in clients %}
+              <tr>
+                <td>
+                  <strong>{{ client.name }}</strong>
+                  {% if client.description %}
+                    <div class="text-muted small">{{ client.description }}</div>
+                  {% endif %}
+                </td>
+                <td><code>{{ client.prefix }}</code></td>
+                <td>
+                  {% if client.default_user %}
+                    <span class="badge-chip bg-primary-subtle text-primary-emphasis"><i class="fa fa-user me-1"></i>{{ client.default_user }}</span>
+                  {% else %}
+                    <span class="text-muted small">{{ _('None') }}</span>
+                  {% endif %}
+                </td>
+                <td class="small text-muted">{{ client.created_at.strftime('%Y-%m-%d %H:%M') if client.created_at else '—' }}</td>
+                <td class="small text-muted">
+                  {% if client.last_used_at %}
+                    {{ client.last_used_at.strftime('%Y-%m-%d %H:%M') }}
+                  {% else %}
+                    <span class="text-muted">{{ _('Never') }}</span>
+                  {% endif %}
+                </td>
+                <td>
                   {% if client.revoked_at %}
-                    <form method="post" onsubmit="return confirm('{{ _('Generate a new key and reactivate this client?') }}');">
+                    <span class="badge bg-danger"><i class="fa fa-ban"></i> {{ _('Revoked') }}</span>
+                  {% else %}
+                    <span class="badge bg-success"><i class="fa fa-check"></i> {{ _('Active') }}</span>
+                  {% endif %}
+                </td>
+                <td class="text-end">
+                  <div class="d-flex gap-1 justify-content-end flex-wrap">
+                    <button
+                      type="button"
+                      class="btn btn-outline-secondary btn-sm"
+                      data-bs-toggle="collapse"
+                      data-bs-target="#clientEditor{{ client.id }}"
+                      aria-expanded="false"
+                      aria-controls="clientEditor{{ client.id }}">
+                      <i class="fa fa-pen"></i> {{ _('Edit') }}
+                    </button>
+                    <form method="post" onsubmit="return confirm('{{ _('Rotate key for this client? The previous key will stop working immediately.') }}');">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <input type="hidden" name="action" value="rotate">
                       <input type="hidden" name="client_id" value="{{ client.id }}">
-                      <button type="submit" class="btn btn-outline-success btn-sm">
-                        <i class="fa fa-unlock"></i> {{ _('Reactivate') }}
+                      <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="fa fa-sync"></i> {{ _('Rotate') }}
                       </button>
                     </form>
-                  {% else %}
-                    <form method="post" onsubmit="return confirm('{{ _('Revoke this API key? Integration will lose access immediately.') }}');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="action" value="revoke">
-                      <input type="hidden" name="client_id" value="{{ client.id }}">
-                      <button type="submit" class="btn btn-outline-warning btn-sm">
-                        <i class="fa fa-ban"></i> {{ _('Revoke') }}
-                      </button>
-                    </form>
-                  {% endif %}
-                  <form method="post" onsubmit="return confirm('{{ _('Delete this API client? This cannot be undone.') }}');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="client_id" value="{{ client.id }}">
-                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                      <i class="fa fa-trash"></i> {{ _('Delete') }}
-                    </button>
-                  </form>
-                </div>
-              </td>
-            </tr>
-
-            <tr class="collapse" id="clientEditor{{ client.id }}" data-bs-parent="#apiClientsTable">
-              <td colspan="7">
-                <div class="card border-primary-subtle shadow-sm">
-                  <div class="card-body">
-                    <form method="post" class="row g-3 align-items-end">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <input type="hidden" name="action" value="update">
-                      <input type="hidden" name="client_id" value="{{ client.id }}">
-                      <div class="col-md-4">
-                        <label class="form-label">{{ _('Name') }}</label>
-                        <input type="text" class="form-control" name="name" value="{{ client.name }}">
-                      </div>
-                      <div class="col-md-4">
-                        <label class="form-label">{{ _('Description') }}</label>
-                        <input type="text" class="form-control" name="description" value="{{ client.description or '' }}">
-                      </div>
-                      <div class="col-md-4">
-                        <label class="form-label">{{ _('Default user context') }}</label>
-                        <select class="form-select" name="default_user_id">
-                          <option value="">{{ _('None') }}</option>
-                          {% for user in users %}
-                            <option value="{{ user.id }}" {% if client.default_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.role }})</option>
-                          {% endfor %}
-                        </select>
-                      </div>
-                      <div class="col-12 d-flex justify-content-end gap-2 mt-2">
-                        <button
-                          type="button"
-                          class="btn btn-outline-secondary"
-                          data-bs-toggle="collapse"
-                          data-bs-target="#clientEditor{{ client.id }}">
-                          {{ _('Cancel') }}
+                    {% if client.revoked_at %}
+                      <form method="post" onsubmit="return confirm('{{ _('Generate a new key and reactivate this client?') }}');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="rotate">
+                        <input type="hidden" name="client_id" value="{{ client.id }}">
+                        <button type="submit" class="btn btn-outline-success btn-sm">
+                          <i class="fa fa-unlock"></i> {{ _('Reactivate') }}
                         </button>
-                        <button type="submit" class="btn btn-primary">{{ _('Save changes') }}</button>
-                      </div>
+                      </form>
+                    {% else %}
+                      <form method="post" onsubmit="return confirm('{{ _('Revoke this API key? Integration will lose access immediately.') }}');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="revoke">
+                        <input type="hidden" name="client_id" value="{{ client.id }}">
+                        <button type="submit" class="btn btn-outline-warning btn-sm">
+                          <i class="fa fa-ban"></i> {{ _('Revoke') }}
+                        </button>
+                      </form>
+                    {% endif %}
+                    <form method="post" onsubmit="return confirm('{{ _('Delete this API client? This cannot be undone.') }}');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="action" value="delete">
+                      <input type="hidden" name="client_id" value="{{ client.id }}">
+                      <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="fa fa-trash"></i> {{ _('Delete') }}
+                      </button>
                     </form>
                   </div>
-                </div>
-              </td>
-            </tr>
-          {% endfor %}
-        {% endif %}
-      </tbody>
-    </table>
+                </td>
+              </tr>
+
+              <tr class="collapse" id="clientEditor{{ client.id }}" data-bs-parent="#apiClientsTable">
+                <td colspan="7">
+                  <div class="card border-primary-subtle shadow-sm">
+                    <div class="card-body">
+                      <form method="post" class="row g-3 align-items-end">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="action" value="update">
+                        <input type="hidden" name="client_id" value="{{ client.id }}">
+                        <div class="col-md-4">
+                          <label class="form-label">{{ _('Name') }}</label>
+                          <input type="text" class="form-control" name="name" value="{{ client.name }}">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">{{ _('Description') }}</label>
+                          <input type="text" class="form-control" name="description" value="{{ client.description or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                          <label class="form-label">{{ _('Default user context') }}</label>
+                          <select class="form-select" name="default_user_id">
+                            <option value="">{{ _('None') }}</option>
+                            {% for user in users %}
+                              <option value="{{ user.id }}" {% if client.default_user_id == user.id %}selected{% endif %}>{{ user.username }} ({{ user.role }})</option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-12 d-flex justify-content-end gap-2 mt-2">
+                          <button
+                            type="button"
+                            class="btn btn-outline-secondary"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#clientEditor{{ client.id }}">
+                            <i class="fa fa-xmark"></i> {{ _('Cancel') }}
+                          </button>
+                          <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save"></i> {{ _('Save Changes') }}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
   </div>
 </div>
 

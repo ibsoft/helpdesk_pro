@@ -36,9 +36,16 @@
     </ol>
   </nav>
 
-  <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
-    <h1 class="mb-0"><i class="fa fa-clipboard-check me-2"></i>{{ job.name }}</h1>
-    <span class="badge-chip bg-secondary-subtle text-secondary-emphasis">{{ job.job_date.strftime("%Y-%m-%d %H:%M") }}</span>
+  <div class="d-flex align-items-center justify-content-between gap-2 mb-3 flex-wrap">
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+      <h1 class="mb-0"><i class="fa fa-clipboard-check me-2"></i>{{ job.name }}</h1>
+      <span class="badge-chip bg-secondary-subtle text-secondary-emphasis">{{ job.job_date.strftime("%Y-%m-%d %H:%M") }}</span>
+    </div>
+    {% if module_access == 'write' %}
+    <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteJobModal">
+      <i class="fa fa-trash"></i> {{ _('Delete Job') }}
+    </button>
+    {% endif %}
   </div>
   <p class="text-muted mb-4">{{ _("Backup job overview with retention, verification outcome, linked tapes, and audit trail.") }}</p>
 
@@ -230,5 +237,28 @@
       </div>
     </div>
   </div>
+{% if module_access == 'write' %}
+<div class="modal fade" id="deleteJobModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="post" action="{{ url_for('backup.delete_job', job_id=job.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title"><i class="fa fa-trash"></i> {{ _('Delete Backup Job') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ _('Delete job “%(name)s”? Tape assignments will be removed but cartridges remain available for new jobs.', name=job.name) }}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 </div>
 {% endblock %}

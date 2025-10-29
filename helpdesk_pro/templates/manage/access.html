@@ -20,19 +20,92 @@
   html[data-bs-theme="dark"] body .menu-group {
     background: rgba(15, 23, 42, 0.6);
   }
+  .access-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .access-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .access-summary-card .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .access-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .access-summary-card .metric-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .badge-chip {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
 </style>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h4 class="mb-0"><i class="fa fa-key"></i> {{ _('Access Control') }}</h4>
-  <a href="{{ url_for('users.list_users') }}?lang={{ g.locale }}" class="btn btn-outline-secondary">
-    <i class="fa fa-users"></i> {{ _('Manage Users') }}
-  </a>
-</div>
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h1 class="mb-0"><i class="fa fa-key me-2"></i> {{ _('Access Control') }}</h1>
+    <a href="{{ url_for('users.list_users') }}?lang={{ g.locale }}" class="btn btn-outline-secondary">
+      <i class="fa fa-users"></i> {{ _('Manage Users') }}
+    </a>
+  </div>
 
-<div class="alert alert-info shadow-sm">
-  <i class="fa fa-info-circle"></i>
-  {{ _('Toggle which roles can see each menu item. Defaults apply when no override is set.') }}
-</div>
+  <div class="card access-summary-card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Menu items') }}</span>
+            <span class="metric-value"><i class="fa fa-sitemap me-1"></i>{{ menu_stats.total_items }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Menu overrides') }}</span>
+            <span class="metric-value text-primary"><i class="fa fa-toggles me-1"></i>{{ menu_stats.overrides }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Module overrides') }}</span>
+            <span class="metric-value text-success"><i class="fa fa-layer-group me-1"></i>{{ module_stats.overrides }}</span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Read-only assignments') }}</span>
+            <span class="metric-value text-warning"><i class="fa fa-eye me-1"></i>{{ module_stats.read_only }}</span>
+            <div class="mt-2">
+              <span class="badge-chip bg-body-secondary text-body">
+                {{ _('Roles') }}: {{ menu_stats.roles }}
+              </span>
+              <span class="badge-chip bg-body-secondary text-body">
+                {{ _('Modules') }}: {{ module_stats.total_modules }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-info shadow-sm">
+    <i class="fa fa-info-circle"></i>
+    {{ _('Toggle which roles can see each menu item. Defaults apply when no override is set.') }}
+  </div>
 
 <form method="post">
   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -139,5 +212,7 @@
     </div>
   </div>
 </form>
+
+</div>
 
 {% endblock %}
