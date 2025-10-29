@@ -189,7 +189,8 @@
         <button type="button"
                 class="btn btn-sm btn-outline-primary edit-contract-btn"
                 data-id="{{ contract.id }}"
-                data-update-url="{{ url_for('contracts.update_contract', contract_id=contract.id) }}">
+                data-update-url="{{ url_for('contracts.update_contract', contract_id=contract.id) }}"
+                data-delete-url="{{ url_for('contracts.delete_contract', contract_id=contract.id) }}">
           <i class="fa fa-edit"></i>
         </button>
         <button type="button"

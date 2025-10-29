@@ -258,6 +258,35 @@
       .btn-outline-light, .btn-outline-warning {
         border-radius: 50px;
       }
+
+      .navbar .nav-icon-button {
+        width: 30px;
+        height: 30px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        color: #fff;
+        transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+      }
+
+      .navbar .nav-icon-button.btn-outline-light,
+      .navbar .nav-icon-button.btn-outline-warning {
+        border: none;
+      }
+
+      .navbar .nav-icon-button:hover,
+      .navbar .nav-icon-button:focus {
+        background: rgba(255,255,255,0.18);
+        color: #fff;
+        transform: translateY(-1px);
+      }
+
+      .navbar .nav-icon-button i {
+        font-size: 1rem;
+      }
     </style>
   </head>
 
@@ -314,7 +343,7 @@
               </li>
             {% endif %}
             <li class="nav-item me-2">
-              <button id="themeToggle" class="btn btn-sm btn-outline-light" title="{{ _('Toggle theme') }}">
+              <button id="themeToggle" class="btn btn-sm btn-outline-light nav-icon-button" title="{{ _('Toggle theme') }}" aria-label="{{ _('Toggle theme') }}">
                 <i class="fa fa-sun"></i>
               </button>
             </li>
@@ -354,8 +383,9 @@
               </li>
             {% else %}
               <li class="nav-item me-2">
-                <button type="button" class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#aboutModal">
-                  <i class="fa fa-info-circle"></i> {{ _('About') }}
+                <button type="button" class="btn btn-sm btn-outline-light nav-icon-button" data-bs-toggle="modal" data-bs-target="#aboutModal" title="{{ _('About') }}" aria-label="{{ _('About') }}">
+                  <i class="fa fa-info-circle"></i>
+                  <span class="visually-hidden">{{ _('About') }}</span>
                 </button>
               </li>
             {% endif %}

@@ -23,7 +23,7 @@ import requests
 from flask import Blueprint, jsonify, request, abort, current_app, url_for, send_from_directory
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
-from sqlalchemy import func, or_, and_
+from sqlalchemy import func, or_, and_, literal
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
@@ -100,8 +100,16 @@ VENDOR_PATTERN = re.compile(
     r"(?:vendor|προμηθευτ[ήςη])\s+(?:is|=|:|for|με|του|τον|την)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)",
     re.IGNORECASE,
 )
+VENDOR_TRAILING_PATTERN = re.compile(
+    r"\b([a-z0-9_.\-άέήίόύώ]+)\s+vendor\b",
+    re.IGNORECASE,
+)
 CONTRACT_FROM_PATTERN = re.compile(
     r"contracts?\s+(?:from|by)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
+    re.IGNORECASE,
+)
+CONTRACT_FOR_PATTERN = re.compile(
+    r"contracts?\s+(?:for|about|regarding)\s+([a-z0-9_.\-άέήίόύώ\s]+)",
     re.IGNORECASE,
 )
 CONTRACT_TYPE_PATTERN = re.compile(r"(?:type|τύπος|τυπος)\s+(?:is|=|:)?\s*['\"]?([a-z0-9_.\-άέήίόύώ\s]+)", re.IGNORECASE)
@@ -234,6 +242,19 @@ CONTRACT_KEYWORDS = {
     "υποστήριξη", "υποστηριξη", "τυπος", "τύπος", "συμβολαιο", "συμβόλαιο"
 }
 
+CONTRACT_VENDOR_STOPWORDS = {
+    "contract", "contracts", "vendor", "vendors", "support", "phone", "email", "contact",
+    "for", "about", "regarding", "with", "and", "the", "a", "an", "show", "list", "find",
+    "search", "lookup", "give", "me", "please", "all", "any", "value", "values", "cost",
+    "costs", "price", "prices", "details", "info", "information", "help", "θέλω", "να", "βρες",
+    "renewals", "renewal", "status", "statuses", "type", "types"
+}
+
+COST_KEYWORDS = {
+    "cost", "costs", "price", "value", "amount", "total", "budget",
+    "κόστος", "κοστος", "τιμή", "τιμη", "ποσο", "πόσο", "ποσο κοστίζει", "κοστίζει"
+}
+
 ADDRESS_BOOK_KEYWORDS = {
     "contact", "contacts", "address book", "directory", "phone", "mobile", "email", "company", "department", "city", "tag",
     "vendor", "partner", "stakeholder",
@@ -362,6 +383,13 @@ MESSAGE_ALIAS_MAP = {
     "τελευταιες 7 μερες": "last 7 days",
     "τελευταίων 7 ημερών": "last 7 days",
     "τελευταιων 7 ημερων": "last 7 days",
+    "ind": "find",
+    "fing": "find",
+    "serach": "search",
+    "crontract": "contract",
+    "crontracts": "contracts",
+    "contracs": "contracts",
+    "contratcs": "contracts",
 }
 
 NETWORK_HINT_STOPWORDS = {
@@ -707,6 +735,22 @@ def _safe_strip(value: Union[str, None], chars: Optional[str] = None) -> str:
     return value.strip(chars) if chars else value.strip()
 
 
+def _contains_word(text: str, word: str) -> bool:
+    if not text or not word:
+        return False
+    pattern = r"\b" + re.escape(word) + r"\b"
+    return re.search(pattern, text, re.IGNORECASE) is not None
+
+
+def _ensure_decimal(value: Any) -> Decimal:
+    if isinstance(value, Decimal):
+        return value
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return Decimal("0")
+
+
 def _should_force_builtin(message: str) -> bool:
     lowered = (message or "").lower()
     if not lowered:
@@ -714,6 +758,19 @@ def _should_force_builtin(message: str) -> bool:
     if not any(keyword in lowered for keyword in SOFTWARE_KEYWORDS):
         return False
     return any(term in lowered for term in SENSITIVE_LICENSE_TERMS)
+
+
+def _history_mentions_contract(history: List[Dict[str, str]], limit: int = 6) -> bool:
+    if not history:
+        return False
+    for entry in reversed(history[-limit:]):
+        content = _safe_strip(entry.get("content"))
+        if not content:
+            continue
+        lowered = content.lower()
+        if "contract" in lowered or "συμβ" in lowered or any(keyword in lowered for keyword in CONTRACT_KEYWORDS):
+            return True
+    return False
 
 
 def _is_meaningful_builtin_reply(reply: Optional[str]) -> bool:
@@ -1082,8 +1139,16 @@ def api_message():
             if not builtin_fallback:
                 builtin_fallback = _call_builtin(message, history, current_user)
             if _is_meaningful_builtin_reply(builtin_fallback):
-                current_app.logger.info("Assistant override: replacing LLM response with builtin database answer.")
-                reply = builtin_fallback
+                if current_app.config.get("ASSISTANT_ENABLE_LLM_OVERRIDE", False):
+                    current_app.logger.info("Assistant override: replacing LLM response with builtin database answer.")
+                    reply = builtin_fallback
+                else:
+                    current_app.logger.info("Assistant supplement: appending builtin database answer alongside LLM reply.")
+                    clean_llm = reply.strip()
+                    if clean_llm:
+                        reply = f"{builtin_fallback}\n\n(LLM reply: {clean_llm})"
+                    else:
+                        reply = builtin_fallback
 
     if not reply:
         db.session.rollback()
@@ -1456,6 +1521,9 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
         or "συμβ" in lowered
         or any(keyword in lowered for keyword in CONTRACT_KEYWORDS)
     )
+    if not has_contracts and history:
+        if any(term in lowered for term in COST_KEYWORDS) and _history_mentions_contract(history):
+            has_contracts = True
     has_contacts = (
         "contact" in lowered
         or "address book" in lowered
@@ -1499,11 +1567,11 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
 
 def _answer_network_query(message: str, lowered: str, user) -> Optional[str]:
     has_network_intent = (
-        any(term in lowered for term in NETWORK_KEYWORDS)
+        any(_contains_word(lowered, term) for term in NETWORK_KEYWORDS)
         or CIDR_PATTERN.search(message) is not None
         or IP_ADDRESS_PATTERN.search(message) is not None
-        or "host" in lowered
-        or "hosts" in lowered
+        or _contains_word(lowered, "host")
+        or _contains_word(lowered, "hosts")
     )
     if not has_network_intent:
         return None
@@ -2444,7 +2512,8 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
     base_query = Contract.query.options(joinedload(Contract.owner))
     filters: List[str] = []
     need_total = "how many" in lowered or "count" in lowered
-    show_support = "support" in lowered
+    support_terms = ("support", "phone", "email", "contact", "τηλεφων", "επικοινων", "email")
+    show_support = any(term in lowered for term in support_terms)
     suppressed_keywords: Set[str] = set()
 
     if "active" in lowered or "ενεργ" in lowered:
@@ -2469,15 +2538,92 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
         inferred_match = CONTRACT_FROM_PATTERN.search(lowered)
         if inferred_match:
             vendor_value = _safe_strip(inferred_match.group(1))
+        if not vendor_value:
+            for_match = CONTRACT_FOR_PATTERN.search(lowered)
+            if for_match:
+                vendor_value = _safe_strip(for_match.group(1))
+        if not vendor_value:
+            trailing_match = VENDOR_TRAILING_PATTERN.search(message)
+            if trailing_match:
+                vendor_value = _safe_strip(trailing_match.group(1))
+        if not vendor_value:
+            candidate_phrases = _extract_candidate_phrases(message)
+            for phrase in candidate_phrases:
+                raw_tokens = [tok for tok in re.split(r"[\s,]+", phrase) if tok]
+                filtered_tokens: List[str] = []
+                for raw in raw_tokens:
+                    cleaned_token = _safe_strip(re.sub(r"[^a-zA-Z0-9_.\-άέήίόύώ]", "", raw))
+                    if not cleaned_token:
+                        continue
+                    if cleaned_token.lower() in CONTRACT_VENDOR_STOPWORDS:
+                        continue
+                    filtered_tokens.append(cleaned_token)
+                if filtered_tokens:
+                    vendor_value = " ".join(filtered_tokens)
+                    break
+        if not vendor_value:
+            direct_match = re.search(
+                r"contracts?\s+(?!for\b|and\b|with\b|about\b|regarding\b)([a-z0-9_.\-άέήίόύώ]+)",
+                message,
+                re.IGNORECASE,
+            )
+            if direct_match:
+                candidate = _safe_strip(direct_match.group(1))
+                if candidate and candidate.lower() not in CONTRACT_VENDOR_STOPWORDS:
+                    vendor_value = candidate
+                    filters.append(f"vendor token {vendor_value}")
+            if not vendor_value:
+                sequential_tokens = re.findall(r"[A-Za-z0-9_.\-άέήίόύώ]+", message)
+                token_count = len(sequential_tokens)
+                idx = 0
+                while idx < token_count:
+                    token = sequential_tokens[idx]
+                    if token.lower() in {"contract", "contracts"}:
+                        j = idx + 1
+                        vendor_tokens: List[str] = []
+                        while j < token_count:
+                            next_token = _safe_strip(sequential_tokens[j])
+                            j += 1
+                            if not next_token:
+                                continue
+                            lowered_next = next_token.lower()
+                            if lowered_next in CONTRACT_VENDOR_STOPWORDS:
+                                if vendor_tokens and lowered_next in {"contracts", "contract"}:
+                                    break
+                                if lowered_next in {"and", "with"}:
+                                    continue
+                                break
+                            vendor_tokens.append(next_token)
+                        if vendor_tokens:
+                            vendor_value = " ".join(vendor_tokens)
+                            filters.append(f"vendor tokens {vendor_value}")
+                            break
+                    idx += 1
     if vendor_value:
-        vendor_value = re.split(r"\b(?:contracts?|support|and|,|with)\b", vendor_value, 1)[0]
+        vendor_value = re.split(r"\b(?:contracts?|support|and|,|with|phone|email|contact|vendor)\b", vendor_value, 1)[0]
         vendor_value = _safe_strip(vendor_value)
         if vendor_value:
-            clean_vendor = vendor_value.lower()
-            base_query = base_query.filter(func.lower(func.trim(Contract.vendor)) == clean_vendor)
-            filters.append(f"vendor {vendor_value}")
-            suppressed_keywords.add(clean_vendor)
-            normalized_vendor = clean_vendor
+            like_pattern = f"%{vendor_value}%"
+            base_query = base_query.filter(
+                or_(
+                    func.trim(Contract.vendor).ilike(like_pattern),
+                    Contract.name.ilike(like_pattern),
+                )
+            )
+            filters.append(f"vendor ~ {vendor_value}")
+            suppressed_keywords.add(vendor_value.lower())
+            normalized_vendor = vendor_value.lower()
+    elif filters and any(entry.startswith("vendor tokens") or entry.startswith("vendor token") for entry in filters):
+        dynamic_terms = [entry.split(" ", 2)[-1] for entry in filters if entry.startswith("vendor")]
+        if dynamic_terms:
+            like_filters = [
+                or_(
+                    func.trim(Contract.vendor).ilike(f"%{term}%"),
+                    Contract.name.ilike(f"%{term}%"),
+                )
+                for term in dynamic_terms
+            ]
+            base_query = base_query.filter(or_(*like_filters))
 
     number_match = CONTRACT_NUMBER_PATTERN.search(message)
     if number_match:
@@ -2573,7 +2719,68 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
                 if digits_only:
                     suppressed_keywords.add(digits_only)
 
-    keywords = _extract_keywords(message, extra_stop={"contract", "contracts", "renewal", "renewals"})
+    wants_summary = any(
+        phrase in lowered
+        for phrase in ("summarize", "summary", "aggregate", "rollup", "total value", "σύνολο", "συνολικά")
+    )
+    if wants_summary:
+        summary_query = base_query.enable_eagerloads(False)
+        vendor_expr = func.coalesce(func.nullif(func.trim(Contract.vendor), ""), literal(_("Unspecified vendor")))
+        currency_expr = func.coalesce(func.nullif(func.trim(Contract.currency), ""), literal(_("Unspecified currency")))
+        total_expr = func.coalesce(func.sum(func.coalesce(Contract.value, 0)), literal(0))
+        count_expr = func.count(Contract.id)
+        summary_rows = (
+            summary_query.with_entities(
+                vendor_expr.label("vendor"),
+                currency_expr.label("currency"),
+                total_expr.label("total_value"),
+                count_expr.label("contract_count"),
+            )
+            .group_by(vendor_expr, currency_expr)
+            .order_by(vendor_expr.asc(), currency_expr.asc())
+            .all()
+        )
+        if not summary_rows:
+            header = _("Overall contract value")
+            overall_line = f"{header}: 0.00 across 0 contract(s)"
+            if filters:
+                overall_line += f" ({', '.join(filters)})"
+            return overall_line
+        lines: List[str] = []
+        overall_value = Decimal("0")
+        overall_count = 0
+        for vendor_label, currency_label, total_value, contract_count in summary_rows:
+            vendor_display = vendor_label or _("Unspecified vendor")
+            currency_display = currency_label or _("Unspecified currency")
+            amount = _ensure_decimal(total_value)
+            overall_value += amount
+            overall_count += contract_count or 0
+            try:
+                formatted_amount = f"{amount:,.2f}"
+            except (InvalidOperation, TypeError, ValueError):
+                formatted_amount = str(total_value)
+            lines.append(
+                f"{vendor_display} — {currency_display}: total {formatted_amount} across {contract_count} contract(s)"
+            )
+        try:
+            formatted_overall = f"{overall_value:,.2f}"
+        except (InvalidOperation, TypeError, ValueError):
+            formatted_overall = str(overall_value)
+        summary_header = _("Overall contract value")
+        overall_line = f"{summary_header}: {formatted_overall} across {overall_count} contract(s)"
+
+        if "vendor" in lowered or "currency" in lowered:
+            header = _("Total contract value by vendor and currency")
+        else:
+            header = _("Total contract value breakdown by vendor and currency")
+        if filters:
+            header += f" ({', '.join(filters)})"
+        return overall_line + "\n" + header + ":\n" + "\n".join(lines)
+
+    keywords = _extract_keywords(
+        message,
+        extra_stop={"contract", "contracts", "renewal", "renewals", "search", "vendor", "vendors"},
+    )
     keywords = [
         keyword
         for keyword in keywords
@@ -2606,10 +2813,19 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
         renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
         owner_name = contract.owner.username if contract.owner else "n/a"
         support_info = _support_contact_snippet(contract) if show_support else ""
+        value_display = "n/a"
+        if contract.value is not None:
+            amount = _ensure_decimal(contract.value)
+            try:
+                formatted_amount = f"{amount:,.2f}"
+            except (InvalidOperation, TypeError, ValueError):
+                formatted_amount = str(contract.value)
+            currency_part = f" {contract.currency}" if contract.currency else ""
+            value_display = f"{formatted_amount}{currency_part}".strip()
         line = (
             f"{contract.name} — {contract.contract_type}; vendor {contract.vendor or 'n/a'}; "
             f"status {contract.status or 'n/a'}; end {end_date}; renewal {renewal}; "
-            f"auto-renew {'yes' if contract.auto_renew else 'no'}; owner {owner_name}"
+            f"auto-renew {'yes' if contract.auto_renew else 'no'}; owner {owner_name}; value {value_display}"
         )
         if support_info:
             line += f"; support {support_info}"

@@ -88,6 +88,26 @@ Contracts (`contract`)
 - EN: show support contacts for $vendor / GR: εμφάνισε στοιχεία υποστήριξης για $vendor
 - EN: contracts by type $type / GR: συμβάσεις τύπου $type
 - EN: high-value contracts over $amount / GR: συμβάσεις αξίας άνω των $amount
+- EN: Which contracts are active today and expire within the next 60 days? / GR: Ποιες συμβάσεις είναι ενεργές σήμερα και λήγουν μέσα στους επόμενους 60 ημέρες;
+- EN: Show all "Support" contracts with auto-renew enabled and a notice period shorter than 30 days. / GR: Δείξε όλες τις συμβάσεις τύπου "Support" με ενεργό αυτόματη ανανέωση και προθεσμία προειδοποίησης μικρότερη από 30 ημέρες.
+- EN: Which contracts have status "Pending" or "Under Review," and who is their owner? / GR: Ποιες συμβάσεις έχουν status "Pending" ή "Under Review" και ποιος είναι ο owner τους;
+- EN: Which contracts from vendor [Vendor X] in EUR have a value above 10,000? / GR: Ποιες συμβάσεις του προμηθευτή [Vendor X] σε EUR έχουν αξία πάνω από 10.000;
+- EN: List contracts with start_date after 2025-01-01 and end_date before 2025-12-31. / GR: Λίστα συμβάσεων με start_date μετά την 2025-01-01 και end_date πριν την 2025-12-31.
+- EN: Which contracts are missing support_email or support_phone? / GR: Ποιες συμβάσεις δεν έχουν συμπληρωμένο support_email ή support_phone;
+- EN: Give me contracts with auto_renew = false that require a cancellation notice within 45 days from today. / GR: Δώσε μου συμβάσεις με auto_renew = false που απαιτούν ειδοποίηση ακύρωσης εντός 45 ημερών από σήμερα.
+- EN: Which contracts have a blank renewal_date while auto_renew is true? / GR: Ποιες συμβάσεις έχουν κενό renewal_date ενώ το auto_renew είναι true;
+- EN: Show contracts with a specific contract_number or a po_number that contains "2025-". / GR: Εμφάνισε συμβάσεις με συγκεκριμένο contract_number ή po_number που περιέχει "2025-".
+- EN: Which contracts changed status in the last month, and what notes were recorded? / GR: Ποιες συμβάσεις άλλαξαν status τον τελευταίο μήνα και τι καταχωρήθηκε στα notes;
+- EN: Summarize total contract value by vendor and currency for active contracts. / GR: Δώσε σύνοψη συνολικής αξίας ανά προμηθευτή και νόμισμα για ενεργές συμβάσεις.
+- EN: Which contracts owned by [User ID] expire next quarter? / GR: Ποιες συμβάσεις του owner [User ID] λήγουν το επόμενο τρίμηνο;
+- EN: Which contracts have an empty or unreachable support_url? / GR: Ποιες συμβάσεις έχουν κενό ή μη προσβάσιμο support_url;
+- EN: Show cancelled or expired contracts with their actual end_date and the reason in notes. / GR: Δείξε ακυρωμένες ή ληγμένες συμβάσεις με την πραγματική end_date και τον λόγο στα notes.
+- EN: Which contracts have notice_period_days greater than the days remaining until end_date (i.e., require immediate action)? / GR: Ποιες συμβάσεις έχουν notice_period_days μεγαλύτερο από τις ημέρες που απομένουν μέχρι το end_date (άρα απαιτούν άμεση ενέργεια);
+- EN: Which "SaaS" contracts in USD have an estimated monthly cost if value is annual (value/12)? / GR: Ποιες συμβάσεις τύπου "SaaS" σε USD έχουν εκτιμώμενο μηνιαίο κόστος αν η value είναι ετήσια (value/12);
+- EN: Which contracts have duplicate contract_number or po_number? / GR: Ποιες συμβάσεις έχουν διπλότυπο contract_number ή po_number;
+- EN: Show contracts that start next month and list their owner_id. / GR: Δείξε συμβάσεις που ξεκινούν τον επόμενο μήνα και αναφέρουν το owner_id τους.
+- EN: Which contracts have a value outside the 1,000-50,000 range for anomaly screening? / GR: Ποιες συμβάσεις έχουν value εκτός του εύρους 1.000-50.000 για έλεγχο ανωμαλιών;
+- EN: Which contracts are marked "Active" but their end_date has already passed? / GR: Ποιες συμβάσεις είναι σε status "Active" ενώ το end_date έχει ήδη περάσει;
 
 Address Book (`address_book_entry`)
 - EN: find contact $name / GR: βρες επαφή $name
