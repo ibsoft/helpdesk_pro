@@ -41,8 +41,8 @@ class Config:
     BABEL_DEFAULT_LOCALE = 'en'
     BABEL_TRANSLATION_DIRECTORIES = os.path.join(
         os.path.dirname(__file__), 'translations')
-    APP_VERSION = os.getenv('APP_VERSION', '1.5.10')
-    UI_FONT_SCALE = _float_env('UI_FONT_SCALE', 1.1)
-    UI_NAVBAR_HEIGHT = _float_env('UI_NAVBAR_HEIGHT', 50.0)
-    UI_FOOTER_HEIGHT = _float_env('UI_FOOTER_HEIGHT', 64.0)
+    UI_FONT_SCALE = _float_env('UI_FONT_SCALE', 0.95)
+    UI_NAVBAR_HEIGHT = _float_env('UI_NAVBAR_HEIGHT', 30.0)
+    UI_FOOTER_HEIGHT = _float_env('UI_FOOTER_HEIGHT', 35.0)
     UI_DATATABLE_HEADER_FONT_SIZE = _float_env('UI_DATATABLE_HEADER_FONT_SIZE', 0.95)
+    ASSISTANT_ENABLE_LLM_OVERRIDE = os.getenv('ASSISTANT_ENABLE_LLM_OVERRIDE', 'True').lower() == 'true'
