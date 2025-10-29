@@ -15,6 +15,7 @@ import os
 import uuid
 import mimetypes
 import ipaddress
+from collections import Counter
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import List, Dict, Any, Iterable, Optional, Tuple, Union, Sequence, Set
@@ -47,6 +48,8 @@ from app.models import (
     Contract,
     AddressBookEntry,
     User,
+    TapeCartridge,
+    TapeLocation,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app import db
@@ -262,6 +265,20 @@ ADDRESS_BOOK_KEYWORDS = {
     "τμημα", "τμήμα", "πολη", "πόλη", "ετικετα", "ετικέτα", "συνεργατες", "συνεργάτες", "προμηθευτες", "προμηθευτές"
 }
 
+BACKUP_KEYWORDS = {
+    "backup", "tape", "tapes", "lto", "cartridge", "cartridges",
+    "disk", "disks", "drive", "drives",
+    "backup job", "backup jobs",
+    "ταινια", "ταινία", "ταινιες", "ταινίες", "κασέτα", "κασέτες", "κασετα", "κασετες",
+    "δίσκος", "δίσκοι", "δισκος", "δισκοι",
+}
+
+BACKUP_LOCATION_LABELS = {
+    "on_site": "On-Site",
+    "in_transit": "In Transit",
+    "off_site": "Off-Site",
+}
+
 MESSAGE_ALIAS_MAP = {
     "σήμερα": "today",
     "σημερα": "today",
@@ -319,6 +336,18 @@ MESSAGE_ALIAS_MAP = {
     "δεσμευμενες": "reserved",
     "χωρίς ανάθεση": "unassigned",
     "χωρις αναθεση": "unassigned",
+    "ταινίες": "tapes",
+    "ταινιες": "tapes",
+    "ταινία": "tape",
+    "ταινια": "tape",
+    "κασέτες": "tapes",
+    "κασετες": "tapes",
+    "κασέτα": "tape",
+    "κασετα": "tape",
+    "δίσκος": "disk",
+    "δίσκοι": "disks",
+    "δισκος": "disk",
+    "δισκοι": "disks",
     "επαφή": "contact",
     "επαφη": "contact",
     "επαφές": "contacts",
@@ -1512,6 +1541,13 @@ def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
     if cross_response:
         return cross_response
 
+    has_backup = any(keyword in lowered for keyword in BACKUP_KEYWORDS)
+
+    if has_backup:
+        backup_response = _answer_backup_query(message, lowered)
+        if backup_response:
+            return backup_response
+
     has_ticket = any(keyword in lowered for keyword in TICKET_KEYWORDS)
     has_knowledge = any(keyword in lowered for keyword in KNOWLEDGE_KEYWORDS)
     has_hardware = any(keyword in lowered for keyword in HARDWARE_KEYWORDS)
@@ -1953,6 +1989,156 @@ def _format_network_hosts(network: Network, message: str, lowered: str, user) ->
         )
     if len(hosts) > 25:
         lines.append("…limited to first 25 hosts.")
+    return "\n".join(lines)
+
+
+def _answer_backup_query(message: str, lowered: str) -> Optional[str]:
+    media_tokens = ("tape", "tapes", "cartridge", "cartridges", "lto", "disk", "disks", "drive", "drives", "storage media", "storage medium")
+    has_media_context = any(token in lowered for token in media_tokens)
+    if not has_media_context and "retention" not in lowered and "off-site" not in lowered and "offsite" not in lowered and "off site" not in lowered:
+        if "backup" not in lowered:
+            return None
+
+    now = datetime.utcnow()
+
+    medium_filter: Optional[str] = None
+    if any(term in lowered for term in ("disk", "disks", "drive", "drives", "external disk", "external drive", "δίσκ", "δισκ")):
+        medium_filter = "disk"
+    elif any(term in lowered for term in ("tape", "tapes", "cartridge", "cartridges", "lto", "ταιν")):
+        medium_filter = "tape"
+
+    query = TapeCartridge.query.options(joinedload(TapeCartridge.current_location))
+    if medium_filter:
+        query = query.filter(TapeCartridge.medium_type == medium_filter)
+
+    wants_overdue = any(term in lowered for term in ("expired", "overdue", "past due", "ληγ", "εκπρόθεσ", "εκπροθεσ"))
+    wants_due = any(term in lowered for term in ("due", "within", "upcoming", "approaching", "λήγει", "ληγει", "σε", "πλησιάζει"))
+    wants_retention = (
+        "retention" in lowered
+        or any(term in lowered for term in ("λήξη", "ληξη", "διατήρηση", "διατηρηση"))
+        or wants_overdue
+        or wants_due
+    )
+
+    def _location_label(medium: TapeCartridge) -> str:
+        if medium.current_location:
+            loc_type = medium.current_location.location_type or ""
+            loc_label = BACKUP_LOCATION_LABELS.get(loc_type, loc_type.replace("_", " ").title() or "Unspecified")
+            site_name = medium.current_location.site_name
+            if site_name:
+                return f"{loc_label} ({site_name})"
+            return loc_label
+        return "Unassigned"
+
+    def _medium_label(medium: TapeCartridge) -> str:
+        return "External disk" if medium.medium_type == "disk" else "Tape"
+
+    if wants_retention:
+        base = query.filter(TapeCartridge.retention_days.isnot(None), TapeCartridge.retention_until.isnot(None))
+        if wants_overdue:
+            results = (
+                base.filter(TapeCartridge.retention_until <= now)
+                .order_by(TapeCartridge.retention_until.asc())
+                .all()
+            )
+            label = _("retention already expired")
+        else:
+            window = 7
+            match = re.search(r"(\d+)\s*(?:day|days|ημέρ|ημερ)", lowered)
+            if match:
+                try:
+                    window = max(int(match.group(1)), 1)
+                except ValueError:
+                    window = 7
+            upper = now + timedelta(days=window)
+            results = (
+                base.filter(TapeCartridge.retention_until > now, TapeCartridge.retention_until <= upper)
+                .order_by(TapeCartridge.retention_until.asc())
+                .all()
+            )
+            label = _("retention due within %(days)s day(s)", days=window)
+
+        if not results:
+            return _("No storage media matched %(label)s.", label=label)
+
+        lines = [
+            _("Storage media with %(label)s: showing %(count)s item(s).", label=label, count=len(results))
+        ]
+        for medium in results[:25]:
+            remaining = medium.retention_remaining_days()
+            status_bits = []
+            if remaining is not None:
+                if remaining < 0:
+                    status_bits.append(_("%(days)s day(s) overdue", days=abs(remaining)))
+                else:
+                    status_bits.append(_("%(days)s day(s) remaining", days=remaining))
+            info = f"- {medium.barcode} ({_medium_label(medium)}) — "
+            info += _("ends %(date)s", date=medium.retention_until.strftime("%Y-%m-%d %H:%M"))
+            info += "; " + _location_label(medium)
+            if status_bits:
+                info += " (" + ", ".join(status_bits) + ")"
+            lines.append(info)
+        if len(results) > 25:
+            lines.append("…" + _("limited to first 25 media."))
+        return "\n".join(lines)
+
+    wants_offsite = any(term in lowered for term in ("off-site", "off site", "offsite", "vault", "εκτός", "εκτος"))
+    if wants_offsite:
+        offsite_query = (
+            query.join(TapeLocation, TapeLocation.id == TapeCartridge.current_location_id)
+            .filter(TapeLocation.location_type == "off_site")
+            .order_by(TapeCartridge.barcode.asc())
+        )
+        results = offsite_query.limit(50).all()
+        if not results:
+            return _("No storage media are currently marked as off-site.")
+        lines = [_("Off-site storage media (%(count)s found):", count=len(results))]
+        for medium in results:
+            site_name = medium.current_location.site_name if medium.current_location else None
+            site_text = f" — {site_name}" if site_name else ""
+            lines.append(f"- {medium.barcode} ({_medium_label(medium)}){site_text}")
+        return "\n".join(lines)
+
+    # Default summary
+    media = query.order_by(TapeCartridge.barcode.asc()).all()
+    if not media:
+        if medium_filter == "disk":
+            return _("No external disks have been registered yet.")
+        if medium_filter == "tape":
+            return _("No tape cartridges have been registered yet.")
+        return _("No storage media have been registered yet.")
+
+    type_counts = Counter(m.medium_type or "tape" for m in media)
+    location_counts = Counter(
+        (m.current_location.location_type if m.current_location else "unassigned")
+        for m in media
+    )
+    overdue = sum(1 for m in media if m.retention_days and m.retention_until and m.retention_until <= now)
+    due_within_7 = sum(
+        1
+        for m in media
+        if m.retention_days
+        and m.retention_until
+        and 0 < (m.retention_until - now).total_seconds() <= 7 * 24 * 3600
+    )
+
+    type_label = {
+        "tape": _("tape cartridges"),
+        "disk": _("external disks"),
+    }
+    lines = []
+    if medium_filter:
+        lines.append(_("Storage media summary (filtered by %(type)s):", type=type_label.get(medium_filter, medium_filter)))
+    else:
+        lines.append(_("Storage media summary:"))
+    lines.append(_("Total media: %(count)s", count=len(media)))
+    for key, count in type_counts.items():
+        lines.append(_("- %(label)s: %(count)s", label=type_label.get(key, key.title()), count=count))
+    for key, count in location_counts.items():
+        loc_label = BACKUP_LOCATION_LABELS.get(key, "Unassigned" if key == "unassigned" else key.replace("_", " ").title())
+        lines.append(_("- Location %(loc)s: %(count)s", loc=loc_label, count=count))
+    lines.append(_("Retention overdue: %(count)s", count=overdue))
+    lines.append(_("Retention due within 7 days: %(count)s", count=due_within_7))
     return "\n".join(lines)
 
 

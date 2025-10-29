@@ -12,3 +12,9 @@ from .assistant import AssistantConfig, AssistantSession, AssistantMessage, Assi
 from .auth_config import AuthConfig
 from .api import ApiClient
 from .email_ingest import EmailIngestConfig
+from .backup import (
+    TapeCartridge,
+    TapeLocation,
+    TapeCustodyEvent,
+    BackupAuditLog,
+)

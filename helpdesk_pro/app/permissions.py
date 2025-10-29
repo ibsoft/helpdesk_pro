@@ -15,6 +15,7 @@ MODULE_ACCESS_DEFINITIONS = {
     "hardware": {"label": "Hardware Inventory"},
     "contracts": {"label": "Contracts"},
     "networks": {"label": "Network Maps & Tools"},
+    "backup": {"label": "Backup Monitor"},
 }
 
 MODULE_ACCESS_LEVELS = ("read", "write")

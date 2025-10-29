@@ -1,17 +1,124 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mt-4">
-  <h1 class="mb-3"><i class="fa fa-envelope-open-text me-2"></i>{{ _("Email to Ticket") }}</h1>
-  <p class="text-muted">{{ _("Automatically convert incoming emails into Helpdesk tickets.") }}</p>
 
-  <form method="post" class="card shadow-sm">
+{% set is_enabled = config.is_enabled %}
+{% set poll_interval = config.poll_interval_seconds or 300 %}
+{% set last_run = config.last_run_at %}
+{% set has_error = config.last_error %}
+
+<style>
+  .email-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 50%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .email-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .email-summary-card .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .email-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .email-summary-card .metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .form-label {
+    text-transform: uppercase;
+    font-size: 0.82rem;
+    letter-spacing: 0.05em;
+  }
+  .badge-chip {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
+</style>
+
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="mb-1"><i class="fa fa-envelope-open-text me-2"></i>{{ _("Email to Ticket") }}</h1>
+      <p class="text-muted mb-0">{{ _("Automatically convert incoming emails into Helpdesk tickets.") }}</p>
+    </div>
+    <div>
+      <span class="badge-chip {% if is_enabled %}bg-success-subtle text-success-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">
+        <i class="fa {% if is_enabled %}fa-check-circle{% else %}fa-pause-circle{% endif %} me-1"></i>
+        {% if is_enabled %}{{ _("Service Enabled") }}{% else %}{{ _("Service Disabled") }}{% endif %}
+      </span>
+    </div>
+  </div>
+
+  <div class="card email-summary-card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _("Protocol") }}</span>
+            <span class="metric-value">
+              <i class="fa fa-plug me-1"></i>{{ (config.protocol or 'IMAP')|upper }}
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _("Poll Interval") }}</span>
+            <span class="metric-value">
+              <i class="fa fa-clock me-1"></i>{{ poll_interval }} {{ _("seconds") }}
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _("Last Run") }}</span>
+            <span class="metric-value">
+              {% if last_run %}
+                <i class="fa fa-calendar-check me-1"></i>{{ last_run }}
+              {% else %}
+                <span class="text-muted"><i class="fa fa-minus me-1"></i>{{ _("Never") }}</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _("Last Error") }}</span>
+            <span class="metric-value">
+              {% if has_error %}
+                <span class="text-danger"><i class="fa fa-triangle-exclamation me-1"></i>{{ config.last_error }}</span>
+              {% else %}
+                <span class="text-success"><i class="fa fa-check me-1"></i>{{ _("None") }}</span>
+              {% endif %}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" class="card shadow-sm border-0">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card-body">
       <div class="row g-3">
-        <div class="col-md-3 form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="is_enabled" name="is_enabled" value="1" {% if config.is_enabled %}checked{% endif %}>
-          <label class="form-check-label" for="is_enabled">{{ _("Enable polling service") }}</label>
+        <div class="col-md-3">
+          <label class="form-label d-block">{{ _("Enable polling service") }}</label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="is_enabled" name="is_enabled" value="1" {% if is_enabled %}checked{% endif %}>
+            <label class="form-check-label" for="is_enabled">{{ _("Active") }}</label>
+          </div>
         </div>
         <div class="col-md-3">
           <label class="form-label" for="protocol">{{ _("Protocol") }}</label>
@@ -33,9 +140,12 @@
           <label class="form-label" for="port">{{ _("Port") }}</label>
           <input class="form-control" id="port" name="port" value="{{ config.port or '' }}" placeholder="{{ _('Auto') }}">
         </div>
-        <div class="col-md-3 form-check form-switch">
-          <input class="form-check-input" type="checkbox" id="use_ssl" name="use_ssl" value="1" {% if config.use_ssl %}checked{% endif %}>
-          <label class="form-check-label" for="use_ssl">{{ _("Use SSL/TLS") }}</label>
+        <div class="col-md-3">
+          <label class="form-label d-block">{{ _("Use SSL/TLS") }}</label>
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="use_ssl" name="use_ssl" value="1" {% if config.use_ssl %}checked{% endif %}>
+            <label class="form-check-label" for="use_ssl">{{ _("Enabled") }}</label>
+          </div>
         </div>
         <div class="col-md-6">
           <label class="form-label" for="username">{{ _("Username") }}</label>
@@ -48,7 +158,7 @@
         </div>
         <div class="col-md-3">
           <label class="form-label" for="poll_interval_seconds">{{ _("Poll interval (seconds)") }}</label>
-          <input class="form-control" id="poll_interval_seconds" name="poll_interval_seconds" value="{{ config.poll_interval_seconds or 300 }}" min="30">
+          <input class="form-control" id="poll_interval_seconds" name="poll_interval_seconds" value="{{ poll_interval }}" min="30">
         </div>
         <div class="col-md-3">
           <label class="form-label" for="default_priority">{{ _("Default priority") }}</label>
@@ -111,17 +221,17 @@
       </div>
 
       <hr class="my-4">
-      <div class="row">
+      <div class="row align-items-center">
         <div class="col-md-6">
           <p class="mb-1"><strong>{{ _("Last run") }}:</strong>
-            {% if config.last_run_at %}
-              {{ config.last_run_at }}
+            {% if last_run %}
+              {{ last_run }}
             {% else %}
               {{ _("Never") }}
             {% endif %}
           </p>
           <p class="mb-0"><strong>{{ _("Last error") }}:</strong>
-            {% if config.last_error %}
+            {% if has_error %}
               <span class="text-danger">{{ config.last_error }}</span>
             {% else %}
               <span class="text-success">{{ _("None") }}</span>
