@@ -26,3 +26,19 @@ The Backup Monitor module adds LTO tape lifecycle management, backup job trackin
 2. Sign in as an admin and visit **Manage → Backup Monitor**.
 3. Use the summary actions to register tapes or log backup jobs.
 4. Manage access rights via **Manage → Access** (look for the `Backup Monitor` module toggle).
+
+## Network Host Import Script
+
+Use `scripts/import_network_hosts.py` to bulk load hosts into an existing network (or create one on the fly). Example:
+
+```bash
+python scripts/import_network_hosts.py \
+  --csv data/lan_hosts.csv \
+  --network 192.168.1.0/24 \
+  --create-if-missing \
+  --network-name "HQ LAN"
+```
+
+- The CSV must contain an `ip_address` column; optional fields are `hostname`, `mac_address`, `device_type`, `assigned_to`, `description`, and `is_reserved`.
+- Hosts are updated when they already exist; new rows are inserted automatically.
+- Add `--dry-run` to preview changes without committing.
