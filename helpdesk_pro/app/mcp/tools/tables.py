@@ -128,6 +128,21 @@ def _coerce_boolean_literal(column: str, value: Any) -> bool:
     raise ToolExecutionError(f"Invalid boolean literal for {column!r}: {value!r}")
 
 
+def _coerce_integer_literal(column: str, value: Any) -> int:
+    if isinstance(value, bool):
+        raise ToolExecutionError(f"Invalid integer literal for {column!r}: {value!r}")
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        if re.fullmatch(r"[+-]?\d+", text):
+            try:
+                return int(text, 10)
+            except ValueError as exc:  # pragma: no cover
+                raise ToolExecutionError(f"Invalid integer literal for {column!r}: {value!r}") from exc
+    raise ToolExecutionError(f"Invalid integer literal for {column!r}: {value!r}")
+
+
 def _coerce_timestamp_literal(column: str, value: Any) -> Tuple[datetime, bool]:
     """Return (datetime_value, matched_date_only)."""
 
@@ -148,7 +163,33 @@ def _coerce_timestamp_literal(column: str, value: Any) -> Tuple[datetime, bool]:
     raise ToolExecutionError(f"Expected a datetime value for {column!r}, got {type(value).__name__}")
 
 
+def _handle_integer_reference(
+    table: str,
+    column: str,
+    value: str,
+    base_param: str,
+) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """
+    Allow natural string inputs for integer foreign keys where it makes sense,
+    e.g. ticket.assigned_to='geozac' should match the username.
+    """
+
+    lowered = value.strip()
+    if not lowered:
+        return None
+
+    if table == "ticket" and column in {"assigned_to", "created_by"}:
+        param = f"{base_param}_username"
+        clause = (
+            f'"{column}" IN (SELECT id FROM "user" WHERE LOWER(username) = LOWER(:{param}))'
+        )
+        return clause, {param: lowered}
+
+    return None
+
+
 def _prepare_filter_clause(
+    table: str,
     column: str,
     value: Any,
     column_meta: Optional[Dict[str, Any]],
@@ -180,6 +221,18 @@ def _prepare_filter_clause(
             )
         return f'"{column}" = :{base_param}', {base_param: coerced}
 
+    if meta_type in {"integer", "bigint", "smallint"}:
+        if isinstance(value, str):
+            text = value.strip()
+            if text and not re.fullmatch(r"[+-]?\d+", text):
+                handled = _handle_integer_reference(table, column, text, base_param)
+                if handled:
+                    clause, clause_params = handled
+                    return clause, clause_params
+                raise ToolExecutionError(f"Invalid integer literal for {column!r}: {value!r}")
+        coerced = _coerce_integer_literal(column, value)
+        return f'"{column}" = :{base_param}', {base_param: coerced}
+
     return f'"{column}" = :{base_param}', {base_param: value}
 
 
@@ -193,7 +246,7 @@ def _build_where_and_params(table: str, filters: Dict[str, Any], cols: List[Dict
         if not _is_ident(column) or column not in allowed_cols:
             raise ToolExecutionError(f"Invalid filter column: {column}")
         try:
-            clause, clause_params = _prepare_filter_clause(column, value, column_meta.get(column))
+            clause, clause_params = _prepare_filter_clause(table, column, value, column_meta.get(column))
         except ToolExecutionError:
             raise
         except Exception as exc:  # pragma: no cover

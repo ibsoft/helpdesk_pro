@@ -25,9 +25,16 @@
             </div>
 
             <div class="mb-3">
+              <label class="form-label" for="full_name">{{ _('Full name') }}</label>
+              <input type="text" class="form-control" id="full_name" name="full_name" value="{{ request.form.full_name or '' }}">
+            </div>
+
+            <div class="mb-3">
               <label class="form-label" for="password">{{ _('Password') }}</label>
-              <input type="password" class="form-control" id="password" name="password" required minlength="8">
-              <div class="form-text">{{ _('Use at least 8 characters with a mix of letters and numbers.') }}</div>
+              <input type="password" class="form-control" id="password" name="password" required minlength="12">
+              <div class="form-text">
+                {{ _('Use at least 12 characters including uppercase, lowercase, number, and symbol.') }}
+              </div>
             </div>
 
             <div class="mb-4">

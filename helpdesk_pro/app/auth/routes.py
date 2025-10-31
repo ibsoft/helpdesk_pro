@@ -7,7 +7,7 @@ from sqlalchemy import func
 from app import db, login_manager, mail
 from app.models.user import User
 from app.models.auth_config import AuthConfig
-from werkzeug.security import generate_password_hash
+from app.utils.security import validate_password_strength
 from flask_babel import gettext as _
 
 
@@ -31,7 +31,8 @@ def login():
         else:
             remember = bool(request.form.get("remember"))
             login_user(user, remember=remember)
-            flash(_("Welcome, %(username)s!", username=user.username), "success")
+            display_name = user.full_name or user.username
+            flash(_("Welcome, %(username)s!", username=display_name), "success")
             next_url = request.args.get("next")
             if next_url:
                 return redirect(next_url)
@@ -95,6 +96,7 @@ def register():
 
         username = (request.form.get("username") or "").strip()
         email = (request.form.get("email") or "").strip().lower()
+        full_name = (request.form.get("full_name") or "").strip()
         password = request.form.get("password") or ""
         confirm_password = request.form.get("confirm_password") or ""
 
@@ -107,8 +109,9 @@ def register():
             errors.append(_("Username is already taken."))
         if User.query.filter(func.lower(User.email) == email).first():
             errors.append(_("An account with that email already exists."))
-        if len(password) < 8:
-            errors.append(_("Password must be at least 8 characters long."))
+        ok, password_errors = validate_password_strength(password)
+        if not ok:
+            errors.extend([_(msg) for msg in password_errors])
         if password != confirm_password:
             errors.append(_("Passwords do not match."))
 
@@ -123,6 +126,7 @@ def register():
         user = User(
             username=username,
             email=email,
+            full_name=full_name or None,
             role=config.default_role,
             active=True,
         )
@@ -152,8 +156,10 @@ def reset_password(token):
     if request.method == "POST":
         password = request.form.get("password") or ""
         confirm_password = request.form.get("confirm_password") or ""
-        if len(password) < 8:
-            flash(_("Password must be at least 8 characters long."), "danger")
+        ok, password_errors = validate_password_strength(password)
+        if not ok:
+            for msg in password_errors:
+                flash(_(msg), "danger")
         elif password != confirm_password:
             flash(_("Passwords do not match."), "danger")
         else:
@@ -177,24 +183,37 @@ def setup_admin():
         return redirect(url_for("auth.login"))
 
     if request.method == "POST":
-        username = request.form.get("username").strip()
-        password = request.form.get("password").strip()
-        email = request.form.get("email").strip()
+        username = (request.form.get("username") or "").strip()
+        password = request.form.get("password") or ""
+        email = (request.form.get("email") or "").strip()
+        full_name = (request.form.get("full_name") or "").strip()
 
-        if not username or not password:
-            flash("Username and password required", "danger")
+        errors = []
+        if not username:
+            errors.append(_("Username is required."))
+        if not password:
+            errors.append(_("Password is required."))
+        else:
+            ok, password_errors = validate_password_strength(password)
+            if not ok:
+                errors.extend([_(msg) for msg in password_errors])
+
+        if errors:
+            for msg in errors:
+                flash(msg, "danger")
             return redirect(url_for("auth.setup_admin"))
 
         admin = User(
             username=username,
-            email=email,
+            email=email or None,
+            full_name=full_name or None,
             role="admin",
             active=True,
-            password_hash=generate_password_hash(password)
         )
+        admin.set_password(password)
         db.session.add(admin)
         db.session.commit()
-        flash("Administrator account created successfully.", "success")
+        flash(_("Administrator account created successfully."), "success")
         login_user(admin)
         return redirect(url_for("dashboard.index"))
 

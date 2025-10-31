@@ -43,7 +43,7 @@ def list_tickets():
         if current_user.role == "admin":
             tickets = Ticket.query.order_by(Ticket.id.desc()).all()
             users = User.query.filter_by(
-                role="technician", active=True).order_by(User.username).all()
+                active=True).order_by(User.username).all()
 
         elif current_user.role == "manager":
             dept_users = User.query.filter_by(
@@ -59,9 +59,16 @@ def list_tickets():
                 )
             ).order_by(Ticket.id.desc()).all()
 
-            users = User.query.filter_by(
-                role="technician", active=True, department=current_user.department
+            allowed_roles = ["technician", "user"]
+            users = User.query.filter(
+                User.active.is_(True),
+                User.department == current_user.department,
+                User.role.in_(allowed_roles),
             ).order_by(User.username).all()
+
+            if current_user.active and not any(u.id == current_user.id for u in users):
+                users.append(current_user)
+                users.sort(key=lambda u: (u.username or "").lower())
 
         else:
             tickets = Ticket.query.filter(
@@ -139,12 +146,17 @@ def edit_ticket(id):
 
     try:
         if current_user.role == "admin":
-            users = User.query.filter_by(
-                role="technician", active=True).order_by(User.username).all()
+            users = User.query.filter_by(active=True).order_by(User.username).all()
         elif current_user.role == "manager":
-            users = User.query.filter_by(
-                role="technician", active=True, department=current_user.department
+            allowed_roles = ["technician", "user"]
+            users = User.query.filter(
+                User.active.is_(True),
+                User.department == current_user.department,
+                User.role.in_(allowed_roles),
             ).order_by(User.username).all()
+            if current_user.active and not any(u.id == current_user.id for u in users):
+                users.append(current_user)
+                users.sort(key=lambda u: (u.username or "").lower())
         else:
             users = []
 
@@ -158,8 +170,19 @@ def edit_ticket(id):
 
             if current_user.role == "manager" and assigned_to_val:
                 assigned_user = User.query.get(int(assigned_to_val))
-                if not assigned_user or assigned_user.department != current_user.department:
-                    msg = "Managers can assign only to users within their department."
+                if not assigned_user:
+                    msg = "Selected user was not found."
+                    return jsonify(success=False, message=msg, category="danger")
+                if assigned_user.id != current_user.id:
+                    allowed_roles = {"technician", "user"}
+                    if assigned_user.department != current_user.department:
+                        msg = "Managers can assign only to members of their team."
+                        return jsonify(success=False, message=msg, category="danger")
+                    if assigned_user.role not in allowed_roles:
+                        msg = "Managers can assign only to Technicians or Users from their team."
+                        return jsonify(success=False, message=msg, category="danger")
+                if not assigned_user.active:
+                    msg = "Cannot assign tickets to inactive users."
                     # Always return JSON for modal consistency
                     return jsonify(success=False, message=msg, category="danger")
 

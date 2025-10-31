@@ -5,8 +5,8 @@ from datetime import datetime
 
 def init_demo_data():
     if not User.query.filter_by(username='admin').first():
-        admin = User(username='admin', email='admin@helpdesk.local', role='admin')
-        admin.set_password('change_me')
+        admin = User(username='admin', email='admin@helpdesk.local', full_name='Demo Administrator', role='admin')
+        admin.set_password('ChangeMe123!@')
         db.session.add(admin)
         db.session.commit()
 

@@ -1,148 +1,118 @@
-2025-10-31 15:44:47,037 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
+2025-10-31 19:18:34,803 [ERROR] helpdesk_pro.mcp: Unexpected MCP error
+Traceback (most recent call last):
+  File "asyncpg/protocol/prepared_stmt.pyx", line 175, in asyncpg.protocol.protocol.PreparedStatementState._encode_bind_msg
+  File "asyncpg/protocol/codecs/base.pyx", line 227, in asyncpg.protocol.protocol.Codec.encode
+  File "asyncpg/protocol/codecs/base.pyx", line 129, in asyncpg.protocol.protocol.Codec.encode_scalar
+  File "asyncpg/pgproto/./codecs/int.pyx", line 54, in asyncpg.pgproto.pgproto.int4_encode
+TypeError: 'str' object cannot be interpreted as an integer
 
-2025-10-31 15:44:47,038 [INFO] app: MCP server thread exited.
-2025-10-31 15:44:49,268 [INFO] app: Helpdesk Pro started
-2025-10-31 15:44:50,647 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:44:50,691 [INFO] uvicorn.error: Started server process [128117]
-2025-10-31 15:44:50,691 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:44:50,691 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:44:50,692 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:44:57,610 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:44:57,711 [INFO] uvicorn.error: Finished server process [128117]
-2025-10-31 15:44:57,713 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
+The above exception was the direct cause of the following exception:
 
-2025-10-31 15:44:57,714 [INFO] app: MCP server thread exited.
-2025-10-31 15:44:59,863 [INFO] app: Helpdesk Pro started
-2025-10-31 15:45:05,651 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:45:05,698 [INFO] uvicorn.error: Started server process [128230]
-2025-10-31 15:45:05,698 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:45:05,699 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:45:05,699 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:45:15,330 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:45:15,430 [INFO] uvicorn.error: Finished server process [128230]
-2025-10-31 15:45:15,431 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
+Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 538, in _prepare_and_execute
+    self._rows = await prepared_stmt.fetch(*parameters)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py", line 176, in fetch
+    data = await self.__bind_execute(args, 0, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py", line 241, in __bind_execute
+    data, status, _ = await self.__do_execute(
+                      ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/asyncpg/prepared_stmt.py", line 230, in __do_execute
+    return await executor(protocol)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "asyncpg/protocol/protocol.pyx", line 186, in bind_execute
+  File "asyncpg/protocol/prepared_stmt.pyx", line 204, in asyncpg.protocol.protocol.PreparedStatementState._encode_bind_msg
+asyncpg.exceptions.DataError: invalid input for query argument $1: 'geozac' ('str' object cannot be interpreted as an integer)
 
-2025-10-31 15:45:15,432 [INFO] app: MCP server thread exited.
-2025-10-31 15:45:17,676 [INFO] app: Helpdesk Pro started
-2025-10-31 15:45:20,648 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:45:20,687 [INFO] uvicorn.error: Started server process [128472]
-2025-10-31 15:45:20,688 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:45:20,688 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:45:20,689 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:45:33,126 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:45:33,226 [INFO] uvicorn.error: Finished server process [128472]
-2025-10-31 15:45:33,228 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
+The above exception was the direct cause of the following exception:
 
-2025-10-31 15:45:33,229 [INFO] app: MCP server thread exited.
-2025-10-31 15:45:35,337 [INFO] app: Helpdesk Pro started
-2025-10-31 15:45:35,650 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:45:35,691 [INFO] uvicorn.error: Started server process [128671]
-2025-10-31 15:45:35,691 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:45:35,692 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:45:35,692 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:45:39,608 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:45:39,708 [INFO] uvicorn.error: Finished server process [128671]
-2025-10-31 15:45:39,712 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
+Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 572, in execute
+    self._adapt_connection.await_(
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 131, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 550, in _prepare_and_execute
+    self._handle_exception(error)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 501, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 789, in _handle_exception
+    raise translated_error from error
+sqlalchemy.dialects.postgresql.asyncpg.AsyncAdapt_asyncpg_dbapi.Error: <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $1: 'geozac' ('str' object cannot be interpreted as an integer)
 
-2025-10-31 15:45:39,712 [INFO] app: MCP server thread exited.
-2025-10-31 15:45:41,845 [INFO] app: Helpdesk Pro started
-2025-10-31 15:45:50,650 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:45:50,690 [INFO] uvicorn.error: Started server process [128756]
-2025-10-31 15:45:50,690 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:45:50,691 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:45:50,691 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:46:19,671 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:46:19,772 [INFO] uvicorn.error: Finished server process [128756]
-2025-10-31 15:46:19,773 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
+The above exception was the direct cause of the following exception:
 
-2025-10-31 15:46:19,774 [INFO] app: MCP server thread exited.
-2025-10-31 15:46:22,019 [INFO] app: Helpdesk Pro started
-2025-10-31 15:46:22,163 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:46:22,217 [INFO] uvicorn.error: Started server process [129135]
-2025-10-31 15:46:22,217 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:46:22,217 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:46:22,218 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:46:25,326 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:46:25,430 [INFO] uvicorn.error: Finished server process [129135]
-2025-10-31 15:46:25,432 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-10-31 15:46:25,433 [INFO] app: MCP server thread exited.
-2025-10-31 15:46:27,825 [INFO] app: Helpdesk Pro started
-2025-10-31 15:46:36,335 [INFO] app: Helpdesk Pro started
-2025-10-31 15:46:36,587 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 15:46:36,658 [INFO] uvicorn.error: Started server process [129345]
-2025-10-31 15:46:36,658 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 15:46:36,658 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 15:46:36,661 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 15:46:57,366 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=348
-2025-10-31 15:47:28,180 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=335
-2025-10-31 15:47:47,877 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=355
-2025-10-31 15:48:02,773 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=287
-2025-10-31 15:54:30,239 [INFO] uvicorn.error: Shutting down
-2025-10-31 15:54:30,339 [INFO] uvicorn.error: Finished server process [129345]
-2025-10-31 15:54:30,341 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
+Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/mcp/server.py", line 62, in invoke
+    result = await invoke_tool(request.tool, request.arguments)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/mcp/tools/registry.py", line 67, in invoke_tool
+    result_model = await tool.invoke(arguments)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/mcp/tools/base.py", line 57, in invoke
+    result = await self._run(args)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/mcp/tools/tables.py", line 383, in _run
+    total_row = await fetch_one(
+                ^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/mcp/db.py", line 74, in fetch_one
+    result: Result = await session.execute(text(query), params)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py", line 461, in execute
+    result = await greenlet_spawn(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 201, in greenlet_spawn
+    result = context.throw(*sys.exc_info())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2351, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2245, in _execute_internal
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
+    return meth(
+           ^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2353, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 924, in do_execute
+    cursor.execute(statement, parameters)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 572, in execute
+    self._adapt_connection.await_(
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 131, in await_only
+    return current.driver.switch(awaitable)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/util/_concurrency_py3k.py", line 196, in greenlet_spawn
+    value = await result
+            ^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 550, in _prepare_and_execute
+    self._handle_exception(error)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 501, in _handle_exception
+    self._adapt_connection._handle_exception(error)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/asyncpg.py", line 789, in _handle_exception
+    raise translated_error from error
+sqlalchemy.exc.DBAPIError: (sqlalchemy.dialects.postgresql.asyncpg.Error) <class 'asyncpg.exceptions.DataError'>: invalid input for query argument $1: 'geozac' ('str' object cannot be interpreted as an integer)
+[SQL: SELECT COUNT(*) AS n FROM "ticket" WHERE "assigned_to" = $1]
+[parameters: ('geozac',)]
+(Background on this error at: https://sqlalche.me/e/20/dbapi)

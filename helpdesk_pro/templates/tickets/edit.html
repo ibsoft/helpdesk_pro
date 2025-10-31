@@ -29,11 +29,18 @@
     </select>
 
     {% if current_user.role in ['admin', 'manager'] %}
-    <label class="form-label">{{ _('Assign To (Technician)') }}</label>
+    <label class="form-label">{{ _('Assign To') }}</label>
     <select name="assigned_to" class="form-select mb-2">
       <option value="">{{ _('— Unassigned —') }}</option>
       {% for u in users %}
-        <option value="{{ u.id }}" {% if ticket.assigned_to == u.id %}selected{% endif %}>{{ u.username }} ({{ u.department }})</option>
+        <option value="{{ u.id }}" {% if ticket.assigned_to == u.id %}selected{% endif %}>
+          {{ u.username }}
+          {% if u.department %}
+            ({{ u.role|capitalize }} - {{ u.department }})
+          {% else %}
+            ({{ u.role|capitalize }})
+          {% endif %}
+        </option>
       {% endfor %}
     </select>
     {% endif %}
