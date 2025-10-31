@@ -73,6 +73,57 @@
         background-color: rgba(255, 255, 255, 0.18) !important;
       }
 
+      .datatable-wrapper {
+        position: relative;
+      }
+
+      .datatable-loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease-in-out;
+        z-index: 30;
+      }
+
+      .datatable-loading .datatable-loading-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(6px);
+      }
+
+      html[data-bs-theme="dark"] .datatable-loading .datatable-loading-backdrop {
+        background: rgba(15, 23, 42, 0.85);
+      }
+
+      .datatable-loading .datatable-loading-content {
+        position: relative;
+        z-index: 1;
+        padding: 1.25rem 1.75rem;
+        border-radius: 0.85rem;
+        background: rgba(255, 255, 255, 0.92);
+        box-shadow: 0 12px 42px rgba(15, 23, 42, 0.18);
+      }
+
+      html[data-bs-theme="dark"] .datatable-loading .datatable-loading-content {
+        background: rgba(30, 41, 59, 0.92);
+        box-shadow: 0 12px 42px rgba(2, 6, 23, 0.45);
+      }
+
+      .datatable-loading .spinner-border {
+        width: 2.75rem;
+        height: 2.75rem;
+      }
+
+      .datatable-loading.active {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
       /* ─── Gradient modal headers ─── */
       .modal-header-gradient {
         background: linear-gradient(135deg, #111827 0%, #0d6efd 60%, #6610f2 100%);
@@ -489,7 +540,92 @@
             responsive: true,
             autoWidth: false,
             scrollX: false,
+            deferRender: true,
           });
+
+          const loadingText = "{{ _('Loading data...') }}";
+          const spinnerTemplate = `
+            <div class="datatable-loading" aria-hidden="true">
+              <div class="datatable-loading-backdrop"></div>
+              <div class="datatable-loading-content text-center">
+                <div class="spinner-border text-primary" role="status" aria-label="${loadingText}"></div>
+                <div class="fw-semibold mt-3 small">${loadingText}</div>
+              </div>
+            </div>`;
+
+          const ensureWrapper = ($table) => {
+            if (!$table.length) {
+              return null;
+            }
+            if (!$table.closest(".datatable-wrapper").length) {
+              $table.wrap('<div class="datatable-wrapper position-relative"></div>');
+            }
+            return $table.closest(".datatable-wrapper");
+          };
+
+          const getOverlay = ($table, createIfMissing = false) => {
+            const $wrapper = ensureWrapper($table);
+            if (!$wrapper || !$wrapper.length) {
+              return null;
+            }
+            let $overlay = $wrapper.children(".datatable-loading");
+            if (!$overlay.length && createIfMissing) {
+              $overlay = $(spinnerTemplate);
+              $wrapper.append($overlay);
+            }
+            return $overlay.length ? $overlay : null;
+          };
+
+          $(document).on("preInit.dt", function (e, settings) {
+            const api = new $.fn.dataTable.Api(settings);
+            const $table = $(api.table().node());
+            const $overlay = getOverlay($table, true);
+            if ($overlay) {
+              $overlay.addClass("active");
+            }
+          });
+
+          $(document).on("processing.dt", function (e, settings, processing) {
+            const $table = $(settings.nTable);
+            const $overlay = getOverlay($table, processing);
+            if (!$overlay) return;
+            if (processing) {
+              $overlay.addClass("active");
+            } else {
+              $overlay.removeClass("active");
+            }
+          });
+
+          $(document).on("init.dt draw.dt", function (e, settings) {
+            const api = new $.fn.dataTable.Api(settings);
+            const $table = $(api.table().node());
+            const $overlay = getOverlay($table, false);
+            if ($overlay) {
+              $overlay.removeClass("active");
+            }
+          });
+
+          if (!window.DataTableSpinner) {
+            window.DataTableSpinner = {
+              show(target) {
+                if (typeof $ === "undefined") return;
+                const $table = target && target.jquery ? target : $(target);
+                const $overlay = getOverlay($table, true);
+                if ($overlay) {
+                  $overlay.addClass("active");
+                }
+              },
+              hide(target) {
+                if (typeof $ === "undefined") return;
+                const $table = target && target.jquery ? target : $(target);
+                const $overlay = getOverlay($table, false);
+                if ($overlay) {
+                  $overlay.removeClass("active");
+                }
+              },
+            };
+          }
+
           $(document).on("init.dt", function (e, settings) {
             const api = new $.fn.dataTable.Api(settings);
             api.columns.adjust();

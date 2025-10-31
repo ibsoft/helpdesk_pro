@@ -30,6 +30,7 @@ class TapeCartridge(db.Model):
     nominal_capacity_tb = db.Column(db.Numeric(10, 2), nullable=True)
     usable_capacity_tb = db.Column(db.Numeric(10, 2), nullable=True)
     status = db.Column(db.String(32), nullable=False, default="empty")
+    lifecycle_policy = db.Column(db.String(32), nullable=True)
     usage_tags = db.Column(db.Text, nullable=True)
     notes = db.Column(db.Text, nullable=True)
     last_inventory_at = db.Column(db.DateTime, nullable=True)

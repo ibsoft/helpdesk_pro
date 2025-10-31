@@ -4,8 +4,6 @@ Address book blueprint routes.
 Provides contact directory management with CRUD operations.
 """
 
-from collections import Counter
-
 from flask import (
     Blueprint,
     render_template,
@@ -16,6 +14,7 @@ from flask import (
     flash,
 )
 from flask_login import login_required
+from sqlalchemy import func
 
 from app import db
 from app.models import AddressBookEntry
@@ -23,6 +22,7 @@ from app.models import AddressBookEntry
 address_book_bp = Blueprint("address_book", __name__)
 
 ADDRESS_CATEGORIES = ["Vendor", "Partner", "Customer", "Internal", "Other"]
+CHUNK_SIZE = 500
 
 
 def _clean_str(field_name):
@@ -47,13 +47,38 @@ def _json_or_redirect(success, message, category, redirect_endpoint):
 @address_book_bp.route("/address-book")
 @login_required
 def directory():
-    entries = AddressBookEntry.query.order_by(AddressBookEntry.name.asc()).all()
-    category_counts = Counter(entry.category or "Unspecified" for entry in entries)
+    query = AddressBookEntry.query.order_by(AddressBookEntry.name.asc())
+    entries = query.limit(CHUNK_SIZE).all()
+
+    total_entries = db.session.query(func.count(AddressBookEntry.id)).scalar() or 0
+
+    category_rows = (
+        db.session.query(AddressBookEntry.category, func.count(AddressBookEntry.id))
+        .group_by(AddressBookEntry.category)
+        .all()
+    )
+    category_counts = {}
+    unspecified_total = 0
+    for category, count in category_rows:
+        if category:
+            category_counts[category] = count
+        else:
+            unspecified_total += count
+    if unspecified_total:
+        category_counts["Unspecified"] = unspecified_total
+
+    has_more = total_entries > len(entries)
+    next_offset = len(entries)
+
     return render_template(
         "address_book/address_book.html",
         entries=entries,
         categories=ADDRESS_CATEGORIES,
         category_counts=category_counts,
+        total_entries=total_entries,
+        has_more=has_more,
+        next_offset=next_offset,
+        chunk_size=CHUNK_SIZE,
     )
 
 
@@ -142,3 +167,49 @@ def delete_entry(entry_id):
     except Exception as exc:
         db.session.rollback()
         return _json_or_redirect(False, f"Failed to delete contact: {exc}", "danger", "address_book.directory")
+
+
+@address_book_bp.route("/address-book/api/list", methods=["GET"])
+@login_required
+def list_entries_api():
+    try:
+        offset = int(request.args.get("offset", 0))
+        if offset < 0:
+            offset = 0
+    except (TypeError, ValueError):
+        offset = 0
+
+    try:
+        limit = int(request.args.get("limit", CHUNK_SIZE))
+        if limit <= 0 or limit > CHUNK_SIZE:
+            limit = CHUNK_SIZE
+    except (TypeError, ValueError):
+        limit = CHUNK_SIZE
+
+    query = AddressBookEntry.query.order_by(AddressBookEntry.name.asc())
+    total = db.session.query(func.count(AddressBookEntry.id)).scalar() or 0
+    entries = query.offset(offset).limit(limit).all()
+
+    payload = []
+    for entry in entries:
+        data = entry.to_dict()
+        data.update(
+            {
+                "id": entry.id,
+                "update_url": url_for("address_book.update_entry", entry_id=entry.id),
+                "delete_url": url_for("address_book.delete_entry", entry_id=entry.id),
+                "details_url": url_for("address_book.entry_details", entry_id=entry.id),
+            }
+        )
+        payload.append(data)
+
+    next_offset = offset + len(entries)
+    has_more = next_offset < total
+
+    return jsonify(
+        success=True,
+        entries=payload,
+        next_offset=next_offset,
+        has_more=has_more,
+        total=total,
+    )
