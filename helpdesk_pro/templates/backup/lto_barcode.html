@@ -1,0 +1,616 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row g-4">
+  <div class="col-12">
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="card-body p-4 p-lg-5">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-4 mb-4">
+          <div class="flex-shrink-0">
+            <div class="bg-primary-subtle text-primary rounded-4 p-4 d-flex align-items-center justify-content-center">
+              <i class="fa fa-barcode fa-3x"></i>
+            </div>
+          </div>
+          <div>
+            <h2 class="fw-bold mb-2">{{ _('LTO Barcode Label Studio') }}</h2>
+            <p class="text-muted mb-3">
+              {{ _('Design, preview, and export barcode labels for your tape library directly within Helpdesk Pro. Configure prefixes, numbering, and styling, then generate a printable sheet or individual stickers.') }}
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge rounded-pill text-bg-primary"><i class="fa fa-wand-magic-sparkles me-1"></i>{{ _('Instant preview') }}</span>
+              <span class="badge rounded-pill text-bg-success"><i class="fa fa-print me-1"></i>{{ _('PDF export ready') }}</span>
+              <span class="badge rounded-pill text-bg-info"><i class="fa fa-layer-group me-1"></i>{{ _('Batch generation') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="ltoForm" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Tape type') }}</label>
+            <select class="form-select" name="tape_type" id="tapeType" required>
+              <option value="L1" selected>LTO-1 (L1)</option>
+              <option value="L2">LTO-2 (L2)</option>
+              <option value="L3">LTO-3 (L3)</option>
+              <option value="L4">LTO-4 (L4)</option>
+              <option value="L5">LTO-5 (L5)</option>
+              <option value="L6">LTO-6 (L6)</option>
+              <option value="L7">LTO-7 (L7)</option>
+              <option value="L8">LTO-8 (L8)</option>
+              <option value="L9">LTO-9 (L9)</option>
+              <option value="DL">DLT (DL)</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Prefix') }}</label>
+            <input type="text" class="form-control" id="prefix" name="prefix" value="TAP" maxlength="3" required>
+            <div class="form-text">{{ _('Up to 3 alphanumeric characters.') }}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Starting number') }}</label>
+            <input type="number" class="form-control" id="startNumber" name="start_number" value="1" min="0" max="999999" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Number of labels') }}</label>
+            <input type="number" class="form-control" id="labelCount" name="label_count" value="12" min="1" max="96" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Digits per number') }}</label>
+            <input type="number" class="form-control" id="digits" name="digits" value="4" min="1" max="6">
+            <div class="form-text">{{ _('Numbers are padded with leading zeros.') }}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Layout') }}</label>
+            <div class="input-group">
+              <input type="number" class="form-control" id="columns" value="2" min="1" max="6" aria-label="Columns">
+              <span class="input-group-text">×</span>
+              <input type="number" class="form-control" id="rows" value="8" min="1" max="24" aria-label="Rows">
+            </div>
+          </div>
+          <div class="col-md-4 d-flex align-items-center">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="colorized">
+              <label class="form-check-label" for="colorized">{{ _('Tri-optic vibrant palette') }}</label>
+            </div>
+          </div>
+          <div class="col-md-8 d-flex align-items-center justify-content-md-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="clearLabels"><i class="fa fa-trash-can me-1"></i>{{ _('Clear') }}</button>
+            <button type="submit" class="btn btn-primary"><i class="fa fa-wand-magic-sparkles me-1"></i>{{ _('Generate labels') }}</button>
+            <button type="button" class="btn btn-success" id="downloadPdf"><i class="fa fa-file-pdf me-1"></i>{{ _('Download PDF') }}</button>
+          </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+          <h5 class="mb-0"><i class="fa fa-eye me-2 text-primary"></i>{{ _('Preview') }}</h5>
+          <small class="text-muted">{{ _('Click a label to toggle selection before exporting. Selected labels only will be included in the PDF.') }}</small>
+        </div>
+        <div class="lto-grid" id="ltoGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+      <div class="card-body p-4 p-lg-5">
+        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-4 mb-4">
+          <div class="flex-shrink-0">
+            <div class="bg-info-subtle text-info rounded-4 p-4 d-flex align-items-center justify-content-center">
+              <i class="fa fa-wifi fa-3x"></i>
+            </div>
+          </div>
+          <div>
+            <h2 class="fw-bold mb-2">{{ _('Wi-Fi Access Point QR Generator') }}</h2>
+            <p class="text-muted mb-3">{{ _('Share wireless credentials securely. Generate a QR code or create a fresh strong passphrase and copy it with one click.') }}</p>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge rounded-pill text-bg-info"><i class="fa fa-qrcode me-1"></i>{{ _('Instant QR preview') }}</span>
+              <span class="badge rounded-pill text-bg-warning"><i class="fa fa-key me-1"></i>{{ _('Strong password builder') }}</span>
+              <span class="badge rounded-pill text-bg-secondary"><i class="fa fa-copy me-1"></i>{{ _('One-click copy') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <form id="wifiForm" class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label">{{ _('SSID (Network name)') }}</label>
+            <input type="text" class="form-control" id="wifiSsid" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label">{{ _('Security') }}</label>
+            <select class="form-select" id="wifiSecurity">
+              <option value="WPA" selected>WPA/WPA2/WPA3</option>
+              <option value="WEP">WEP</option>
+              <option value="nopass">{{ _('Open network') }}</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="wifiHidden">
+              <label class="form-check-label" for="wifiHidden">{{ _('Hidden SSID') }}</label>
+            </div>
+          </div>
+          <div class="col-md-9">
+            <label class="form-label">{{ _('Password') }}</label>
+            <div class="input-group">
+              <input type="text" class="form-control" id="wifiPassword" autocomplete="off">
+              <button class="btn btn-outline-secondary" type="button" id="generatePassword"><i class="fa fa-wand-magic-sparkles"></i></button>
+              <button class="btn btn-outline-secondary" type="button" id="copyPassword"><i class="fa fa-copy"></i></button>
+            </div>
+            <div class="form-text">{{ _('Leave empty for open networks. Generated passwords are 16 characters with mixed complexity.') }}</div>
+          </div>
+          <div class="col-md-3 d-flex align-items-end justify-content-md-end gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="clearWifi"><i class="fa fa-trash-can me-1"></i>{{ _('Reset form') }}</button>
+            <button type="submit" class="btn btn-info"><i class="fa fa-plus me-1"></i>{{ _('Add card') }}</button>
+          </div>
+        </form>
+
+        <hr class="my-4">
+
+        <div class="row g-4 align-items-center">
+          <div class="col-md-4 text-center">
+            <div class="bg-body-secondary rounded-4 p-4 d-inline-block" id="wifiQrContainer"></div>
+          </div>
+          <div class="col-md-8">
+            <h5 class="fw-semibold mb-3"><i class="fa fa-share-nodes text-info me-2"></i>{{ _('Sharing tips') }}</h5>
+            <ul class="list-unstyled text-muted small">
+              <li class="mb-2"><i class="fa fa-print me-2"></i>{{ _('Print the QR code and place it near the access point for visitors.') }}</li>
+              <li class="mb-2"><i class="fa fa-mobile-screen me-2"></i>{{ _('Most modern phones connect automatically after scanning the code.') }}</li>
+              <li class="mb-2"><i class="fa fa-lock me-2"></i>{{ _('Rotate the password regularly and reprint the QR code to keep your network secure.') }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-4">
+          <h5 class="fw-semibold mb-0"><i class="fa fa-id-card text-info me-2"></i>{{ _('Saved Wi-Fi Cards') }}</h5>
+          <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-secondary" id="clearWifiCards"><i class="fa fa-trash-can me-1"></i>{{ _('Clear cards') }}</button>
+            <button type="button" class="btn btn-success" id="downloadWifiPdf"><i class="fa fa-file-pdf me-1"></i>{{ _('Download cards PDF') }}</button>
+          </div>
+        </div>
+        <p class="text-muted small mt-2">{{ _('Click a card to toggle selection. Only selected cards are included when exporting.') }}</p>
+        <div class="wifi-card-grid" id="wifiCardGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .lto-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 1.25rem;
+  }
+  .lto-card {
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.9) 0%, rgba(240, 249, 255, 0.8) 100%);
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  }
+  html[data-bs-theme="dark"] .lto-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.75) 100%);
+    border-color: rgba(148, 163, 184, 0.2);
+  }
+  .lto-card.selected {
+    border-color: rgba(59, 130, 246, 0.9);
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.15);
+    transform: translateY(-4px);
+  }
+  .lto-card canvas,
+  .lto-card .barcode-img {
+    width: 100%;
+    height: 60px;
+    object-fit: contain;
+  }
+  .lto-label-title {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    font-size: 0.95rem;
+    text-transform: uppercase;
+  }
+  #wifiQrContainer canvas, #wifiQrContainer img {
+    width: 220px !important;
+    height: 220px !important;
+  }
+  .wifi-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+  }
+  .wifi-card {
+    background: linear-gradient(135deg, rgba(240, 249, 255, 0.9) 0%, rgba(224, 242, 254, 0.85) 100%);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+    border-radius: 1.25rem;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    cursor: pointer;
+  }
+  html[data-bs-theme="dark"] .wifi-card {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.85) 0%, rgba(15, 23, 42, 0.7) 100%);
+    border-color: rgba(148, 163, 184, 0.25);
+  }
+  .wifi-card.selected {
+    border-color: rgba(56, 189, 248, 0.9);
+    box-shadow: 0 12px 24px rgba(14, 165, 233, 0.2);
+    transform: translateY(-4px);
+  }
+  .wifi-card img {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    background: #fff;
+    padding: 8px;
+    border-radius: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  .wifi-card .wifi-meta {
+    text-align: center;
+  }
+  .wifi-card .wifi-meta strong {
+    display: block;
+    font-size: 1rem;
+  }
+  .wifi-card .badge {
+    font-size: 0.7rem;
+  }
+  .wifi-card .card-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+  (function() {
+    const ltoForm = document.getElementById("ltoForm");
+    const ltoGrid = document.getElementById("ltoGrid");
+    const downloadPdfBtn = document.getElementById("downloadPdf");
+    const clearLabelsBtn = document.getElementById("clearLabels");
+
+    function colorForIndex(index) {
+      if (!document.getElementById("colorized").checked) {
+        return "#1e293b";
+      }
+      const palette = ["#2563eb", "#0ea5e9", "#10b981", "#f97316", "#e11d48", "#6366f1", "#facc15", "#14b8a6"];
+      return palette[index % palette.length];
+    }
+
+    function buildLabel(prefix, number, mediaCode, index) {
+      const card = document.createElement("div");
+      card.className = "lto-card";
+      card.dataset.media = mediaCode;
+      card.dataset.serial = `${prefix}${number}${mediaCode}`;
+      card.dataset.index = index;
+      card.classList.add("selected");
+
+      const title = document.createElement("div");
+      title.className = "lto-label-title mb-2";
+      title.textContent = `${prefix}${number}${mediaCode}`;
+      title.style.color = colorForIndex(index);
+      card.appendChild(title);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = 320;
+      canvas.height = 80;
+      JsBarcode(canvas, `${prefix}${number}${mediaCode}`, {
+        format: "CODE39",
+        displayValue: false,
+        height: 55,
+        margin: 0,
+        background: "rgba(255,255,255,0)",
+        lineColor: "#111827"
+      });
+      card.appendChild(canvas);
+
+      const meta = document.createElement("div");
+      meta.className = "small text-muted mt-2";
+      meta.textContent = `${prefix}${number}`;
+      card.appendChild(meta);
+
+      card.addEventListener("click", () => {
+        card.classList.toggle("selected");
+      });
+
+      return card;
+    }
+
+    function padNumber(num, digits) {
+      return String(num).padStart(digits, "0");
+    }
+
+    ltoForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const media = document.getElementById("tapeType").value;
+      const prefix = (document.getElementById("prefix").value || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 3);
+      const start = parseInt(document.getElementById("startNumber").value || 1, 10);
+      const count = Math.min(parseInt(document.getElementById("labelCount").value || 1, 10), 120);
+      const digits = Math.min(Math.max(parseInt(document.getElementById("digits").value || 4, 10), 1), 6);
+      const columns = Math.min(Math.max(parseInt(document.getElementById("columns").value || 2, 10), 1), 6);
+      const rows = Math.min(Math.max(parseInt(document.getElementById("rows").value || 8, 10), 1), 24);
+
+      if (!prefix) {
+        showToast("{{ _('Please provide a valid prefix (A-Z, 0-9).') }}", "warning");
+        return;
+      }
+
+      ltoGrid.innerHTML = "";
+      const total = Math.min(count, columns * rows);
+      for (let i = 0; i < total; i++) {
+        const number = padNumber(start + i, digits);
+        const card = buildLabel(prefix, number, media, i);
+        ltoGrid.appendChild(card);
+      }
+      if (!ltoGrid.children.length) {
+        showToast("{{ _('No labels were generated. Adjust the parameters and try again.') }}", "warning");
+      }
+    });
+
+    clearLabelsBtn.addEventListener("click", () => {
+      ltoGrid.innerHTML = "";
+    });
+
+    downloadPdfBtn.addEventListener("click", async () => {
+      const selected = Array.from(ltoGrid.querySelectorAll(".lto-card.selected"));
+      if (!selected.length) {
+        showToast("{{ _('Select at least one label before exporting.') }}", "warning");
+        return;
+      }
+      const clone = document.createElement("div");
+      clone.style.display = "grid";
+      clone.style.gridTemplateColumns = "repeat(3, 1fr)";
+      clone.style.gap = "20px";
+      selected.forEach(card => {
+        const copy = card.cloneNode(true);
+        copy.classList.remove("selected");
+        const originalCanvas = card.querySelector("canvas");
+        const copyCanvas = copy.querySelector("canvas");
+        if (originalCanvas && copyCanvas) {
+          try {
+            const img = document.createElement("img");
+            img.src = originalCanvas.toDataURL("image/png");
+            img.className = "barcode-img";
+            copyCanvas.replaceWith(img);
+          } catch (err) {
+            console.error("Failed to convert barcode canvas", err);
+          }
+        }
+        clone.appendChild(copy);
+      });
+      document.body.appendChild(clone);
+      await html2canvas(clone, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "landscape", unit: "pt", format: "a4" });
+        const imgData = canvas.toDataURL("image/png");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+        const width = canvas.width * ratio;
+        const height = canvas.height * ratio;
+        pdf.addImage(imgData, "PNG", (pageWidth - width) / 2, (pageHeight - height) / 2, width, height);
+        pdf.save(`LTO-labels-${Date.now()}.pdf`);
+      });
+      document.body.removeChild(clone);
+      showToast("{{ _('PDF generated successfully.') }}", "success");
+    });
+
+    // Wi-Fi section
+    const wifiForm = document.getElementById("wifiForm");
+    const wifiQrContainer = document.getElementById("wifiQrContainer");
+    const generatePasswordBtn = document.getElementById("generatePassword");
+    const copyPasswordBtn = document.getElementById("copyPassword");
+    const clearWifiBtn = document.getElementById("clearWifi");
+    const wifiCardGrid = document.getElementById("wifiCardGrid");
+    const downloadWifiPdfBtn = document.getElementById("downloadWifiPdf");
+    const clearWifiCardsBtn = document.getElementById("clearWifiCards");
+    let wifiQr;
+
+    function ensureQrInstance() {
+      if (!wifiQr) {
+        wifiQr = new QRCode(wifiQrContainer, {
+          width: 220,
+          height: 220,
+          colorDark: "#111827",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+      } else {
+        wifiQr.clear();
+      }
+    }
+
+    function generateStrongPassword() {
+      const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@#$%&*+-";
+      let pass = "";
+      for (let i = 0; i < 16; i++) {
+        pass += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return pass;
+    }
+
+    generatePasswordBtn.addEventListener("click", () => {
+      document.getElementById("wifiPassword").value = generateStrongPassword();
+    });
+
+    copyPasswordBtn.addEventListener("click", () => {
+      const field = document.getElementById("wifiPassword");
+      if (!field.value) {
+        showToast("{{ _('Nothing to copy.') }}", "warning");
+        return;
+      }
+      navigator.clipboard.writeText(field.value)
+        .then(() => showToast("{{ _('Password copied to clipboard.') }}", "success"))
+        .catch(() => showToast("{{ _('Unable to copy password.') }}", "danger"));
+    });
+
+    clearWifiBtn.addEventListener("click", () => {
+      document.getElementById("wifiSsid").value = "";
+      document.getElementById("wifiPassword").value = "";
+      document.getElementById("wifiSecurity").value = "WPA";
+      document.getElementById("wifiHidden").checked = false;
+      if (wifiQr) {
+        wifiQr.clear();
+      }
+    });
+
+    function createWifiQrImage(text) {
+      const tempContainer = document.createElement("div");
+      const generator = new QRCode(tempContainer, {
+        text,
+        width: 220,
+        height: 220,
+        colorDark: "#111827",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+      const canvas = tempContainer.querySelector("canvas");
+      let dataUrl = "";
+      if (canvas) {
+        dataUrl = canvas.toDataURL("image/png");
+      }
+      generator.clear();
+      return dataUrl;
+    }
+
+    function addWifiCard({ ssid, security, hidden, password, qrString }) {
+      const card = document.createElement("div");
+      card.className = "wifi-card selected";
+
+      const img = document.createElement("img");
+      img.src = createWifiQrImage(qrString);
+      img.alt = ssid;
+      card.appendChild(img);
+
+      const meta = document.createElement("div");
+      meta.className = "wifi-meta";
+      const securityLabel = security === "nopass" ? "{{ _('Open network') }}" : security;
+      meta.innerHTML = `
+        <strong>${ssid}</strong>
+        <span class="text-muted small">${securityLabel}</span>
+        ${hidden ? `<span class=\"badge rounded-pill text-bg-warning mt-2\"><i class=\"fa fa-eye-slash me-1\"></i>{{ _('Hidden SSID') }}</span>` : ""}
+        ${security !== "nopass" && password ? `<div class=\"mt-2\"><code>${password}</code></div>` : ""}
+      `;
+      card.appendChild(meta);
+
+      const actions = document.createElement("div");
+      actions.className = "card-actions";
+      const copyBtn = document.createElement("button");
+      copyBtn.type = "button";
+      copyBtn.className = "btn btn-sm btn-outline-secondary";
+      copyBtn.innerHTML = `<i class=\"fa fa-copy me-1\"></i>{{ _('Copy password') }}`;
+      copyBtn.addEventListener("click", (evt) => {
+        evt.stopPropagation();
+        if (password) {
+          navigator.clipboard.writeText(password)
+            .then(() => showToast("{{ _('Password copied to clipboard.') }}", "success"))
+            .catch(() => showToast("{{ _('Unable to copy password.') }}", "danger"));
+        } else {
+          showToast("{{ _('This network has no password.') }}", "info");
+        }
+      });
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "btn btn-sm btn-outline-danger";
+      removeBtn.innerHTML = `<i class=\"fa fa-trash-can me-1\"></i>{{ _('Remove') }}`;
+      removeBtn.addEventListener("click", (evt) => {
+        evt.stopPropagation();
+        wifiCardGrid.removeChild(card);
+      });
+      actions.appendChild(copyBtn);
+      actions.appendChild(removeBtn);
+      card.appendChild(actions);
+
+      card.addEventListener("click", () => {
+        card.classList.toggle("selected");
+      });
+
+      wifiCardGrid.appendChild(card);
+    }
+
+    function escapeWifiComponent(value) {
+      return value.replace(/([\\\\;:,\"])/g, "\\\\$1");
+    }
+
+    wifiForm.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const ssidRaw = document.getElementById("wifiSsid").value.trim();
+      const security = document.getElementById("wifiSecurity").value;
+      const passwordRaw = document.getElementById("wifiPassword").value;
+      const hidden = document.getElementById("wifiHidden").checked;
+
+      if (!ssidRaw) {
+        showToast("{{ _('SSID is required to generate a QR code.') }}", "warning");
+        return;
+      }
+      if (security !== "nopass" && !passwordRaw) {
+        showToast("{{ _('Provide a password or select open network.') }}", "warning");
+        return;
+      }
+
+      const ssid = escapeWifiComponent(ssidRaw);
+      const password = escapeWifiComponent(passwordRaw);
+
+      let qrString;
+      if (security === "nopass") {
+        qrString = `WIFI:T:nopass;S:${ssid};${hidden ? "H:true;" : ""};`; 
+      } else {
+        qrString = `WIFI:T:${security};S:${ssid};P:${password};${hidden ? "H:true;" : ""};`;
+      }
+
+      ensureQrInstance();
+      wifiQr.makeCode(qrString);
+      addWifiCard({ ssid: ssidRaw, security, hidden, password: passwordRaw, qrString });
+      showToast("{{ _('Wi-Fi card added.') }}", "success");
+    });
+
+    clearWifiCardsBtn.addEventListener("click", () => {
+      wifiCardGrid.innerHTML = "";
+      showToast("{{ _('All Wi-Fi cards cleared.') }}", "info");
+    });
+
+    downloadWifiPdfBtn.addEventListener("click", async () => {
+      const selected = Array.from(wifiCardGrid.querySelectorAll(".wifi-card.selected"));
+      if (!selected.length) {
+        showToast("{{ _('Select at least one Wi-Fi card before exporting.') }}", "warning");
+        return;
+      }
+      const clone = document.createElement("div");
+      clone.style.display = "grid";
+      clone.style.gridTemplateColumns = "repeat(2, 1fr)";
+      clone.style.gap = "24px";
+      selected.forEach(card => {
+        const copy = card.cloneNode(true);
+        copy.classList.remove("selected");
+        clone.appendChild(copy);
+      });
+      document.body.appendChild(clone);
+      await html2canvas(clone, { backgroundColor: "#ffffff", scale: 2 }).then(canvas => {
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+        const imgData = canvas.toDataURL("image/png");
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const pageHeight = pdf.internal.pageSize.getHeight();
+        const ratio = Math.min(pageWidth / canvas.width, pageHeight / canvas.height);
+        const width = canvas.width * ratio;
+        const height = canvas.height * ratio;
+        pdf.addImage(imgData, "PNG", (pageWidth - width) / 2, (pageHeight - height) / 2, width, height);
+        pdf.save(`wifi-cards-${Date.now()}.pdf`);
+      });
+      document.body.removeChild(clone);
+      showToast("{{ _('Wi-Fi cards PDF generated.') }}", "success");
+    });
+  })();
+</script>
+
+{% endblock %}

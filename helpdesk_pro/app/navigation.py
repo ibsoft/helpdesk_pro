@@ -163,6 +163,20 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin", "manager", "technician"],
                 "endpoint": "backup.monitor",
             },
+            {
+                "key": "lto_barcode_generator",
+                "label": _("LTO Barcode Generator"),
+                "icon": "fa fa-barcode text-info",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "backup.lto_barcode_generator",
+            },
+            {
+                "key": "password_workbench",
+                "label": _("Password & PIN Studio"),
+                "icon": "fa fa-key text-danger",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "tools.password_generator",
+            },
         ],
     },
     {

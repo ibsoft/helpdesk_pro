@@ -127,6 +127,7 @@ def create_app():
     from app.contracts.routes import contracts_bp
     from app.address_book.routes import address_book_bp
     from app.backup.routes import backup_bp
+    from app.tools.routes import tools_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -142,6 +143,7 @@ def create_app():
     app.register_blueprint(contracts_bp)
     app.register_blueprint(address_book_bp)
     app.register_blueprint(backup_bp)
+    app.register_blueprint(tools_bp)
 
     with app.app_context():
         from app.models.module_permission import ModulePermission
