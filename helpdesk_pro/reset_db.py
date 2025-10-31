@@ -78,14 +78,15 @@ def create_admin_user():
             admin = User(
                 username="admin",
                 email="admin@example.com",
+                full_name="System Administrator",
                 role="admin",
                 department="IT",
                 active=True,
             )
-            admin.set_password("Admin123!")
+            admin.set_password("Admin1234!@#")
             db.session.add(admin)
             db.session.commit()
-            print("✅ Admin user created (username=admin, password=Admin123!).")
+            print("✅ Admin user created (username=admin, password=Admin1234!@#).")
         else:
             print("ℹ️ Admin user already exists.")
 

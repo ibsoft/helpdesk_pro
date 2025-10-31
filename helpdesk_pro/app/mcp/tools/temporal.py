@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from typing import Any, Dict
 from zoneinfo import ZoneInfo
 
@@ -41,7 +41,7 @@ class TimeNowTool(BaseTool[TimeNowArgs, TimeNowResult]):
             raise ToolExecutionError(f"Unknown timezone: {arguments.timezone}") from exc
 
         now = datetime.now(tz)
-        now_utc = now.astimezone(UTC)
+        now_utc = now.astimezone(timezone.utc)
 
         return {
             "timezone": arguments.timezone,
@@ -57,4 +57,3 @@ class TimeNowTool(BaseTool[TimeNowArgs, TimeNowResult]):
 __all__ = [
     "TimeNowTool",
 ]
-

@@ -109,6 +109,7 @@
         <thead class="table-dark">
           <tr>
             <th>{{ _('ID') }}</th>
+            <th>{{ _('Full Name') }}</th>
             <th>{{ _('Username') }}</th>
             <th>{{ _('Email') }}</th>
             <th>{{ _('Role') }}</th>
@@ -119,11 +120,12 @@
           </tr>
         </thead>
         <tbody>
-          {% for u in users %}
-          <tr id="user-row-{{ u.id }}">
-            <td>{{ u.id }}</td>
-            <td>{{ u.username }}</td>
-            <td>{{ u.email }}</td>
+    {% for u in users %}
+    <tr id="user-row-{{ u.id }}">
+      <td>{{ u.id }}</td>
+      <td>{{ u.full_name or '—' }}</td>
+      <td>{{ u.username }}</td>
+      <td>{{ u.email }}</td>
             <td>
               {% if u.role == 'admin' %}
                 <span class="badge bg-danger">{{ _('Admin') }}</span>
@@ -176,6 +178,9 @@
 
                     <label class="form-label">{{ _('Email') }}</label>
                     <input name="email" type="email" class="form-control mb-2" value="{{ u.email }}" required>
+
+                    <label class="form-label">{{ _('Full Name') }}</label>
+                    <input name="full_name" class="form-control mb-2" value="{{ u.full_name or '' }}">
 
                     <label class="form-label">{{ _('Role') }}</label>
                     <select name="role" class="form-select mb-2">
@@ -231,6 +236,9 @@
 
             <label class="form-label">{{ _('Email') }}</label>
             <input name="email" type="email" class="form-control mb-2" required>
+
+            <label class="form-label">{{ _('Full Name') }}</label>
+            <input name="full_name" class="form-control mb-2">
 
             <label class="form-label">{{ _('Password') }}</label>
             <input name="password" type="password" class="form-control mb-2" required>
@@ -332,11 +340,11 @@
         }
       ],
       columnDefs: [
-        { targets: [6], type: 'date', searchBuilderType: 'date' },
+        { targets: [7], type: 'date', searchBuilderType: 'date' },
         { targets: -1, orderable: false, searchable: false }
       ],
       searchBuilder: {
-        columns: [0, 1, 2, 3, 4, 5, 6]
+        columns: [0, 1, 2, 3, 4, 5, 6, 7]
       }
     });
 
@@ -349,12 +357,28 @@
 
     $('#confirmDeleteBtn').on('click', function () {
       if (!deleteUserId) return;
-      $.post("{{ url_for('users.delete_user', id=0) }}".replace('0', deleteUserId), {
-        csrf_token: "{{ csrf_token() }}"
-      }).done(function () {
-        table.row($('#user-row-' + deleteUserId)).remove().draw();
+      const url = "{{ url_for('users.delete_user', id=0) }}".replace('0', deleteUserId);
+      $.ajax({
+        url: url,
+        type: 'POST',
+        data: { csrf_token: "{{ csrf_token() }}" },
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      }).done(function (res) {
+        if (res && res.success) {
+          table.row($('#user-row-' + deleteUserId)).remove().draw();
+          showToast(res.message || '{{ _("User deleted successfully.") }}', 'success');
+        } else {
+          const message = (res && (res.message || res.error)) || '{{ _("Failed to delete user.") }}';
+          showToast(message, 'warning');
+        }
+      }).fail(function (xhr) {
+        const data = xhr.responseJSON || {};
+        const message = data.message || data.error || '{{ _("Failed to delete user.") }}';
+        showToast(message, 'danger');
       }).always(function () {
-        bootstrap.Modal.getInstance(document.getElementById('deleteConfirmModal')).hide();
+        const modalEl = document.getElementById('deleteConfirmModal');
+        const instance = bootstrap.Modal.getInstance(modalEl);
+        if (instance) instance.hide();
         deleteUserId = null;
       });
     });

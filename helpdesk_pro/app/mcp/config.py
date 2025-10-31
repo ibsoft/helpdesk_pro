@@ -7,7 +7,7 @@ Flask application configuration at runtime.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Optional
 
 from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings
@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     max_rows: int = Field(1000, alias="MCP_MAX_ROWS")
     request_timeout_seconds: int = Field(10, alias="MCP_REQUEST_TIMEOUT")
     allowed_origins: list[str] = Field(default_factory=list, alias="MCP_ALLOWED_ORIGINS")
-    base_url: str | None = Field(default=None, alias="BASE_URL")
+    base_url: Optional[str] = Field(default=None, alias="BASE_URL")
     environment: str = Field("development", alias="MCP_ENV")
 
     class Config:
@@ -36,11 +36,11 @@ class Settings(BaseSettings):
         extra = "ignore"
 
 
-_settings_cache: Settings | None = None
+_settings_cache: Optional[Settings] = None
 settings: Settings
 
 
-def configure(overrides: Mapping[str, Any] | None = None) -> Settings:
+def configure(overrides: Optional[Mapping[str, Any]] = None) -> Settings:
     """
     Populate the settings cache using optional mapping overrides.
 

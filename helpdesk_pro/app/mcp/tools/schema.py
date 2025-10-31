@@ -4,7 +4,7 @@ Schema discovery tools.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field, ConfigDict, validator
 
@@ -69,7 +69,7 @@ class TableColumn(BaseModel):
     name: str
     data_type: str
     is_nullable: bool
-    default: str | None = None
+    default: Optional[str] = None
 
 
 class DescribeTableResult(BaseModel):
