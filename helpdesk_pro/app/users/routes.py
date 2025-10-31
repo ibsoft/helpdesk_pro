@@ -1,5 +1,9 @@
+import os
+import time
+import shutil
 from flask import Blueprint, render_template, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
+from werkzeug.utils import secure_filename
 from app import db, csrf
 from app.models.user import User
 from app.models.ticket import Ticket
@@ -24,6 +28,9 @@ from sqlalchemy import func, or_, text, inspect
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 users_bp = Blueprint("users", __name__)
+
+ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
+MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 @users_bp.route("/users", methods=["GET"])
@@ -51,7 +58,7 @@ def list_users():
 @role_required('admin')
 def add_user():
     username = (request.form.get("username") or "").strip()
-    email = (request.form.get("email") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
     full_name = (request.form.get("full_name") or "").strip()
     password = request.form.get("password") or ""
     password_confirm = request.form.get("password_confirm") or ""
@@ -132,6 +139,137 @@ def edit_user(id):
 
     db.session.commit()
     return jsonify(success=True, message="User updated successfully")
+
+
+def _allowed_avatar(filename: str) -> bool:
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_AVATAR_EXTENSIONS
+
+
+def _avatar_upload_folder() -> str:
+    folder = current_app.config.get("AVATAR_UPLOAD_FOLDER")
+    if not folder:
+        folder = os.path.join(current_app.static_folder, "uploads", "avatars")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def _legacy_avatar_folder() -> str:
+    return os.path.join(current_app.root_path, "static", "uploads", "avatars")
+
+
+def _remove_avatar_file(filename: str) -> None:
+    if not filename:
+        return
+    paths = [os.path.join(_avatar_upload_folder(), filename),
+             os.path.join(_legacy_avatar_folder(), filename)]
+    for path in paths:
+        try:
+            if os.path.isfile(path):
+                os.remove(path)
+        except OSError:
+            current_app.logger.warning("Failed to remove avatar file %s", path, exc_info=True)
+
+
+@users_bp.route("/profile", methods=["POST"])
+@login_required
+def update_profile():
+    user = current_user
+    full_name = (request.form.get("full_name") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+
+    if not email:
+        return jsonify(success=False, message="Email is required."), 400
+
+    duplicate_email = (
+        User.query.filter(func.lower(User.email) == email.lower(), User.id != user.id).first()
+    )
+    if duplicate_email:
+        return jsonify(success=False, message="Another account already uses that email address."), 400
+
+    use_gravatar = bool(request.form.get("use_gravatar"))
+    use_profile_picture = bool(request.form.get("use_profile_picture"))
+    remove_avatar = bool(request.form.get("remove_avatar"))
+
+    avatar_file = request.files.get("profile_image")
+
+    if use_profile_picture:
+        if avatar_file and avatar_file.filename:
+            if not _allowed_avatar(avatar_file.filename):
+                return jsonify(
+                    success=False,
+                    message="Invalid image type. Please upload PNG, JPG, JPEG, GIF or WEBP.",
+                ), 400
+            try:
+                avatar_file.stream.seek(0, os.SEEK_END)
+                size = avatar_file.stream.tell()
+                avatar_file.stream.seek(0)
+            except OSError:
+                size = 0
+            if size and size > MAX_AVATAR_SIZE:
+                return jsonify(success=False, message="Profile image must be smaller than 5MB."), 400
+            filename_root = f"user_{user.id}_{int(time.time())}"
+            extension = avatar_file.filename.rsplit(".", 1)[1].lower()
+            filename = secure_filename(f"{filename_root}.{extension}")
+            upload_folder = _avatar_upload_folder()
+            upload_path = os.path.join(upload_folder, filename)
+            avatar_file.save(upload_path)
+            if user.avatar_filename and user.avatar_filename != filename:
+                _remove_avatar_file(user.avatar_filename)
+            user.avatar_filename = filename
+        elif not user.avatar_filename:
+            return jsonify(
+                success=False,
+                message="Upload a profile image or disable the custom picture option.",
+            ), 400
+        user.use_gravatar = False
+    elif use_gravatar:
+        user.use_gravatar = True
+    else:
+        user.use_gravatar = False
+        if remove_avatar and user.avatar_filename:
+            _remove_avatar_file(user.avatar_filename)
+            user.avatar_filename = None
+
+    user.full_name = full_name or None
+    user.email = email
+
+    if user.avatar_filename:
+        new_path = os.path.join(_avatar_upload_folder(), user.avatar_filename)
+        legacy_path = os.path.join(_legacy_avatar_folder(), user.avatar_filename)
+        if not os.path.isfile(new_path) and os.path.isfile(legacy_path):
+            os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            try:
+                shutil.move(legacy_path, new_path)
+            except OSError:
+                current_app.logger.warning("Failed to migrate legacy avatar %s", legacy_path, exc_info=True)
+
+    new_password = request.form.get("new_password") or ""
+    confirm_password = request.form.get("confirm_password") or ""
+    current_password = request.form.get("current_password") or ""
+
+    if new_password or confirm_password or current_password:
+        if not current_password:
+            return jsonify(success=False, message="Provide your current password to set a new one."), 400
+        if not user.check_password(current_password):
+            return jsonify(success=False, message="Current password is incorrect."), 400
+        if new_password != confirm_password:
+            return jsonify(success=False, message="New passwords do not match."), 400
+        ok, messages = validate_password_strength(new_password)
+        if not ok:
+            return jsonify(success=False, message=" ".join(messages)), 400
+        user.set_password(new_password)
+
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify(
+        success=True,
+        message="Profile updated successfully.",
+        avatar_url=user.avatar_url(64),
+        display_name=user.display_name,
+        handle=f"@{user.username}",
+        email=user.email,
+    )
 
 
 def _cleanup_user_relationships(target: User, acting: User) -> None:

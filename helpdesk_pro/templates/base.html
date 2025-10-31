@@ -73,6 +73,72 @@
         background-color: rgba(255, 255, 255, 0.18) !important;
       }
 
+      .nav-user-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      html[data-bs-theme="dark"] .nav-user-avatar {
+        box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.35);
+      }
+
+      .nav-user-dropdown .dropdown-menu {
+        min-width: 260px;
+      }
+
+      .nav-user-label span {
+        font-weight: 600;
+      }
+
+      .nav-user-label small {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+
+      .profile-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.08) 0%, rgba(59, 130, 246, 0.12) 100%);
+        border-radius: 1.1rem;
+        border: 1px solid rgba(59, 130, 246, 0.12);
+        padding: 1.5rem;
+      }
+
+      html[data-bs-theme="dark"] body .profile-card {
+        background: linear-gradient(135deg, rgba(15, 23, 42, 0.55) 0%, rgba(59, 130, 246, 0.25) 100%);
+        border-color: rgba(59, 130, 246, 0.32);
+      }
+
+      .profile-modal-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 24px;
+        object-fit: cover;
+        box-shadow: 0 16px 30px rgba(15, 23, 42, 0.28);
+      }
+
+      .profile-toggle .form-check-input {
+        cursor: pointer;
+      }
+
+      .profile-toggle label {
+        cursor: pointer;
+      }
+
+      .profile-section-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        font-weight: 700;
+        opacity: 0.65;
+      }
+
+      .profile-avatar-actions .btn {
+        border-radius: 999px;
+      }
+
       .datatable-wrapper {
         position: relative;
       }
@@ -416,12 +482,18 @@
             </li>
 
             {% if current_user.is_authenticated %}
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  <i class="fa fa-user-circle"></i>
-                  <span class="d-none d-lg-inline">{{ current_user.username }}</span>
+              <li class="nav-item dropdown nav-user-dropdown">
+                <a class="nav-link dropdown-toggle d-flex align-items-center gap-3" href="#" id="userMenu" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                  <span class="fw-semibold" id="navUserDisplayName">{{ current_user.display_name }}</span>
+                  <img src="{{ current_user.avatar_url(48) }}" alt="{{ _('Profile avatar') }}" class="nav-user-avatar" id="navUserAvatar">
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userMenu">
+                  <li>
+                    <button class="dropdown-item d-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#profileModal">
+                      <i class="fa fa-user-gear text-info"></i>
+                      {{ _('Profile & Preferences') }}
+                    </button>
+                  </li>
                   <li>
                     <button class="dropdown-item d-flex align-items-center gap-2" type="button" data-bs-toggle="modal" data-bs-target="#aboutModal">
                       <i class="fa fa-info-circle text-primary"></i>
@@ -494,6 +566,109 @@
         <a href="mailto:ioannis.bouhras@gmail.com"><i class="fa fa-envelope"></i></a>
       </span>
     </footer>
+
+    {% if current_user.is_authenticated %}
+    <div class="modal fade" id="profileModal" tabindex="-1" aria-labelledby="profileModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content fancy-modal">
+          <form id="profileForm" enctype="multipart/form-data" autocomplete="off">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="remove_avatar" id="removeAvatarInput" value="">
+            <div class="modal-header modal-header-gradient text-white">
+              <h5 class="modal-title d-flex align-items-center gap-2" id="profileModalLabel">
+                <i class="fa fa-user-gear"></i>
+                <span>{{ _('Profile & Preferences') }}</span>
+              </h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row g-4">
+                <div class="col-lg-4">
+                  <div class="profile-card h-100 text-center d-flex flex-column align-items-center justify-content-center gap-3">
+                    <img src="{{ current_user.avatar_url(160) }}" alt="{{ _('Profile avatar preview') }}" class="profile-modal-avatar" id="profileAvatarPreview">
+                    <div class="w-100 profile-toggle">
+                      <div class="form-check form-switch text-start">
+                        <input class="form-check-input" type="checkbox" id="useProfileImage" name="use_profile_picture" value="1" {% if current_user.avatar_filename and not current_user.use_gravatar %}checked{% endif %}>
+                        <label class="form-check-label" for="useProfileImage">{{ _('Use uploaded profile picture') }}</label>
+                      </div>
+                      <div class="form-check form-switch text-start">
+                        <input class="form-check-input" type="checkbox" id="useGravatar" name="use_gravatar" value="1" {% if current_user.use_gravatar %}checked{% endif %}>
+                        <label class="form-check-label" for="useGravatar">{{ _('Use Gravatar (based on email)') }}</label>
+                      </div>
+                    </div>
+                    <div class="profile-avatar-actions d-grid gap-2 w-100">
+                      <input class="form-control" type="file" id="profileImageInput" name="profile_image" accept="image/*" {% if not current_user.avatar_filename or current_user.use_gravatar %}disabled{% endif %}>
+                      <button class="btn btn-sm btn-outline-danger" type="button" id="removeAvatarBtn">
+                        <i class="fa fa-trash-can"></i> {{ _('Remove current picture') }}
+                      </button>
+                    </div>
+                    <p class="small mb-0 opacity-75">{{ _('Supported formats: PNG, JPG, JPEG, GIF, WEBP (max 5MB).') }}</p>
+                  </div>
+                </div>
+                <div class="col-lg-8">
+                  <div class="row g-3">
+                    <div class="col-12">
+                      <span class="profile-section-title">{{ _('Personal Details') }}</span>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label">{{ _('Username') }}</label>
+                      <input type="text" class="form-control" value="{{ current_user.username }}" disabled>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="profileFullName">{{ _('Full name') }}</label>
+                      <input type="text" class="form-control" id="profileFullName" name="full_name" value="{{ current_user.full_name or '' }}">
+                    </div>
+                    <div class="col-md-12">
+                      <label class="form-label" for="profileEmail">{{ _('Email address') }}</label>
+                      <input type="email" class="form-control" id="profileEmail" name="email" value="{{ current_user.email }}" required>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="profileDepartment">{{ _('Department') }}</label>
+                      <input type="text" class="form-control" id="profileDepartment" value="{{ current_user.department or '' }}" disabled>
+                    </div>
+                    <div class="col-md-6 d-flex align-items-end">
+                      <span class="badge bg-success-subtle text-success w-100 py-2">
+                        <i class="fa fa-shield-halved me-1"></i>
+                        {{ _('Account active') if current_user.active else _('Account inactive') }}
+                      </span>
+                    </div>
+                    <div class="col-12 pt-2">
+                      <span class="profile-section-title">{{ _('Change Password') }}</span>
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="currentPassword">{{ _('Current password') }}</label>
+                      <input type="password" class="form-control" id="currentPassword" name="current_password" autocomplete="current-password">
+                    </div>
+                    <div class="col-md-6"></div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="newPassword">{{ _('New password') }}</label>
+                      <input type="password" class="form-control" id="newPassword" name="new_password" minlength="12" autocomplete="new-password">
+                    </div>
+                    <div class="col-md-6">
+                      <label class="form-label" for="confirmPassword">{{ _('Confirm new password') }}</label>
+                      <input type="password" class="form-control" id="confirmPassword" name="confirm_password" minlength="12" autocomplete="new-password">
+                    </div>
+                    <div class="col-12">
+                      <p class="small text-muted mb-0">
+                        <i class="fa fa-lightbulb me-1 text-warning"></i>
+                        {{ _('Passwords must be at least 12 characters and include uppercase, lowercase, number, and symbol.') }}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+              <button type="submit" class="btn btn-primary" id="profileSubmitBtn">
+                <i class="fa fa-floppy-disk me-1"></i>{{ _('Save changes') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endif %}
 
     <div class="modal fade" id="aboutModal" tabindex="-1" aria-labelledby="aboutModalLabel" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
@@ -667,6 +842,144 @@
         bsToast.show();
         toast.on("hidden.bs.toast", () => toast.remove());
       }
+
+      // Profile modal interactions
+      (function() {
+        const profileModal = document.getElementById("profileModal");
+        if (!profileModal) return;
+        const form = document.getElementById("profileForm");
+        const useGravatar = document.getElementById("useGravatar");
+        const useProfile = document.getElementById("useProfileImage");
+        const fileInput = document.getElementById("profileImageInput");
+        const removeBtn = document.getElementById("removeAvatarBtn");
+        const removeInput = document.getElementById("removeAvatarInput");
+        const preview = document.getElementById("profileAvatarPreview");
+        const submitBtn = document.getElementById("profileSubmitBtn");
+
+        const DEFAULT_AVATAR = "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=160&d=mp";
+
+        function syncControls() {
+          if (useGravatar && useGravatar.checked) {
+            if (useProfile) {
+              useProfile.checked = false;
+            }
+          }
+          if (fileInput) {
+            fileInput.disabled = !(useProfile && useProfile.checked);
+          }
+          if (removeInput && !(useProfile && useProfile.checked) && !(useGravatar && useGravatar.checked)) {
+            removeInput.value = "";
+          }
+        }
+
+        function setSubmitting(state) {
+          if (!submitBtn) return;
+          submitBtn.disabled = state;
+          submitBtn.innerHTML = state
+            ? '<i class="fa fa-circle-notch fa-spin me-1"></i>{{ _("Saving") }}...'
+            : '<i class="fa fa-floppy-disk me-1"></i>{{ _("Save changes") }}';
+        }
+
+        if (useGravatar) {
+          useGravatar.addEventListener("change", () => {
+            if (useGravatar.checked && useProfile) {
+              useProfile.checked = false;
+            }
+            syncControls();
+          });
+        }
+
+        if (useProfile) {
+          useProfile.addEventListener("change", () => {
+            if (useProfile.checked && useGravatar) {
+              useGravatar.checked = false;
+            }
+            syncControls();
+          });
+        }
+
+        if (removeBtn && removeInput) {
+          removeBtn.addEventListener("click", () => {
+            removeInput.value = "1";
+            if (useProfile) useProfile.checked = false;
+            if (useGravatar) useGravatar.checked = false;
+            if (fileInput) {
+              fileInput.value = "";
+              fileInput.disabled = true;
+            }
+            if (preview) {
+              preview.src = DEFAULT_AVATAR;
+            }
+          });
+        }
+
+        if (fileInput && preview) {
+          fileInput.addEventListener("change", (ev) => {
+            const file = ev.target.files && ev.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = e => preview.src = e.target.result;
+            reader.readAsDataURL(file);
+            if (removeInput) {
+              removeInput.value = "";
+            }
+          });
+        }
+
+        if (form) {
+          form.addEventListener("submit", async (ev) => {
+            ev.preventDefault();
+            setSubmitting(true);
+            const formData = new FormData(form);
+            try {
+              const response = await fetch("{{ url_for('users.update_profile') }}", {
+                method: "POST",
+                body: formData,
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+              });
+              const data = await response.json();
+              if (!response.ok || !data.success) {
+                const message = (data && data.message) || "{{ _('Failed to update profile.') }}";
+                showToast(message, "danger");
+              } else {
+                showToast(data.message || "{{ _('Profile updated successfully.') }}", "success");
+                const instance = bootstrap.Modal.getInstance(profileModal);
+                if (instance) instance.hide();
+                if (data.avatar_url) {
+                  const bust = (data.avatar_url.includes("?") ? "&" : "?") + "t=" + Date.now();
+                  const avatarNav = document.getElementById("navUserAvatar");
+                  if (avatarNav) avatarNav.src = data.avatar_url + bust;
+                  if (preview) preview.src = data.avatar_url + bust.replace("t=", "preview=");
+                }
+                if (data.display_name) {
+                  const desktopName = document.getElementById("navUserDisplayName");
+                  const mobileName = document.getElementById("navUserDisplayNameMobile");
+                  if (desktopName) desktopName.textContent = data.display_name;
+                  if (mobileName) mobileName.textContent = data.display_name;
+                }
+                if (data.handle) {
+                  const handle = document.getElementById("navUserHandle");
+                  if (handle) handle.textContent = data.handle;
+                }
+                if (data.email) {
+                  const emailField = document.getElementById("profileEmail");
+                  if (emailField) emailField.value = data.email;
+                }
+              }
+            } catch (error) {
+              console.error(error);
+              showToast("{{ _('Unexpected error updating profile.') }}", "danger");
+            } finally {
+              setSubmitting(false);
+              if (removeInput) removeInput.value = "";
+              syncControls();
+            }
+          });
+        }
+
+        profileModal.addEventListener("shown.bs.modal", syncControls);
+        syncControls();
+      })();
 
       // Theme toggle
       (function() {

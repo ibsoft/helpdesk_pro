@@ -20,6 +20,7 @@ from flask import (
     url_for,
     flash,
     jsonify,
+    abort,
 )
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
@@ -34,6 +35,15 @@ from app.models import (
 from app.permissions import get_module_access, require_module_write
 
 backup_bp = Blueprint("backup", __name__)
+
+
+@backup_bp.route("/backup/lto-barcode", methods=["GET"])
+@login_required
+def lto_barcode_generator():
+    access = get_module_access(current_user, "backup")
+    if not access:
+        abort(403)
+    return render_template("backup/lto_barcode.html")
 
 
 TAPE_STATUS_CHOICES = [
