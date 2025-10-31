@@ -12,7 +12,7 @@ from ..db import fetch_all
 from .base import BaseTool, ToolExecutionError
 
 
-def _coerce_decimal(value: Any) -> str | None:
+def _coerce_decimal(value: Any) -> Optional[str]:
     if value is None:
         return None
     return format(value, "f")
@@ -40,7 +40,7 @@ class ContractsSummaryRow(BaseModel):
     vendor: str
     currency: str
     contract_count: int
-    total_value: str | None = None
+    total_value: Optional[str] = None
 
 
 class ContractsSummaryResult(BaseModel):
@@ -126,12 +126,12 @@ class ContractsExpiringArgs(BaseModel):
 class ContractsExpiringRow(BaseModel):
     contract_id: int
     name: str
-    vendor: str | None
-    status: str | None
-    end_date: str | None
-    renewal_date: str | None
-    value: str | None
-    currency: str | None
+    vendor: Optional[str]
+    status: Optional[str]
+    end_date: Optional[str]
+    renewal_date: Optional[str]
+    value: Optional[str]
+    currency: Optional[str]
     auto_renew: bool
 
 

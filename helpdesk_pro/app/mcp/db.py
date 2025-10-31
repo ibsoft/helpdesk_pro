@@ -5,7 +5,7 @@ Database utilities for the MCP server.
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Sequence
+from typing import Any, AsyncGenerator, Optional, Sequence
 
 from sqlalchemy import text
 from sqlalchemy.engine import Result
@@ -18,8 +18,8 @@ from sqlalchemy.ext.asyncio import (
 
 from .config import get_settings
 
-_engine: AsyncEngine | None = None
-_session_factory: async_sessionmaker[AsyncSession] | None = None
+_engine: Optional[AsyncEngine] = None
+_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
 
 
 def _get_session_factory() -> async_sessionmaker[AsyncSession]:
@@ -56,7 +56,7 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
             await session.close()
 
 
-async def fetch_all(query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+async def fetch_all(query: str, params: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
     """Run a read-only query and return rows as dictionaries."""
 
     params = params or {}
@@ -66,7 +66,7 @@ async def fetch_all(query: str, params: dict[str, Any] | None = None) -> list[di
         return [dict(row) for row in rows]
 
 
-async def fetch_one(query: str, params: dict[str, Any] | None = None) -> dict[str, Any] | None:
+async def fetch_one(query: str, params: Optional[dict[str, Any]] = None) -> Optional[dict[str, Any]]:
     """Return a single row (or None) as a dictionary."""
 
     params = params or {}
@@ -76,7 +76,7 @@ async def fetch_one(query: str, params: dict[str, Any] | None = None) -> dict[st
         return dict(record) if record else None
 
 
-async def fetch_value(query: str, params: dict[str, Any] | None = None) -> Any:
+async def fetch_value(query: str, params: Optional[dict[str, Any]] = None) -> Any:
     """Return a single scalar value."""
 
     params = params or {}

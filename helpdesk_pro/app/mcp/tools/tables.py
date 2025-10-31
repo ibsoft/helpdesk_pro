@@ -11,8 +11,10 @@ Now supports optional `computed` templates to synthesize link/HTML fields.
 
 from __future__ import annotations
 
+from datetime import date, datetime, time, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 import os
+import re
 from urllib.parse import quote
 
 from pydantic import BaseModel, Field, field_validator
@@ -97,19 +99,107 @@ def _normalise_filter(table: str, column: str, value: Any) -> Tuple[str, Any]:
     return column, value
 
 
-def _build_where_and_params(table: str, filters: Dict[str, Any], allowed_cols: List[str]) -> Tuple[str, Dict[str, Any]]:
+def _coerce_date_literal(column: str, value: Any) -> date:
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str):
+        raw = value.strip()
+        try:
+            return date.fromisoformat(raw)
+        except ValueError:
+            try:
+                return datetime.fromisoformat(raw).date()
+            except ValueError as exc:
+                raise ToolExecutionError(f"Invalid date literal for {column!r}: {value!r}") from exc
+    raise ToolExecutionError(f"Expected a date value for {column!r}, got {type(value).__name__}")
+
+
+def _coerce_boolean_literal(column: str, value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        val = value.strip().lower()
+        if val in {"true", "t", "yes", "y", "1"}:
+            return True
+        if val in {"false", "f", "no", "n", "0"}:
+            return False
+    raise ToolExecutionError(f"Invalid boolean literal for {column!r}: {value!r}")
+
+
+def _coerce_timestamp_literal(column: str, value: Any) -> Tuple[datetime, bool]:
+    """Return (datetime_value, matched_date_only)."""
+
+    if isinstance(value, datetime):
+        return value, False
+    if isinstance(value, date):
+        dt = datetime.combine(value, time.min)
+        return dt, True
+    if isinstance(value, str):
+        raw = value.strip()
+        date_only = bool(re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw))
+        normalised = raw[:-1] + "+00:00" if raw.endswith("Z") else raw
+        try:
+            parsed = datetime.fromisoformat(normalised)
+        except ValueError as exc:
+            raise ToolExecutionError(f"Invalid timestamp literal for {column!r}: {value!r}") from exc
+        return parsed, date_only
+    raise ToolExecutionError(f"Expected a datetime value for {column!r}, got {type(value).__name__}")
+
+
+def _prepare_filter_clause(
+    column: str,
+    value: Any,
+    column_meta: Optional[Dict[str, Any]],
+) -> Tuple[str, Dict[str, Any]]:
+    """Build the SQL clause and params for a single filter."""
+
+    if value is None:
+        return f'"{column}" IS NULL', {}
+
+    meta_type = (column_meta or {}).get("data_type")
+    base_param = f"p_{column}"
+
+    if meta_type == "boolean":
+        coerced = _coerce_boolean_literal(column, value)
+        return f'"{column}" = :{base_param}', {base_param: coerced}
+
+    if meta_type == "date":
+        coerced = _coerce_date_literal(column, value)
+        return f'"{column}" = :{base_param}', {base_param: coerced}
+
+    if meta_type in {"timestamp without time zone", "timestamp with time zone"}:
+        coerced, date_only = _coerce_timestamp_literal(column, value)
+        if date_only:
+            start = coerced
+            end = start + timedelta(days=1)
+            return (
+                f'("{column}" >= :{base_param}_start AND "{column}" < :{base_param}_end)',
+                {f"{base_param}_start": start, f"{base_param}_end": end},
+            )
+        return f'"{column}" = :{base_param}', {base_param: coerced}
+
+    return f'"{column}" = :{base_param}', {base_param: value}
+
+
+def _build_where_and_params(table: str, filters: Dict[str, Any], cols: List[Dict[str, Any]]) -> Tuple[str, Dict[str, Any]]:
     clauses: List[str] = []
     params: Dict[str, Any] = {}
+    allowed_cols = [c["column_name"] for c in cols]
+    column_meta = {c["column_name"]: c for c in cols}
     for k, v in (filters or {}).items():
         column, value = _normalise_filter(table, k, v)
         if not _is_ident(column) or column not in allowed_cols:
             raise ToolExecutionError(f"Invalid filter column: {column}")
-        p = f"p_{column}"
-        if value is None:
-            clauses.append(f'"{column}" IS NULL')
-        else:
-            clauses.append(f'"{column}" = :{p}')
-            params[p] = value
+        try:
+            clause, clause_params = _prepare_filter_clause(column, value, column_meta.get(column))
+        except ToolExecutionError:
+            raise
+        except Exception as exc:  # pragma: no cover
+            raise ToolExecutionError(f"Failed to normalise value for {column!r}") from exc
+        clauses.append(clause)
+        params.update(clause_params)
     where_clause = " AND ".join(clauses) if clauses else "1=1"
     return where_clause, params
 
@@ -267,7 +357,7 @@ class TableFetchTool(BaseTool[TableFetchArgs, TableFetchResult]):
             select_list = ", ".join(f'"{c}"' for c in col_names)
             out_cols = col_names
 
-        where_filters, params = _build_where_and_params(arguments.table, arguments.filters or {}, col_names)
+        where_filters, params = _build_where_and_params(arguments.table, arguments.filters or {}, cols)
 
         if arguments.search:
             search_clause, search_params = _build_search(arguments.search, cols)

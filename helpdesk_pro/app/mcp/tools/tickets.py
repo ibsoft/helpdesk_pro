@@ -80,7 +80,7 @@ class TicketPriorityCount(BaseModel):
 class TicketQueueSummaryResult(BaseModel):
     total: int
     overdue_count: int
-    average_age_hours: float | None
+    average_age_hours: Optional[float]
     by_status: List[TicketStatusCount]
     by_priority: List[TicketPriorityCount]
 
