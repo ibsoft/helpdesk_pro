@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-10-28 16:05+0200\n"
+"POT-Creation-Date: 2025-10-29 21:22+0200\n"
 "PO-Revision-Date: 2025-10-18 23:43+0300\n"
 "Last-Translator: Ioannis Bouchras <ioannis.bouchras@unixfor.gr>\n"
 "Language: el\n"
@@ -27,7 +27,7 @@ msgid "Manage"
 msgstr "Διαχείριση"
 
 #: app/navigation.py:37 templates/dashboard/index.html:64
-#: templates/users/list.html:19
+#: templates/users/list.html:59
 msgid "Users"
 msgstr "Χρήστες"
 
@@ -37,22 +37,22 @@ msgstr "Πρόσβαση"
 
 #: app/navigation.py:51
 msgid "Authentication"
-msgstr ""
+msgstr "Έλεγχος ταυτότητας"
 
 #: app/navigation.py:58
 msgid "AI Assistant"
 msgstr "Βοηθός ΤΝ"
 
-#: app/navigation.py:65 templates/manage/api_keys.html:20
+#: app/navigation.py:65 templates/manage/api_keys.html:55
 #, fuzzy
 msgid "API Keys"
 msgstr "OpenAI API key"
 
 #: app/navigation.py:72
 msgid "API Docs"
-msgstr ""
+msgstr "Τεκμηρίωση API"
 
-#: app/navigation.py:79 templates/manage/email_ingest.html:5
+#: app/navigation.py:79 templates/manage/email_ingest.html:54
 msgid "Email to Ticket"
 msgstr "Email σε Ticket"
 
@@ -89,7 +89,7 @@ msgstr "Συμβάσεις"
 msgid "Address Book"
 msgstr "Βιβλίο διευθύνσεων"
 
-#: app/navigation.py:147 templates/networks/maps.html:97
+#: app/navigation.py:147 templates/networks/maps.html:102
 msgid "Network Maps"
 msgstr "Τοπολογία δικτύων"
 
@@ -97,173 +97,301 @@ msgstr "Τοπολογία δικτύων"
 msgid "Network Tools"
 msgstr "Εργαλεία δικτύου"
 
-#: app/navigation.py:163 templates/manage/assistant_settings.html:26
+#: app/navigation.py:161 templates/backup/job_detail.html:34
+#: templates/backup/tape_detail.html:34
+msgid "Backup Monitor"
+msgstr "Παρακολούθηση αντιγράφων ασφαλείας"
+
+#: app/navigation.py:170 templates/manage/assistant_settings.html:65
 msgid "AI Assistant Widget"
 msgstr "Widget βοηθού AI"
 
-#: app/assistant/routes.py:829 app/assistant/routes.py:848
-#: app/assistant/routes.py:864 app/assistant/routes.py:923
-#: app/assistant/routes.py:984
+#: app/navigation.py:179
+#, fuzzy
+msgid "Email to Ticket Worker"
+msgstr "Υπηρεσία Email σε Ticket"
+
+#: app/assistant/routes.py:915 app/assistant/routes.py:934
+#: app/assistant/routes.py:950 app/assistant/routes.py:1009
+#: app/assistant/routes.py:1070
 #, fuzzy
 msgid "Session not found."
 msgstr "Ο χρήστης δεν βρέθηκε."
 
-#: app/assistant/routes.py:869
+#: app/assistant/routes.py:955
 msgid "No file provided."
-msgstr ""
+msgstr "Δεν δόθηκε αρχείο"
 
-#: app/assistant/routes.py:872
-#, fuzzy
+#: app/assistant/routes.py:958
 msgid "Please choose a file."
 msgstr "Παρακαλώ επιλέξτε ένα αρχείο για μεταφόρτωση."
 
-#: app/assistant/routes.py:876 app/knowledge/routes.py:249
+#: app/assistant/routes.py:962 app/knowledge/routes.py:249
 msgid "Invalid filename."
 msgstr "Μη έγκυρο όνομα αρχείου."
 
-#: app/assistant/routes.py:931
-#, fuzzy
+#: app/assistant/routes.py:1017
 msgid "Document not found."
-msgstr "Ο χρήστης δεν βρέθηκε."
+msgstr "Το έγγραφο δεν βρέθηκε."
 
-#: app/assistant/routes.py:976
+#: app/assistant/routes.py:1062
 msgid "Assistant is disabled."
 msgstr "Ο βοηθός είναι απενεργοποιημένος."
 
-#: app/assistant/routes.py:991 app/collab/routes.py:342
+#: app/assistant/routes.py:1077 app/collab/routes.py:342
 #: templates/collab/chat.html:682
 msgid "Message cannot be empty."
 msgstr "Το μήνυμα δεν μπορεί να είναι κενό."
 
-#: app/assistant/routes.py:1034 app/assistant/routes.py:1039
+#: app/assistant/routes.py:1120 app/assistant/routes.py:1125
 msgid "OpenAI API key is not configured."
 msgstr "Το κλειδί API του OpenAI δεν έχει ρυθμιστεί."
 
-#: app/assistant/routes.py:1049 app/assistant/routes.py:1266
-#, fuzzy
+#: app/assistant/routes.py:1135 app/assistant/routes.py:1360
 msgid "OpenWebUI base URL is not configured."
 msgstr "Η διεύθυνση URL του webhook δεν έχει ρυθμιστεί."
 
-#: app/assistant/routes.py:1061
+#: app/assistant/routes.py:1147
 msgid "Webhook URL is not configured."
 msgstr "Η διεύθυνση URL του webhook δεν έχει ρυθμιστεί."
 
-#: app/assistant/routes.py:1064
+#: app/assistant/routes.py:1150
 #, python-format
 msgid "Connection error: %(error)s"
 msgstr "Σφάλμα σύνδεσης: %(error)s"
 
-#: app/assistant/routes.py:1090
+#: app/assistant/routes.py:1184
 msgid "Assistant did not return a reply."
 msgstr "Ο βοηθός δεν επέστρεψε απάντηση."
 
-#: app/assistant/routes.py:1153
+#: app/assistant/routes.py:1247
 #, python-format
 msgid "OpenAI error: %(status)s %(body)s"
 msgstr "Σφάλμα OpenAI: %(status)s %(body)s"
 
-#: app/assistant/routes.py:1240
+#: app/assistant/routes.py:1334
 #, fuzzy, python-format
 msgid "Remote tool execution failed: %(status)s %(body)s"
 msgstr "Σφάλμα OpenAI: %(status)s %(body)s"
 
-#: app/assistant/routes.py:1305
+#: app/assistant/routes.py:1399
 #, fuzzy, python-format
 msgid "OpenWebUI error: %(status)s %(body)s"
 msgstr "Σφάλμα OpenAI: %(status)s %(body)s"
 
-#: app/assistant/routes.py:1393
+#: app/assistant/routes.py:1487
 #, python-format
 msgid "Webhook error: %(status)s %(body)s"
 msgstr "Σφάλμα webhook: %(status)s %(body)s"
 
-#: app/assistant/routes.py:1397
+#: app/assistant/routes.py:1491
 #, python-format
 msgid "Invalid webhook response: %(error)s"
 msgstr "Μη έγκυρη απόκριση webhook: %(error)s"
 
-#: app/assistant/routes.py:1401
+#: app/assistant/routes.py:1495
 msgid "Webhook response is missing a 'reply' field."
 msgstr "Η απόκριση του webhook δεν περιέχει το πεδίο «reply»."
 
-#: app/auth/routes.py:28 app/collab/routes.py:214 app/collab/routes.py:428
-msgid "User not found."
-msgstr "Ο χρήστης δεν βρέθηκε."
+#: app/assistant/routes.py:2044
+#, fuzzy
+msgid "retention already expired"
+msgstr "Έχουν λήξει"
+
+#: app/assistant/routes.py:2059
+#, python-format
+msgid "retention due within %(days)s day(s)"
+msgstr "λήξη διακράτησης σε %(days)s ημέρες"
+
+#: app/assistant/routes.py:2062
+#, python-format
+msgid "No storage media matched %(label)s."
+msgstr "Δεν βρέθηκαν μέσα αποθήκευσης που να ταιριάζουν με %(label)s."
+
+#: app/assistant/routes.py:2065
+#, python-format
+msgid "Storage media with %(label)s: showing %(count)s item(s)."
+msgstr "Μέσα αποθήκευσης με %(label)s: εμφανίζονται %(count)s στοιχείο(α)."
+
+#: app/assistant/routes.py:2072
+#, python-format
+msgid "%(days)s day(s) overdue"
+msgstr "%(days)s ημέρα/ες καθυστέρηση"
+
+#: app/assistant/routes.py:2074
+#, python-format
+msgid "%(days)s day(s) remaining"
+msgstr "Απομένουν %(days)s ημέρα/ες"
+
+#: app/assistant/routes.py:2076
+#, fuzzy, python-format
+msgid "ends %(date)s"
+msgstr "λήγει %(date)s"
+
+#: app/assistant/routes.py:2082
+msgid "limited to first 25 media."
+msgstr "περιορισμένο στα πρώτα 25 μέσα."
+
+#: app/assistant/routes.py:2094
+msgid "No storage media are currently marked as off-site."
+msgstr "Κανένα μέσο αποθήκευσης δεν έχει επισημανθεί ως εκτός εγκατάστασης."
+
+#: app/assistant/routes.py:2095
+#, python-format
+msgid "Off-site storage media (%(count)s found):"
+msgstr "Μέσα αποθήκευσης εκτός εγκατάστασης (βρέθηκαν %(count)s):"
+
+#: app/assistant/routes.py:2106
+msgid "No external disks have been registered yet."
+msgstr "Δεν έχουν ακόμη καταχωρηθεί εξωτερικοί δίσκοι."
+
+#: app/assistant/routes.py:2108
+msgid "No tape cartridges have been registered yet."
+msgstr "Δεν έχουν ακόμη καταχωρηθεί κασέτες ταινίας."
+
+#: app/assistant/routes.py:2109
+msgid "No storage media have been registered yet."
+msgstr "Δεν έχουν ακόμη καταχωρηθεί μέσα αποθήκευσης."
+
+#: app/assistant/routes.py:2126
+#, fuzzy
+msgid "tape cartridges"
+msgstr "Σύνολο άρθρων"
+
+#: app/assistant/routes.py:2127
+msgid "external disks"
+msgstr "εξωτερικοί δίσκοι"
+
+#: app/assistant/routes.py:2131
+#, python-format
+msgid "Storage media summary (filtered by %(type)s):"
+msgstr "Σύνοψη μέσων αποθήκευσης (φιλτραρισμένα κατά %(type)s):"
+
+#: app/assistant/routes.py:2133
+msgid "Storage media summary:"
+msgstr "Σύνοψη μέσων αποθήκευσης:"
+
+#: app/assistant/routes.py:2134
+#, fuzzy, python-format
+msgid "Total media: %(count)s"
+msgstr "Σύνολο Αιτημάτων"
+
+#: app/assistant/routes.py:2136
+#, python-format
+msgid "- %(label)s: %(count)s"
+msgstr "- %(label)s: %(count)s"
+
+#: app/assistant/routes.py:2139
+#, python-format
+msgid "- Location %(loc)s: %(count)s"
+msgstr "- Τοποθεσία %(loc)s: %(count)s"
+
+#: app/assistant/routes.py:2140
+#, python-format
+msgid "Retention overdue: %(count)s"
+msgstr "Εκτός περιόδου διακράτησης: %(count)s"
+
+#: app/assistant/routes.py:2141
+#, python-format
+msgid "Retention due within 7 days: %(count)s"
+msgstr "Λήξη διακράτησης εντός 7 ημερών: %(count)s"
+
+#: app/assistant/routes.py:2914 app/assistant/routes.py:2939
+msgid "Unspecified vendor"
+msgstr "Μη καθορισμένος προμηθευτής"
+
+#: app/assistant/routes.py:2915 app/assistant/routes.py:2940
+msgid "Unspecified currency"
+msgstr "Μη καθορισμένο νόμισμα"
+
+#: app/assistant/routes.py:2930 app/assistant/routes.py:2955
+#, fuzzy
+msgid "Overall contract value"
+msgstr "Κόστος σύμβασης"
+
+#: app/assistant/routes.py:2959
+msgid "Total contract value by vendor and currency"
+msgstr "Συνολική αξία σύμβασης ανά προμηθευτή και νόμισμα"
+
+#: app/assistant/routes.py:2961
+msgid "Total contract value breakdown by vendor and currency"
+msgstr "Ανάλυση συνολικής αξίας σύμβασης ανά προμηθευτή και νόμισμα"
+
+#: app/auth/routes.py:28
+#, fuzzy
+msgid "Incorrect credentials."
+msgstr "Ξεχάσατε τον κωδικό;"
 
 #: app/auth/routes.py:30
 #, fuzzy
 msgid "Account is disabled."
 msgstr "Ο βοηθός είναι απενεργοποιημένος."
 
-#: app/auth/routes.py:32
-#, fuzzy
-msgid "Incorrect password."
-msgstr "Ξεχάσατε τον κωδικό;"
-
-#: app/auth/routes.py:36
+#: app/auth/routes.py:34
 #, python-format
 msgid "Welcome, %(username)s!"
-msgstr ""
+msgstr "Καλώς ήρθατε, %(username)s!"
 
-#: app/auth/routes.py:48
+#: app/auth/routes.py:46
 msgid "You have been logged out."
-msgstr ""
+msgstr "Αποσυνδεθήκατε."
 
-#: app/auth/routes.py:59 app/auth/routes.py:147
+#: app/auth/routes.py:57 app/auth/routes.py:145
 #, fuzzy
 msgid "Password reset is disabled."
 msgstr "Ο βοηθός είναι απενεργοποιημένος."
 
-#: app/auth/routes.py:75
+#: app/auth/routes.py:73
 msgid "Please provide an email address."
-msgstr ""
+msgstr "Παρακαλώ δώστε μια διεύθυνση email."
 
-#: app/auth/routes.py:95
+#: app/auth/routes.py:93
 #, fuzzy
 msgid "Registration is currently disabled."
 msgstr ""
 "Η αυτόματη εγγραφή είναι απενεργοποιημένη. Επικοινωνήστε με τον "
 "διαχειριστή."
 
-#: app/auth/routes.py:105
+#: app/auth/routes.py:103
 msgid "Username must be at least 3 characters long."
-msgstr ""
+msgstr "Το όνομα χρήστη πρέπει να έχει τουλάχιστον 3 χαρακτήρες."
+
+#: app/auth/routes.py:105
+msgid "Email is required."
+msgstr "Το email είναι υποχρεωτικό."
 
 #: app/auth/routes.py:107
-msgid "Email is required."
-msgstr ""
+msgid "Username is already taken."
+msgstr "Το όνομα χρήστη χρησιμοποιείται ήδη."
 
 #: app/auth/routes.py:109
-msgid "Username is already taken."
-msgstr ""
-
-#: app/auth/routes.py:111
 msgid "An account with that email already exists."
-msgstr ""
+msgstr "Υπάρχει ήδη λογαριασμός με αυτό το email."
 
-#: app/auth/routes.py:113 app/auth/routes.py:158
+#: app/auth/routes.py:111 app/auth/routes.py:156
 msgid "Password must be at least 8 characters long."
-msgstr ""
+msgstr "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες."
 
-#: app/auth/routes.py:115 app/auth/routes.py:160
+#: app/auth/routes.py:113 app/auth/routes.py:158 templates/users/list.html:381
+#: templates/users/list.html:417
 msgid "Passwords do not match."
-msgstr ""
+msgstr "Οι κωδικοί δεν ταιριάζουν."
 
-#: app/auth/routes.py:134
+#: app/auth/routes.py:132
 #, fuzzy
 msgid "Account created successfully. You can now sign in."
 msgstr "Το άρθρο δημιουργήθηκε με επιτυχία."
 
-#: app/auth/routes.py:164
+#: app/auth/routes.py:162
 msgid "Your password has been updated. Please sign in."
-msgstr ""
+msgstr "Ο κωδικός σας ενημερώθηκε. Παρακαλώ συνδεθείτε."
 
-#: app/auth/routes.py:235
+#: app/auth/routes.py:233
 #, fuzzy
 msgid "Helpdesk Pro password reset"
 msgstr "Helpdesk Pro"
 
-#: app/auth/routes.py:237
+#: app/auth/routes.py:235
 #, python-format
 msgid ""
 "Hello %(username)s,\n"
@@ -275,6 +403,254 @@ msgid ""
 "\n"
 "If you did not request this change, please ignore this email."
 msgstr ""
+"Γεια σας %(username)s,\n"
+"\n"
+"Λάβαμε αίτημα επαναφοράς κωδικού για τον λογαριασμό σας στο Helpdesk Pro. "
+"Κάντε κλικ στον παρακάτω σύνδεσμο για να ορίσετε νέο κωδικό (ισχύει για 1 ώρα):\n"
+"\n"
+"%(reset_url)s\n"
+"\n"
+"Αν δεν ζητήσατε αυτήν την αλλαγή, αγνοήστε αυτό το μήνυμα."
+
+#: app/backup/routes.py:40
+msgid "Empty"
+msgstr "Κενό"
+
+#: app/backup/routes.py:41
+#, fuzzy
+msgid "In Use"
+msgstr "Νέος Χρήστης"
+
+#: app/backup/routes.py:42
+msgid "Full"
+msgstr "Πλήρες"
+
+#: app/backup/routes.py:43
+msgid "Pending Destruction"
+msgstr "Εν αναμονή καταστροφής"
+
+#: app/backup/routes.py:47
+#, fuzzy
+msgid "On-Site"
+msgstr "Τοποθεσία"
+
+#: app/backup/routes.py:48
+msgid "In Transit"
+msgstr "Σε μεταφορά"
+
+#: app/backup/routes.py:49
+#, fuzzy
+msgid "Off-Site"
+msgstr "Τοποθεσία"
+
+#: app/backup/routes.py:117 templates/backup/job_detail.html:133
+#: templates/backup/job_detail.html:190 templates/backup/monitor.html:124
+#: templates/backup/monitor.html:308 templates/backup/monitor.html:416
+#: templates/backup/tape_detail.html:127
+#: templates/contracts/contract_list.html:301
+#: templates/contracts/contract_list.html:419
+#: templates/inventory/hardware_list.html:419
+#: templates/inventory/hardware_list.html:588
+#: templates/inventory/software_list.html:115
+#: templates/inventory/software_list.html:378
+#: templates/inventory/software_list.html:530
+#, fuzzy
+msgid "Unassigned"
+msgstr "— Μη ανατεθειμένο —"
+
+#: app/backup/routes.py:139 app/backup/routes.py:145 app/backup/routes.py:161
+#: app/backup/routes.py:206 app/backup/routes.py:209 app/backup/routes.py:219
+msgid "—"
+msgstr "—"
+
+#: app/backup/routes.py:147 templates/backup/monitor.html:166
+#: templates/backup/monitor.html:276 templates/backup/monitor.html:390
+#: templates/backup/tape_detail.html:61 templates/backup/tape_detail.html:156
+msgid "External Disk"
+msgstr "Εξωτερικός δίσκος"
+
+#: app/backup/routes.py:149 templates/backup/monitor.html:165
+#: templates/backup/tape_detail.html:63 templates/backup/tape_detail.html:155
+msgid "Tape Cartridge"
+msgstr "Κασέτα ταινίας"
+
+#: app/backup/routes.py:155 app/backup/routes.py:200
+#: templates/backup/monitor.html:327 templates/backup/tape_detail.html:102
+#, fuzzy
+msgid "Not set"
+msgstr "Σημειώσεις"
+
+#: app/backup/routes.py:156 app/backup/routes.py:201
+#, python-format
+msgid "%(days)s day(s)"
+msgstr "%(days)s ημέρα/ες"
+
+#: app/backup/routes.py:171 app/backup/routes.py:173
+#: templates/backup/job_detail.html:225
+#, fuzzy
+msgid "Event"
+msgstr "Περιβάλλον"
+
+#: app/backup/routes.py:174 templates/backup/job_detail.html:177
+#: templates/backup/tape_detail.html:113
+#, fuzzy
+msgid "Current location"
+msgstr "Τοποθεσία"
+
+#: app/backup/routes.py:175 templates/backup/job_detail.html:176
+#: templates/backup/monitor.html:200 templates/backup/monitor.html:261
+#: templates/backup/tape_detail.html:75 templates/backup/tape_detail.html:184
+#: templates/contracts/contract_list.html:136
+#: templates/contracts/contract_list.html:254
+#: templates/contracts/contract_list.html:372
+#: templates/inventory/hardware_list.html:177
+#: templates/inventory/hardware_list.html:347
+#: templates/inventory/hardware_list.html:516
+#: templates/inventory/software_list.html:169
+#: templates/inventory/software_list.html:305
+#: templates/inventory/software_list.html:457
+#: templates/manage/api_keys.html:147
+#: templates/manage/assistant_settings.html:78 templates/tickets/edit.html:24
+#: templates/tickets/list.html:201 templates/tickets/view.html:217
+msgid "Status"
+msgstr "Κατάσταση"
+
+#: app/backup/routes.py:176 templates/backup/tape_detail.html:130
+#, fuzzy
+msgid "Usage tags"
+msgstr "Πεδίο χρήσης"
+
+#: app/backup/routes.py:177 templates/address_book/address_book.html:114
+#: templates/address_book/address_book.html:248
+#: templates/address_book/address_book.html:342
+#: templates/backup/job_detail.html:150 templates/backup/monitor.html:227
+#: templates/backup/tape_detail.html:215 templates/backup/tape_detail.html:355
+#: templates/backup/tape_detail.html:447
+#: templates/contracts/contract_list.html:152
+#: templates/contracts/contract_list.html:330
+#: templates/contracts/contract_list.html:448
+#: templates/inventory/hardware_list.html:194
+#: templates/inventory/hardware_list.html:430
+#: templates/inventory/hardware_list.html:599
+#: templates/inventory/software_list.html:180 templates/networks/hosts.html:226
+#: templates/networks/maps.html:128 templates/networks/maps.html:212
+#: templates/networks/maps.html:266
+msgid "Notes"
+msgstr "Σημειώσεις"
+
+#: app/backup/routes.py:178 templates/backup/tape_detail.html:58
+#, fuzzy
+msgid "Medium type"
+msgstr "Μεσαία"
+
+#: app/backup/routes.py:179 templates/backup/tape_detail.html:160
+#, fuzzy
+msgid "Generation / Model"
+msgstr "Μοντέλο OpenAI"
+
+#: app/backup/routes.py:180 templates/backup/tape_detail.html:73
+#, fuzzy
+msgid "Serial number"
+msgstr "Σειριακός αριθμός"
+
+#: app/backup/routes.py:181 templates/backup/monitor.html:186
+#: templates/backup/tape_detail.html:71 templates/backup/tape_detail.html:170
+#: templates/inventory/hardware_list.html:170
+#: templates/inventory/hardware_list.html:319
+#: templates/inventory/hardware_list.html:488
+#, fuzzy
+msgid "Manufacturer"
+msgstr "Κατασκευαστής"
+
+#: app/backup/routes.py:182 templates/backup/monitor.html:180
+#: templates/backup/tape_detail.html:206
+#: templates/inventory/hardware_list.html:171
+#: templates/inventory/hardware_list.html:323
+#: templates/inventory/hardware_list.html:492
+#: templates/manage/assistant_settings.html:208
+msgid "Model"
+msgstr "Μοντέλο"
+
+#: app/backup/routes.py:183 templates/backup/job_detail.html:103
+#: templates/backup/monitor.html:208 templates/backup/tape_detail.html:192
+#, fuzzy
+msgid "Retention (days)"
+msgstr "Ειδόποίηση"
+
+#: app/backup/routes.py:184
+msgid "Retention start"
+msgstr "Έναρξη διακράτησης"
+
+#: app/backup/routes.py:185
+#, fuzzy
+msgid "Retention end"
+msgstr "Λήξη διακράτησης"
+
+#: app/backup/routes.py:186 templates/backup/tape_detail.html:105
+#, fuzzy
+msgid "Last inventory check"
+msgstr "Τελευταίος έλεγχος απογραφής"
+
+#: app/backup/routes.py:326 templates/backup/monitor.html:317
+#: templates/contracts/contract_list.html:110
+#: templates/contracts/contract_list.html:167
+#: templates/inventory/software_list.html:205
+msgid "Expired"
+msgstr "Ληγμένο"
+
+#: app/backup/routes.py:328
+#, python-format
+msgid "Due in %(days)s day(s)"
+msgstr "Λήγει σε %(days)s ημέρα/ες"
+
+#: app/backup/routes.py:330
+#, python-format
+msgid "Active (%(days)s days remaining)"
+msgstr "Ενεργό (απομένουν %(days)s ημέρες)"
+
+#: app/backup/routes.py:349
+msgid "Barcode is required."
+msgstr "Απαιτείται barcode."
+
+#: app/backup/routes.py:354
+msgid "A storage medium with this barcode already exists."
+msgstr "Υπάρχει ήδη μέσο αποθήκευσης με αυτό το barcode."
+
+#: app/backup/routes.py:399
+#, python-format
+msgid "Storage medium “%(barcode)s” created."
+msgstr "Δημιουργήθηκε μέσο αποθήκευσης «%(barcode)s»."
+
+#: app/backup/routes.py:512
+msgid "No changes detected for the storage medium."
+msgstr "Δεν εντοπίστηκαν αλλαγές για το μέσο αποθήκευσης."
+
+#: app/backup/routes.py:519
+msgid "Storage medium updated."
+msgstr "Το μέσο αποθήκευσης ενημερώθηκε."
+
+#: app/backup/routes.py:530
+#, fuzzy
+msgid "Invalid location type."
+msgstr "Μη έγκυρο όνομα αρχείου."
+
+#: app/backup/routes.py:571
+msgid "Location entry added."
+msgstr "Προστέθηκε καταχώριση τοποθεσίας."
+
+#: app/backup/routes.py:602
+msgid "Custody event recorded."
+msgstr "Καταγράφηκε συμβάν φύλαξης."
+
+#: app/backup/routes.py:648
+#, python-format
+msgid "Storage medium “%(barcode)s” deleted."
+msgstr "Διαγράφηκε το μέσο αποθήκευσης «%(barcode)s»."
+
+#: app/backup/routes.py:656
+#, fuzzy, python-format
+msgid "Failed to delete storage medium: %(error)s"
+msgstr "Αποτυχία επεξεργασίας γραμματοκιβωτίου: %(error)s"
 
 #: app/collab/routes.py:57 templates/collab/chat.html:335
 #: templates/collab/chat.html:839
@@ -289,9 +665,13 @@ msgstr "Άμεση συνομιλία"
 msgid "Invalid user."
 msgstr "Μη έγκυρος χρήστης."
 
-#: app/collab/routes.py:277 templates/contracts/contract_list.html:157
-#: templates/inventory/hardware_list.html:206
-#: templates/inventory/software_list.html:198
+#: app/collab/routes.py:214 app/collab/routes.py:428
+msgid "User not found."
+msgstr "Ο χρήστης δεν βρέθηκε."
+
+#: app/collab/routes.py:277 templates/contracts/contract_list.html:173
+#: templates/inventory/hardware_list.html:225
+#: templates/inventory/software_list.html:211
 #: templates/knowledge/detail.html:125
 msgid "Unknown"
 msgstr "Άγνωστο"
@@ -385,163 +765,168 @@ msgstr "Δεν έχετε πρόσβαση σε αυτό το συνημμένο
 msgid "You do not have permission to view historical versions."
 msgstr "Δεν έχετε δικαίωμα να δείτε παλαιότερες εκδόσεις."
 
-#: app/manage/routes.py:63
+#: app/manage/routes.py:107
 msgid "Access settings updated."
 msgstr "Οι ρυθμίσεις πρόσβασης ενημερώθηκαν."
 
-#: app/manage/routes.py:65
+#: app/manage/routes.py:109
 msgid "No changes were necessary."
 msgstr "Δεν απαιτήθηκαν αλλαγές."
 
-#: app/manage/routes.py:155
+#: app/manage/routes.py:235
 msgid "Webhook headers must be valid JSON object."
 msgstr "Τα headers του webhook πρέπει να είναι έγκυρο αντικείμενο JSON."
 
-#: app/manage/routes.py:157
+#: app/manage/routes.py:237
 msgid "Webhook headers must be valid JSON."
 msgstr "Τα headers του webhook πρέπει να είναι έγκυρο JSON."
 
-#: app/manage/routes.py:172
+#: app/manage/routes.py:252
 msgid "Assistant settings saved."
 msgstr "Οι ρυθμίσεις του βοηθού αποθηκεύτηκαν."
 
-#: app/manage/routes.py:208
+#: app/manage/routes.py:288
 #, fuzzy
 msgid "Authentication settings saved."
 msgstr "Οι ρυθμίσεις του βοηθού αποθηκεύτηκαν."
 
-#: app/manage/routes.py:234
+#: app/manage/routes.py:314
 msgid "Selected default user does not exist."
-msgstr ""
+msgstr "Ο επιλεγμένος προεπιλεγμένος χρήστης δεν υπάρχει."
 
-#: app/manage/routes.py:241 app/manage/routes.py:243
+#: app/manage/routes.py:321 app/manage/routes.py:323
 #, fuzzy
 msgid "New API Client"
 msgstr "Νέο άρθρο"
 
-#: app/manage/routes.py:248
+#: app/manage/routes.py:328
 msgid "API key created. Copy it now, it will not be shown again."
-msgstr ""
+msgstr "Το κλειδί API δημιουργήθηκε. Αντιγράψτε το τώρα, δεν θα εμφανιστεί ξανά."
 
-#: app/manage/routes.py:252 app/manage/routes.py:262 app/manage/routes.py:273
-#: app/manage/routes.py:281
+#: app/manage/routes.py:332 app/manage/routes.py:342 app/manage/routes.py:353
+#: app/manage/routes.py:361
 #, fuzzy
 msgid "API client not found."
 msgstr "Ο χρήστης δεν βρέθηκε."
 
-#: app/manage/routes.py:258
+#: app/manage/routes.py:338
 msgid "API key rotated. Copy the new key immediately."
-msgstr ""
+msgstr "Έγινε περιστροφή του κλειδιού API. Αντιγράψτε το νέο κλειδί άμεσα."
 
-#: app/manage/routes.py:269
+#: app/manage/routes.py:349
 #, fuzzy
 msgid "API client details updated."
 msgstr "Οι ρυθμίσεις πρόσβασης ενημερώθηκαν."
 
-#: app/manage/routes.py:277
+#: app/manage/routes.py:357
 msgid "API key revoked."
-msgstr ""
+msgstr "Το κλειδί API ανακλήθηκε."
 
-#: app/manage/routes.py:285
+#: app/manage/routes.py:365
 #, fuzzy
 msgid "API client deleted."
 msgstr "Το άρθρο διαγράφηκε."
 
-#: app/manage/routes.py:287
+#: app/manage/routes.py:367
 #, fuzzy
 msgid "Unsupported action."
 msgstr "Σύμβαση υποστήριξης"
 
-#: app/manage/routes.py:290
+#: app/manage/routes.py:370
 #, python-format
 msgid "Error processing request: %(error)s"
-msgstr ""
+msgstr "Σφάλμα κατά την επεξεργασία του αιτήματος: %(error)s"
 
-#: app/manage/routes.py:323
+#: app/manage/routes.py:419
 msgid ""
 "Email ingestion is temporarily unavailable because the database schema is"
 " out of date. Please run the latest migrations and reload this page."
 msgstr ""
+"Η ανάκτηση email δεν είναι προσωρινά διαθέσιμη επειδή το σχήμα της βάσης "
+"δεδομένων δεν είναι ενημερωμένο. Εκτελέστε τις πιο πρόσφατες μεταναστεύσεις "
+"και ανανεώστε αυτήν τη σελίδα."
 
-#: app/manage/routes.py:333
+#: app/manage/routes.py:429
 msgid ""
 "Unable to save email ingestion settings because the required database "
 "table is missing. Run the database migrations and try again."
 msgstr ""
+"Αδυναμία αποθήκευσης ρυθμίσεων ανάκτησης email επειδή λείπει ο απαιτούμενος "
+"πίνακας στη βάση. Εκτελέστε τις μεταναστεύσεις της βάσης και δοκιμάστε ξανά."
 
-#: app/manage/routes.py:345
+#: app/manage/routes.py:441
 #, python-format
 msgid "Processed %(count)s email(s) and created tickets."
 msgstr "Επεξεργάστηκε %(count)s email και δημιουργήθηκαν δελτία."
 
-#: app/manage/routes.py:347
+#: app/manage/routes.py:443
 msgid "Mailbox checked. No new emails were ingested."
 msgstr "Ο λογαριασμός ελέγχθηκε. Δεν εισήχθησαν νέα email."
 
-#: app/manage/routes.py:349
+#: app/manage/routes.py:445
 #, python-format
 msgid "Failed to process mailbox: %(error)s"
 msgstr "Αποτυχία επεξεργασίας γραμματοκιβωτίου: %(error)s"
 
-#: app/manage/routes.py:358
+#: app/manage/routes.py:454
 msgid "Mail server host is required when email ingestion is enabled."
-msgstr ""
+msgstr "Απαιτείται διακομιστής email όταν η ανάκτηση email είναι ενεργή."
 
-#: app/manage/routes.py:360
+#: app/manage/routes.py:456
 msgid "Mailbox username is required when email ingestion is enabled."
-msgstr ""
+msgstr "Απαιτείται όνομα χρήστη γραμματοκιβωτίου όταν η ανάκτηση είναι ενεργή."
 
-#: app/manage/routes.py:362
+#: app/manage/routes.py:458
 msgid "Mailbox password is required when email ingestion is enabled."
-msgstr ""
+msgstr "Απαιτείται κωδικός γραμματοκιβωτίου όταν η ανάκτηση είναι ενεργή."
 
-#: app/manage/routes.py:373
+#: app/manage/routes.py:469
 msgid "Please select a ticket creator account."
 msgstr "Επιλέξτε λογαριασμό χρήστη για τη δημιουργία δελτίων."
 
-#: app/manage/routes.py:381
+#: app/manage/routes.py:477
 msgid "Email ingestion settings saved."
 msgstr "Οι ρυθμίσεις ανάκτησης email αποθηκεύτηκαν."
 
-#: templates/base.html:6
+#: templates/base.html:11
 msgid "Helpdesk Pro"
 msgstr "Helpdesk Pro"
 
-#: templates/base.html:287
+#: templates/base.html:346
 msgid "Toggle theme"
 msgstr "Αλλαγή θέματος"
 
-#: templates/base.html:313 templates/base.html:328
+#: templates/base.html:372 templates/base.html:386 templates/base.html:388
 msgid "About"
 msgstr "Σχετικά"
 
-#: templates/base.html:320
+#: templates/base.html:379
 msgid "Logout"
 msgstr "Αποσύνδεση"
 
-#: templates/base.html:375
+#: templates/base.html:435
 msgid "All Rights Reserved"
 msgstr "Όλα τα δικαιώματα διατηρούνται"
 
-#: templates/base.html:386
+#: templates/base.html:446
 #, fuzzy
 msgid "About Helpdesk Pro"
 msgstr "Σχετικά με το Helpdesk Pro"
 
-#: templates/base.html:387 templates/base.html:397
+#: templates/base.html:447 templates/base.html:457
 #: templates/knowledge/detail.html:25
 #, fuzzy
 msgid "Close"
 msgstr "Κλείσιμο"
 
-#: templates/base.html:390 templates/inventory/software_list.html:147
-#: templates/inventory/software_list.html:263
-#: templates/inventory/software_list.html:414
+#: templates/base.html:450 templates/inventory/software_list.html:160
+#: templates/inventory/software_list.html:279
+#: templates/inventory/software_list.html:431
 #: templates/knowledge/detail.html:195 templates/knowledge/version.html:18
 msgid "Version"
 msgstr "Έκδοση"
 
-#: templates/base.html:392 templates/knowledge/detail.html:197
+#: templates/base.html:452 templates/knowledge/detail.html:197
 msgid "Author"
 msgstr "Συντάκτης"
 
@@ -575,14 +960,15 @@ msgstr "Νέο Αίτημα"
 #: templates/address_book/address_book.html:99
 #: templates/address_book/address_book.html:183
 #: templates/address_book/address_book.html:277
-#: templates/contracts/contract_list.html:118
-#: templates/contracts/contract_list.html:221
-#: templates/contracts/contract_list.html:339
-#: templates/inventory/software_list.html:145
-#: templates/inventory/software_list.html:255
-#: templates/inventory/software_list.html:406 templates/manage/api_keys.html:74
-#: templates/manage/api_keys.html:181 templates/networks/maps.html:106
-#: templates/networks/maps.html:172 templates/networks/maps.html:225
+#: templates/contracts/contract_list.html:134
+#: templates/contracts/contract_list.html:241
+#: templates/contracts/contract_list.html:359
+#: templates/inventory/software_list.html:158
+#: templates/inventory/software_list.html:271
+#: templates/inventory/software_list.html:423
+#: templates/manage/api_keys.html:142 templates/manage/api_keys.html:249
+#: templates/networks/maps.html:119 templates/networks/maps.html:188
+#: templates/networks/maps.html:242
 #, fuzzy
 msgid "Name"
 msgstr "Όνομα"
@@ -590,12 +976,12 @@ msgstr "Όνομα"
 #: templates/address_book/address_book.html:100
 #: templates/address_book/address_book.html:187
 #: templates/address_book/address_book.html:281
-#: templates/inventory/hardware_list.html:149
-#: templates/inventory/hardware_list.html:279
-#: templates/inventory/hardware_list.html:449
-#: templates/inventory/software_list.html:148
-#: templates/inventory/software_list.html:271
-#: templates/inventory/software_list.html:422 templates/knowledge/edit.html:19
+#: templates/inventory/hardware_list.html:168
+#: templates/inventory/hardware_list.html:301
+#: templates/inventory/hardware_list.html:470
+#: templates/inventory/software_list.html:161
+#: templates/inventory/software_list.html:287
+#: templates/inventory/software_list.html:439 templates/knowledge/edit.html:19
 msgid "Category"
 msgstr "Κατηγορία"
 
@@ -603,7 +989,7 @@ msgstr "Κατηγορία"
 #: templates/address_book/address_book.html:196
 #: templates/address_book/address_book.html:290
 msgid "Company"
-msgstr ""
+msgstr "Εταιρεία"
 
 #: templates/address_book/address_book.html:102
 #: templates/address_book/address_book.html:200
@@ -615,15 +1001,15 @@ msgstr "Τίτλος"
 #: templates/address_book/address_book.html:103
 #: templates/address_book/address_book.html:204
 #: templates/address_book/address_book.html:298 templates/tickets/create.html:9
-#: templates/users/list.html:34 templates/users/list.html:106
-#: templates/users/list.html:154
+#: templates/users/list.html:115 templates/users/list.html:187
+#: templates/users/list.html:249
 msgid "Department"
 msgstr "Τμήμα"
 
 #: templates/address_book/address_book.html:104
 #: templates/address_book/address_book.html:208
-#: templates/address_book/address_book.html:302 templates/users/list.html:32
-#: templates/users/list.html:96 templates/users/list.html:140
+#: templates/address_book/address_book.html:302 templates/users/list.html:113
+#: templates/users/list.html:177 templates/users/list.html:232
 msgid "Email"
 msgstr "Email"
 
@@ -673,13 +1059,13 @@ msgstr "Κατάσταση"
 #: templates/address_book/address_book.html:236
 #: templates/address_book/address_book.html:330
 msgid "Postal Code"
-msgstr ""
+msgstr "Ταχυδρομικός κώδικας"
 
 #: templates/address_book/address_book.html:112
 #: templates/address_book/address_book.html:240
 #: templates/address_book/address_book.html:334
 msgid "Country"
-msgstr ""
+msgstr "Χώρα"
 
 #: templates/address_book/address_book.html:113
 #: templates/address_book/address_book.html:244
@@ -689,59 +1075,46 @@ msgstr ""
 msgid "Tags"
 msgstr "Ετικέτες"
 
-#: templates/address_book/address_book.html:114
-#: templates/address_book/address_book.html:248
-#: templates/address_book/address_book.html:342
-#: templates/contracts/contract_list.html:136
-#: templates/contracts/contract_list.html:310
-#: templates/contracts/contract_list.html:428
-#: templates/inventory/hardware_list.html:175
-#: templates/inventory/hardware_list.html:408
-#: templates/inventory/hardware_list.html:578
-#: templates/inventory/software_list.html:167 templates/networks/hosts.html:213
-#: templates/networks/maps.html:115 templates/networks/maps.html:196
-#: templates/networks/maps.html:249
-msgid "Notes"
-msgstr "Σημειώσεις"
-
 #: templates/address_book/address_book.html:115
-#: templates/contracts/contract_list.html:137
-#: templates/inventory/hardware_list.html:176
-#: templates/inventory/software_list.html:168 templates/manage/api_keys.html:80
-#: templates/networks/hosts.html:122 templates/networks/maps.html:116
-#: templates/tickets/list.html:206 templates/users/list.html:37
+#: templates/backup/monitor.html:267 templates/contracts/contract_list.html:153
+#: templates/inventory/hardware_list.html:195
+#: templates/inventory/software_list.html:181
+#: templates/manage/api_keys.html:148 templates/networks/hosts.html:132
+#: templates/networks/maps.html:129 templates/tickets/list.html:206
+#: templates/users/list.html:118
 msgid "Actions"
 msgstr "Ενέργειες"
 
 #: templates/address_book/address_book.html:137
-#: templates/contracts/contract_list.html:182
+#: templates/contracts/contract_list.html:198
 msgid "Link"
-msgstr ""
+msgstr "Σύνδεσμος"
 
 #: templates/address_book/address_book.html:189
 #: templates/address_book/address_book.html:283
-#: templates/contracts/contract_list.html:227
-#: templates/contracts/contract_list.html:236
-#: templates/contracts/contract_list.html:345
-#: templates/contracts/contract_list.html:354
-#: templates/inventory/hardware_list.html:281
-#: templates/inventory/hardware_list.html:290
-#: templates/inventory/hardware_list.html:327
-#: templates/inventory/hardware_list.html:336
-#: templates/inventory/hardware_list.html:451
-#: templates/inventory/hardware_list.html:460
-#: templates/inventory/hardware_list.html:497
-#: templates/inventory/hardware_list.html:506
-#: templates/inventory/software_list.html:273
-#: templates/inventory/software_list.html:282
-#: templates/inventory/software_list.html:291
-#: templates/inventory/software_list.html:312
-#: templates/inventory/software_list.html:321
-#: templates/inventory/software_list.html:424
-#: templates/inventory/software_list.html:433
-#: templates/inventory/software_list.html:442
-#: templates/inventory/software_list.html:463
-#: templates/inventory/software_list.html:472 templates/networks/hosts.html:193
+#: templates/backup/job_detail.html:119
+#: templates/contracts/contract_list.html:247
+#: templates/contracts/contract_list.html:256
+#: templates/contracts/contract_list.html:365
+#: templates/contracts/contract_list.html:374
+#: templates/inventory/hardware_list.html:303
+#: templates/inventory/hardware_list.html:312
+#: templates/inventory/hardware_list.html:349
+#: templates/inventory/hardware_list.html:358
+#: templates/inventory/hardware_list.html:472
+#: templates/inventory/hardware_list.html:481
+#: templates/inventory/hardware_list.html:518
+#: templates/inventory/hardware_list.html:527
+#: templates/inventory/software_list.html:289
+#: templates/inventory/software_list.html:298
+#: templates/inventory/software_list.html:307
+#: templates/inventory/software_list.html:328
+#: templates/inventory/software_list.html:337
+#: templates/inventory/software_list.html:441
+#: templates/inventory/software_list.html:450
+#: templates/inventory/software_list.html:459
+#: templates/inventory/software_list.html:480
+#: templates/inventory/software_list.html:489 templates/networks/hosts.html:206
 msgid "Select..."
 msgstr "Επιλέξτε..."
 
@@ -753,30 +1126,32 @@ msgstr "Ετικέτες (χωρισμένες με κόμμα)"
 
 #: templates/address_book/address_book.html:254
 #: templates/address_book/address_book.html:352
-#: templates/address_book/address_book.html:377 templates/collab/chat.html:903
-#: templates/collab/chat.html:922 templates/contracts/contract_list.html:316
-#: templates/contracts/contract_list.html:438
-#: templates/contracts/contract_list.html:463
-#: templates/inventory/hardware_list.html:414
-#: templates/inventory/hardware_list.html:588
-#: templates/inventory/hardware_list.html:613
-#: templates/inventory/software_list.html:383
-#: templates/inventory/software_list.html:538
-#: templates/inventory/software_list.html:563
+#: templates/address_book/address_book.html:377
+#: templates/backup/job_detail.html:254 templates/backup/monitor.html:447
+#: templates/backup/tape_detail.html:511 templates/collab/chat.html:903
+#: templates/collab/chat.html:922 templates/contracts/contract_list.html:336
+#: templates/contracts/contract_list.html:458
+#: templates/contracts/contract_list.html:483
+#: templates/inventory/hardware_list.html:436
+#: templates/inventory/hardware_list.html:609
+#: templates/inventory/hardware_list.html:635
+#: templates/inventory/software_list.html:399
+#: templates/inventory/software_list.html:555
+#: templates/inventory/software_list.html:580
 #: templates/knowledge/detail.html:33 templates/knowledge/edit.html:42
-#: templates/manage/api_keys.html:203 templates/networks/hosts.html:218
-#: templates/networks/hosts.html:242 templates/networks/maps.html:202
-#: templates/networks/maps.html:255 templates/networks/maps.html:279
-#: templates/tickets/list.html:334 templates/users/list.html:176
+#: templates/manage/api_keys.html:271 templates/networks/hosts.html:231
+#: templates/networks/hosts.html:255 templates/networks/maps.html:218
+#: templates/networks/maps.html:272 templates/networks/maps.html:296
+#: templates/tickets/list.html:334 templates/users/list.html:277
 msgid "Cancel"
 msgstr "Ακύρωση"
 
 #: templates/address_book/address_book.html:256
-#: templates/contracts/contract_list.html:318
-#: templates/inventory/hardware_list.html:416
-#: templates/inventory/software_list.html:385 templates/knowledge/edit.html:45
-#: templates/networks/maps.html:204 templates/tickets/edit.html:42
-#: templates/users/list.html:113
+#: templates/contracts/contract_list.html:338
+#: templates/inventory/hardware_list.html:438
+#: templates/inventory/software_list.html:401 templates/knowledge/edit.html:45
+#: templates/networks/maps.html:220 templates/tickets/edit.html:42
+#: templates/users/list.html:203
 msgid "Save"
 msgstr "Αποθήκευση"
 
@@ -786,23 +1161,27 @@ msgid "Edit Contact"
 msgstr "Επεξεργασία Αιτήματος"
 
 #: templates/address_book/address_book.html:349
-#: templates/address_book/address_book.html:379 templates/collab/chat.html:923
-#: templates/contracts/contract_list.html:435
-#: templates/contracts/contract_list.html:465
-#: templates/inventory/hardware_list.html:585
-#: templates/inventory/hardware_list.html:615
-#: templates/inventory/software_list.html:535
-#: templates/inventory/software_list.html:565
-#: templates/knowledge/detail.html:60 templates/manage/api_keys.html:165
-#: templates/networks/hosts.html:244 templates/networks/maps.html:281
+#: templates/address_book/address_book.html:379
+#: templates/backup/job_detail.html:255 templates/backup/monitor.html:448
+#: templates/backup/tape_detail.html:512 templates/collab/chat.html:923
+#: templates/contracts/contract_list.html:455
+#: templates/contracts/contract_list.html:485
+#: templates/inventory/hardware_list.html:606
+#: templates/inventory/hardware_list.html:637
+#: templates/inventory/software_list.html:552
+#: templates/inventory/software_list.html:582
+#: templates/knowledge/detail.html:60 templates/manage/api_keys.html:233
+#: templates/networks/hosts.html:257 templates/networks/maps.html:298
 #: templates/tickets/_row.html:53 templates/tickets/list.html:269
 #: templates/tickets/list.html:335 templates/tickets/list.html:433
-#: templates/users/list.html:177
+#: templates/users/list.html:278
 msgid "Delete"
 msgstr "Διαγραφή"
 
 #: templates/address_book/address_book.html:354
-#: templates/contracts/contract_list.html:440 templates/manage/access.html:75
+#: templates/backup/job_detail.html:155 templates/backup/tape_detail.html:220
+#: templates/contracts/contract_list.html:460 templates/manage/access.html:149
+#: templates/manage/access.html:211 templates/manage/api_keys.html:274
 msgid "Save Changes"
 msgstr "Αποθήκευση αλλαγών"
 
@@ -812,65 +1191,67 @@ msgid "Delete Contact"
 msgstr "Διαγραφή συζήτησης"
 
 #: templates/address_book/address_book.html:374
-#: templates/contracts/contract_list.html:460
-#: templates/inventory/hardware_list.html:610
-#: templates/inventory/software_list.html:560 templates/networks/maps.html:276
+#: templates/contracts/contract_list.html:480
+#: templates/inventory/hardware_list.html:632
+#: templates/inventory/software_list.html:577 templates/networks/maps.html:293
 #, fuzzy
 msgid "Are you sure you want to delete"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε"
 
 #: templates/address_book/address_book.html:404
-#: templates/contracts/contract_list.html:490
-#: templates/inventory/hardware_list.html:640
-#: templates/inventory/software_list.html:590 templates/networks/hosts.html:269
-#: templates/networks/maps.html:326 templates/tickets/list.html:365
-#: templates/users/list.html:204
+#: templates/contracts/contract_list.html:513
+#: templates/inventory/hardware_list.html:669
+#: templates/inventory/software_list.html:609 templates/networks/hosts.html:285
+#: templates/networks/maps.html:345 templates/tickets/list.html:365
+#: templates/users/list.html:310
 msgid "Excel"
 msgstr "Excel"
 
 #: templates/address_book/address_book.html:405
-#: templates/contracts/contract_list.html:491
-#: templates/inventory/hardware_list.html:641
-#: templates/inventory/software_list.html:591 templates/networks/hosts.html:270
-#: templates/networks/maps.html:327 templates/tickets/list.html:366
-#: templates/users/list.html:205
+#: templates/contracts/contract_list.html:514
+#: templates/inventory/hardware_list.html:670
+#: templates/inventory/software_list.html:610 templates/networks/hosts.html:286
+#: templates/networks/maps.html:346 templates/tickets/list.html:366
+#: templates/users/list.html:319
 msgid "Print"
 msgstr "Εκτύπωση"
 
 #: templates/address_book/address_book.html:406
-#: templates/contracts/contract_list.html:492
-#: templates/inventory/hardware_list.html:642
-#: templates/inventory/software_list.html:592 templates/networks/hosts.html:271
-#: templates/networks/maps.html:328 templates/tickets/list.html:367
+#: templates/contracts/contract_list.html:515
+#: templates/inventory/hardware_list.html:671
+#: templates/inventory/software_list.html:611 templates/networks/hosts.html:287
+#: templates/networks/maps.html:347 templates/tickets/list.html:367
+#: templates/users/list.html:331
 msgid "Advanced Filters"
 msgstr "Σύνθετα φίλτρα"
 
 #: templates/address_book/address_book.html:416
-#: templates/contracts/contract_list.html:506
-#: templates/inventory/hardware_list.html:655
-#: templates/inventory/software_list.html:605 templates/networks/hosts.html:281
-#: templates/networks/maps.html:338 templates/tickets/list.html:466
+#: templates/contracts/contract_list.html:529
+#: templates/inventory/hardware_list.html:687
+#: templates/inventory/software_list.html:624 templates/networks/hosts.html:297
+#: templates/networks/maps.html:357 templates/tickets/list.html:466
+#: templates/users/list.html:365 templates/users/list.html:421
 msgid "Saving..."
 msgstr "Γίνεται αποθήκευση..."
 
 #: templates/address_book/address_book.html:425
 #: templates/address_book/address_book.html:443
-#: templates/contracts/contract_list.html:515
-#: templates/contracts/contract_list.html:533
-#: templates/inventory/hardware_list.html:664
-#: templates/inventory/hardware_list.html:682
-#: templates/inventory/software_list.html:614
-#: templates/inventory/software_list.html:632 templates/networks/hosts.html:290
-#: templates/networks/hosts.html:308 templates/networks/maps.html:347
-#: templates/networks/maps.html:365
+#: templates/contracts/contract_list.html:544
+#: templates/contracts/contract_list.html:562
+#: templates/inventory/hardware_list.html:702
+#: templates/inventory/hardware_list.html:720
+#: templates/inventory/software_list.html:639
+#: templates/inventory/software_list.html:657 templates/networks/hosts.html:312
+#: templates/networks/hosts.html:330 templates/networks/maps.html:372
+#: templates/networks/maps.html:390
 msgid "Unexpected error while saving."
 msgstr "Απρόσμενο σφάλμα κατά την αποθήκευση."
 
 #: templates/address_book/address_book.html:438
-#: templates/contracts/contract_list.html:528
-#: templates/inventory/hardware_list.html:677
-#: templates/inventory/software_list.html:627 templates/networks/hosts.html:303
-#: templates/networks/maps.html:360
+#: templates/contracts/contract_list.html:557
+#: templates/inventory/hardware_list.html:715
+#: templates/inventory/software_list.html:652 templates/networks/hosts.html:325
+#: templates/networks/maps.html:385
 #, fuzzy
 msgid "Operation completed successfully"
 msgstr "Η ενέργεια ολοκληρώθηκε επιτυχώς"
@@ -894,19 +1275,19 @@ msgstr "Ξεχάσατε τον κωδικό;"
 msgid ""
 "Password reset via email is currently disabled. Contact an administrator "
 "for assistance."
-msgstr ""
+msgstr "Η επαναφορά κωδικού μέσω email είναι προς το παρόν απενεργοποιημένη. Επικοινωνήστε με διαχειριστή για βοήθεια."
 
 #: templates/auth/forgot_password.html:15
 msgid ""
 "If the email you entered exists, a reset link has been sent. Check your "
 "inbox for further instructions."
-msgstr ""
+msgstr "Αν το email που εισαγάγατε υπάρχει, έχει σταλεί σύνδεσμος επαναφοράς. Ελέγξτε τα εισερχόμενά σας για οδηγίες."
 
 #: templates/auth/forgot_password.html:18
 msgid ""
 "Enter the email address associated with your account and we will send you"
 " a reset link."
-msgstr ""
+msgstr "Εισαγάγετε το email του λογαριασμού σας και θα σας στείλουμε σύνδεσμο επαναφοράς."
 
 #: templates/auth/forgot_password.html:22 templates/auth/register.html:23
 #, fuzzy
@@ -915,7 +1296,7 @@ msgstr "Διεύθυνση MAC"
 
 #: templates/auth/forgot_password.html:26
 msgid "Send reset link"
-msgstr ""
+msgstr "Αποστολή συνδέσμου επαναφοράς"
 
 #: templates/auth/forgot_password.html:34 templates/auth/register.html:47
 #: templates/auth/reset_password.html:34
@@ -932,15 +1313,15 @@ msgid "Your secure access to IT support and ticketing"
 msgstr "Η ασφαλής πρόσβασή σας στην υποστήριξη και το ticketing ΙΤ"
 
 #: templates/auth/login.html:117 templates/auth/register.html:18
-#: templates/auth/setup_admin.html:49 templates/manage/email_ingest.html:41
-#: templates/users/list.html:31 templates/users/list.html:93
-#: templates/users/list.html:137
+#: templates/auth/setup_admin.html:49 templates/manage/email_ingest.html:151
+#: templates/users/list.html:112 templates/users/list.html:174
+#: templates/users/list.html:229
 msgid "Username"
 msgstr "Όνομα Χρήστη"
 
 #: templates/auth/login.html:122 templates/auth/register.html:28
-#: templates/auth/setup_admin.html:57 templates/manage/email_ingest.html:45
-#: templates/users/list.html:143
+#: templates/auth/setup_admin.html:57 templates/manage/email_ingest.html:155
+#: templates/users/list.html:235
 msgid "Password"
 msgstr "Κωδικός"
 
@@ -976,7 +1357,7 @@ msgstr ""
 
 #: templates/auth/register.html:30 templates/auth/reset_password.html:19
 msgid "Use at least 8 characters with a mix of letters and numbers."
-msgstr ""
+msgstr "Χρησιμοποιήστε τουλάχιστον 8 χαρακτήρες με γράμματα και αριθμούς."
 
 #: templates/auth/register.html:34 templates/auth/reset_password.html:22
 #, fuzzy
@@ -990,11 +1371,11 @@ msgstr "Δημιουργία λογαριασμού"
 
 #: templates/auth/reset_password.html:8
 msgid "Choose a new password"
-msgstr ""
+msgstr "Επιλέξτε νέο κωδικό"
 
 #: templates/auth/reset_password.html:11
 msgid "This reset link is invalid or has expired. Please request a new one."
-msgstr ""
+msgstr "Ο σύνδεσμος επαναφοράς δεν είναι έγκυρος ή έχει λήξει. Ζητήστε έναν νέο."
 
 #: templates/auth/reset_password.html:17
 #, fuzzy
@@ -1024,6 +1405,569 @@ msgstr "Email (προαιρετικό)"
 #, fuzzy
 msgid "Create Admin Account"
 msgstr "Δημιουργία λογαριασμού Διαχειριστή"
+
+#: templates/backup/job_detail.html:32 templates/backup/tape_detail.html:32
+msgid "Breadcrumb"
+msgstr "Ιεραρχία πλοήγησης"
+
+#: templates/backup/job_detail.html:46
+#, fuzzy
+msgid "Delete Job"
+msgstr "Διαγραφή host"
+
+#: templates/backup/job_detail.html:50
+msgid ""
+"Backup job overview with retention, verification outcome, linked tapes, "
+"and audit trail."
+msgstr "Επισκόπηση εργασίας αντιγράφων με διακράτηση, αποτέλεσμα επαλήθευσης, συνδεδεμένες ταινίες και ίχνος ελέγχου."
+
+#: templates/backup/job_detail.html:56
+#, fuzzy
+msgid "Job Summary"
+msgstr "Περίληψη"
+
+#: templates/backup/job_detail.html:58
+#, fuzzy
+msgid "Job date"
+msgstr "Τίτλος"
+
+#: templates/backup/job_detail.html:60 templates/backup/monitor.html:263
+#: templates/backup/tape_detail.html:89
+#, fuzzy
+msgid "Retention"
+msgstr "Σταθμός εργασίας"
+
+#: templates/backup/job_detail.html:61 templates/backup/monitor.html:313
+#: templates/backup/tape_detail.html:92
+#, fuzzy
+msgid "days"
+msgstr "Προσχέδια"
+
+#: templates/backup/job_detail.html:62
+#, fuzzy
+msgid "Expires on"
+msgstr "Ληγμένο"
+
+#: templates/backup/job_detail.html:70 templates/backup/job_detail.html:107
+#, fuzzy
+msgid "Total files"
+msgstr "Σύνολο άρθρων"
+
+#: templates/backup/job_detail.html:72 templates/backup/job_detail.html:111
+msgid "Total size (bytes)"
+msgstr "Συνολικό μέγεθος (bytes)"
+
+#: templates/backup/job_detail.html:74
+msgid "Verification result"
+msgstr "Αποτέλεσμα επαλήθευσης"
+
+#: templates/backup/job_detail.html:75
+#: templates/contracts/contract_list.html:98
+#: templates/contracts/contract_list.html:169
+#, fuzzy
+msgid "Pending"
+msgstr "Ping"
+
+#: templates/backup/job_detail.html:76
+#, fuzzy
+msgid "Source system"
+msgstr "Λειτουργικό σύστημα"
+
+#: templates/backup/job_detail.html:78
+#, fuzzy
+msgid "Responsible technician"
+msgstr "Ανάθεση Σε (Τεχνικό)"
+
+#: templates/backup/job_detail.html:88
+msgid "Update Backup Job"
+msgstr "Ενημέρωση εργασίας αντιγράφων"
+
+#: templates/backup/job_detail.html:93
+#, fuzzy
+msgid "Job Name"
+msgstr "Όνομα"
+
+#: templates/backup/job_detail.html:97
+#, fuzzy
+msgid "Job Date"
+msgstr "Τίτλος"
+
+#: templates/backup/job_detail.html:117
+msgid "Verify Result"
+msgstr "Επαλήθευση αποτελέσματος"
+
+#: templates/backup/job_detail.html:126
+#, fuzzy
+msgid "Source System"
+msgstr "Λειτουργικό σύστημα"
+
+#: templates/backup/job_detail.html:131
+#, fuzzy
+msgid "Responsible Technician"
+msgstr "Ανάθεση Σε (Τεχνικό)"
+
+#: templates/backup/job_detail.html:140 templates/backup/monitor.html:97
+#, fuzzy
+msgid "Tape Cartridges"
+msgstr "Σύνολο άρθρων"
+
+#: templates/backup/job_detail.html:147
+msgid "Select multiple tapes to represent spanning jobs."
+msgstr "Επιλέξτε πολλές ταινίες για εργασίες που εκτείνονται σε περισσότερα μέσα."
+
+#: templates/backup/job_detail.html:167
+msgid "Associated Tape Cartridges"
+msgstr "Συνδεδεμένες κασέτες ταινίας"
+
+#: templates/backup/job_detail.html:174
+msgid "Barcode"
+msgstr "Barcode"
+
+#: templates/backup/job_detail.html:175
+#, fuzzy
+msgid "LTO Generation"
+msgstr "Συνολικές συνομιλίες"
+
+#: templates/backup/job_detail.html:196
+msgid "No tapes linked to this job yet."
+msgstr "Δεν έχουν συνδεθεί ακόμη ταινίες σε αυτή την εργασία."
+
+#: templates/backup/job_detail.html:207 templates/backup/tape_detail.html:464
+#, fuzzy
+msgid "Audit Trail"
+msgstr "Επεξεργασία άρθρου"
+
+#: templates/backup/job_detail.html:214 templates/backup/tape_detail.html:378
+#: templates/backup/tape_detail.html:418 templates/backup/tape_detail.html:471
+msgid "Timestamp"
+msgstr "Χρονική σήμανση"
+
+#: templates/backup/job_detail.html:215 templates/backup/tape_detail.html:472
+#, fuzzy
+msgid "Field"
+msgstr "Αρχείο"
+
+#: templates/backup/job_detail.html:216 templates/backup/tape_detail.html:473
+#, fuzzy
+msgid "Old value"
+msgstr "Κόστος σύμβασης"
+
+#: templates/backup/job_detail.html:217 templates/backup/tape_detail.html:474
+#, fuzzy
+msgid "New value"
+msgstr "Νέος Χρήστης"
+
+#: templates/backup/job_detail.html:218 templates/backup/tape_detail.html:475
+#, fuzzy
+msgid "Changed by"
+msgstr "Δημιουργήθηκε Από"
+
+#: templates/backup/job_detail.html:232 templates/backup/tape_detail.html:489
+#, fuzzy
+msgid "No audit entries yet."
+msgstr "Δεν υπάρχουν ακόμη συνημμένα."
+
+#: templates/backup/job_detail.html:247
+msgid "Delete Backup Job"
+msgstr "Διαγραφή εργασίας αντιγράφων"
+
+#: templates/backup/job_detail.html:251
+#, python-format
+msgid ""
+"Delete job “%(name)s”? Tape assignments will be removed but cartridges "
+"remain available for new jobs."
+msgstr "Να διαγραφεί η εργασία «%(name)s»; Οι συσχετίσεις με ταινίες θα αφαιρεθούν αλλά οι κασέτες θα παραμείνουν διαθέσιμες."
+
+#: templates/backup/monitor.html:78
+msgid "Storage Media Monitor"
+msgstr "Παρακολούθηση μέσων αποθήκευσης"
+
+#: templates/backup/monitor.html:80
+msgid ""
+"Track tape cartridges and external disks as they leave the library, "
+"monitor retention windows, and record custody history."
+msgstr "Παρακολουθήστε κασέτες ταινίας και εξωτερικούς δίσκους, τις περιόδους διακράτησης και το ιστορικό φύλαξης."
+
+#: templates/backup/monitor.html:91
+msgid "Total Media"
+msgstr "Σύνολο μέσων"
+
+#: templates/backup/monitor.html:99
+msgid "External Disks"
+msgstr "Εξωτερικοί δίσκοι"
+
+#: templates/backup/monitor.html:130
+#, fuzzy
+msgid "Retention expired"
+msgstr "Έχουν λήξει"
+
+#: templates/backup/monitor.html:133
+msgid "Due within 7 days"
+msgstr "Λήγουν εντός 7 ημερών"
+
+#: templates/backup/monitor.html:136
+#, fuzzy
+msgid "Active retention"
+msgstr "Αποθήκευση ρυθμίσεων"
+
+#: templates/backup/monitor.html:139
+msgid "No retention set"
+msgstr "Δεν έχει οριστεί διακράτηση"
+
+#: templates/backup/monitor.html:149
+msgid "Register Storage Media"
+msgstr "Καταχώριση μέσων αποθήκευσης"
+
+#: templates/backup/monitor.html:154
+msgid "Register Storage Medium"
+msgstr "Καταχώριση μέσου αποθήκευσης"
+
+#: templates/backup/monitor.html:159 templates/backup/monitor.html:259
+msgid "Barcode / Label"
+msgstr "Barcode / Ετικέτα"
+
+#: templates/backup/monitor.html:163 templates/backup/tape_detail.html:153
+#, fuzzy
+msgid "Medium Type"
+msgstr "Μεσαία"
+
+#: templates/backup/monitor.html:176 templates/backup/tape_detail.html:164
+#: templates/inventory/hardware_list.html:167
+#: templates/inventory/hardware_list.html:297
+#: templates/inventory/hardware_list.html:466
+#: templates/inventory/software_list.html:165
+#: templates/inventory/software_list.html:322
+#: templates/inventory/software_list.html:474
+msgid "Serial Number"
+msgstr "Σειριακός αριθμός"
+
+#: templates/backup/monitor.html:190 templates/backup/tape_detail.html:174
+msgid "Nominal TB"
+msgstr "Ονομαστικά TB"
+
+#: templates/backup/monitor.html:194 templates/backup/tape_detail.html:178
+#, fuzzy
+msgid "Usable TB"
+msgstr "Εύρος χρήσιμων hosts"
+
+#: templates/backup/monitor.html:212 templates/backup/tape_detail.html:196
+msgid "Retention Start"
+msgstr "Έναρξη διακράτησης"
+
+#: templates/backup/monitor.html:218 templates/backup/tape_detail.html:202
+#, fuzzy
+msgid "Last Inventory Check"
+msgstr "Απογραφή λογισμικού"
+
+#: templates/backup/monitor.html:222 templates/backup/tape_detail.html:211
+#, fuzzy
+msgid "Usage Tags (comma separated)"
+msgstr "Ετικέτες (χωρισμένες με κόμμα)"
+
+#: templates/backup/monitor.html:228
+msgid "e.g. Sent to Iron Mountain storage"
+msgstr "π.χ. Στάλθηκε σε αποθήκη Iron Mountain"
+
+#: templates/backup/monitor.html:232
+#, fuzzy
+msgid "Register Medium"
+msgstr "Δεσμευμένο"
+
+#: templates/backup/monitor.html:239
+msgid "Retention Tips"
+msgstr "Συμβουλές διακράτησης"
+
+#: templates/backup/monitor.html:240
+msgid ""
+"Retention dates help you plan returns to the library. Set a start date "
+"when the medium leaves controlled storage."
+msgstr "Οι ημερομηνίες διακράτησης βοηθούν στον προγραμματισμό επιστροφών. Ορίστε έναρξη όταν το μέσο φύγει από ελεγχόμενη αποθήκευση."
+
+#: templates/backup/monitor.html:241
+msgid ""
+"You can update retention or move a medium to a new location from the "
+"detail page once it reaches off-site storage."
+msgstr "Μπορείτε να ενημερώσετε τη διακράτηση ή να μετακινήσετε το μέσο από τη σελίδα λεπτομερειών όταν φτάσει εκτός εγκατάστασης."
+
+#: templates/backup/monitor.html:251
+#, fuzzy
+msgid "Storage Media Inventory"
+msgstr "Απογραφή λογισμικού"
+
+#: templates/backup/monitor.html:260 templates/backup/monitor.html:379
+#: templates/backup/tape_detail.html:302
+#: templates/contracts/contract_list.html:135
+#: templates/contracts/contract_list.html:245
+#: templates/contracts/contract_list.html:363
+#: templates/inventory/hardware_list.html:169
+#: templates/inventory/hardware_list.html:310
+#: templates/inventory/hardware_list.html:479
+#: templates/knowledge/detail.html:111
+msgid "Type"
+msgstr "Τύπος"
+
+#: templates/backup/monitor.html:262 templates/backup/monitor.html:382
+#: templates/backup/tape_detail.html:241
+#: templates/inventory/hardware_list.html:179
+#: templates/inventory/hardware_list.html:365
+#: templates/inventory/hardware_list.html:534
+#, fuzzy
+msgid "Location"
+msgstr "Τοποθεσία"
+
+#: templates/backup/monitor.html:264
+#, fuzzy
+msgid "Usage Tags"
+msgstr "Πεδίο χρήσης"
+
+#: templates/backup/monitor.html:265
+#, fuzzy
+msgid "Last Inventory"
+msgstr "Στο απόθεμα"
+
+#: templates/backup/monitor.html:266 templates/knowledge/detail.html:47
+#: templates/knowledge/list.html:250
+#, fuzzy
+msgid "Updated"
+msgstr "ενημερώθηκε σε"
+
+#: templates/backup/monitor.html:278 templates/backup/monitor.html:390
+#, fuzzy
+msgid "Tape"
+msgstr "Τύπος"
+
+#: templates/backup/monitor.html:319
+#, python-format
+msgid "Due in %(days)s d"
+msgstr "Λήγει σε %(days)s ημ."
+
+#: templates/backup/monitor.html:324
+#, fuzzy
+msgid "Start date needed"
+msgstr "Άρχισε"
+
+#: templates/backup/monitor.html:349
+#, python-format
+msgid ""
+"Delete storage medium “%(barcode)s”? All associated locations and custody"
+" events will also be removed."
+msgstr "Διαγραφή μέσου «%(barcode)s»; Θα αφαιρεθούν και οι σχετικές τοποθεσίες και συμβάντα φύλαξης."
+
+#: templates/backup/monitor.html:359
+msgid "No storage media registered yet."
+msgstr "Δεν έχουν καταχωρηθεί ακόμη μέσα αποθήκευσης."
+
+#: templates/backup/monitor.html:370
+msgid "Retention Alerts"
+msgstr "Ειδοποιήσεις διακράτησης"
+
+#: templates/backup/monitor.html:378 templates/tickets/_row.html:10
+#: templates/tickets/list.html:220 templates/tickets/list.html:300
+msgid "Medium"
+msgstr "Μεσαία"
+
+#: templates/backup/monitor.html:380
+msgid "Retention Ends"
+msgstr "Λήξη διακράτησης"
+
+#: templates/backup/monitor.html:381
+msgid "Days Remaining"
+msgstr "Απομένουσες ημέρες"
+
+#: templates/backup/monitor.html:395
+#, python-format
+msgid "%(days)s overdue"
+msgstr "%(days)s ημέρες καθυστέρηση"
+
+#: templates/backup/monitor.html:422
+msgid "No retention alerts. All media are within their retention window."
+msgstr "Καμία ειδοποίηση διακράτησης. Όλα τα μέσα είναι εντός περιόδου."
+
+#: templates/backup/monitor.html:440 templates/backup/tape_detail.html:46
+#: templates/backup/tape_detail.html:504
+#, fuzzy
+msgid "Delete Storage Medium"
+msgstr "Διαγραφή στοιχείου λογισμικού"
+
+#: templates/backup/tape_detail.html:50
+msgid ""
+"Detailed traceability for the selected storage medium, including "
+"retention status and custody history."
+msgstr "Αναλυτική ιχνηλασιμότητα για το επιλεγμένο μέσο αποθήκευσης, με κατάσταση διακράτησης και ιστορικό φύλαξης."
+
+#: templates/backup/tape_detail.html:56
+msgid "Storage Medium Overview"
+msgstr "Επισκόπηση μέσου αποθήκευσης"
+
+#: templates/backup/tape_detail.html:85
+#, fuzzy
+msgid "Nominal capacity"
+msgstr "Χωρητικότητα hosts"
+
+#: templates/backup/tape_detail.html:87
+#, fuzzy
+msgid "Usable capacity"
+msgstr "Χωρητικότητα hosts"
+
+#: templates/backup/tape_detail.html:94
+#, fuzzy, python-format
+msgid "Ends %(date)s"
+msgstr "Ημ/νία λήξης"
+
+#: templates/backup/tape_detail.html:99
+msgid "Set retention start date"
+msgstr "Ορισμός ημερομηνίας έναρξης διακράτησης"
+
+#: templates/backup/tape_detail.html:148
+#, fuzzy
+msgid "Update Storage Medium"
+msgstr "Κωδικός"
+
+#: templates/backup/tape_detail.html:234
+#, fuzzy
+msgid "Location History"
+msgstr "Ιστορικό εκδόσεων"
+
+#: templates/backup/tape_detail.html:242 templates/tickets/view.html:189
+msgid "Details"
+msgstr "Λεπτομέρειες"
+
+#: templates/backup/tape_detail.html:243 templates/backup/tape_detail.html:346
+msgid "Check-in"
+msgstr "Παραλαβή"
+
+#: templates/backup/tape_detail.html:244 templates/backup/tape_detail.html:350
+msgid "Check-out"
+msgstr "Παράδοση"
+
+#: templates/backup/tape_detail.html:259
+#, fuzzy
+msgid "Current"
+msgstr "Νόμισμα"
+
+#: templates/backup/tape_detail.html:265 templates/networks/maps.html:125
+#, fuzzy
+msgid "Site"
+msgstr "Τοποθεσία"
+
+#: templates/backup/tape_detail.html:268
+msgid "Shelf/Slot"
+msgstr "Ράφι/Θέση"
+
+#: templates/backup/tape_detail.html:271
+msgid "Locker Code"
+msgstr "Κωδικός θυρίδας"
+
+#: templates/backup/tape_detail.html:274
+#: templates/manage/assistant_settings.html:89
+#: templates/manage/assistant_settings.html:165
+msgid "Provider"
+msgstr "Πάροχος"
+
+#: templates/backup/tape_detail.html:277
+#, fuzzy
+msgid "Holder"
+msgstr "Ρόλος"
+
+#: templates/backup/tape_detail.html:288
+#, fuzzy
+msgid "No location history yet."
+msgstr "Δεν υπάρχουν ακόμη σχόλια."
+
+#: templates/backup/tape_detail.html:297
+#, fuzzy
+msgid "Add Location Entry"
+msgstr "Προσθήκη Σχολίου"
+
+#: templates/backup/tape_detail.html:310
+#, fuzzy
+msgid "Site / Vault / Address"
+msgstr "Διεύθυνση MAC"
+
+#: templates/backup/tape_detail.html:316
+msgid "Shelf / Slot Code"
+msgstr "Κωδικός ραφιού / θέσης"
+
+#: templates/backup/tape_detail.html:320
+msgid "Locker / Deposit Code"
+msgstr "Κωδικός θυρίδας / παρακατάθεσης"
+
+#: templates/backup/tape_detail.html:326
+#, fuzzy
+msgid "Provider / Courier"
+msgstr "Πάροχος"
+
+#: templates/backup/tape_detail.html:330
+#, fuzzy
+msgid "Contact details"
+msgstr "Κόστος σύμβασης"
+
+#: templates/backup/tape_detail.html:336
+msgid "Custody holder"
+msgstr "Κηδεμόνας φύλαξης"
+
+#: templates/backup/tape_detail.html:340
+#, fuzzy
+msgid "Reference / Ticket"
+msgstr "Δημιουργία Αιτήματος"
+
+#: templates/backup/tape_detail.html:360
+#, fuzzy
+msgid "Log Location"
+msgstr "Τοποθεσία"
+
+#: templates/backup/tape_detail.html:371
+msgid "Custody Chain"
+msgstr "Αλυσίδα φύλαξης"
+
+#: templates/backup/tape_detail.html:379
+#, fuzzy
+msgid "Action"
+msgstr "Ενέργειες"
+
+#: templates/backup/tape_detail.html:380 templates/backup/tape_detail.html:428
+msgid "Handed over by"
+msgstr "Παραδόθηκε από"
+
+#: templates/backup/tape_detail.html:381 templates/backup/tape_detail.html:438
+#, fuzzy
+msgid "Received by"
+msgstr "Δημιουργήθηκε Από"
+
+#: templates/backup/tape_detail.html:392 templates/backup/tape_detail.html:398
+#, fuzzy
+msgid "Signature"
+msgstr "Τοποθεσία"
+
+#: templates/backup/tape_detail.html:404
+#, fuzzy
+msgid "No custody events recorded yet."
+msgstr "Δεν υπάρχουν καταγεγραμμένες ενέργειες."
+
+#: templates/backup/tape_detail.html:413
+msgid "Record Custody Event"
+msgstr "Καταγραφή συμβάντος φύλαξης"
+
+#: templates/backup/tape_detail.html:422
+#, fuzzy
+msgid "Event type"
+msgstr "Τύπος συσκευής"
+
+#: templates/backup/tape_detail.html:432 templates/backup/tape_detail.html:442
+msgid "Signature / ID"
+msgstr "Υπογραφή / Ταυτ."
+
+#: templates/backup/tape_detail.html:452
+#, fuzzy
+msgid "Add Custody Entry"
+msgstr "Προσθήκη Σχολίου"
+
+#: templates/backup/tape_detail.html:508
+#, python-format
+msgid ""
+"Delete storage medium “%(barcode)s”? All related locations and custody "
+"records will be removed."
+msgstr "Διαγραφή μέσου «%(barcode)s»; Θα αφαιρεθούν όλες οι σχετικές τοποθεσίες και εγγραφές φύλαξης."
 
 #: templates/collab/chat.html:263
 msgid "Total Conversations"
@@ -1154,225 +2098,200 @@ msgstr ""
 "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή τη συζήτηση; Η ενέργεια δεν "
 "μπορεί να αναιρεθεί."
 
-#: templates/contracts/contract_list.html:77
+#: templates/contracts/contract_list.html:85
 #, fuzzy
 msgid "Total Contracts"
 msgstr "Σύνολο Αιτημάτων"
 
-#: templates/contracts/contract_list.html:84
-#: templates/contracts/contract_list.html:147
-#: templates/inventory/software_list.html:188
-#: templates/manage/api_keys.html:119 templates/users/list.html:35
-#: templates/users/list.html:60
+#: templates/contracts/contract_list.html:92
+#: templates/contracts/contract_list.html:163
+#: templates/inventory/software_list.html:201 templates/manage/api_keys.html:74
+#: templates/manage/api_keys.html:187 templates/manage/email_ingest.html:120
+#: templates/users/list.html:80 templates/users/list.html:116
+#: templates/users/list.html:141
 msgid "Active"
 msgstr "Ενεργός"
 
-#: templates/contracts/contract_list.html:90
-#: templates/contracts/contract_list.html:153
-#, fuzzy
-msgid "Pending"
-msgstr "Ping"
-
-#: templates/contracts/contract_list.html:96
-#: templates/contracts/contract_list.html:149
-#: templates/inventory/software_list.html:122
-#: templates/inventory/software_list.html:190
+#: templates/contracts/contract_list.html:104
+#: templates/contracts/contract_list.html:165
+#: templates/inventory/software_list.html:127
+#: templates/inventory/software_list.html:203
 msgid "Expiring Soon"
 msgstr "Λήγουν σύντομα"
 
-#: templates/contracts/contract_list.html:102
-#: templates/contracts/contract_list.html:151
-#: templates/inventory/software_list.html:192
-msgid "Expired"
-msgstr "Ληγμένο"
-
-#: templates/contracts/contract_list.html:109
+#: templates/contracts/contract_list.html:117
 msgid "Contract Registry"
 msgstr "Συμβάσεις"
 
-#: templates/contracts/contract_list.html:111
-#: templates/contracts/contract_list.html:215
+#: templates/contracts/contract_list.html:125
+#: templates/inventory/hardware_list.html:156
+#: templates/inventory/software_list.html:148 templates/networks/maps.html:110
+msgid "Read-only access. Contact an administrator for write permissions."
+msgstr "Πρόσβαση μόνο για ανάγνωση. Επικοινωνήστε με διαχειριστή για δικαιώματα εγγραφής."
+
+#: templates/contracts/contract_list.html:127
+#: templates/contracts/contract_list.html:235
 msgid "New Contract"
 msgstr "Νέα σύμβαση"
 
-#: templates/contracts/contract_list.html:119
-#: templates/contracts/contract_list.html:225
-#: templates/contracts/contract_list.html:343
-#: templates/inventory/hardware_list.html:150
-#: templates/inventory/hardware_list.html:288
-#: templates/inventory/hardware_list.html:458
-#: templates/knowledge/detail.html:111
-msgid "Type"
-msgstr "Τύπος"
-
-#: templates/contracts/contract_list.html:120
-#: templates/contracts/contract_list.html:234
-#: templates/contracts/contract_list.html:352
-#: templates/inventory/hardware_list.html:158
-#: templates/inventory/hardware_list.html:325
-#: templates/inventory/hardware_list.html:495
-#: templates/inventory/software_list.html:156
-#: templates/inventory/software_list.html:289
-#: templates/inventory/software_list.html:440 templates/manage/api_keys.html:79
-#: templates/tickets/edit.html:24 templates/tickets/list.html:201
-#: templates/tickets/view.html:217
-msgid "Status"
-msgstr "Κατάσταση"
-
-#: templates/contracts/contract_list.html:121
-#: templates/contracts/contract_list.html:243
-#: templates/contracts/contract_list.html:361
-#: templates/inventory/software_list.html:146
-#: templates/inventory/software_list.html:259
-#: templates/inventory/software_list.html:410
+#: templates/contracts/contract_list.html:137
+#: templates/contracts/contract_list.html:263
+#: templates/contracts/contract_list.html:381
+#: templates/inventory/software_list.html:159
+#: templates/inventory/software_list.html:275
+#: templates/inventory/software_list.html:427
 msgid "Vendor"
 msgstr "Προμηθευτής"
 
-#: templates/contracts/contract_list.html:122
+#: templates/contracts/contract_list.html:138
 msgid "Contract #"
 msgstr "Σύμβαση"
 
-#: templates/contracts/contract_list.html:123
+#: templates/contracts/contract_list.html:139
 msgid "PO #"
 msgstr "PO"
 
-#: templates/contracts/contract_list.html:124
+#: templates/contracts/contract_list.html:140
 msgid "Value"
-msgstr ""
+msgstr "Αξία"
 
-#: templates/contracts/contract_list.html:125
-#: templates/contracts/contract_list.html:259
-#: templates/contracts/contract_list.html:377
+#: templates/contracts/contract_list.html:141
+#: templates/contracts/contract_list.html:279
+#: templates/contracts/contract_list.html:397
 msgid "Currency"
 msgstr "Νόμισμα"
 
-#: templates/contracts/contract_list.html:126
-#: templates/contracts/contract_list.html:263
-#: templates/contracts/contract_list.html:381
+#: templates/contracts/contract_list.html:142
+#: templates/contracts/contract_list.html:283
+#: templates/contracts/contract_list.html:401
 msgid "Start Date"
 msgstr "Άρχισε"
 
-#: templates/contracts/contract_list.html:127
-#: templates/contracts/contract_list.html:267
-#: templates/contracts/contract_list.html:385
+#: templates/contracts/contract_list.html:143
+#: templates/contracts/contract_list.html:287
+#: templates/contracts/contract_list.html:405
 msgid "End Date"
 msgstr "Ημ/νία λήξης"
 
-#: templates/contracts/contract_list.html:128
-#: templates/contracts/contract_list.html:271
-#: templates/contracts/contract_list.html:389
-#: templates/inventory/software_list.html:159
-#: templates/inventory/software_list.html:340
-#: templates/inventory/software_list.html:491
+#: templates/contracts/contract_list.html:144
+#: templates/contracts/contract_list.html:291
+#: templates/contracts/contract_list.html:409
+#: templates/inventory/software_list.html:172
+#: templates/inventory/software_list.html:356
+#: templates/inventory/software_list.html:508
 msgid "Renewal Date"
 msgstr "Ημ/νία ανανέωσης"
 
-#: templates/contracts/contract_list.html:129
-#: templates/contracts/contract_list.html:290
-#: templates/contracts/contract_list.html:408
+#: templates/contracts/contract_list.html:145
+#: templates/contracts/contract_list.html:310
+#: templates/contracts/contract_list.html:428
 msgid "Auto Renew"
 msgstr "Αυτόματη ανενέωση"
 
-#: templates/contracts/contract_list.html:130
-#: templates/contracts/contract_list.html:275
-#: templates/contracts/contract_list.html:393
+#: templates/contracts/contract_list.html:146
+#: templates/contracts/contract_list.html:295
+#: templates/contracts/contract_list.html:413
 msgid "Notice Period (days)"
 msgstr "Ειδόποίηση"
 
-#: templates/contracts/contract_list.html:131
-#: templates/contracts/contract_list.html:294
-#: templates/contracts/contract_list.html:412
+#: templates/contracts/contract_list.html:147
+#: templates/contracts/contract_list.html:314
+#: templates/contracts/contract_list.html:432
 #, fuzzy
 msgid "Coverage Scope"
 msgstr "Πεδίο χρήσης"
 
-#: templates/contracts/contract_list.html:132
-#: templates/contracts/contract_list.html:279
-#: templates/contracts/contract_list.html:397
+#: templates/contracts/contract_list.html:148
+#: templates/contracts/contract_list.html:299
+#: templates/contracts/contract_list.html:417
 msgid "Owner"
 msgstr "Κάτοχος"
 
-#: templates/contracts/contract_list.html:133
-#: templates/contracts/contract_list.html:298
-#: templates/contracts/contract_list.html:416
-#: templates/inventory/software_list.html:164
-#: templates/inventory/software_list.html:348
-#: templates/inventory/software_list.html:499
+#: templates/contracts/contract_list.html:149
+#: templates/contracts/contract_list.html:318
+#: templates/contracts/contract_list.html:436
+#: templates/inventory/software_list.html:177
+#: templates/inventory/software_list.html:364
+#: templates/inventory/software_list.html:516
 msgid "Support Email"
 msgstr "Email υποστήριξης"
 
-#: templates/contracts/contract_list.html:134
-#: templates/contracts/contract_list.html:302
-#: templates/contracts/contract_list.html:420
-#: templates/inventory/software_list.html:165
-#: templates/inventory/software_list.html:352
-#: templates/inventory/software_list.html:503
+#: templates/contracts/contract_list.html:150
+#: templates/contracts/contract_list.html:322
+#: templates/contracts/contract_list.html:440
+#: templates/inventory/software_list.html:178
+#: templates/inventory/software_list.html:368
+#: templates/inventory/software_list.html:520
 msgid "Support Phone"
 msgstr "Τηλέφωνο υποστήριξης"
 
-#: templates/contracts/contract_list.html:135
-#: templates/contracts/contract_list.html:306
-#: templates/contracts/contract_list.html:424
+#: templates/contracts/contract_list.html:151
+#: templates/contracts/contract_list.html:326
+#: templates/contracts/contract_list.html:444
 #, fuzzy
 msgid "Support URL"
 msgstr "Email υποστήριξης"
 
-#: templates/contracts/contract_list.html:155
+#: templates/contracts/contract_list.html:171
 msgid "Terminated"
-msgstr ""
+msgstr "Τερματισμένη"
 
-#: templates/contracts/contract_list.html:170
+#: templates/contracts/contract_list.html:186
 msgid "Yes"
 msgstr "Ναι"
 
-#: templates/contracts/contract_list.html:172
+#: templates/contracts/contract_list.html:188
 msgid "No"
 msgstr "Όχι"
 
-#: templates/contracts/contract_list.html:247
-#: templates/contracts/contract_list.html:365
+#: templates/contracts/contract_list.html:267
+#: templates/contracts/contract_list.html:385
 msgid "Contract Number"
 msgstr "Αριθμός σύμβασης"
 
-#: templates/contracts/contract_list.html:251
-#: templates/contracts/contract_list.html:369
+#: templates/contracts/contract_list.html:271
+#: templates/contracts/contract_list.html:389
 msgid "PO Number"
 msgstr "Αριθμός προσφοράς"
 
-#: templates/contracts/contract_list.html:255
-#: templates/contracts/contract_list.html:373
+#: templates/contracts/contract_list.html:275
+#: templates/contracts/contract_list.html:393
 msgid "Contract Value"
 msgstr "Κόστος σύμβασης"
 
-#: templates/contracts/contract_list.html:281
-#: templates/contracts/contract_list.html:399
-#: templates/inventory/hardware_list.html:397
-#: templates/inventory/hardware_list.html:567
-#: templates/inventory/software_list.html:110
-#: templates/inventory/software_list.html:362
-#: templates/inventory/software_list.html:513
-#, fuzzy
-msgid "Unassigned"
-msgstr "— Μη ανατεθειμένο —"
-
-#: templates/contracts/contract_list.html:333
+#: templates/contracts/contract_list.html:353
 #, fuzzy
 msgid "Edit Contract"
 msgstr "Σύμβαση υποστήριξης"
 
-#: templates/contracts/contract_list.html:456
+#: templates/contracts/contract_list.html:476
 #, fuzzy
 msgid "Delete Contract"
 msgstr "Διαγραφή συζήτησης"
 
-#: templates/contracts/contract_list.html:599
+#: templates/contracts/contract_list.html:533
+#: templates/inventory/hardware_list.html:691
+#: templates/inventory/software_list.html:628 templates/networks/hosts.html:301
+#: templates/networks/maps.html:361
+msgid "Read-only access. Changes cannot be saved."
+msgstr "Πρόσβαση μόνο για ανάγνωση. Οι αλλαγές δεν μπορούν να αποθηκευτούν."
+
+#: templates/contracts/contract_list.html:628
 #, fuzzy
 msgid "Failed to load contract"
 msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού"
 
-#: templates/contracts/contract_list.html:606
+#: templates/contracts/contract_list.html:635
 msgid "Failed to load contract."
 msgstr "Αποτυχία φόρτωσης σύμβασης."
+
+#: templates/contracts/contract_list.html:641
+#: templates/contracts/contract_list.html:649
+#: templates/contracts/contract_list.html:661
+#: templates/contracts/contract_list.html:678
+#: templates/contracts/contract_list.html:686
+msgid "You have read-only access to Contracts."
+msgstr "Έχετε πρόσβαση μόνο για ανάγνωση στις Συμβάσεις."
 
 # Dashboard strings
 #: templates/dashboard/index.html:50
@@ -1435,8 +2354,8 @@ msgstr "Χρήση δικτύου (Top 8)"
 msgid "Department Workload Summary"
 msgstr "Σύνοψη φόρτου εργασίας τμήματος"
 
-#: templates/dashboard/index.html:174 templates/users/list.html:52
-#: templates/users/list.html:149
+#: templates/dashboard/index.html:174 templates/users/list.html:133
+#: templates/users/list.html:244
 msgid "Technician"
 msgstr "Τεχνικός"
 
@@ -1451,376 +2370,362 @@ msgstr "Ανοιχτό"
 msgid "Closed"
 msgstr "Κλειστό"
 
-#: templates/inventory/hardware_list.html:99
+#: templates/inventory/hardware_list.html:110
 msgid "Total Hardware Assets"
 msgstr "Σύνολο υλικού"
 
-#: templates/inventory/hardware_list.html:106
-#: templates/inventory/software_list.html:104
+#: templates/inventory/hardware_list.html:117
+#: templates/inventory/software_list.html:109
 #, fuzzy
 msgid "Assigned"
 msgstr "Ανατεθειμένα"
 
-#: templates/inventory/hardware_list.html:112
+#: templates/inventory/hardware_list.html:123
 msgid "In Inventory"
 msgstr "Στο απόθεμα"
 
-#: templates/inventory/hardware_list.html:118
+#: templates/inventory/hardware_list.html:129
 msgid "Maintenance"
 msgstr "Συντήρηση"
 
-#: templates/inventory/hardware_list.html:124
-#: templates/inventory/hardware_list.html:196
+#: templates/inventory/hardware_list.html:135
+#: templates/inventory/hardware_list.html:215
 msgid "In Service"
 msgstr "Σε λειτουργία"
 
-#: templates/inventory/hardware_list.html:130
-#: templates/inventory/hardware_list.html:198
+#: templates/inventory/hardware_list.html:141
+#: templates/inventory/hardware_list.html:217
 msgid "In Stock"
 msgstr "Διαθέσιμο"
 
-#: templates/inventory/hardware_list.html:137
+#: templates/inventory/hardware_list.html:148
 msgid "Hardware Inventory"
 msgstr "Απογραφή υλικού"
 
-#: templates/inventory/hardware_list.html:139
-#: templates/inventory/hardware_list.html:261
+#: templates/inventory/hardware_list.html:158
+#: templates/inventory/hardware_list.html:283
 msgid "New Hardware Asset"
 msgstr "Νέο στοιχείο υλικού"
 
-#: templates/inventory/hardware_list.html:146
-#: templates/inventory/hardware_list.html:267
-#: templates/inventory/hardware_list.html:437
+#: templates/inventory/hardware_list.html:165
+#: templates/inventory/hardware_list.html:289
+#: templates/inventory/hardware_list.html:458
 #, fuzzy
 msgid "Asset Tag"
 msgstr "Ετικέτα περιουσιακού στοιχείου"
 
-#: templates/inventory/hardware_list.html:147
-#: templates/inventory/hardware_list.html:271
-#: templates/inventory/hardware_list.html:441
-#: templates/inventory/software_list.html:151
-#: templates/inventory/software_list.html:302
-#: templates/inventory/software_list.html:453
+#: templates/inventory/hardware_list.html:166
+#: templates/inventory/hardware_list.html:293
+#: templates/inventory/hardware_list.html:462
+#: templates/inventory/software_list.html:164
+#: templates/inventory/software_list.html:318
+#: templates/inventory/software_list.html:470
 msgid "Custom Serial"
 msgstr "Προσαρμοσμένο σειριακό"
 
-#: templates/inventory/hardware_list.html:148
-#: templates/inventory/hardware_list.html:275
-#: templates/inventory/hardware_list.html:445
-#: templates/inventory/software_list.html:152
-#: templates/inventory/software_list.html:306
-#: templates/inventory/software_list.html:457
-msgid "Serial Number"
-msgstr "Σειριακός αριθμός"
-
-#: templates/inventory/hardware_list.html:151
-#: templates/inventory/hardware_list.html:297
-#: templates/inventory/hardware_list.html:467
-#, fuzzy
-msgid "Manufacturer"
-msgstr "Κατασκευαστής"
-
-#: templates/inventory/hardware_list.html:152
-#: templates/inventory/hardware_list.html:301
-#: templates/inventory/hardware_list.html:471
-#: templates/manage/assistant_settings.html:131
-msgid "Model"
-msgstr "Μοντέλο"
-
-#: templates/inventory/hardware_list.html:153
-#: templates/inventory/hardware_list.html:305
-#: templates/inventory/hardware_list.html:475
+#: templates/inventory/hardware_list.html:172
+#: templates/inventory/hardware_list.html:327
+#: templates/inventory/hardware_list.html:496
 msgid "CPU"
 msgstr "Επεξεργαστής"
 
-#: templates/inventory/hardware_list.html:154
-#: templates/inventory/hardware_list.html:309
-#: templates/inventory/hardware_list.html:479
+#: templates/inventory/hardware_list.html:173
+#: templates/inventory/hardware_list.html:331
+#: templates/inventory/hardware_list.html:500
 msgid "RAM"
 msgstr "Μνήμη RAM"
 
-#: templates/inventory/hardware_list.html:155
-#: templates/inventory/hardware_list.html:313
-#: templates/inventory/hardware_list.html:483
+#: templates/inventory/hardware_list.html:174
+#: templates/inventory/hardware_list.html:335
+#: templates/inventory/hardware_list.html:504
 msgid "Storage"
 msgstr "Αποθήκευση"
 
-#: templates/inventory/hardware_list.html:156
-#: templates/inventory/hardware_list.html:317
-#: templates/inventory/hardware_list.html:487
+#: templates/inventory/hardware_list.html:175
+#: templates/inventory/hardware_list.html:339
+#: templates/inventory/hardware_list.html:508
 msgid "GPU"
 msgstr "Κάρτα γραφικών"
 
-#: templates/inventory/hardware_list.html:157
-#: templates/inventory/hardware_list.html:321
-#: templates/inventory/hardware_list.html:491
+#: templates/inventory/hardware_list.html:176
+#: templates/inventory/hardware_list.html:343
+#: templates/inventory/hardware_list.html:512
 #, fuzzy
 msgid "Operating System"
 msgstr "Λειτουργικό σύστημα"
 
-#: templates/inventory/hardware_list.html:159
-#: templates/inventory/hardware_list.html:334
-#: templates/inventory/hardware_list.html:504
+#: templates/inventory/hardware_list.html:178
+#: templates/inventory/hardware_list.html:356
+#: templates/inventory/hardware_list.html:525
 #, fuzzy
 msgid "Condition"
 msgstr "Κατάσταση συσκευής"
 
-#: templates/inventory/hardware_list.html:160
-#: templates/inventory/hardware_list.html:343
-#: templates/inventory/hardware_list.html:513
-#, fuzzy
-msgid "Location"
-msgstr "Τοποθεσία"
-
-#: templates/inventory/hardware_list.html:161
-#: templates/inventory/hardware_list.html:347
-#: templates/inventory/hardware_list.html:517
+#: templates/inventory/hardware_list.html:180
+#: templates/inventory/hardware_list.html:369
+#: templates/inventory/hardware_list.html:538
 msgid "Rack/Room"
 msgstr "Rack/Χώρος"
 
-#: templates/inventory/hardware_list.html:162
-#: templates/inventory/hardware_list.html:351
-#: templates/inventory/hardware_list.html:521 templates/networks/hosts.html:115
-#: templates/networks/hosts.html:179
+#: templates/inventory/hardware_list.html:181
+#: templates/inventory/hardware_list.html:373
+#: templates/inventory/hardware_list.html:542 templates/networks/hosts.html:125
+#: templates/networks/hosts.html:192
 msgid "IP Address"
 msgstr "Διεύθυνση IP"
 
-#: templates/inventory/hardware_list.html:163
-#: templates/inventory/hardware_list.html:355
-#: templates/inventory/hardware_list.html:525 templates/networks/hosts.html:117
-#: templates/networks/hosts.html:187
+#: templates/inventory/hardware_list.html:182
+#: templates/inventory/hardware_list.html:377
+#: templates/inventory/hardware_list.html:546 templates/networks/hosts.html:127
+#: templates/networks/hosts.html:200
 msgid "MAC Address"
 msgstr "Διεύθυνση MAC"
 
-#: templates/inventory/hardware_list.html:164
-#: templates/inventory/hardware_list.html:359
-#: templates/inventory/hardware_list.html:529 templates/networks/hosts.html:116
-#: templates/networks/hosts.html:183
+#: templates/inventory/hardware_list.html:183
+#: templates/inventory/hardware_list.html:381
+#: templates/inventory/hardware_list.html:550 templates/networks/hosts.html:126
+#: templates/networks/hosts.html:196
 #, fuzzy
 msgid "Hostname"
 msgstr "Όνομα κεντρικού (hostname)"
 
-#: templates/inventory/hardware_list.html:165
-#: templates/inventory/hardware_list.html:363
-#: templates/inventory/hardware_list.html:533
-#: templates/inventory/software_list.html:157
-#: templates/inventory/software_list.html:332
-#: templates/inventory/software_list.html:483
+#: templates/inventory/hardware_list.html:184
+#: templates/inventory/hardware_list.html:385
+#: templates/inventory/hardware_list.html:554
+#: templates/inventory/software_list.html:170
+#: templates/inventory/software_list.html:348
+#: templates/inventory/software_list.html:500
 msgid "Purchase Date"
 msgstr "Ημ/νία αγοράς"
 
-#: templates/inventory/hardware_list.html:166
-#: templates/inventory/hardware_list.html:367
-#: templates/inventory/hardware_list.html:537
+#: templates/inventory/hardware_list.html:185
+#: templates/inventory/hardware_list.html:389
+#: templates/inventory/hardware_list.html:558
 msgid "Warranty End"
 msgstr "Λήξη εγγύησης"
 
-#: templates/inventory/hardware_list.html:167
-#: templates/inventory/hardware_list.html:371
-#: templates/inventory/hardware_list.html:541
-#: templates/inventory/software_list.html:163
-#: templates/inventory/software_list.html:344
-#: templates/inventory/software_list.html:495
+#: templates/inventory/hardware_list.html:186
+#: templates/inventory/hardware_list.html:393
+#: templates/inventory/hardware_list.html:562
+#: templates/inventory/software_list.html:176
+#: templates/inventory/software_list.html:360
+#: templates/inventory/software_list.html:512
 msgid "Support Vendor"
 msgstr "Πάροχος υποστήριξης"
 
-#: templates/inventory/hardware_list.html:168
-#: templates/inventory/hardware_list.html:375
-#: templates/inventory/hardware_list.html:545
+#: templates/inventory/hardware_list.html:187
+#: templates/inventory/hardware_list.html:397
+#: templates/inventory/hardware_list.html:566
 msgid "Support Contract"
 msgstr "Σύμβαση υποστήριξης"
 
-#: templates/inventory/hardware_list.html:169
-#: templates/inventory/hardware_list.html:395
-#: templates/inventory/hardware_list.html:565
-#: templates/inventory/software_list.html:160
-#: templates/inventory/software_list.html:360
-#: templates/inventory/software_list.html:511 templates/networks/hosts.html:119
+#: templates/inventory/hardware_list.html:188
+#: templates/inventory/hardware_list.html:417
+#: templates/inventory/hardware_list.html:586
+#: templates/inventory/software_list.html:173
+#: templates/inventory/software_list.html:376
+#: templates/inventory/software_list.html:528 templates/networks/hosts.html:129
 #: templates/tickets/list.html:203
 msgid "Assigned To"
 msgstr "Ανατέθηκε Σε"
 
-#: templates/inventory/hardware_list.html:170
-#: templates/inventory/hardware_list.html:404
-#: templates/inventory/hardware_list.html:574
-#: templates/inventory/software_list.html:161
-#: templates/inventory/software_list.html:369
-#: templates/inventory/software_list.html:520
+#: templates/inventory/hardware_list.html:189
+#: templates/inventory/hardware_list.html:426
+#: templates/inventory/hardware_list.html:595
+#: templates/inventory/software_list.html:174
+#: templates/inventory/software_list.html:385
+#: templates/inventory/software_list.html:537
 #, fuzzy
 msgid "Assigned On"
 msgstr "Ημ/νία ανάθεσης"
 
-#: templates/inventory/hardware_list.html:171
-#: templates/inventory/hardware_list.html:379
-#: templates/inventory/hardware_list.html:549
+#: templates/inventory/hardware_list.html:190
+#: templates/inventory/hardware_list.html:401
+#: templates/inventory/hardware_list.html:570
 msgid "Accessories"
 msgstr "Αξεσουάρ"
 
-#: templates/inventory/hardware_list.html:172
-#: templates/inventory/hardware_list.html:383
-#: templates/inventory/hardware_list.html:553
+#: templates/inventory/hardware_list.html:191
+#: templates/inventory/hardware_list.html:405
+#: templates/inventory/hardware_list.html:574
 msgid "Power Supply"
 msgstr "Τροφοδοτικό"
 
-#: templates/inventory/hardware_list.html:173
+#: templates/inventory/hardware_list.html:192
 msgid "BIOS"
 msgstr "BIOS"
 
-#: templates/inventory/hardware_list.html:174
+#: templates/inventory/hardware_list.html:193
 msgid "Firmware"
 msgstr "Firmware"
 
-#: templates/inventory/hardware_list.html:200
+#: templates/inventory/hardware_list.html:219
 msgid "Under Maintenance"
 msgstr "Υπό συντήρηση"
 
-#: templates/inventory/hardware_list.html:202
-#: templates/inventory/software_list.html:196
+#: templates/inventory/hardware_list.html:221
+#: templates/inventory/software_list.html:209
 #, fuzzy
 msgid "Retired"
 msgstr "Αποσυρμένο"
 
-#: templates/inventory/hardware_list.html:204
+#: templates/inventory/hardware_list.html:223
 msgid "Disposed"
 msgstr "Απορριφθέν"
 
-#: templates/inventory/hardware_list.html:387
-#: templates/inventory/hardware_list.html:557
+#: templates/inventory/hardware_list.html:409
+#: templates/inventory/hardware_list.html:578
 msgid "BIOS Version"
 msgstr "Έκδοση BIOS"
 
-#: templates/inventory/hardware_list.html:391
-#: templates/inventory/hardware_list.html:561
+#: templates/inventory/hardware_list.html:413
+#: templates/inventory/hardware_list.html:582
 msgid "Firmware Version"
 msgstr "Έκδοση firmware"
 
-#: templates/inventory/hardware_list.html:431
+#: templates/inventory/hardware_list.html:452
 msgid "Edit Hardware Asset"
 msgstr "Επεξεργασία στοιχείου υλικού"
 
-#: templates/inventory/hardware_list.html:590
-#: templates/inventory/software_list.html:540 templates/networks/hosts.html:220
-#: templates/networks/maps.html:257
+#: templates/inventory/hardware_list.html:611
+#: templates/inventory/software_list.html:557 templates/networks/hosts.html:233
+#: templates/networks/maps.html:274
 #, fuzzy
 msgid "Update"
 msgstr "Ενημέρωση"
 
-#: templates/inventory/hardware_list.html:606
+#: templates/inventory/hardware_list.html:628
 msgid "Delete Hardware Asset"
 msgstr "Διαγραφή στοιχείου υλικού"
 
-#: templates/inventory/hardware_list.html:759
+#: templates/inventory/hardware_list.html:797
 #, fuzzy
 msgid "Failed to load hardware asset"
 msgstr "Αποτυχία φόρτωσης στοιχείου υλικού"
 
-#: templates/inventory/hardware_list.html:766
+#: templates/inventory/hardware_list.html:804
 #, fuzzy
 msgid "Failed to load hardware asset."
 msgstr "Αποτυχία φόρτωσης στοιχείου υλικού."
 
-#: templates/inventory/software_list.html:97
+#: templates/inventory/hardware_list.html:811
+#: templates/inventory/hardware_list.html:821
+#: templates/inventory/hardware_list.html:829
+#: templates/inventory/hardware_list.html:842
+#: templates/inventory/hardware_list.html:856
+msgid "You have read-only access to Hardware Inventory."
+msgstr "Έχετε πρόσβαση μόνο για ανάγνωση στην Απογραφή Υλικού."
+
+#: templates/inventory/software_list.html:102
 msgid "Total Software Assets"
 msgstr "Σύνολο λογισμικού"
 
-#: templates/inventory/software_list.html:116
+#: templates/inventory/software_list.html:121
 msgid "Active Licenses"
 msgstr "Ενεργές άδειες"
 
-#: templates/inventory/software_list.html:128
+#: templates/inventory/software_list.html:133
 msgid "Already Expired"
 msgstr "Έχουν λήξει"
 
-#: templates/inventory/software_list.html:135
+#: templates/inventory/software_list.html:140
 msgid "Software Inventory"
 msgstr "Απογραφή λογισμικού"
 
-#: templates/inventory/software_list.html:137
-#: templates/inventory/software_list.html:249
+#: templates/inventory/software_list.html:150
+#: templates/inventory/software_list.html:265
 msgid "New Software Asset"
 msgstr "Νέο στοιχείο λογισμικού"
 
-#: templates/inventory/software_list.html:149
-#: templates/inventory/software_list.html:280
-#: templates/inventory/software_list.html:431
+#: templates/inventory/software_list.html:162
+#: templates/inventory/software_list.html:296
+#: templates/inventory/software_list.html:448
 msgid "License Type"
 msgstr "Τύπος άδειας"
 
-#: templates/inventory/software_list.html:150
-#: templates/inventory/software_list.html:298
-#: templates/inventory/software_list.html:449
+#: templates/inventory/software_list.html:163
+#: templates/inventory/software_list.html:314
+#: templates/inventory/software_list.html:466
 msgid "License Key"
 msgstr "Κλειδί άδειας"
 
-#: templates/inventory/software_list.html:153
-#: templates/inventory/software_list.html:267
-#: templates/inventory/software_list.html:418
+#: templates/inventory/software_list.html:166
+#: templates/inventory/software_list.html:283
+#: templates/inventory/software_list.html:435
 #, fuzzy
 msgid "Seats"
 msgstr "Θέσεις"
 
-#: templates/inventory/software_list.html:154
-#: templates/inventory/software_list.html:310
-#: templates/inventory/software_list.html:461
+#: templates/inventory/software_list.html:167
+#: templates/inventory/software_list.html:326
+#: templates/inventory/software_list.html:478
 msgid "Platform"
 msgstr "Πλατφόρμα"
 
-#: templates/inventory/software_list.html:155
-#: templates/inventory/software_list.html:319
-#: templates/inventory/software_list.html:470
+#: templates/inventory/software_list.html:168
+#: templates/inventory/software_list.html:335
+#: templates/inventory/software_list.html:487
 msgid "Environment"
 msgstr "Περιβάλλον"
 
-#: templates/inventory/software_list.html:158
-#: templates/inventory/software_list.html:336
-#: templates/inventory/software_list.html:487
+#: templates/inventory/software_list.html:171
+#: templates/inventory/software_list.html:352
+#: templates/inventory/software_list.html:504
 msgid "Expiration Date"
 msgstr "Ημ/νία λήξης"
 
-#: templates/inventory/software_list.html:162
-#: templates/inventory/software_list.html:328
-#: templates/inventory/software_list.html:479
+#: templates/inventory/software_list.html:175
+#: templates/inventory/software_list.html:344
+#: templates/inventory/software_list.html:496
 msgid "Cost Center"
 msgstr "Κέντρο κόστους"
 
-#: templates/inventory/software_list.html:166
-#: templates/inventory/software_list.html:373
-#: templates/inventory/software_list.html:524
+#: templates/inventory/software_list.html:179
+#: templates/inventory/software_list.html:389
+#: templates/inventory/software_list.html:541
 msgid "Usage Scope"
 msgstr "Πεδίο χρήσης"
 
-#: templates/inventory/software_list.html:194
+#: templates/inventory/software_list.html:207
 #, fuzzy
 msgid "Planned"
 msgstr "Προγραμματισμένο"
 
-#: templates/inventory/software_list.html:356
-#: templates/inventory/software_list.html:507
+#: templates/inventory/software_list.html:372
+#: templates/inventory/software_list.html:524
 msgid "Contract URL"
 msgstr "URL σύμβασης"
 
-#: templates/inventory/software_list.html:377
-#: templates/inventory/software_list.html:528
+#: templates/inventory/software_list.html:393
+#: templates/inventory/software_list.html:545
 msgid "Deployment Notes"
 msgstr "Σημειώσεις ανάπτυξης"
 
-#: templates/inventory/software_list.html:400
+#: templates/inventory/software_list.html:417
 msgid "Edit Software Asset"
 msgstr "Επεξεργασία στοιχείου λογισμικού"
 
-#: templates/inventory/software_list.html:556
+#: templates/inventory/software_list.html:573
 msgid "Delete Software Asset"
 msgstr "Διαγραφή στοιχείου λογισμικού"
 
-#: templates/inventory/software_list.html:703
+#: templates/inventory/software_list.html:728
 #, fuzzy
 msgid "Failed to load software asset"
 msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού"
 
-#: templates/inventory/software_list.html:710
+#: templates/inventory/software_list.html:735
 #, fuzzy
 msgid "Failed to load software asset."
 msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού."
+
+#: templates/inventory/software_list.html:741
+#: templates/inventory/software_list.html:749
+#: templates/inventory/software_list.html:763
+#: templates/inventory/software_list.html:779
+#: templates/inventory/software_list.html:787
+msgid "You have read-only access to Software Inventory."
+msgstr "Έχετε πρόσβαση μόνο για ανάγνωση στην Απογραφή Λογισμικού."
 
 #: templates/knowledge/detail.html:24 templates/knowledge/detail.html:36
 #, fuzzy
@@ -1836,12 +2741,7 @@ msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετ�
 msgid ""
 "This action cannot be undone. All article content, attachments, and "
 "version history will be permanently deleted."
-msgstr ""
-
-#: templates/knowledge/detail.html:47 templates/knowledge/list.html:250
-#, fuzzy
-msgid "Updated"
-msgstr "ενημερώθηκε σε"
+msgstr "Η ενέργεια δεν μπορεί να αναιρεθεί. Όλο το περιεχόμενο, τα συνημμένα και το ιστορικό εκδόσεων θα διαγραφούν οριστικά."
 
 #: templates/knowledge/detail.html:48 templates/knowledge/list.html:250
 #: templates/knowledge/version.html:22
@@ -1852,7 +2752,7 @@ msgstr "—"
 msgid "Back"
 msgstr "Πίσω"
 
-#: templates/knowledge/detail.html:57 templates/manage/api_keys.html:131
+#: templates/knowledge/detail.html:57 templates/manage/api_keys.html:199
 #: templates/tickets/_row.html:49 templates/tickets/list.html:265
 msgid "Edit"
 msgstr "Επεξεργασία"
@@ -1899,8 +2799,8 @@ msgid "Version History"
 msgstr "Ιστορικό εκδόσεων"
 
 #: templates/knowledge/detail.html:196 templates/knowledge/version.html:21
-#: templates/manage/api_keys.html:77 templates/tickets/list.html:204
-#: templates/users/list.html:36
+#: templates/manage/api_keys.html:145 templates/tickets/list.html:204
+#: templates/users/list.html:117
 msgid "Created"
 msgstr "Δημιουργία"
 
@@ -1959,11 +2859,11 @@ msgstr "Γνωσιακή βάση"
 
 #: templates/knowledge/list.html:188
 msgid "Find articles, procedures, and attachments in a single sweep."
-msgstr ""
+msgstr "Βρείτε άρθρα, διαδικασίες και συνημμένα με μία αναζήτηση."
 
 #: templates/knowledge/list.html:195
 msgid "Start typing keywords, tags, or attachment names..."
-msgstr ""
+msgstr "Πληκτρολογήστε λέξεις-κλειδιά, ετικέτες ή ονόματα συνημμένων..."
 
 #: templates/knowledge/list.html:199
 #, fuzzy
@@ -1982,11 +2882,11 @@ msgstr "Αναζήτηση"
 
 #: templates/knowledge/list.html:231
 msgid "Showing"
-msgstr ""
+msgstr "Εμφάνιση"
 
 #: templates/knowledge/list.html:231 templates/knowledge/list.html:233
 msgid "of"
-msgstr ""
+msgstr "από"
 
 #: templates/knowledge/list.html:231
 #, fuzzy
@@ -2009,22 +2909,51 @@ msgstr "Προεπισκόπηση"
 
 #: templates/knowledge/list.html:297
 msgid "Next"
-msgstr ""
+msgstr "Επόμενο"
 
 #: templates/knowledge/version.html:27
 msgid "Back to Article"
 msgstr "Επιστροφή στο άρθρο"
 
-#: templates/manage/access.html:26 templates/manage/assistant_settings.html:28
+#: templates/manage/access.html:60 templates/manage/assistant_settings.html:69
 msgid "Access Control"
 msgstr "Έλεγχος πρόσβασης"
 
-#: templates/manage/access.html:28
+#: templates/manage/access.html:62
 #, fuzzy
 msgid "Manage Users"
 msgstr "Διαχείριση χρηστών"
 
-#: templates/manage/access.html:34
+#: templates/manage/access.html:71
+#, fuzzy
+msgid "Menu items"
+msgstr "Στοιχείο μενού"
+
+#: templates/manage/access.html:77
+#, fuzzy
+msgid "Menu overrides"
+msgstr "Στοιχείο μενού"
+
+#: templates/manage/access.html:83
+msgid "Module overrides"
+msgstr "Παρακάμψεις μονάδων"
+
+#: templates/manage/access.html:89
+#, fuzzy
+msgid "Read-only assignments"
+msgstr "Κατανομή λογισμικού"
+
+#: templates/manage/access.html:93 templates/users/list.html:92
+#, fuzzy
+msgid "Roles"
+msgstr "Ρόλος"
+
+#: templates/manage/access.html:96
+#, fuzzy
+msgid "Modules"
+msgstr "Μοντέλο"
+
+#: templates/manage/access.html:107
 msgid ""
 "Toggle which roles can see each menu item. Defaults apply when no "
 "override is set."
@@ -2032,203 +2961,276 @@ msgstr ""
 "Εναλλάξτε ποιοι ρόλοι βλέπουν κάθε στοιχείο μενού. Οι προεπιλογές ισχύουν"
 " όταν δεν έχει οριστεί εξαίρεση."
 
-#: templates/manage/access.html:41
+#: templates/manage/access.html:115
 msgid "Menu Permissions"
 msgstr "Δικαιώματα μενού"
 
-#: templates/manage/access.html:48
+#: templates/manage/access.html:122
 msgid "Menu Item"
 msgstr "Στοιχείο μενού"
 
+#: templates/manage/access.html:156
+msgid ""
+"Define read or read/write permissions for sensitive modules. Admins "
+"always retain full access."
+msgstr "Ορίστε δικαιώματα ανάγνωσης ή ανάγνωσης/εγγραφής για ευαίσθητες μονάδες. Οι διαχειριστές έχουν πάντα πλήρη πρόσβαση."
+
+#: templates/manage/access.html:164
+#, fuzzy
+msgid "Module Permissions"
+msgstr "Δικαιώματα μενού"
+
+#: templates/manage/access.html:171
+#, fuzzy
+msgid "Module"
+msgstr "Μοντέλο"
+
+#: templates/manage/access.html:192
+#, fuzzy
+msgid "Read"
+msgstr "Μη αναγνωσμένα"
+
+#: templates/manage/access.html:200
+msgid "Read / Write"
+msgstr "Ανάγνωση / Εγγραφή"
+
 #: templates/manage/api_docs.html:6
 msgid "API Documentation"
-msgstr ""
+msgstr "Τεκμηρίωση API"
 
 #: templates/manage/api_docs.html:7
 msgid "Interactive Swagger UI for the Helpdesk Pro REST API."
-msgstr ""
+msgstr "Διαδραστικό Swagger UI για το Helpdesk Pro REST API."
 
 #: templates/manage/api_docs.html:10
 #, fuzzy
 msgid "Manage API Keys"
 msgstr "OpenAI API key"
 
-#: templates/manage/api_keys.html:22
-msgid "Refresh"
-msgstr ""
-
-#: templates/manage/api_keys.html:28
-msgid "New API key generated"
-msgstr ""
-
-#: templates/manage/api_keys.html:29
-msgid "Copy this key now. For security reasons it will not be shown again."
-msgstr ""
-
-#: templates/manage/api_keys.html:36
-#, fuzzy
-msgid "Create API Client"
-msgstr "Δημιουργία λογαριασμού"
-
-#: templates/manage/api_keys.html:42
-#, fuzzy
-msgid "Integration name"
-msgstr "Ημ/νία λήξης"
-
-#: templates/manage/api_keys.html:43
-msgid "e.g. ServiceNow bridge"
-msgstr ""
-
-#: templates/manage/api_keys.html:46 templates/manage/api_keys.html:189
-msgid "Default user context"
-msgstr ""
-
-#: templates/manage/api_keys.html:48
-msgid "None (API must supply actor)"
-msgstr ""
-
-#: templates/manage/api_keys.html:53
-msgid "Used when requests omit created_by / updated_by."
-msgstr ""
-
 #: templates/manage/api_keys.html:56
-#, fuzzy
-msgid "Description (optional)"
-msgstr "Email (προαιρετικό)"
+msgid ""
+"Generate, rotate, and revoke REST API credentials for trusted "
+"integrations."
+msgstr "Δημιουργήστε, περιστρέψτε και ανακαλέστε διαπιστευτήρια REST API για έμπιστες ενσωματώσεις."
 
-#: templates/manage/api_keys.html:60
-#, fuzzy
-msgid "Generate Key"
-msgstr "Δημιουργία hosts"
-
-#: templates/manage/api_keys.html:67
-msgid "Existing API Clients"
-msgstr ""
+#: templates/manage/api_keys.html:59
+msgid "Refresh"
+msgstr "Ανανέωση"
 
 #: templates/manage/api_keys.html:68
-msgid "client(s) total"
-msgstr ""
-
-#: templates/manage/api_keys.html:75
 #, fuzzy
-msgid "Prefix"
-msgstr "Προεπισκόπηση"
+msgid "Clients"
+msgstr "Σχόλια"
 
-#: templates/manage/api_keys.html:76
-#, fuzzy
-msgid "Default User"
-msgstr "Επεξεργασία Χρήστη"
-
-#: templates/manage/api_keys.html:78
-msgid "Last used"
-msgstr ""
-
-#: templates/manage/api_keys.html:87
-msgid "No API clients yet. Generate one using the form above."
-msgstr ""
-
-#: templates/manage/api_keys.html:104 templates/manage/api_keys.html:191
-#: templates/manage/email_ingest.html:96
-#, fuzzy
-msgid "None"
-msgstr "Σημειώσεις"
-
-#: templates/manage/api_keys.html:112 templates/manage/email_ingest.html:89
-#, fuzzy
-msgid "Never"
-msgstr "Διακομιστής"
-
-#: templates/manage/api_keys.html:117
+#: templates/manage/api_keys.html:80 templates/manage/api_keys.html:185
 #, fuzzy
 msgid "Revoked"
 msgstr "Δεσμευμένο"
 
-#: templates/manage/api_keys.html:133
+#: templates/manage/api_keys.html:86
+#, python-format
+msgid "Used in last %(days)s days"
+msgstr "Χρησιμοποιήθηκε τις τελευταίες %(days)s ημέρες"
+
+#: templates/manage/api_keys.html:96
+msgid "New API key generated"
+msgstr "Δημιουργήθηκε νέο κλειδί API"
+
+#: templates/manage/api_keys.html:97
+msgid "Copy this key now. For security reasons it will not be shown again."
+msgstr "Αντιγράψτε το κλειδί τώρα. Για λόγους ασφαλείας δεν θα εμφανιστεί ξανά."
+
+#: templates/manage/api_keys.html:104
+#, fuzzy
+msgid "Create API Client"
+msgstr "Δημιουργία λογαριασμού"
+
+#: templates/manage/api_keys.html:110
+#, fuzzy
+msgid "Integration name"
+msgstr "Ημ/νία λήξης"
+
+#: templates/manage/api_keys.html:111
+msgid "e.g. ServiceNow bridge"
+msgstr "π.χ. ServiceNow bridge"
+
+#: templates/manage/api_keys.html:114 templates/manage/api_keys.html:257
+msgid "Default user context"
+msgstr "Προεπιλεγμένο πλαίσιο χρήστη"
+
+#: templates/manage/api_keys.html:116
+msgid "None (API must supply actor)"
+msgstr "Κανένα (το API πρέπει να παρέχει actor)"
+
+#: templates/manage/api_keys.html:121
+msgid "Used when requests omit created_by / updated_by."
+msgstr "Χρησιμοποιείται όταν δεν αποστέλλονται created_by / updated_by."
+
+#: templates/manage/api_keys.html:124
+#, fuzzy
+msgid "Description (optional)"
+msgstr "Email (προαιρετικό)"
+
+#: templates/manage/api_keys.html:128
+#, fuzzy
+msgid "Generate Key"
+msgstr "Δημιουργία hosts"
+
+#: templates/manage/api_keys.html:135
+msgid "Existing API Clients"
+msgstr "Υπάρχοντες πελάτες API"
+
+#: templates/manage/api_keys.html:136
+msgid "client(s) total"
+msgstr "σύνολο πελατών"
+
+#: templates/manage/api_keys.html:143
+#, fuzzy
+msgid "Prefix"
+msgstr "Προεπισκόπηση"
+
+#: templates/manage/api_keys.html:144
+#, fuzzy
+msgid "Default User"
+msgstr "Επεξεργασία Χρήστη"
+
+#: templates/manage/api_keys.html:146
+msgid "Last used"
+msgstr "Τελευταία χρήση"
+
+#: templates/manage/api_keys.html:155
+msgid "No API clients yet. Generate one using the form above."
+msgstr "Δεν υπάρχουν ακόμη πελάτες API. Δημιουργήστε έναν από την παραπάνω φόρμα."
+
+#: templates/manage/api_keys.html:172 templates/manage/api_keys.html:259
+#: templates/manage/email_ingest.html:103
+#: templates/manage/email_ingest.html:237
+#, fuzzy
+msgid "None"
+msgstr "Σημειώσεις"
+
+#: templates/manage/api_keys.html:180 templates/manage/email_ingest.html:91
+#: templates/manage/email_ingest.html:230
+#, fuzzy
+msgid "Never"
+msgstr "Διακομιστής"
+
+#: templates/manage/api_keys.html:201
 msgid ""
 "Rotate key for this client? The previous key will stop working "
 "immediately."
-msgstr ""
+msgstr "Περιστροφή κλειδιού για αυτόν τον πελάτη; Το προηγούμενο θα σταματήσει αμέσως."
 
-#: templates/manage/api_keys.html:138
+#: templates/manage/api_keys.html:206
 #, fuzzy
 msgid "Rotate"
 msgstr "Δημιουργία"
 
-#: templates/manage/api_keys.html:142
+#: templates/manage/api_keys.html:210
 msgid "Generate a new key and reactivate this client?"
-msgstr ""
+msgstr "Δημιουργία νέου κλειδιού και επανενεργοποίηση του πελάτη;"
 
-#: templates/manage/api_keys.html:147
+#: templates/manage/api_keys.html:215
 #, fuzzy
 msgid "Reactivate"
 msgstr "Ενεργός"
 
-#: templates/manage/api_keys.html:151
+#: templates/manage/api_keys.html:219
 msgid "Revoke this API key? Integration will lose access immediately."
-msgstr ""
+msgstr "Ανάκληση αυτού του κλειδιού API; Η ενσωμάτωση θα χάσει άμεσα την πρόσβαση."
 
-#: templates/manage/api_keys.html:156
+#: templates/manage/api_keys.html:224
 #, fuzzy
 msgid "Revoke"
 msgstr "Προεπισκόπηση"
 
-#: templates/manage/api_keys.html:160
+#: templates/manage/api_keys.html:228
 #, fuzzy
 msgid "Delete this API client? This cannot be undone."
 msgstr ""
 "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτή τη συζήτηση; Η ενέργεια δεν "
 "μπορεί να αναιρεθεί."
 
-#: templates/manage/api_keys.html:185 templates/networks/hosts.html:121
-#: templates/networks/maps.html:114 templates/networks/maps.html:192
-#: templates/networks/maps.html:245 templates/tickets/create.html:6
+#: templates/manage/api_keys.html:253 templates/networks/hosts.html:131
+#: templates/networks/maps.html:127 templates/networks/maps.html:208
+#: templates/networks/maps.html:262 templates/tickets/create.html:6
 #: templates/tickets/edit.html:14 templates/tickets/list.html:199
 #: templates/tickets/list.html:294
 msgid "Description"
 msgstr "Περιγραφή"
 
-#: templates/manage/api_keys.html:205
+#: templates/manage/assistant_settings.html:66
 #, fuzzy
-msgid "Save changes"
-msgstr "Αποθήκευση αλλαγών"
-
-#: templates/manage/assistant_settings.html:34
-msgid ""
-"Configure the floating assistant widget. Use the Access page to limit "
-"visibility to specific roles."
+msgid "Configure the floating assistant widget and provider credentials."
 msgstr ""
 "Ρυθμίστε το αιωρούμενο widget βοηθού. Χρησιμοποιήστε τη σελίδα Πρόσβαση "
 "για να περιορίσετε την ορατότητα σε συγκεκριμένους ρόλους."
 
-#: templates/manage/assistant_settings.html:41
-msgid "Widget Appearance"
-msgstr "Εμφάνιση widget"
+#: templates/manage/assistant_settings.html:82
+#: templates/manage/email_ingest.html:147
+#, fuzzy
+msgid "Enabled"
+msgstr "Η αποστολή απέτυχε"
 
-#: templates/manage/assistant_settings.html:47
-msgid "Enable assistant widget"
-msgstr "Ενεργοποίηση widget βοηθού"
+#: templates/manage/assistant_settings.html:82
+#, fuzzy
+msgid "Disabled"
+msgstr "Απορριφθέν"
 
-#: templates/manage/assistant_settings.html:53
+#: templates/manage/assistant_settings.html:97
+#: templates/manage/assistant_settings.html:136
 msgid "Button label"
 msgstr "Ετικέτα κουμπιού"
 
-#: templates/manage/assistant_settings.html:57
+#: templates/manage/assistant_settings.html:103
+#: templates/manage/assistant_settings.html:153
+msgid "Button position"
+msgstr "Θέση κουμπιού"
+
+#: templates/manage/assistant_settings.html:106
+#: templates/manage/assistant_settings.html:156
+msgid "Bottom left"
+msgstr "Κάτω αριστερά"
+
+#: templates/manage/assistant_settings.html:106
+#: templates/manage/assistant_settings.html:155
+msgid "Bottom right"
+msgstr "Κάτω δεξιά"
+
+#: templates/manage/assistant_settings.html:117
+#, fuzzy
+msgid ""
+"Use the Access Control page to choose which roles can see the assistant "
+"widget (menu entry “AI Assistant Widget”)."
+msgstr ""
+"Χρησιμοποιήστε τη σελίδα Ελέγχου Πρόσβασης για να επιλέξετε ποιοι ρόλοι "
+"βλέπουν το widget βοηθού (είσοδος: «AI Assistant Widget»)."
+
+#: templates/manage/assistant_settings.html:126
+msgid "Widget Appearance"
+msgstr "Εμφάνιση widget"
+
+#: templates/manage/assistant_settings.html:131
+msgid "Enable assistant widget"
+msgstr "Ενεργοποίηση widget βοηθού"
+
+#: templates/manage/assistant_settings.html:140
 msgid "Window title"
 msgstr "Τίτλος παραθύρου"
 
-#: templates/manage/assistant_settings.html:61
+#: templates/manage/assistant_settings.html:144
 msgid "Welcome message"
 msgstr "Μήνυμα καλωσορίσματος"
 
-#: templates/manage/assistant_settings.html:65
+#: templates/manage/assistant_settings.html:148
 msgid "System prompt / instructions"
 msgstr "System prompt / οδηγίες"
 
-#: templates/manage/assistant_settings.html:66
+#: templates/manage/assistant_settings.html:149
 msgid "Describe how the assistant should behave"
 msgstr "Περιγράψτε πώς πρέπει να συμπεριφέρεται ο βοηθός"
 
-#: templates/manage/assistant_settings.html:68
+#: templates/manage/assistant_settings.html:150
 msgid ""
 "Used as the system message so the assistant behaves like your IT expert "
 "with PostgreSQL module context."
@@ -2236,27 +3238,11 @@ msgstr ""
 "Χρησιμοποιείται ως system message ώστε ο βοηθός να λειτουργεί ως IT "
 "expert με πλαίσιο από το PostgreSQL module."
 
-#: templates/manage/assistant_settings.html:72
-msgid "Button position"
-msgstr "Θέση κουμπιού"
-
-#: templates/manage/assistant_settings.html:74
-msgid "Bottom right"
-msgstr "Κάτω δεξιά"
-
-#: templates/manage/assistant_settings.html:75
-msgid "Bottom left"
-msgstr "Κάτω αριστερά"
-
-#: templates/manage/assistant_settings.html:84
-msgid "Provider"
-msgstr "Πάροχος"
-
-#: templates/manage/assistant_settings.html:93
+#: templates/manage/assistant_settings.html:174
 msgid "OpenAI ChatGPT API"
 msgstr "OpenAI ChatGPT API"
 
-#: templates/manage/assistant_settings.html:97
+#: templates/manage/assistant_settings.html:177
 msgid ""
 "Sends the full conversation to OpenAI and returns their response. "
 "Requires an API key below."
@@ -2264,43 +3250,44 @@ msgstr ""
 "Στέλνει ολόκληρη τη συνομιλία στο OpenAI και επιστρέφει την απάντησή του."
 " Απαιτείται API key παρακάτω."
 
-#: templates/manage/assistant_settings.html:106
+#: templates/manage/assistant_settings.html:185
 msgid "OpenAI + DB Tools"
 msgstr "OpenAI + DB Tools"
 
-#: templates/manage/assistant_settings.html:110
+#: templates/manage/assistant_settings.html:188
+#, fuzzy
 msgid ""
-"Uses OpenAI with tool-calling to query the database via the built-in "
-"helpers. Configure the OpenAI credentials below."
+"Adds tool-calling to query the database via built-in helpers. Configure "
+"OpenAI credentials below."
 msgstr ""
 "Χρησιμοποιεί OpenAI με tool-calling για ερωτήματα στη βάση μέσω των "
 "ενσωματωμένων helpers. Ρυθμίστε τα διαπιστευτήρια OpenAI παρακάτω."
 
-#: templates/manage/assistant_settings.html:119
+#: templates/manage/assistant_settings.html:196
 #, fuzzy
 msgid "OpenWebUI API"
 msgstr "OpenAI API key"
 
-#: templates/manage/assistant_settings.html:123
+#: templates/manage/assistant_settings.html:200
 msgid "Base URL"
-msgstr ""
+msgstr "Βασικό URL"
 
-#: templates/manage/assistant_settings.html:127
+#: templates/manage/assistant_settings.html:204
 #, fuzzy
 msgid "API key (optional)"
 msgstr "Email (προαιρετικό)"
 
-#: templates/manage/assistant_settings.html:135
+#: templates/manage/assistant_settings.html:211
 msgid ""
 "Uses an OpenAI-compatible endpoint exposed by OpenWebUI. Ensure the base "
 "URL points to `/api/v1/chat/completions`."
-msgstr ""
+msgstr "Χρησιμοποιεί endpoint συμβατό με OpenAI από το OpenWebUI. Βεβαιωθείτε ότι το Base URL δείχνει στο `/api/v1/chat/completions`."
 
-#: templates/manage/assistant_settings.html:144
+#: templates/manage/assistant_settings.html:219
 msgid "Built-in (direct database lookup)"
 msgstr "Ενσωματωμένο (άμεση αναζήτηση στη βάση)"
 
-#: templates/manage/assistant_settings.html:149
+#: templates/manage/assistant_settings.html:222
 msgid ""
 "Responds by querying the Tickets, Knowledge Base, Inventory, and Network "
 "tables in read-only mode."
@@ -2308,47 +3295,40 @@ msgstr ""
 "Απαντά εκτελώντας ερωτήματα στους πίνακες Tickets, Γνωσιακής Βάσης, "
 "Απογραφής και Δικτύων σε λειτουργία μόνο ανάγνωσης."
 
-#: templates/manage/assistant_settings.html:152
-msgid ""
-"Relies on the system prompt above for behaviour—no external services or "
-"API keys required."
-msgstr ""
-"Βασίζεται στο system prompt για τη συμπεριφορά—δεν απαιτούνται εξωτερικές"
-" υπηρεσίες ή API keys."
-
-#: templates/manage/assistant_settings.html:162
+#: templates/manage/assistant_settings.html:230
 msgid "Custom webhook (n8n, etc.)"
 msgstr "Προσαρμοσμένο webhook (n8n κ.λπ.)"
 
-#: templates/manage/assistant_settings.html:166
+#: templates/manage/assistant_settings.html:234
 msgid "Webhook URL"
 msgstr "Webhook URL"
 
-#: templates/manage/assistant_settings.html:170
+#: templates/manage/assistant_settings.html:238
 msgid "HTTP method"
 msgstr "Μέθοδος HTTP"
 
-#: templates/manage/assistant_settings.html:177
+#: templates/manage/assistant_settings.html:245
 msgid "Custom headers (JSON)"
 msgstr "Προσαρμοσμένα headers (JSON)"
 
-#: templates/manage/assistant_settings.html:181
+#: templates/manage/assistant_settings.html:248
+#, fuzzy
 msgid ""
 "The webhook receives JSON payloads with the current message, history, and"
-" user context. It must return JSON with a \"reply\" field."
+" user context. It must return JSON with a “reply” field."
 msgstr ""
 "Το webhook λαμβάνει JSON payloads με το τρέχον μήνυμα, το ιστορικό και το"
 " πλαίσιο χρήστη. Πρέπει να επιστρέφει JSON με πεδίο «reply»."
 
-#: templates/manage/assistant_settings.html:188
+#: templates/manage/assistant_settings.html:255
 msgid "OpenAI API key"
 msgstr "OpenAI API key"
 
-#: templates/manage/assistant_settings.html:192
+#: templates/manage/assistant_settings.html:259
 msgid "OpenAI model"
 msgstr "Μοντέλο OpenAI"
 
-#: templates/manage/assistant_settings.html:197
+#: templates/manage/assistant_settings.html:263
 #, fuzzy
 msgid ""
 "These credentials are required for the OpenAI-based providers. OpenWebUI "
@@ -2357,19 +3337,20 @@ msgstr ""
 "Τα διαπιστευτήρια απαιτούνται για τους παρόχους OpenAI και OpenAI + DB "
 "Tools. Αποθηκεύονται κρυπτογραφημένα στη βάση."
 
-#: templates/manage/assistant_settings.html:209
+#: templates/manage/assistant_settings.html:274
 msgid "Role visibility"
 msgstr "Ορατότητα ρόλων"
 
-#: templates/manage/assistant_settings.html:211
+#: templates/manage/assistant_settings.html:275
+#, fuzzy
 msgid ""
-"Use the Access Control page to choose which roles can see the assistant "
-"widget (entry: \"AI Assistant Widget\")."
+"Use the Access Control page to limit which roles can open the assistant "
+"widget."
 msgstr ""
 "Χρησιμοποιήστε τη σελίδα Ελέγχου Πρόσβασης για να επιλέξετε ποιοι ρόλοι "
 "βλέπουν το widget βοηθού (είσοδος: «AI Assistant Widget»)."
 
-#: templates/manage/assistant_settings.html:218
+#: templates/manage/assistant_settings.html:281
 msgid "Save Settings"
 msgstr "Αποθήκευση ρυθμίσεων"
 
@@ -2380,11 +3361,11 @@ msgstr "Αποθήκευση ρυθμίσεων"
 
 #: templates/manage/auth_settings.html:16
 msgid "Allow users to create their own accounts"
-msgstr ""
+msgstr "Να επιτρέπεται στους χρήστες να δημιουργούν λογαριασμούς"
 
 #: templates/manage/auth_settings.html:18
 msgid "When enabled, a “Create an account” link appears on the sign-in page."
-msgstr ""
+msgstr "Όταν ενεργοποιηθεί, εμφανίζεται σύνδεσμος «Δημιουργία λογαριασμού» στη σελίδα σύνδεσης."
 
 #: templates/manage/auth_settings.html:25
 #, fuzzy
@@ -2395,302 +3376,381 @@ msgstr "Επαναφορά Κωδικού Σύντομα Διαθέσιμη"
 msgid ""
 "Requires outbound email to be configured. Users receive a time-limited "
 "link to pick a new password."
-msgstr ""
+msgstr "Απαιτείται ρύθμιση εξερχόμενου email. Οι χρήστες λαμβάνουν σύνδεσμο με χρονικό όριο για νέο κωδικό."
 
 #: templates/manage/auth_settings.html:33
 msgid "Default role for new self-registered users"
-msgstr ""
+msgstr "Προεπιλεγμένος ρόλος για νέους αυτο-εγγεγραμμένους χρήστες"
 
 #: templates/manage/auth_settings.html:41
 msgid "Choose the least-privileged role that should be assigned automatically."
-msgstr ""
+msgstr "Επιλέξτε τον ρόλο με τα λιγότερα δικαιώματα που θα ανατίθεται αυτόματα."
 
 #: templates/manage/auth_settings.html:45
-#: templates/manage/email_ingest.html:102
+#: templates/manage/email_ingest.html:243
 #, fuzzy
 msgid "Save settings"
 msgstr "Αποθήκευση ρυθμίσεων"
 
-#: templates/manage/email_ingest.html:6
+#: templates/manage/email_ingest.html:55
 msgid "Automatically convert incoming emails into Helpdesk tickets."
 msgstr "Μετατρέψτε αυτόματα τα εισερχόμενα emails σε δελτία υποστήριξης."
 
-#: templates/manage/email_ingest.html:14
-msgid "Enable polling service"
-msgstr "Ενεργοποίηση υπηρεσίας ελέγχου"
+#: templates/manage/email_ingest.html:60
+msgid "Service Enabled"
+msgstr "Υπηρεσία ενεργή"
 
-#: templates/manage/email_ingest.html:17 templates/networks/tools.html:176
+#: templates/manage/email_ingest.html:60
+msgid "Service Disabled"
+msgstr "Υπηρεσία ανενεργή"
+
+#: templates/manage/email_ingest.html:70 templates/manage/email_ingest.html:124
+#: templates/networks/tools.html:176
 msgid "Protocol"
 msgstr "Πρωτόκολλο"
 
-#: templates/manage/email_ingest.html:24
+#: templates/manage/email_ingest.html:78
+#, fuzzy
+msgid "Poll Interval"
+msgstr "Συχνότητα ελέγχου (δευτερόλεπτα)"
+
+#: templates/manage/email_ingest.html:80
+msgid "seconds"
+msgstr "δευτερόλεπτα"
+
+#: templates/manage/email_ingest.html:86
+#, fuzzy
+msgid "Last Run"
+msgstr "Τελευταία εκτέλεση"
+
+#: templates/manage/email_ingest.html:98
+#, fuzzy
+msgid "Last Error"
+msgstr "Τελευταίο σφάλμα"
+
+#: templates/manage/email_ingest.html:117
+msgid "Enable polling service"
+msgstr "Ενεργοποίηση υπηρεσίας ελέγχου"
+
+#: templates/manage/email_ingest.html:131
 msgid "Mailbox / Folder"
 msgstr "Γραμματοκιβώτιο / Φάκελος"
 
-#: templates/manage/email_ingest.html:26
+#: templates/manage/email_ingest.html:133
 msgid "For IMAP this is the folder to monitor (default INBOX)."
 msgstr "Για IMAP αυτός είναι ο φάκελος που θα παρακολουθείται (προεπιλογή INBOX)."
 
-#: templates/manage/email_ingest.html:29
+#: templates/manage/email_ingest.html:136
 msgid "Mail server host"
 msgstr "Διεύθυνση διακομιστή email"
 
-#: templates/manage/email_ingest.html:33
+#: templates/manage/email_ingest.html:140
 msgid "Port"
 msgstr "Θύρα"
 
-#: templates/manage/email_ingest.html:34
+#: templates/manage/email_ingest.html:141
 msgid "Auto"
 msgstr "Αυτόματο"
 
-#: templates/manage/email_ingest.html:38
+#: templates/manage/email_ingest.html:144
 msgid "Use SSL/TLS"
 msgstr "Χρήση SSL/TLS"
 
-#: templates/manage/email_ingest.html:47
+#: templates/manage/email_ingest.html:157
 msgid "Leave as *** to keep the stored password."
 msgstr "Αφήστε *** για να διατηρηθεί ο αποθηκευμένος κωδικός."
 
-#: templates/manage/email_ingest.html:50
+#: templates/manage/email_ingest.html:160
 msgid "Poll interval (seconds)"
 msgstr "Συχνότητα ελέγχου (δευτερόλεπτα)"
 
-#: templates/manage/email_ingest.html:54
+#: templates/manage/email_ingest.html:164
 msgid "Default priority"
 msgstr "Προεπιλεγμένη προτεραιότητα"
 
-#: templates/manage/email_ingest.html:58
+#: templates/manage/email_ingest.html:168
 msgid "Default department"
 msgstr "Προεπιλεγμένο τμήμα"
 
-#: templates/manage/email_ingest.html:62
+#: templates/manage/email_ingest.html:172
 msgid "Ticket creator"
 msgstr "Δημιουργός δελτίου"
 
-#: templates/manage/email_ingest.html:64
+#: templates/manage/email_ingest.html:174
 msgid "Select user"
 msgstr "Επιλέξτε χρήστη"
 
-#: templates/manage/email_ingest.html:69
+#: templates/manage/email_ingest.html:179
 msgid "Tickets will be created under this user's account."
 msgstr "Τα δελτία θα δημιουργούνται με τον λογαριασμό αυτού του χρήστη."
 
-#: templates/manage/email_ingest.html:72
+#: templates/manage/email_ingest.html:182
 msgid "Assign to (optional)"
 msgstr "Ανάθεση σε (προαιρετικό)"
 
-#: templates/manage/email_ingest.html:74
+#: templates/manage/email_ingest.html:184
 msgid "Do not auto-assign"
 msgstr "Να μην γίνει αυτόματη ανάθεση"
 
-#: templates/manage/email_ingest.html:85
+#: templates/manage/email_ingest.html:195
+msgid "Only create tickets when the email subject matches one of these patterns"
+msgstr "Δημιουργία δελτίων μόνο όταν το θέμα email ταιριάζει σε κάποιο από τα παρακάτω μοτίβα"
+
+#: templates/manage/email_ingest.html:197
+msgid "Subject patterns (one per line)"
+msgstr "Μοτίβα θέματος (ένα ανά γραμμή)"
+
+#: templates/manage/email_ingest.html:200
+msgid ""
+"Use simple text, * wildcards, or prefix with regex: to run a regular "
+"expression. Patterns are compared case-insensitively."
+msgstr "Χρησιμοποιήστε απλό κείμενο, μπαλαντέρ *, ή πρόθεμα regex: για κανονική έκφραση. Η σύγκριση δεν διακρίνει πεζά/κεφαλαία."
+
+#: templates/manage/email_ingest.html:203
+msgid "Sample patterns"
+msgstr "Παραδείγματα μοτίβων"
+
+#: templates/manage/email_ingest.html:205
+msgid "only accept subjects that include the exact tag `[1234]`."
+msgstr "δέχεται μόνο θέματα που περιέχουν ακριβώς την ετικέτα `[1234]`."
+
+#: templates/manage/email_ingest.html:206
+msgid "match subjects such as `[INV-001]` where the wildcard fills in the rest."
+msgstr "ταιριάζει θέματα όπως `[INV-001]` όπου ο μπαλαντέρ καλύπτει το υπόλοιπο."
+
+#: templates/manage/email_ingest.html:207
+msgid "allow any prefix but require the suffix `2024`."
+msgstr "επιτρέπει οποιοδήποτε πρόθεμα αλλά απαιτεί το επίθημα `2024`."
+
+#: templates/manage/email_ingest.html:208
+msgid "match any subject that starts with `PROD-`."
+msgstr "ταιριάζει οποιοδήποτε θέμα που ξεκινά με `PROD-`."
+
+#: templates/manage/email_ingest.html:209
+msgid ""
+"match subjects containing a four-digit code in square brackets (regular "
+"expression)."
+msgstr "ταιριάζει θέματα με τετραψήφιο κωδικό σε αγκύλες (κανονική έκφραση)."
+
+#: templates/manage/email_ingest.html:215
+msgid ""
+"Delete emails that do not match any pattern (skipped emails will not "
+"remain unread)."
+msgstr "Διαγραφή email που δεν ταιριάζουν σε κανένα μοτίβο (τα παραλειπόμενα δεν θα μείνουν μη αναγνωσμένα)."
+
+#: templates/manage/email_ingest.html:226
 msgid "Last run"
 msgstr "Τελευταία εκτέλεση"
 
-#: templates/manage/email_ingest.html:92
+#: templates/manage/email_ingest.html:233
 msgid "Last error"
 msgstr "Τελευταίο σφάλμα"
 
-#: templates/manage/email_ingest.html:105
+#: templates/manage/email_ingest.html:246
 msgid "Run now"
 msgstr "Εκτέλεση τώρα"
 
-#: templates/networks/hosts.html:71 templates/networks/maps.html:108
+#: templates/networks/hosts.html:77 templates/networks/maps.html:121
 msgid "Network"
 msgstr "Δίκτυο"
 
-#: templates/networks/hosts.html:77 templates/networks/maps.html:107
+#: templates/networks/hosts.html:83 templates/networks/maps.html:120
 #, fuzzy
 msgid "CIDR"
 msgstr "CIDR"
 
-#: templates/networks/hosts.html:83
+#: templates/networks/hosts.html:89
 #, fuzzy
 msgid "Hosts Managed"
 msgstr "Διαχειριζόμενοι hosts"
 
-#: templates/networks/hosts.html:89
+#: templates/networks/hosts.html:95
 msgid "Capacity"
 msgstr "Χωρητικότητα"
 
-#: templates/networks/hosts.html:96
+#: templates/networks/hosts.html:102
 msgid "Hosts in"
 msgstr "Συσκευές σε"
 
-#: templates/networks/hosts.html:99
+#: templates/networks/hosts.html:105
 msgid "Back to Networks"
 msgstr "Πίσω στα Δίκτυα"
 
-#: templates/networks/hosts.html:105
+#: templates/networks/hosts.html:111 templates/networks/hosts.html:116
 msgid "Generate Hosts"
 msgstr "Δημιουργία hosts"
 
-#: templates/networks/hosts.html:118 templates/networks/hosts.html:191
+#: templates/networks/hosts.html:115
+msgid "Read-only access"
+msgstr "Πρόσβαση μόνο για ανάγνωση"
+
+#: templates/networks/hosts.html:128 templates/networks/hosts.html:204
 msgid "Device Type"
 msgstr "Τύπος συσκευής"
 
-#: templates/networks/hosts.html:120 templates/networks/hosts.html:143
+#: templates/networks/hosts.html:130 templates/networks/hosts.html:153
 msgid "Reserved"
 msgstr "Δεσμευμένο"
 
-#: templates/networks/hosts.html:145
+#: templates/networks/hosts.html:155
 msgid "Available"
 msgstr "Διαθέσιμη"
 
-#: templates/networks/hosts.html:174
+#: templates/networks/hosts.html:187
 #, fuzzy
 msgid "Edit Host"
 msgstr "Επεξεργασία host"
 
-#: templates/networks/hosts.html:194
+#: templates/networks/hosts.html:207
 #, fuzzy
 msgid "Server"
 msgstr "Διακομιστής"
 
-#: templates/networks/hosts.html:195
+#: templates/networks/hosts.html:208
 #, fuzzy
 msgid "Printer"
 msgstr "Εκτυπωτής"
 
-#: templates/networks/hosts.html:196
+#: templates/networks/hosts.html:209
 msgid "Workstation"
 msgstr "Σταθμός εργασίας"
 
-#: templates/networks/hosts.html:197
+#: templates/networks/hosts.html:210
 msgid "Network Device"
 msgstr "Δικτυακή συσκευή"
 
-#: templates/networks/hosts.html:198
+#: templates/networks/hosts.html:211
 msgid "IoT Device"
 msgstr "Συσκευή IoT"
 
-#: templates/networks/hosts.html:199
+#: templates/networks/hosts.html:212
 msgid "VoIP / Telephony"
 msgstr "VoIP / Τηλεφωνία"
 
-#: templates/networks/hosts.html:200
+#: templates/networks/hosts.html:213
 msgid "Camera / CCTV"
 msgstr "Κάμερα / CCTV"
 
-#: templates/networks/hosts.html:201
+#: templates/networks/hosts.html:214
 msgid "Other"
 msgstr "Άλλο"
 
-#: templates/networks/hosts.html:205
+#: templates/networks/hosts.html:218
 msgid "Assigned To (User / Asset)"
 msgstr "Ανατεθειμένο σε (Χρήστη / Περιουσιακό)"
 
-#: templates/networks/hosts.html:210
+#: templates/networks/hosts.html:223
 msgid "Reserve this IP address"
 msgstr "Δέσμευση αυτής της διεύθυνσης IP"
 
-#: templates/networks/hosts.html:235
+#: templates/networks/hosts.html:248
 #, fuzzy
 msgid "Delete Host"
 msgstr "Διαγραφή host"
 
-#: templates/networks/hosts.html:239
+#: templates/networks/hosts.html:252
 #, fuzzy
 msgid "Are you sure you want to delete host"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε host"
 
-#: templates/networks/maps.html:83
+#: templates/networks/hosts.html:350 templates/networks/hosts.html:379
+#: templates/networks/hosts.html:392 templates/networks/maps.html:435
+#: templates/networks/maps.html:457 templates/networks/maps.html:472
+msgid "You have read-only access to Network Maps."
+msgstr "Έχετε πρόσβαση μόνο για ανάγνωση στους Χάρτες Δικτύου."
+
+#: templates/networks/maps.html:88
 msgid "Total Networks"
 msgstr "Σύνολο δικτύων"
 
-#: templates/networks/maps.html:90
+#: templates/networks/maps.html:95
 msgid "Aggregate Host Capacity"
 msgstr "Συνολική χωρητικότητα hosts"
 
-#: templates/networks/maps.html:99
+#: templates/networks/maps.html:112
 #, fuzzy
 msgid "Add Network"
 msgstr "Προσθήκη δικτύου"
 
-#: templates/networks/maps.html:109
+#: templates/networks/maps.html:122
 msgid "Broadcast"
 msgstr "Broadcast"
 
-#: templates/networks/maps.html:110
+#: templates/networks/maps.html:123
 msgid "Hosts"
 msgstr "Hosts"
 
-#: templates/networks/maps.html:111 templates/networks/maps.html:188
-#: templates/networks/maps.html:241
+#: templates/networks/maps.html:124 templates/networks/maps.html:204
+#: templates/networks/maps.html:258
 msgid "Gateway"
 msgstr "Gateway"
 
-#: templates/networks/maps.html:112
-#, fuzzy
-msgid "Site"
-msgstr "Τοποθεσία"
-
-#: templates/networks/maps.html:113 templates/networks/maps.html:184
-#: templates/networks/maps.html:237
+#: templates/networks/maps.html:126 templates/networks/maps.html:200
+#: templates/networks/maps.html:254
 msgid "VLAN"
 msgstr "VLAN"
 
-#: templates/networks/maps.html:166
+#: templates/networks/maps.html:182
 #, fuzzy
 msgid "New Network"
 msgstr "Νέο δίκτυο"
 
-#: templates/networks/maps.html:176 templates/networks/maps.html:229
+#: templates/networks/maps.html:192 templates/networks/maps.html:246
 msgid "Network (CIDR)"
 msgstr "Δίκτυο (CIDR)"
 
-#: templates/networks/maps.html:180 templates/networks/maps.html:233
+#: templates/networks/maps.html:196 templates/networks/maps.html:250
 msgid "Site / Location"
 msgstr "Ιστότοπος / Τοποθεσία"
 
-#: templates/networks/maps.html:219
+#: templates/networks/maps.html:236
 #, fuzzy
 msgid "Edit Network"
 msgstr "Επεξεργασία δικτύου"
 
-#: templates/networks/maps.html:272
+#: templates/networks/maps.html:289
 #, fuzzy
 msgid "Delete Network"
 msgstr "Διαγραφή δικτύου"
 
-#: templates/networks/maps.html:295 templates/networks/maps.html:459
-#: templates/networks/maps.html:484
+#: templates/networks/maps.html:312 templates/networks/maps.html:497
+#: templates/networks/maps.html:522
 #, fuzzy
 msgid "Network Hosts"
 msgstr "Εργαλεία δικτύου"
 
-#: templates/networks/maps.html:473
+#: templates/networks/maps.html:511
 #, fuzzy
 msgid "Unable to load host list."
 msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού."
 
-#: templates/networks/maps.html:485
+#: templates/networks/maps.html:523
 msgid "addresses listed"
-msgstr ""
+msgstr "διευθύνσεις εμφανίζονται"
 
-#: templates/networks/maps.html:486
+#: templates/networks/maps.html:524
 #, fuzzy
 msgid "capacity"
 msgstr "Χωρητικότητα"
 
-#: templates/networks/maps.html:487
+#: templates/networks/maps.html:525
 #, fuzzy
 msgid "reserved"
 msgstr "Δεσμευμένο"
 
-#: templates/networks/maps.html:488
+#: templates/networks/maps.html:526
 msgid "Partial list"
-msgstr ""
+msgstr "Μερική λίστα"
 
-#: templates/networks/maps.html:491
+#: templates/networks/maps.html:529
 msgid "No IP addresses available for this network yet."
-msgstr ""
+msgstr "Δεν υπάρχουν ακόμη διαθέσιμες IP διευθύνσεις για αυτό το δίκτυο."
 
-#: templates/networks/maps.html:505
+#: templates/networks/maps.html:543
 msgid "Showing a partial list. Generate hosts for the full set."
-msgstr ""
+msgstr "Εμφανίζεται μερική λίστα. Δημιουργήστε hosts για το πλήρες σύνολο."
 
-#: templates/networks/maps.html:509
+#: templates/networks/maps.html:547
 #, fuzzy
 msgid "Failed to load host list."
 msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού."
@@ -2820,7 +3880,7 @@ msgstr "Συνημμένα"
 
 #: templates/partials/assistant_widget.html:371
 msgid "Used as knowledge for this chat."
-msgstr ""
+msgstr "Χρησιμοποιούνται ως γνώση για αυτή τη συνομιλία."
 
 #: templates/partials/assistant_widget.html:378
 #, fuzzy
@@ -2829,12 +3889,12 @@ msgstr "Συνημμένα"
 
 #: templates/partials/assistant_widget.html:382
 msgid "Start voice input"
-msgstr ""
+msgstr "Έναρξη φωνητικής εισόδου"
 
 #: templates/partials/assistant_widget.html:382
 #: templates/partials/assistant_widget.html:416
 msgid "Start voice input (GR → EN fallback)"
-msgstr ""
+msgstr "Έναρξη φωνητικής εισόδου (GR → EN εφεδρικό)"
 
 #: templates/partials/assistant_widget.html:385
 #, fuzzy
@@ -2848,16 +3908,16 @@ msgstr "Κλειστό"
 
 #: templates/partials/assistant_widget.html:415
 msgid "Speech recognition is not supported in this browser."
-msgstr ""
+msgstr "Η αναγνώριση ομιλίας δεν υποστηρίζεται σε αυτόν τον περιηγητή."
 
 #: templates/partials/assistant_widget.html:417
 msgid "Stop listening"
-msgstr ""
+msgstr "Διακοπή ακρόασης"
 
 #: templates/partials/assistant_widget.html:483
 #: templates/partials/assistant_widget.html:497
 msgid "Clipboard copy failed. Try again manually."
-msgstr ""
+msgstr "Αποτυχία αντιγραφής στο πρόχειρο. Δοκιμάστε χειροκίνητα."
 
 #: templates/partials/assistant_widget.html:579
 #, fuzzy
@@ -2872,22 +3932,22 @@ msgstr "Αφαίρεση αυτού του συνημμένου;"
 #: templates/partials/assistant_widget.html:634
 #: templates/partials/assistant_widget.html:640
 msgid "Unable to start session."
-msgstr ""
+msgstr "Αδυναμία έναρξης συνεδρίας."
 
 #: templates/partials/assistant_widget.html:656
 #: templates/partials/assistant_widget.html:657
 msgid "Exit full screen"
-msgstr ""
+msgstr "Έξοδος από πλήρη οθόνη"
 
 #: templates/partials/assistant_widget.html:660
 #: templates/partials/assistant_widget.html:661
 msgid "Enter full screen"
-msgstr ""
+msgstr "Είσοδος σε πλήρη οθόνη"
 
 #: templates/partials/assistant_widget.html:714
 #: templates/partials/assistant_widget.html:799
 msgid "Session not ready yet."
-msgstr ""
+msgstr "Η συνεδρία δεν είναι ακόμη έτοιμη."
 
 #: templates/partials/assistant_widget.html:722
 msgid "Thinking..."
@@ -2916,21 +3976,16 @@ msgstr "Αδυναμία καθαρισμού της γενικής συνομι
 #: templates/partials/assistant_widget.html:948
 #: templates/partials/assistant_widget.html:989
 msgid "Unable to start voice capture."
-msgstr ""
+msgstr "Αδυναμία έναρξης σύλληψης φωνής."
 
 #: templates/partials/assistant_widget.html:953
 msgid "Microphone permission denied."
-msgstr ""
+msgstr "Άρνηση άδειας μικροφώνου."
 
 #: templates/tickets/_row.html:8 templates/tickets/list.html:218
 #: templates/tickets/list.html:299
 msgid "Low"
 msgstr "Χαμηλή"
-
-#: templates/tickets/_row.html:10 templates/tickets/list.html:220
-#: templates/tickets/list.html:300
-msgid "Medium"
-msgstr "Μεσαία"
 
 #: templates/tickets/_row.html:12 templates/tickets/list.html:222
 #: templates/tickets/list.html:301
@@ -2998,7 +4053,7 @@ msgstr "Σύνολο Αιτημάτων"
 msgid "New Ticket"
 msgstr "Νέο Αίτημα"
 
-#: templates/tickets/list.html:197 templates/users/list.html:30
+#: templates/tickets/list.html:197 templates/users/list.html:111
 msgid "ID"
 msgstr "Α/Α"
 
@@ -3006,11 +4061,11 @@ msgstr "Α/Α"
 msgid "Created By"
 msgstr "Δημιουργήθηκε Από"
 
-#: templates/tickets/list.html:306 templates/users/list.html:158
+#: templates/tickets/list.html:306 templates/users/list.html:259
 msgid "Create"
 msgstr "Δημιουργία"
 
-#: templates/tickets/list.html:329 templates/users/list.html:171
+#: templates/tickets/list.html:329 templates/users/list.html:272
 msgid "Confirm Delete"
 msgstr "Επιβεβαίωση Διαγραφής"
 
@@ -3022,7 +4077,7 @@ msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετ�
 msgid "Deleting..."
 msgstr "Γίνεται διαγραφή..."
 
-#: templates/tickets/list.html:434 templates/users/list.html:223
+#: templates/tickets/list.html:434
 msgid "Delete failed"
 msgstr "Η διαγραφή απέτυχε"
 
@@ -3031,17 +4086,13 @@ msgstr "Η διαγραφή απέτυχε"
 msgid "Failed to load edit form"
 msgstr "Αποτυχία φόρτωσης φόρμας επεξεργασίας"
 
-#: templates/tickets/list.html:500
+#: templates/tickets/list.html:500 templates/users/list.html:385
 msgid "Creating..."
 msgstr "Γίνεται δημιουργία..."
 
 #: templates/tickets/view.html:8
 msgid "Ticket"
 msgstr "Αίτημα"
-
-#: templates/tickets/view.html:189
-msgid "Details"
-msgstr "Λεπτομέρειες"
 
 #: templates/tickets/view.html:190
 msgid "Comments"
@@ -3096,7 +4147,7 @@ msgstr "Δεν υπάρχουν καταγεγραμμένες ενέργειε�
 msgid "Adding..."
 msgstr "Γίνεται προσθήκη..."
 
-#: templates/tickets/view.html:377 templates/users/list.html:241
+#: templates/tickets/view.html:377
 msgid "Update failed"
 msgstr "Η ενημέρωση απέτυχε"
 
@@ -3109,63 +4160,90 @@ msgstr "Γίνεται μεταφόρτωση..."
 msgid "Upload failed"
 msgstr "Η μεταφόρτωση απέτυχε"
 
-#: templates/users/list.html:22
+#: templates/users/list.html:60
+msgid "Manage helpdesk accounts, roles, and activation status."
+msgstr "Διαχείριση λογαριασμών helpdesk, ρόλων και κατάστασης ενεργοποίησης."
+
+#: templates/users/list.html:64
 msgid "New User"
 msgstr "Νέος Χρήστης"
 
-#: templates/users/list.html:33 templates/users/list.html:99
-#: templates/users/list.html:146
-msgid "Role"
-msgstr "Ρόλος"
+#: templates/users/list.html:74
+#, fuzzy
+msgid "Total Users"
+msgstr "Σύνολο δικτύων"
 
-#: templates/users/list.html:48 templates/users/list.html:151
-msgid "Admin"
-msgstr "Διαχειριστής"
-
-#: templates/users/list.html:50 templates/users/list.html:150
-msgid "Manager"
-msgstr "Προϊστάμενος"
-
-#: templates/users/list.html:54 templates/users/list.html:148
-#: templates/users/list.html:236
-msgid "User"
-msgstr "Χρήστης"
-
-#: templates/users/list.html:62
+#: templates/users/list.html:86 templates/users/list.html:143
 msgid "Inactive"
 msgstr "Ανενεργός"
 
-#: templates/users/list.html:88
+#: templates/users/list.html:114 templates/users/list.html:180
+#: templates/users/list.html:241
+msgid "Role"
+msgstr "Ρόλος"
+
+#: templates/users/list.html:129 templates/users/list.html:246
+msgid "Admin"
+msgstr "Διαχειριστής"
+
+#: templates/users/list.html:131 templates/users/list.html:245
+msgid "Manager"
+msgstr "Προϊστάμενος"
+
+#: templates/users/list.html:135 templates/users/list.html:243
+msgid "User"
+msgstr "Χρήστης"
+
+#: templates/users/list.html:169
 msgid "Edit User"
 msgstr "Επεξεργασία Χρήστη"
 
-#: templates/users/list.html:109
+#: templates/users/list.html:190
 msgid "Password (leave blank to keep unchanged)"
 msgstr "Κωδικός (αφήστε κενό για να παραμείνει ίδιος)"
 
-#: templates/users/list.html:132
+#: templates/users/list.html:193 templates/users/list.html:238
+#, fuzzy
+msgid "Confirm Password"
+msgstr "Ξεχάσατε τον κωδικό;"
+
+#: templates/users/list.html:199 templates/users/list.html:255
+#, fuzzy
+msgid "Active account"
+msgstr "Δημιουργία λογαριασμού"
+
+#: templates/users/list.html:224
 msgid "Add New User"
 msgstr "Προσθήκη Νέου Χρήστη"
 
-#: templates/users/list.html:174
+#: templates/users/list.html:275
 msgid "Are you sure you want to delete this user?"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτόν τον χρήστη;"
 
-#: templates/users/list.html:221
-msgid "User deleted"
-msgstr "Ο χρήστης διαγράφηκε"
+#: templates/users/list.html:323
+#, fuzzy
+msgid "Helpdesk Users"
+msgstr "Helpdesk Pro"
 
-#: templates/users/list.html:236
-msgid "updated successfully"
-msgstr "ενημερώθηκε επιτυχώς"
+#: templates/users/list.html:393 templates/users/list.html:402
+#, fuzzy
+msgid "Failed to create user."
+msgstr "Αποτυχία προσθήκης χρήστη"
 
-#: templates/users/list.html:253
-msgid "User added successfully"
+#: templates/users/list.html:397
+#, fuzzy
+msgid "User created successfully."
 msgstr "Ο χρήστης προστέθηκε επιτυχώς"
 
-#: templates/users/list.html:256
-msgid "Failed to add user"
+#: templates/users/list.html:429 templates/users/list.html:443
+#, fuzzy
+msgid "Failed to update user."
 msgstr "Αποτυχία προσθήκης χρήστη"
+
+#: templates/users/list.html:433
+#, fuzzy
+msgid "User updated successfully."
+msgstr "ενημερώθηκε επιτυχώς"
 
 #~ msgid "Inventory"
 #~ msgstr "Απογραφή"
@@ -3233,3 +4311,17 @@ msgstr "Αποτυχία προσθήκης χρήστη"
 #~ msgid "Sorry, something went wrong."
 #~ msgstr "Συγγνώμη, κάτι πήγε στραβά."
 
+#~ msgid "Save changes"
+#~ msgstr "Αποθήκευση αλλαγών"
+
+#~ msgid ""
+#~ "Relies on the system prompt above "
+#~ "for behaviour—no external services or "
+#~ "API keys required."
+#~ msgstr ""
+#~ "Βασίζεται στο system prompt για τη "
+#~ "συμπεριφορά—δεν απαιτούνται εξωτερικές υπηρεσίες "
+#~ "ή API keys."
+
+#~ msgid "User deleted"
+#~ msgstr "Ο χρήστης διαγράφηκε"

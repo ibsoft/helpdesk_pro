@@ -63,8 +63,6 @@
   }
 </style>
 
-{% set total_entries = entries|length %}
-
 <div class="card address-summary-card border-0 shadow-sm mb-3">
   <div class="card-body py-3">
     <div class="d-flex flex-wrap align-items-center gap-4">
@@ -166,6 +164,19 @@
     {% endfor %}
   </tbody>
 </table>
+
+<div class="d-flex justify-content-center my-3" id="loadMoreContainer" {% if not has_more %}style="display:none"{% endif %}>
+  <button type="button"
+          class="btn btn-outline-primary"
+          id="loadMoreBtn"
+          data-next-offset="{{ next_offset }}"
+          data-next-count="{{ chunk_size }}"
+          data-chunk-size="{{ chunk_size }}"
+          data-label-template="{{ _('Load next {count} contacts') }}">
+    <i class="fa fa-download me-1"></i>
+    {{ _('Load next %(count)s contacts', count=chunk_size) }}
+  </button>
+</div>
 
 <!-- Create Modal -->
 <div class="modal fade" id="addressCreateModal" tabindex="-1" aria-hidden="true">
@@ -392,6 +403,7 @@ $(function() {
   const addressTable = $('#addressBookTable').DataTable({
     order: [[0, 'asc']],
     pageLength: 25,
+    deferRender: true,
     language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
     scrollX: true,
     scrollCollapse: true,
@@ -409,6 +421,158 @@ $(function() {
       columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
     }
   });
+
+  const dash = '—';
+  const linkLabel = "{{ _('Link') }}";
+  const loadMoreBtn = $('#loadMoreBtn');
+  const loadMoreContainer = $('#loadMoreContainer');
+  const hasLoadMore = loadMoreBtn.length > 0;
+  const chunkSize = hasLoadMore ? Number(loadMoreBtn.data('chunk-size')) || {{ chunk_size }} : {{ chunk_size }};
+  const dataEndpoint = "{{ url_for('address_book.list_entries_api') }}";
+  const loadMoreIconHtml = '<i class="fa fa-download me-1"></i>';
+  const loadMoreLoadingHtml = '<i class="fa fa-spinner fa-spin me-1"></i>{{ _("Loading") }}';
+  const loadMoreLabelTemplate = hasLoadMore ? (loadMoreBtn.data('label-template') || '') : '';
+  const loadMoreFallbackLabel = "{{ _('Load more contacts') }}";
+
+  function renderLoadMoreLabel(count) {
+    const nextCount = count > 0 ? count : chunkSize;
+    if (loadMoreLabelTemplate && loadMoreLabelTemplate.includes('{count}')) {
+      return `${loadMoreIconHtml}${loadMoreLabelTemplate.replace('{count}', nextCount)}`;
+    }
+    return `${loadMoreIconHtml}${loadMoreFallbackLabel}`;
+  }
+
+  function escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function formatOptional(value) {
+    return value ? escapeHtml(value) : dash;
+  }
+
+  function truncate(value, limit) {
+    if (!value) return '';
+    if (value.length <= limit) {
+      return escapeHtml(value);
+    }
+    return `${escapeHtml(value.slice(0, limit))}…`;
+  }
+
+  function buildActions(entry) {
+    const nameAttr = escapeHtml(entry.name);
+    return `
+      <button type="button"
+              class="btn btn-sm btn-outline-primary edit-entry-btn"
+              data-id="${entry.id}"
+              data-update-url="${entry.update_url}"
+              data-delete-url="${entry.delete_url}">
+        <i class="fa fa-edit"></i>
+      </button>
+      <button type="button"
+              class="btn btn-sm btn-outline-danger delete-entry-btn ms-1"
+              data-id="${entry.id}"
+              data-delete-url="${entry.delete_url}"
+              data-name="${nameAttr}">
+        <i class="fa fa-trash"></i>
+      </button>
+    `;
+  }
+
+  function buildRow(entry) {
+    const nameCell = `<span class="fw-semibold">${escapeHtml(entry.name)}</span>`;
+    const emailCell = entry.email
+      ? `<a href="mailto:${escapeHtml(entry.email)}">${escapeHtml(entry.email)}</a>`
+      : dash;
+    const websiteCell = entry.website
+      ? `<a href="${escapeHtml(entry.website)}" target="_blank" rel="noopener">${linkLabel}</a>`
+      : dash;
+    const notesContent = entry.notes ? truncate(entry.notes, 120) : dash;
+    const notesCell = `<span class="d-block text-truncate" style="max-width: 220px;">${notesContent}</span>`;
+
+    return [
+      nameCell,
+      formatOptional(entry.category),
+      formatOptional(entry.company),
+      formatOptional(entry.job_title),
+      formatOptional(entry.department),
+      emailCell,
+      formatOptional(entry.phone),
+      formatOptional(entry.mobile),
+      websiteCell,
+      formatOptional(entry.address_line),
+      formatOptional(entry.city),
+      formatOptional(entry.state),
+      formatOptional(entry.postal_code),
+      formatOptional(entry.country),
+      formatOptional(entry.tags),
+      notesCell,
+      buildActions(entry),
+    ];
+  }
+
+  function appendEntries(entries) {
+    if (!entries || !entries.length) return;
+    const rows = entries.map(buildRow);
+    const added = addressTable.rows.add(rows);
+    added.nodes().each(function(index, node) {
+      $(node).attr('data-entry-id', entries[index].id);
+    });
+    addressTable.draw(false);
+  }
+
+  if (hasLoadMore) {
+    const initialCount = Number(loadMoreBtn.data('next-count')) || chunkSize;
+    loadMoreBtn.data('next-count', initialCount);
+    loadMoreBtn.html(renderLoadMoreLabel(initialCount));
+    loadMoreBtn.on('click', function() {
+      const btn = $(this);
+      const offset = Number(btn.data('next-offset')) || 0;
+      const limit = Number(btn.data('chunk-size')) || chunkSize;
+      btn.prop('disabled', true).html(loadMoreLoadingHtml);
+      if (window.DataTableSpinner && typeof window.DataTableSpinner.show === 'function') {
+        window.DataTableSpinner.show('#addressBookTable');
+      }
+      $.getJSON(dataEndpoint, { offset, limit })
+        .done(function(res) {
+          if (!res || res.success === false) {
+            const msg = (res && res.message) ? res.message : '{{ _("Failed to load additional contacts.") }}';
+            showToast(msg, (res && res.category) || 'danger');
+            const fallbackCount = Number(btn.data('next-count')) || chunkSize;
+            btn.prop('disabled', false).html(renderLoadMoreLabel(fallbackCount));
+            return;
+          }
+          appendEntries(res.entries || []);
+          const total = Number(res.total) || 0;
+          const loadedCount = (res.entries && res.entries.length) || 0;
+          const apiNextOffset = typeof res.next_offset !== 'undefined' ? Number(res.next_offset) : NaN;
+          const nextOffset = Number.isFinite(apiNextOffset) ? apiNextOffset : offset + loadedCount;
+          btn.data('next-offset', nextOffset);
+          if (res.has_more) {
+            const remaining = Math.max(total - nextOffset, 0);
+            const nextCount = Math.min(chunkSize, remaining || chunkSize);
+            btn.data('next-count', nextCount);
+            btn.prop('disabled', false).html(renderLoadMoreLabel(nextCount));
+          } else {
+            loadMoreContainer.hide();
+          }
+        })
+        .fail(function() {
+          showToast('{{ _("Failed to load additional contacts.") }}', 'danger');
+          const fallbackCount = Number(loadMoreBtn.data('next-count')) || chunkSize;
+          btn.prop('disabled', false).html(renderLoadMoreLabel(fallbackCount));
+        })
+        .always(function() {
+          if (window.DataTableSpinner && typeof window.DataTableSpinner.hide === 'function') {
+            window.DataTableSpinner.hide('#addressBookTable');
+          }
+        });
+    });
+  }
 
   function submitForm($form, modalId) {
     const submitBtn = $form.find('button[type="submit"]');

@@ -53,6 +53,13 @@ TAPE_STATUS_VALUES = {value for value, _ in TAPE_STATUS_CHOICES}
 LOCATION_TYPE_VALUES = {value for value, _ in LOCATION_TYPE_CHOICES}
 STATUS_LABELS = {key: label for key, label in TAPE_STATUS_CHOICES}
 LOCATION_LABELS = {key: label for key, label in LOCATION_TYPE_CHOICES}
+LIFECYCLE_POLICY_CHOICES = [
+    ("daily", _("Daily")),
+    ("weekly", _("Weekly")),
+    ("monthly", _("Monthly")),
+]
+LIFECYCLE_POLICY_VALUES = {value for value, _ in LIFECYCLE_POLICY_CHOICES}
+LIFECYCLE_POLICY_LABELS = {key: label for key, label in LIFECYCLE_POLICY_CHOICES}
 
 
 def _clean_str(field: str) -> Optional[str]:
@@ -102,6 +109,17 @@ def _parse_tags(raw: Optional[str]) -> list[str]:
     if not raw:
         return []
     return [token.strip() for token in raw.split(",") if token.strip()]
+
+
+def _normalise_lifecycle_value(raw: Optional[str]) -> Optional[str]:
+    if raw is None:
+        return None
+    value = raw.strip()
+    if not value:
+        return None
+    if value not in LIFECYCLE_POLICY_VALUES:
+        return None
+    return value
 
 
 def _value_is_blank(value: Optional[str]) -> bool:
@@ -173,6 +191,7 @@ def _friendly_field_label(field_name: Optional[str]) -> str:
         "create": _("Event"),
         "current_location_id": _("Current location"),
         "status": _("Status"),
+        "lifecycle_policy": _("Lifecycle policy"),
         "usage_tags": _("Usage tags"),
         "notes": _("Notes"),
         "medium_type": _("Medium type"),
@@ -195,6 +214,10 @@ def _format_audit_value(field_name: Optional[str], value: Optional[str]) -> str:
         return _describe_status(value)
     if field_name == "medium_type":
         return _describe_medium_type(value)
+    if field_name == "lifecycle_policy":
+        if _value_is_blank(value):
+            return _("—")
+        return LIFECYCLE_POLICY_LABELS.get(value, value.title())
     if field_name in {"retention_days"}:
         if _value_is_blank(value):
             return _("Not set")
@@ -303,6 +326,7 @@ def monitor():
         retention_summary=retention_summary,
         tape_status_choices=TAPE_STATUS_CHOICES,
         location_type_choices=LOCATION_TYPE_CHOICES,
+        lifecycle_policy_choices=LIFECYCLE_POLICY_CHOICES,
         attention_media=attention_media,
     )
 
@@ -335,6 +359,7 @@ def tape_detail(tape_id: int):
         module_access=module_access,
         tape_status_choices=TAPE_STATUS_CHOICES,
         location_type_choices=LOCATION_TYPE_CHOICES,
+        lifecycle_policy_choices=LIFECYCLE_POLICY_CHOICES,
         audit_entries=audit_entries,
         audit_rows=audit_rows,
         retention_state=retention_state,
@@ -376,6 +401,7 @@ def create_tape():
         nominal_capacity_tb=_parse_decimal("nominal_capacity_tb"),
         usable_capacity_tb=_parse_decimal("usable_capacity_tb"),
         status=status,
+        lifecycle_policy=_normalise_lifecycle_value(request.form.get("lifecycle_policy")),
         notes=_clean_str("notes"),
     )
     tape.set_usage_tags(_parse_tags(request.form.get("usage_tags")))
@@ -440,6 +466,12 @@ def update_tape(tape_id: int):
     _update_field("serial_number")
     _update_field("manufacturer")
     _update_field("model_name")
+    lifecycle_raw = request.form.get("lifecycle_policy")
+    if lifecycle_raw is not None:
+        lifecycle_value = _normalise_lifecycle_value(lifecycle_raw)
+        if lifecycle_value != tape.lifecycle_policy:
+            changes.append(("lifecycle_policy", tape.lifecycle_policy, lifecycle_value))
+            tape.lifecycle_policy = lifecycle_value
 
     medium_type_value = _clean_str("medium_type")
     if medium_type_value and medium_type_value in {"tape", "disk"} and medium_type_value != tape.medium_type:

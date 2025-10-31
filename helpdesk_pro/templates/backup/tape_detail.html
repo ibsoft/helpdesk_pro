@@ -167,6 +167,17 @@
             </div>
             <div class="row g-2 mt-2">
               <div class="col-sm-4">
+                <label class="form-label" for="lifecycle_policy">{{ _('Lifecycle Policy') }}</label>
+                <select class="form-select" id="lifecycle_policy" name="lifecycle_policy">
+                  <option value="">{{ _('Select...') }}</option>
+                  {% for key, label in lifecycle_policy_choices %}
+                  <option value="{{ key }}" {% if tape.lifecycle_policy == key %}selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row g-2 mt-2">
+              <div class="col-sm-4">
                 <label class="form-label" for="manufacturer">{{ _('Manufacturer') }}</label>
                 <input class="form-control" id="manufacturer" name="manufacturer" value="{{ tape.manufacturer }}">
               </div>
@@ -232,6 +243,11 @@
       <div class="card shadow-sm border-0 h-100">
         <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
           <h2 class="h5 mb-0">{{ _('Location History') }}</h2>
+          {% if module_access == 'write' %}
+          <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#locationModal">
+            <i class="fa fa-map-marker-alt me-1"></i>{{ _('Add Location Entry') }}
+          </button>
+          {% endif %}
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -292,83 +308,17 @@
             </table>
           </div>
         </div>
-        {% if module_access == "write" %}
-        <div class="card-footer">
-          <h3 class="h6 text-uppercase text-muted">{{ _('Add Location Entry') }}</h3>
-          <form method="post" action="{{ url_for('backup.add_location', tape_id=tape.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="row g-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="location_type">{{ _('Type') }}</label>
-                <select class="form-select" id="location_type" name="location_type">
-                  {% for key, label in location_type_choices %}
-                  <option value="{{ key }}">{{ label }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="site_name">{{ _('Site / Vault / Address') }}</label>
-                <input class="form-control" id="site_name" name="site_name">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="shelf_code">{{ _('Shelf / Slot Code') }}</label>
-                <input class="form-control" id="shelf_code" name="shelf_code">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="locker_code">{{ _('Locker / Deposit Code') }}</label>
-                <input class="form-control" id="locker_code" name="locker_code">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="provider_name">{{ _('Provider / Courier') }}</label>
-                <input class="form-control" id="provider_name" name="provider_name">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="provider_contact">{{ _('Contact details') }}</label>
-                <input class="form-control" id="provider_contact" name="provider_contact">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="custody_holder">{{ _('Custody holder') }}</label>
-                <input class="form-control" id="custody_holder" name="custody_holder">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="custody_reference">{{ _('Reference / Ticket') }}</label>
-                <input class="form-control" id="custody_reference" name="custody_reference">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="check_in_at">{{ _('Check-in') }}</label>
-                <input class="form-control" type="datetime-local" id="check_in_at" name="check_in_at">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="check_out_at">{{ _('Check-out') }}</label>
-                <input class="form-control" type="datetime-local" id="check_out_at" name="check_out_at">
-              </div>
-            </div>
-            <div class="mt-2">
-              <label class="form-label" for="location_notes">{{ _('Notes') }}</label>
-              <textarea class="form-control" id="location_notes" name="notes" rows="2"></textarea>
-            </div>
-            <div class="mt-3">
-              <button class="btn btn-outline-primary" type="submit">
-                <i class="fa fa-map-marker-alt me-1"></i>{{ _('Log Location') }}
-              </button>
-            </div>
-          </form>
-        </div>
-        {% endif %}
       </div>
     </div>
     <div class="col-lg-6">
       <div class="card shadow-sm border-0 h-100">
-        <div class="card-header bg-body-tertiary">
+        <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
           <h2 class="h5 mb-0">{{ _('Custody Chain') }}</h2>
+          {% if module_access == 'write' %}
+          <button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#custodyModal">
+            <i class="fa fa-user-shield me-1"></i>{{ _('Record Custody Event') }}
+          </button>
+          {% endif %}
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
@@ -408,53 +358,6 @@
             </table>
           </div>
         </div>
-        {% if module_access == "write" %}
-        <div class="card-footer">
-          <h3 class="h6 text-uppercase text-muted">{{ _('Record Custody Event') }}</h3>
-          <form method="post" action="{{ url_for('backup.add_custody_event', tape_id=tape.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="row g-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="event_time">{{ _('Timestamp') }}</label>
-                <input class="form-control" type="datetime-local" id="event_time" name="event_time">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="event_type">{{ _('Event type') }}</label>
-                <input class="form-control" id="event_type" name="event_type" placeholder="Transfer / Pickup / Return">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="handed_over_by">{{ _('Handed over by') }}</label>
-                <input class="form-control" id="handed_over_by" name="handed_over_by">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="handed_over_signature">{{ _('Signature / ID') }}</label>
-                <input class="form-control" id="handed_over_signature" name="handed_over_signature">
-              </div>
-            </div>
-            <div class="row g-2 mt-2">
-              <div class="col-sm-6">
-                <label class="form-label" for="received_by">{{ _('Received by') }}</label>
-                <input class="form-control" id="received_by" name="received_by">
-              </div>
-              <div class="col-sm-6">
-                <label class="form-label" for="received_signature">{{ _('Signature / ID') }}</label>
-                <input class="form-control" id="received_signature" name="received_signature">
-              </div>
-            </div>
-            <div class="mt-2">
-              <label class="form-label" for="custody_notes">{{ _('Notes') }}</label>
-              <textarea class="form-control" id="custody_notes" name="notes" rows="2"></textarea>
-            </div>
-            <div class="mt-3">
-              <button class="btn btn-outline-success" type="submit">
-                <i class="fa fa-user-shield me-1"></i>{{ _('Add Custody Entry') }}
-              </button>
-            </div>
-          </form>
-        </div>
-        {% endif %}
       </div>
     </div>
   </div>
@@ -510,6 +413,130 @@
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
           <button type="submit" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if module_access == 'write' %}
+<!-- Add Location Modal -->
+<div class="modal fade" id="locationModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form action="{{ url_for('backup.add_location', tape_id=tape.id) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-map-marker-alt me-2"></i>{{ _('Add Location Entry') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Type') }}</label>
+              <select name="location_type" class="form-select">
+                {% for key, label in location_type_choices %}
+                <option value="{{ key }}">{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Site / Vault / Address') }}</label>
+              <input name="site_name" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Shelf / Slot Code') }}</label>
+              <input name="shelf_code" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Locker / Deposit Code') }}</label>
+              <input name="locker_code" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Provider / Courier') }}</label>
+              <input name="provider_name" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Contact details') }}</label>
+              <input name="provider_contact" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Custody holder') }}</label>
+              <input name="custody_holder" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Reference / Ticket') }}</label>
+              <input name="custody_reference" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Check-in') }}</label>
+              <input name="check_in_at" type="datetime-local" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Check-out') }}</label>
+              <input name="check_out_at" type="datetime-local" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes') }}</label>
+              <textarea name="notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary"><i class="fa fa-map-marker-alt me-2"></i>{{ _('Add Location Entry') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Custody Event Modal -->
+<div class="modal fade" id="custodyModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form action="{{ url_for('backup.add_custody_event', tape_id=tape.id) }}" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-user-shield me-2"></i>{{ _('Record Custody Event') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Timestamp') }}</label>
+              <input name="event_time" type="datetime-local" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Event type') }}</label>
+              <input name="event_type" class="form-control" placeholder="Transfer / Pickup / Return">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Handed over by') }}</label>
+              <input name="handed_over_by" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Signature / ID') }}</label>
+              <input name="handed_over_signature" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Received by') }}</label>
+              <input name="received_by" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Signature / ID') }}</label>
+              <input name="received_signature" class="form-control">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes') }}</label>
+              <textarea name="notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-success"><i class="fa fa-user-shield me-2"></i>{{ _('Add Custody Entry') }}</button>
         </div>
       </form>
     </div>

@@ -354,6 +354,18 @@ For manual checks:
 
 ---
 
+Translations
+
+pybabel extract -F babel.cfg -k _ -k _l -o messages.pot .
+
+pybabel update -i messages.pot -d translations
+
+pybabel compile -d translations
+
+
+
+---
+
 ## License
 
 © 2025 Ioannis A. Bouhras. Licensed under the MIT License. See `LICENSE` (if provided) or include attribution when distributing.
@@ -361,3 +373,4 @@ For manual checks:
 ---
 
 Happy troubleshooting! 🛠️ If you build additional modules or integrations, contribute back via pull requests or open issues for feature requests.
+
