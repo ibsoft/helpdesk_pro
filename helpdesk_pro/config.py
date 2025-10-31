@@ -1,3 +1,4 @@
+import json
 import os
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -9,6 +10,19 @@ def _float_env(key: str, default: float) -> float:
         return float(os.getenv(key, default))
     except (TypeError, ValueError):
         return default
+
+
+def _list_env(key: str, default: list[str]) -> list[str]:
+    raw = os.getenv(key)
+    if not raw:
+        return default
+    try:
+        parsed = json.loads(raw)
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed]
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return [item.strip() for item in raw.split(",") if item.strip()]
 
 
 class Config:
@@ -46,3 +60,17 @@ class Config:
     UI_FOOTER_HEIGHT = _float_env('UI_FOOTER_HEIGHT', 35.0)
     UI_DATATABLE_HEADER_FONT_SIZE = _float_env('UI_DATATABLE_HEADER_FONT_SIZE', 0.95)
     ASSISTANT_ENABLE_LLM_OVERRIDE = os.getenv('ASSISTANT_ENABLE_LLM_OVERRIDE', 'True').lower() == 'true'
+    try:
+        ASSISTANT_TOOL_CALL_DEPTH_LIMIT = int(os.getenv('ASSISTANT_TOOL_CALL_DEPTH_LIMIT', '-1'))
+    except (TypeError, ValueError):
+        ASSISTANT_TOOL_CALL_DEPTH_LIMIT = -1
+    MCP_ENABLED = os.getenv('MCP_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
+    MCP_HOST = os.getenv('MCP_HOST', '127.0.0.1')
+    MCP_PORT = int(os.getenv('MCP_PORT', 8081))
+    MCP_DATABASE_URL = os.getenv('MCP_DATABASE_URL')
+    MCP_LOG_LEVEL = os.getenv('MCP_LOG_LEVEL', LOG_LEVEL)
+    MCP_ALLOWED_ORIGINS = _list_env('MCP_ALLOWED_ORIGINS', [])
+    MCP_MAX_ROWS = int(os.getenv('MCP_MAX_ROWS', 1000))
+    MCP_REQUEST_TIMEOUT_SECONDS = int(os.getenv('MCP_REQUEST_TIMEOUT', 10))
+    MCP_KEEP_ALIVE_SECONDS = int(os.getenv('MCP_KEEP_ALIVE', 5))
+    MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {'1', 'true', 'yes'}

@@ -3,6 +3,7 @@
 Manage blueprint routes (access control, admin utilities).
 """
 
+import json
 from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
@@ -32,6 +33,7 @@ from app.permissions import (
     MODULE_ACCESS_LEVELS,
     clear_access_cache,
 )
+from app.mcp import start_mcp_server, stop_mcp_server
 
 
 manage_bp = Blueprint("manage", __name__, url_prefix="/manage")
@@ -182,9 +184,15 @@ def assistant_settings():
 
     if request.method == "POST":
         config.is_enabled = bool(request.form.get("is_enabled"))
-        provider = request.form.get("provider") or "builtin"
-        if provider not in {"chatgpt", "chatgpt_hybrid", "webhook", "builtin", "openwebui"}:
-            provider = "builtin"
+        previous_mcp_enabled = current_app.config.get("MCP_ENABLED", True)
+        mcp_enabled_form = bool(request.form.get("mcp_enabled"))
+        current_app.config["MCP_ENABLED"] = mcp_enabled_form
+
+        provider = request.form.get("provider") or "chatgpt_hybrid"
+        if provider in {"chatgpt", "builtin"}:
+            provider = "chatgpt_hybrid"
+        if provider not in {"chatgpt_hybrid", "openwebui", "webhook"}:
+            provider = "chatgpt_hybrid"
         config.provider = provider
 
         position = request.form.get("position") or "right"
@@ -198,7 +206,7 @@ def assistant_settings():
         system_prompt = (request.form.get("system_prompt") or "").strip()
         config.system_prompt = system_prompt or DEFAULT_SYSTEM_PROMPT
 
-        if provider in {"chatgpt", "chatgpt_hybrid"}:
+        if provider == "chatgpt_hybrid":
             config.openai_api_key = (request.form.get("openai_api_key") or "").strip()
             config.openai_model = (request.form.get("openai_model") or "gpt-3.5-turbo").strip()
             config.openwebui_api_key = None
@@ -247,12 +255,19 @@ def assistant_settings():
             config.webhook_method = "POST"
             config.webhook_headers = None
 
+        app_obj = current_app._get_current_object()
+        ext_state = app_obj.extensions.setdefault("mcp_server", {"started": False})
+        if mcp_enabled_form and not previous_mcp_enabled:
+            start_mcp_server(app_obj)
+            ext_state["started"] = True
+        elif not mcp_enabled_form and previous_mcp_enabled:
+            stop_mcp_server(app_obj)
+            ext_state["started"] = False
+
         db.session.add(config)
         db.session.commit()
         flash(_("Assistant settings saved."), "success")
         return redirect(url_for("manage.assistant_settings"))
-
-    import json
 
     headers_pretty = ""
     if config.webhook_headers:
@@ -261,10 +276,23 @@ def assistant_settings():
         except Exception:
             headers_pretty = config.webhook_headers
 
+    mcp_host = current_app.config.get("MCP_HOST", "127.0.0.1")
+    mcp_port = current_app.config.get("MCP_PORT", 8081)
+    mcp_base_url = current_app.config.get("MCP_BASE_URL") or f"http://{mcp_host}:{mcp_port}"
+    mcp_defaults = {
+        "enabled": current_app.config.get("MCP_ENABLED", True),
+        "host": mcp_host,
+        "port": mcp_port,
+        "base_url": mcp_base_url,
+        "allowed_origins": current_app.config.get("MCP_ALLOWED_ORIGINS", []),
+        "log_level": current_app.config.get("MCP_LOG_LEVEL", current_app.config.get("LOG_LEVEL", "INFO")),
+    }
+
     return render_template(
         "manage/assistant_settings.html",
         config=config,
         headers_pretty=headers_pretty,
+        mcp_defaults=mcp_defaults,
     )
 
 
