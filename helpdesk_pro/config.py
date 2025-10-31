@@ -60,6 +60,10 @@ class Config:
     UI_FOOTER_HEIGHT = _float_env('UI_FOOTER_HEIGHT', 35.0)
     UI_DATATABLE_HEADER_FONT_SIZE = _float_env('UI_DATATABLE_HEADER_FONT_SIZE', 0.95)
     ASSISTANT_ENABLE_LLM_OVERRIDE = os.getenv('ASSISTANT_ENABLE_LLM_OVERRIDE', 'True').lower() == 'true'
+    try:
+        ASSISTANT_TOOL_CALL_DEPTH_LIMIT = int(os.getenv('ASSISTANT_TOOL_CALL_DEPTH_LIMIT', '-1'))
+    except (TypeError, ValueError):
+        ASSISTANT_TOOL_CALL_DEPTH_LIMIT = -1
     MCP_ENABLED = os.getenv('MCP_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
     MCP_HOST = os.getenv('MCP_HOST', '127.0.0.1')
     MCP_PORT = int(os.getenv('MCP_PORT', 8081))

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     max_rows: int = Field(1000, alias="MCP_MAX_ROWS")
     request_timeout_seconds: int = Field(10, alias="MCP_REQUEST_TIMEOUT")
     allowed_origins: list[str] = Field(default_factory=list, alias="MCP_ALLOWED_ORIGINS")
+    base_url: str | None = Field(default=None, alias="BASE_URL")
     environment: str = Field("development", alias="MCP_ENV")
 
     class Config:

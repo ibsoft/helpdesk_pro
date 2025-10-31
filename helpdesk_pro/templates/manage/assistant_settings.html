@@ -2,7 +2,7 @@
 {% block content %}
 
 {% set is_enabled = config.is_enabled %}
-{% set provider = config.provider or 'builtin' %}
+{% set provider = config.provider or 'chatgpt_hybrid' %}
 
 <style>
   .assistant-summary-card {
@@ -167,25 +167,14 @@
       <div class="card-body">
         <div class="row g-3">
           <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if provider == 'chatgpt' %}active{% endif %}">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_chatgpt" value="chatgpt" {% if provider == 'chatgpt' %}checked{% endif %}>
-                <label class="form-check-label fw-semibold" for="provider_chatgpt">
-                  <i class="fa fa-brain text-primary me-1"></i>{{ _('OpenAI ChatGPT API') }}
-                </label>
-              </div>
-              <p class="text-muted small mt-3 mb-0">{{ _('Sends the full conversation to OpenAI and returns their response. Requires an API key below.') }}</p>
-            </div>
-          </div>
-          <div class="col-xl-3 col-md-6">
             <div class="assistant-provider-option {% if provider == 'chatgpt_hybrid' %}active{% endif %}">
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="provider" id="provider_chatgpt_hybrid" value="chatgpt_hybrid" {% if provider == 'chatgpt_hybrid' %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="provider_chatgpt_hybrid">
-                  <i class="fa fa-robot text-warning me-1"></i>{{ _('OpenAI + DB Tools') }}
+                  <i class="fa fa-robot text-warning me-1"></i>{{ _('OpenAI (MCP tools)') }}
                 </label>
               </div>
-              <p class="text-muted small mt-3 mb-0">{{ _('Adds tool-calling to query the database via built-in helpers. Configure OpenAI credentials below.') }}</p>
+              <p class="text-muted small mt-3 mb-0">{{ _('Uses OpenAI function-calling with the embedded MCP tool catalogue. Requires the API key below.') }}</p>
             </div>
           </div>
           <div class="col-xl-3 col-md-6">
@@ -209,17 +198,6 @@
                 <input type="text" class="form-control" name="openwebui_model" value="{{ config.openwebui_model or 'gpt-3.5-turbo' }}" placeholder="llama3:latest">
               </div>
               <p class="text-muted small mt-3 mb-0">{{ _('Uses an OpenAI-compatible endpoint exposed by OpenWebUI. Ensure the base URL points to `/api/v1/chat/completions`.') }}</p>
-            </div>
-          </div>
-          <div class="col-xl-3 col-md-6">
-            <div class="assistant-provider-option {% if provider == 'builtin' %}active{% endif %}">
-              <div class="form-check">
-                <input class="form-check-input" type="radio" name="provider" id="provider_builtin" value="builtin" {% if provider == 'builtin' %}checked{% endif %}>
-                <label class="form-check-label fw-semibold" for="provider_builtin">
-                  <i class="fa fa-database text-info me-1"></i>{{ _('Built-in (direct database lookup)') }}
-                </label>
-              </div>
-              <p class="text-muted small mt-3 mb-0">{{ _('Responds by querying the Tickets, Knowledge Base, Inventory, and Network tables in read-only mode.') }}</p>
             </div>
           </div>
           <div class="col-xl-3 col-md-6">
@@ -262,6 +240,64 @@
           <div class="col-12">
             <small class="text-muted">{{ _('These credentials are required for the OpenAI-based providers. OpenWebUI fields are used when that provider is selected.') }}</small>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-body-tertiary d-flex align-items-center justify-content-between">
+        <strong>{{ _('Embedded MCP Server') }}</strong>
+        <span class="badge-chip {% if mcp_defaults.enabled %}bg-success-subtle text-success-emphasis{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">
+          <i class="fa {% if mcp_defaults.enabled %}fa-toggle-on{% else %}fa-toggle-off{% endif %} me-1"></i>
+          {% if mcp_defaults.enabled %}{{ _('Running') }}{% else %}{{ _('Disabled') }}{% endif %}
+        </span>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          {{ _('The MCP server runs inside Helpdesk Pro and exposes read-only tools over HTTP.') }}
+          {{ _('Share these coordinates with external AI agents or MCP-compatible clients.') }}
+        </p>
+        <div class="form-check form-switch mb-3">
+          <input class="form-check-input" type="checkbox" role="switch" id="mcp_enabled" name="mcp_enabled" {% if mcp_defaults.enabled %}checked{% endif %}>
+          <label class="form-check-label" for="mcp_enabled">{{ _('Enable embedded MCP server') }}</label>
+          <div class="form-text">{{ _('No OpenAI API key is required for the MCP provider.') }}</div>
+        </div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label text-muted">{{ _('Base URL') }}</label>
+            <div class="form-control bg-body-tertiary font-monospace" readonly>{{ mcp_defaults.base_url }}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted">{{ _('Host') }}</label>
+            <div class="form-control bg-body-tertiary font-monospace" readonly>{{ mcp_defaults.host }}</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label text-muted">{{ _('Port') }}</label>
+            <div class="form-control bg-body-tertiary font-monospace" readonly>{{ mcp_defaults.port }}</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted">{{ _('Allowed origins') }}</label>
+            {% if mcp_defaults.allowed_origins %}
+              <ul class="list-group list-group-flush">
+                {% for origin in mcp_defaults.allowed_origins %}
+                <li class="list-group-item px-0 py-1">{{ origin }}</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="form-text">{{ _('No CORS restrictions configured (local access only).') }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <label class="form-label text-muted">{{ _('Log level') }}</label>
+            <div class="form-control bg-body-tertiary font-monospace" readonly>{{ mcp_defaults.log_level }}</div>
+            <div class="form-text">
+              {{ _('Adjust using the %(var)s environment variable.', var='MCP_LOG_LEVEL') }}
+            </div>
+          </div>
+        </div>
+        <div class="alert alert-secondary mt-3 mb-0">
+          <i class="fa fa-plug me-2"></i>
+          {{ _('Default tools are available under `/mcp/tools` and `/mcp/invoke` on the above base URL.') }}
         </div>
       </div>
     </div>

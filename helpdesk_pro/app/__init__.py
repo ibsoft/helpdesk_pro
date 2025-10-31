@@ -20,6 +20,7 @@ from flask_babel import Babel
 from flask_jwt_extended import JWTManager
 from logging.handlers import RotatingFileHandler
 from config import Config
+from app.mcp import init_app as init_mcp
 
 # ───────── Extensions ───────── #
 db = SQLAlchemy()
@@ -196,6 +197,9 @@ def create_app():
             sql_console.setFormatter(logging.Formatter("%(asctime)s [SQL] %(message)s"))
             sql_logger.addHandler(sql_console)
     app.logger.info("Helpdesk Pro started")
+
+    # ───────── Embedded MCP server ───────── #
+    init_mcp(app)
 
     # ───────── Root route ───────── #
     @app.route("/")
