@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """Assistant widget API routes.
 
-This module now supports three providers:
+Supported providers:
 
 - OpenAI ChatGPT (proxying to OpenAI's API)
 - Custom webhooks
+- OpenWebUI-compatible chat APIs
+- Embedded MCP server tooling
 - Built-in tooling that answers by querying the local PostgreSQL database
   across Tickets, Knowledge Base, Inventory, and Network modules.
 """
@@ -15,6 +17,7 @@ import os
 import uuid
 import mimetypes
 import ipaddress
+import time
 from collections import Counter
 from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
@@ -528,55 +531,7 @@ BUILTIN_DEFAULT_RESPONSE = (
     "'List hardware assigned to Alice', or 'Find an available IP in 192.168.1.0/24'."
 )
 
-LLM_TOOL_DEFINITIONS = [
-    {
-        "name": "query_tickets",
-        "description": (
-            "Look up ticket information from the Helpdesk Pro database. Use this to retrieve ticket summaries, "
-            "counts, or details filtered by status, priority, department, assignee, or dates."
-        ),
-    },
-    {
-        "name": "query_knowledge_base",
-        "description": (
-            "Search knowledge base articles and attachments stored in Helpdesk Pro. Use this to find guides, "
-            "procedures, or documents that match specific keywords or phrases."
-        ),
-    },
-    {
-        "name": "query_software_inventory",
-        "description": (
-            "Retrieve software asset records, including license keys and assignment details, from the Helpdesk Pro "
-            "inventory."
-        ),
-    },
-    {
-        "name": "query_hardware_inventory",
-        "description": (
-            "Retrieve hardware asset records, including asset tags, hostnames, serials, and assignment details, "
-            "from the Helpdesk Pro inventory."
-        ),
-    },
-    {
-        "name": "query_network_inventory",
-        "description": (
-            "Retrieve network details, including CIDR blocks, available IPs, host reservations, and assignments "
-            "from the Helpdesk Pro network map."
-        ),
-    },
-    {
-        "name": "query_contracts",
-        "description": (
-            "Retrieve contract records, renewal schedules, support contacts, and financial details from the Helpdesk Pro contracts registry."
-        ),
-    },
-    {
-        "name": "query_address_book",
-        "description": (
-            "Lookup contacts in the Helpdesk Pro address book by name, company, department, tags, or other attributes."
-        ),
-    },
-]
+LLM_TOOL_DEFINITIONS: List[Dict[str, Any]] = []
 
 PHRASE_PATTERN = re.compile(
     r"(?:for|about|regarding|lookup|find|search for|αναζήτησε|βρες|για)\s+([a-z0-9\"'\\-\\s\\.]+)",
@@ -1094,90 +1049,39 @@ def api_message():
     messages_for_model.append(user_history_entry)
 
     reply: Optional[str] = None
-    builtin_reply: Optional[str] = None
-    used_llm_provider = False
-
     user_message_row = AssistantMessage(session_id=session.id, role="user", content=message)
     db.session.add(user_message_row)
 
-    if config.provider in {"chatgpt", "chatgpt_hybrid"} and _should_force_builtin(message):
-        builtin_reply = _call_builtin(message, history, current_user)
-        if _is_meaningful_builtin_reply(builtin_reply):
-            current_app.logger.info("Assistant bypassed LLM for sensitive software query.")
-            reply = builtin_reply
-
-    if reply is None and config.provider == "chatgpt":
-        builtin_prefill = _call_builtin(message, history, current_user)
-        if _is_meaningful_builtin_reply(builtin_prefill):
-            current_app.logger.info("Assistant satisfied request using builtin handler (chatgpt provider without tools).")
-            reply = builtin_prefill
-            builtin_reply = builtin_prefill
-
-    if reply is None:
-        try:
-            if config.provider == "chatgpt":
-                if not config.openai_api_key:
-                    return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
-                used_llm_provider = True
-                reply = _call_openai(messages_for_model, config, allow_tools=False)
-            elif config.provider == "chatgpt_hybrid":
-                if not config.openai_api_key:
-                    return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
-                tool_context = {
-                    "user": current_user,
-                    "history": history,
-                    "latest_user_message": message,
-                }
-                used_llm_provider = True
-                reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
-            elif config.provider == "openwebui":
-                if not config.openwebui_base_url:
-                    return jsonify({"success": False, "message": _("OpenWebUI base URL is not configured.")}), 400
-                tool_context = {
-                    "user": current_user,
-                    "history": history,
-                    "latest_user_message": message,
-                }
-                used_llm_provider = True
-                reply = _call_openwebui(messages_for_model, config, tool_context=tool_context)
-            elif config.provider == "builtin":
-                reply = _call_builtin(message, history, current_user)
-            else:
-                if not config.webhook_url:
-                    return jsonify({"success": False, "message": _("Webhook URL is not configured.")}), 400
-                reply = _call_webhook(history, messages_for_model, config, system_prompt)
-        except requests.RequestException as exc:
-            return jsonify({"success": False, "message": _("Connection error: %(error)s", error=str(exc))}), 502
-        except Exception as exc:  # pragma: no cover
-            db.session.rollback()
-            return jsonify({"success": False, "message": str(exc)}), 500
-
-    if not reply and config.provider in {"chatgpt", "chatgpt_hybrid", "openwebui"}:
-        if not _is_meaningful_builtin_reply(builtin_reply):
-            builtin_reply = _call_builtin(message, history, current_user)
-        if _is_meaningful_builtin_reply(builtin_reply):
-            current_app.logger.info("Assistant recovered missing LLM reply with builtin software lookup.")
-            reply = builtin_reply
-
-    if used_llm_provider and reply:
-        override = _maybe_builtin_override(message, history, current_user, reply, cached=builtin_reply)
-        if override:
-            reply = override
-        elif _should_replace_with_builtin(message, reply):
-            builtin_fallback = builtin_reply if _is_meaningful_builtin_reply(builtin_reply) else None
-            if not builtin_fallback:
-                builtin_fallback = _call_builtin(message, history, current_user)
-            if _is_meaningful_builtin_reply(builtin_fallback):
-                if current_app.config.get("ASSISTANT_ENABLE_LLM_OVERRIDE", False):
-                    current_app.logger.info("Assistant override: replacing LLM response with builtin database answer.")
-                    reply = builtin_fallback
-                else:
-                    current_app.logger.info("Assistant supplement: appending builtin database answer alongside LLM reply.")
-                    clean_llm = reply.strip()
-                    if clean_llm:
-                        reply = f"{builtin_fallback}\n\n(LLM reply: {clean_llm})"
-                    else:
-                        reply = builtin_fallback
+    try:
+        if config.provider == "chatgpt_hybrid":
+            if not config.openai_api_key:
+                return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
+            tool_context = {
+                "user": current_user,
+                "history": history,
+                "latest_user_message": message,
+            }
+            reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
+        elif config.provider == "openwebui":
+            if not config.openwebui_base_url:
+                return jsonify({"success": False, "message": _("OpenWebUI base URL is not configured.")}), 400
+            tool_context = {
+                "user": current_user,
+                "history": history,
+                "latest_user_message": message,
+            }
+            reply = _call_openwebui(messages_for_model, config, tool_context=tool_context)
+        elif config.provider == "webhook":
+            if not config.webhook_url:
+                return jsonify({"success": False, "message": _("Webhook URL is not configured.")}), 400
+            reply = _call_webhook(history, messages_for_model, config, system_prompt)
+        else:
+            return jsonify({"success": False, "message": _("Unsupported assistant provider configured.")}), 400
+    except requests.RequestException as exc:
+        return jsonify({"success": False, "message": _("Connection error: %(error)s", error=str(exc))}), 502
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        return jsonify({"success": False, "message": str(exc)}), 500
 
     if not reply:
         db.session.rollback()
@@ -1218,29 +1122,7 @@ def _call_openai(
         "messages": messages,
     }
     if allow_tools:
-        payload["tools"] = [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool["name"],
-                    "description": tool["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": (
-                                    "Natural language description of what to retrieve, including any filters "
-                                    "(ids, usernames, tags, statuses, dates, etc.)."
-                                ),
-                            }
-                        },
-                        "required": ["query"],
-                    },
-                },
-            }
-            for tool in LLM_TOOL_DEFINITIONS
-        ]
+        payload["tools"] = _build_openai_tool_spec()
         payload["tool_choice"] = "auto"
     response = requests.post(endpoint, headers=headers, json=payload, timeout=30)
     if response.status_code >= 400:
@@ -1295,6 +1177,26 @@ def _tool_call_limit() -> int:
     except (TypeError, ValueError):
         limit = 3
     return limit
+
+
+def _build_openai_tool_spec() -> List[Dict[str, Any]]:
+    specs: List[Dict[str, Any]] = []
+
+    if current_app.config.get("MCP_ENABLED", True):
+        for meta in _get_mcp_tool_metadata():
+            parameters = meta.get("input_schema") or {"type": "object", "properties": {}}
+            specs.append(
+                {
+                    "type": "function",
+                    "function": {
+                        "name": meta["name"],
+                        "description": meta.get("description", "MCP tool"),
+                        "parameters": parameters,
+                    },
+                }
+            )
+
+    return specs
 
 
 def _execute_remote_openwebui_tool(
@@ -1368,29 +1270,7 @@ def _call_openwebui(
         "model": config.openwebui_model or "gpt-3.5-turbo",
         "messages": messages,
         "stream": False,
-        "tools": [
-            {
-                "type": "function",
-                "function": {
-                    "name": tool["name"],
-                    "description": tool["description"],
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "query": {
-                                "type": "string",
-                                "description": (
-                                    "Natural language description of what to retrieve, including any filters "
-                                    "(ids, usernames, tags, statuses, dates, etc.)."
-                                ),
-                            }
-                        },
-                        "required": ["query"],
-                    },
-                },
-            }
-            for tool in LLM_TOOL_DEFINITIONS
-        ],
+        "tools": _build_openai_tool_spec(),
         "tool_choice": "auto",
     }
 
@@ -1410,7 +1290,7 @@ def _call_openwebui(
             return _safe_strip(message.get("content", fallback)) or fallback
         context = _prepare_tool_context(tool_context, messages)
         new_messages = messages + [message]
-        local_tool_names = {tool["name"] for tool in LLM_TOOL_DEFINITIONS}
+        local_tool_names = {tool["name"] for tool in _get_mcp_tool_metadata()}
         for call in tool_calls:
             name = (call.get("function") or {}).get("name") or ""
             if name in local_tool_names:
@@ -1450,7 +1330,7 @@ def _call_openwebui(
                         "arguments": raw_arguments,
                     },
                 }
-                local_tool_names = {tool["name"] for tool in LLM_TOOL_DEFINITIONS}
+                local_tool_names = {tool["name"] for tool in _get_mcp_tool_metadata()}
                 context = _prepare_tool_context(tool_context, messages)
                 if name in local_tool_names:
                     return _execute_tool_call(tool_call, context)
@@ -1495,6 +1375,135 @@ def _call_webhook(
     raise RuntimeError(_("Webhook response is missing a 'reply' field."))
 
 
+def _format_mcp_result(tool: str, result: Any) -> str:
+    """Produce a readable string from an MCP tool result."""
+
+    if isinstance(result, dict):
+        rows = result.get("rows")
+        if isinstance(rows, list):
+            if not rows:
+                return _("Tool `%(tool)s` returned no rows.", tool=tool)
+            lines = []
+            knowledge_tool = tool in {"knowledge_recent_articles"}
+            for idx, row in enumerate(rows, start=1):
+                if isinstance(row, dict):
+                    rendered = []
+                    if knowledge_tool:
+                        article_id = row.get("id") or row.get("article_id")
+                        title = row.get("title")
+                        if not title:
+                            title = _("Untitled article") if not article_id else f"Article {article_id}"
+                        link = row.get("url") or row.get("article_url")
+                        if not link and article_id:
+                            try:
+                                link = url_for("knowledge.view_article", article_id=article_id)
+                            except RuntimeError:
+                                link = f"/knowledge/article/{article_id}"
+                        rendered.append(title)
+                        if link:
+                            rendered.append(f"url: {link}")
+                        summary = row.get("summary")
+                        if summary:
+                            rendered.append(f"summary: {summary}")
+                        tags = row.get("tags")
+                        if tags:
+                            rendered.append(f"tags: {tags}")
+                        attachments = row.get("attachments") or []
+                        attachment_lines: List[str] = []
+                        for attachment in attachments:
+                            if not isinstance(attachment, dict):
+                                continue
+                            att_name = attachment.get("filename") or f"attachment {attachment.get('id')}"
+                            att_url = attachment.get("download_url") or attachment.get("url")
+                            if not att_url:
+                                continue
+                            size = attachment.get("file_size")
+                            markdown = attachment.get("download_markdown")
+                            if markdown:
+                                line = f"- {markdown}"
+                            else:
+                                line = f"- [{att_name}]({att_url})"
+                            if size:
+                                line += f" ({size} bytes)"
+                            attachment_lines.append(line)
+                        if attachment_lines:
+                            rendered.append("attachments:\n" + "\n".join(attachment_lines))
+                    else:
+                        rendered.append(", ".join(f"{key}: {row_val}" for key, row_val in row.items()))
+                    formatted = " — ".join(part for part in rendered if part)
+                else:
+                    formatted = str(row)
+                lines.append(f"{idx}. {formatted}")
+            return _("Results from `%(tool)s`:\n%(rows)s", tool=tool, rows="\n".join(lines))
+        return _("Tool `%(tool)s` response:\n%(payload)s", tool=tool, payload=json.dumps(result, indent=2, default=str))
+    if isinstance(result, list):
+        if not result:
+            return _("Tool `%(tool)s` returned no data.", tool=tool)
+        lines = [f"{idx}. {item}" for idx, item in enumerate(result, start=1)]
+        return _("Results from `%(tool)s`:\n%(rows)s", tool=tool, rows="\n".join(lines))
+    if result is None:
+        return _("Tool `%(tool)s` completed with no data.", tool=tool)
+    return _("Tool `%(tool)s` response: %(payload)s", tool=tool, payload=str(result))
+
+
+def _invoke_mcp_tool(tool: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
+    base_url = current_app.config.get("MCP_BASE_URL")
+    if not base_url:
+        host = current_app.config.get("MCP_HOST", "127.0.0.1")
+        port = current_app.config.get("MCP_PORT", 8081)
+        base_url = f"http://{host}:{port}"
+    endpoint = f"{base_url.rstrip('/')}/mcp/invoke"
+
+    timeout = current_app.config.get("MCP_REQUEST_TIMEOUT_SECONDS", 10)
+    response = requests.post(endpoint, json={"tool": tool, "arguments": arguments}, timeout=timeout)
+    if response.status_code >= 400:
+        try:
+            detail = response.json()
+        except ValueError:
+            detail = response.text
+        raise RuntimeError(
+            _("MCP invocation failed (%(status)s): %(detail)s", status=response.status_code, detail=detail)
+        )
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise RuntimeError(_("Invalid response from MCP server: %(error)s", error=str(exc)))
+
+
+def _get_mcp_tool_metadata() -> List[Dict[str, Any]]:
+    cache = current_app.extensions.setdefault("mcp_server", {})
+    cached = cache.get("tool_catalog")
+    ttl = current_app.config.get("MCP_TOOL_CACHE_SECONDS", 300)
+    now = time.time()
+    if cached and now - cached.get("fetched_at", 0) < ttl:
+        return cached.get("items", [])
+
+    base_url = current_app.config.get("MCP_BASE_URL")
+    if not base_url:
+        host = current_app.config.get("MCP_HOST", "127.0.0.1")
+        port = current_app.config.get("MCP_PORT", 8081)
+        base_url = f"http://{host}:{port}"
+    endpoint = f"{base_url.rstrip('/')}/mcp/tools"
+    timeout = current_app.config.get("MCP_REQUEST_TIMEOUT_SECONDS", 10)
+    try:
+        response = requests.get(endpoint, timeout=timeout)
+    except requests.RequestException:
+        cache["tool_catalog"] = {"items": [], "fetched_at": now}
+        return []
+    if response.status_code >= 400:
+        cache["tool_catalog"] = {"items": [], "fetched_at": now}
+        return []
+    try:
+        data = response.json()
+    except ValueError:
+        cache["tool_catalog"] = {"items": [], "fetched_at": now}
+        return []
+
+    items = data.get("tools") or []
+    cache["tool_catalog"] = {"items": items, "fetched_at": now}
+    return items
+
+
 def _execute_tool_call(tool_call: Dict[str, Any], context: Dict[str, Any]) -> str:
     function = tool_call.get("function") or {}
     name = function.get("name") or ""
@@ -1508,20 +1517,19 @@ def _execute_tool_call(tool_call: Dict[str, Any], context: Dict[str, Any]) -> st
         except (ValueError, TypeError):
             args = {"query": raw_args if isinstance(raw_args, str) else ""}
 
-    query = args.get("query") or context.get("latest_user_message") or ""
-    user = context.get("user")
+    mcp_tool_names = {tool["name"] for tool in _get_mcp_tool_metadata()}
+    if name in mcp_tool_names:
+        if not current_app.config.get("MCP_ENABLED", True):
+            return "MCP server is disabled; cannot execute tool."
+        try:
+            response = _invoke_mcp_tool(name, args if isinstance(args, dict) else {})
+        except Exception as exc:
+            return f"MCP tool execution failed: {exc}"
+        if isinstance(response, dict):
+            return _format_mcp_result(name, response.get("data"))
+        return str(response)
 
-    if not _safe_strip(query):
-        return "No query provided for helpdesk lookup."
-
-    if name not in {tool["name"] for tool in LLM_TOOL_DEFINITIONS}:
-        return f"Unsupported tool call: {name}"
-
-    try:
-        result = _dispatch_module_query(name, query, user)
-    except Exception as exc:
-        return f"Error while querying database: {exc}"
-    return result or "No matching records were found."
+    return f"Unsupported tool call: {name}"
 
 
 def _call_builtin(message: str, history: List[Dict[str, str]], user) -> str:
