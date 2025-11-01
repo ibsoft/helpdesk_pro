@@ -7,6 +7,7 @@ Provides article list, detail, CRUD, versioning, and attachments.
 import os
 import uuid
 import mimetypes
+from urllib.parse import quote
 
 from flask import (
     Blueprint,
@@ -20,7 +21,7 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from sqlalchemy import or_, func
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 from flask_babel import gettext as _
 
 from app import db
@@ -244,16 +245,37 @@ def upload_attachment(article_id):
         flash(_("Please select a file to upload."), "warning")
         return redirect(url_for("knowledge.view_article", article_id=article.id))
 
-    filename = secure_filename(file.filename)
-    if not filename:
-        flash(_("Invalid filename."), "danger")
-        return redirect(url_for("knowledge.view_article", article_id=article.id))
+    original_name = (file.filename or "").strip()
+    stem, ext = os.path.splitext(original_name)
+    display_name = original_name or _("Attachment")
+    safe_name = secure_filename(original_name, allow_unicode=True)
+    if not safe_name:
+        fallback = (stem or "attachment").strip().replace(" ", "_")
+        safe_name = secure_filename(f"{fallback}{ext}", allow_unicode=True)
+    if not safe_name:
+        safe_name = secure_filename(f"attachment{ext}", allow_unicode=True)
+    if not safe_name:
+        safe_name = "attachment"
+
+    display_name = display_name[:255].strip()
+    if not display_name:
+        display_name = _("Attachment")
 
     upload_folder = _ensure_upload_folder()
-    unique_name = f"{uuid.uuid4().hex}_{filename}"
+    unique_prefix = uuid.uuid4().hex
+    max_safe_length = max(1, 255 - len(unique_prefix) - 1)
+    if len(safe_name) > max_safe_length:
+        base, safe_ext = os.path.splitext(safe_name)
+        allowed = max_safe_length - len(safe_ext)
+        if allowed <= 0:
+            safe_name = safe_name[:max_safe_length]
+        else:
+            safe_name = f"{base[:allowed]}{safe_ext}"
+    safe_name = (safe_name[:max_safe_length] or "attachment").strip(".")
+    unique_name = f"{unique_prefix}_{safe_name}"
     stored_path = os.path.join(upload_folder, unique_name)
     file.save(stored_path)
-    mimetype = file.mimetype or mimetypes.guess_type(filename)[0]
+    mimetype = file.mimetype or mimetypes.guess_type(safe_name)[0]
     try:
         size = os.path.getsize(stored_path)
     except OSError:
@@ -263,7 +285,7 @@ def upload_attachment(article_id):
 
     attachment = KnowledgeAttachment(
         article_id=article.id,
-        original_filename=filename,
+        original_filename=display_name,
         stored_filename=unique_name,
         mimetype=mimetype,
         file_size=size,
@@ -303,7 +325,21 @@ def download_attachment(filename):
         flash(_("You do not have access to this attachment."), "warning")
         return redirect(url_for('knowledge.view_article', article_id=article.id))
     upload_folder = _ensure_upload_folder()
-    return send_from_directory(upload_folder, filename, as_attachment=True)
+    response = send_from_directory(
+        upload_folder,
+        filename,
+        as_attachment=True,
+        download_name=attachment.original_filename,
+    )
+    if attachment.original_filename:
+        ascii_name = secure_filename(attachment.original_filename) or ""
+        original_ext = os.path.splitext(attachment.original_filename)[1]
+        if ascii_name.lower() == original_ext.lstrip(".").lower() or not ascii_name:
+            fallback_label = f"attachment_{attachment.id or 'file'}{original_ext}"
+            ascii_name = secure_filename(fallback_label) or fallback_label
+        encoded_name = quote(attachment.original_filename)
+        response.headers["Content-Disposition"] = f'attachment; filename="{ascii_name}"; filename*=UTF-8\'\'{encoded_name}'
+    return response
 
 
 @knowledge_bp.route("/article/<int:article_id>/version/<int:version_id>")

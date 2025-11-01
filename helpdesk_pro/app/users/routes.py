@@ -3,7 +3,7 @@ import time
 import shutil
 from flask import Blueprint, render_template, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 from app import db, csrf
 from app.models.user import User
 from app.models.ticket import Ticket
@@ -31,6 +31,20 @@ users_bp = Blueprint("users", __name__)
 
 ALLOWED_AVATAR_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 MAX_AVATAR_SIZE = 5 * 1024 * 1024  # 5MB
+
+
+def _checkbox_enabled(form, name: str) -> bool:
+    """
+    Interpret checkbox inputs that include a hidden fallback value.
+    The hidden input usually precedes the checkbox, so we use the last value.
+    """
+    values = form.getlist(name)
+    if not values:
+        return False
+    value = values[-1]
+    if isinstance(value, str):
+        value = value.lower()
+    return value in {"1", "true", "on", "yes"}
 
 
 @users_bp.route("/users", methods=["GET"])
@@ -66,6 +80,9 @@ def add_user():
     department = request.form.get("department", "")
     active_values = request.form.getlist("active")
     active_value = active_values[-1] if active_values else "1"
+    notify_email = _checkbox_enabled(request.form, "notify_team_ticket_email")
+    notify_teams = _checkbox_enabled(request.form, "notify_team_ticket_teams")
+    teams_webhook_url = (request.form.get("teams_webhook_url") or "").strip()
 
     if not username or not email or not password:
         return jsonify(success=False, message="Missing required fields"), 400
@@ -80,6 +97,13 @@ def add_user():
     if not ok:
         return jsonify(success=False, message=" ".join(messages)), 400
 
+    if role != "manager":
+        notify_email = False
+        notify_teams = False
+        teams_webhook_url = ""
+    elif notify_teams and not teams_webhook_url:
+        return jsonify(success=False, message="Provide a Teams webhook URL or disable Teams notifications."), 400
+
     user = User(
         username=username,
         email=email,
@@ -87,6 +111,9 @@ def add_user():
         role=role,
         department=department,
         active=active_value in {"1", "true", "on", "yes"},
+        notify_team_ticket_email=notify_email,
+        notify_team_ticket_teams=notify_teams,
+        teams_webhook_url=teams_webhook_url or None,
     )
     user.set_password(password)
     db.session.add(user)
@@ -112,6 +139,9 @@ def edit_user(id):
     new_password_confirm = request.form.get("password_confirm", "").strip()
     active_values = request.form.getlist("active")
     active_value = active_values[-1] if active_values else ("1" if user.active else "0")
+    notify_email = _checkbox_enabled(request.form, "notify_team_ticket_email")
+    notify_teams = _checkbox_enabled(request.form, "notify_team_ticket_teams")
+    teams_webhook_url = (request.form.get("teams_webhook_url") or "").strip()
 
     if not new_username or not new_email:
         return jsonify(success=False, message="Username and email are required"), 400
@@ -129,6 +159,16 @@ def edit_user(id):
     user.role = new_role
     user.department = new_department
     user.active = active_value in {"1", "true", "on", "yes"}
+    if user.role != "manager":
+        user.notify_team_ticket_email = False
+        user.notify_team_ticket_teams = False
+        user.teams_webhook_url = None
+    else:
+        if notify_teams and not teams_webhook_url:
+            return jsonify(success=False, message="Provide a Teams webhook URL or disable Teams notifications."), 400
+        user.notify_team_ticket_email = notify_email
+        user.notify_team_ticket_teams = notify_teams
+        user.teams_webhook_url = teams_webhook_url or None
     if new_password:
         if new_password != new_password_confirm:
             return jsonify(success=False, message="Passwords do not match"), 400
@@ -186,6 +226,10 @@ def update_profile():
     if duplicate_email:
         return jsonify(success=False, message="Another account already uses that email address."), 400
 
+    notify_email = _checkbox_enabled(request.form, "notify_team_ticket_email")
+    notify_teams = _checkbox_enabled(request.form, "notify_team_ticket_teams")
+    teams_webhook_url = (request.form.get("teams_webhook_url") or "").strip()
+
     use_gravatar = bool(request.form.get("use_gravatar"))
     use_profile_picture = bool(request.form.get("use_profile_picture"))
     remove_avatar = bool(request.form.get("remove_avatar"))
@@ -209,7 +253,7 @@ def update_profile():
                 return jsonify(success=False, message="Profile image must be smaller than 5MB."), 400
             filename_root = f"user_{user.id}_{int(time.time())}"
             extension = avatar_file.filename.rsplit(".", 1)[1].lower()
-            filename = secure_filename(f"{filename_root}.{extension}")
+            filename = secure_filename(f"{filename_root}.{extension}", allow_unicode=True)
             upload_folder = _avatar_upload_folder()
             upload_path = os.path.join(upload_folder, filename)
             avatar_file.save(upload_path)
@@ -229,6 +273,17 @@ def update_profile():
         if remove_avatar and user.avatar_filename:
             _remove_avatar_file(user.avatar_filename)
             user.avatar_filename = None
+
+    if user.role == "manager":
+        if notify_teams and not teams_webhook_url:
+            return jsonify(success=False, message="Provide a Teams webhook URL or disable Teams notifications."), 400
+        user.notify_team_ticket_email = notify_email
+        user.notify_team_ticket_teams = notify_teams
+        user.teams_webhook_url = teams_webhook_url or None
+    else:
+        user.notify_team_ticket_email = False
+        user.notify_team_ticket_teams = False
+        user.teams_webhook_url = None
 
     user.full_name = full_name or None
     user.email = email

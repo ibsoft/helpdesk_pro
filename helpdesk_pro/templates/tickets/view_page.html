@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}{{ _('Ticket') }} #{{ ticket.id }}{% endblock %}
+
+{% block content %}
+  <div class="ticket-view-shell py-5">
+    <div class="container">
+      {% set page_view = True %}
+      {% include 'tickets/_view_content.html' %}
+    </div>
+  </div>
+{% endblock %}
+
+{% block extra_css %}
+  <style>
+    .ticket-view-shell{
+      min-height:calc(100vh - 120px);
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding-bottom:3rem;
+      position:relative;
+      background:
+        radial-gradient(1600px 900px at 50% -200px, rgba(13,110,253,0.12), transparent 65%),
+        radial-gradient(1400px 780px at 50% 120%, rgba(102,16,242,0.12), transparent 70%),
+        linear-gradient(180deg, rgba(15,23,42,0.96) 0%, rgba(15,23,42,0.85) 55%, rgba(15,23,42,0.92) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+    .ticket-view-shell::before{
+      content:"";
+      position:absolute;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(900px 600px at 15% 25%, rgba(255,255,255,0.15), transparent 70%),
+        radial-gradient(700px 500px at 85% 20%, rgba(13,110,253,0.18), transparent 78%);
+      opacity:.8;
+    }
+    .ticket-view-shell > .container{
+      position:relative;
+      z-index:1;
+    }
+    .ticket-view-shell .ticket-view-root-page{
+      max-width: 1100px;
+      margin: 0 auto;
+      filter: drop-shadow(0 15px 40px rgba(15,23,42,.35));
+      transform:translateY(0);
+      animation: slideIn .5s ease;
+    }
+    @keyframes slideIn{
+      from{ opacity:0; transform:translateY(40px); }
+      to{ opacity:1; transform:translateY(0); }
+    }
+    html[data-bs-theme="light"] body .ticket-view-shell{
+      background:
+        radial-gradient(1600px 900px at 50% -200px, rgba(13,110,253,0.16), transparent 65%),
+        radial-gradient(1400px 780px at 50% 120%, rgba(102,16,242,0.16), transparent 70%),
+        linear-gradient(180deg, rgba(241,245,255,0.96) 0%, rgba(226,232,255,0.85) 55%, rgba(248,250,252,0.92) 100%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.9);
+    }
+    html[data-bs-theme="light"] body .ticket-view-shell::before{
+      background:
+        radial-gradient(900px 620px at 15% 25%, rgba(255,255,255,0.55), transparent 72%),
+        radial-gradient(740px 520px at 85% 20%, rgba(13,110,253,0.18), transparent 80%);
+    }
+  </style>
+{% endblock %}

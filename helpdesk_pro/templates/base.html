@@ -196,6 +196,12 @@
         border-bottom: none;
         color: #ffffff;
       }
+      .modal .modal-header {
+        padding-top: 1.1rem;
+        padding-bottom: 1.1rem;
+        min-height: 70px;
+        align-items: center;
+      }
       .modal-header-gradient .modal-title {
         font-weight: 600;
         letter-spacing: 0.3px;
@@ -410,6 +416,8 @@
         font-size: 1rem;
       }
     </style>
+
+    {% block extra_css %}{% endblock %}
   </head>
 
   <body>
@@ -626,6 +634,29 @@
                       <label class="form-label" for="profileDepartment">{{ _('Department') }}</label>
                       <input type="text" class="form-control" id="profileDepartment" value="{{ current_user.department or '' }}" disabled>
                     </div>
+                    {% if current_user.role == 'manager' %}
+                      <div class="col-12">
+                        <div class="profile-card mt-2 p-3">
+                          <span class="profile-section-title">{{ _('Team Ticket Notifications') }}</span>
+                          <p class="text-muted small mb-3">{{ _('Receive alerts when users in your department update tickets.') }}</p>
+                          <input type="hidden" name="notify_team_ticket_email" value="0">
+                          <div class="form-check form-switch mb-2">
+                            <input class="form-check-input" type="checkbox" role="switch" id="profileNotifyEmail" name="notify_team_ticket_email" value="1" {% if current_user.notify_team_ticket_email %}checked{% endif %}>
+                            <label class="form-check-label" for="profileNotifyEmail">{{ _('Email notifications') }}</label>
+                          </div>
+                          <input type="hidden" name="notify_team_ticket_teams" value="0">
+                          <div class="form-check form-switch mb-2">
+                            <input class="form-check-input manager-teams-toggle" type="checkbox" role="switch" id="profileNotifyTeams" name="notify_team_ticket_teams" value="1" data-target="#profileTeamsWebhookGroup" {% if current_user.notify_team_ticket_teams %}checked{% endif %}>
+                            <label class="form-check-label" for="profileNotifyTeams">{{ _('Teams webhook notifications') }}</label>
+                          </div>
+                          <div class="mt-2 {% if not current_user.notify_team_ticket_teams %}d-none{% endif %}" id="profileTeamsWebhookGroup">
+                            <label class="form-label" for="profileTeamsWebhook">{{ _('Teams webhook URL') }}</label>
+                            <input type="url" class="form-control" id="profileTeamsWebhook" name="teams_webhook_url" value="{{ current_user.teams_webhook_url or '' }}" placeholder="https://">
+                            <div class="form-text">{{ _('Required when Teams notifications are enabled.') }}</div>
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
                     <div class="col-md-6 d-flex align-items-end">
                       <span class="badge bg-success-subtle text-success w-100 py-2">
                         <i class="fa fa-shield-halved me-1"></i>
@@ -855,6 +886,8 @@
         const removeInput = document.getElementById("removeAvatarInput");
         const preview = document.getElementById("profileAvatarPreview");
         const submitBtn = document.getElementById("profileSubmitBtn");
+        const notifyTeamsToggle = document.getElementById("profileNotifyTeams");
+        const teamsWebhookGroup = document.getElementById("profileTeamsWebhookGroup");
 
         const DEFAULT_AVATAR = "https://www.gravatar.com/avatar/00000000000000000000000000000000?s=160&d=mp";
 
@@ -870,6 +903,12 @@
           if (removeInput && !(useProfile && useProfile.checked) && !(useGravatar && useGravatar.checked)) {
             removeInput.value = "";
           }
+        }
+
+        function syncTeamsWebhook() {
+          if (!teamsWebhookGroup) return;
+          const shouldShow = notifyTeamsToggle && notifyTeamsToggle.checked;
+          teamsWebhookGroup.classList.toggle("d-none", !shouldShow);
         }
 
         function setSubmitting(state) {
@@ -924,6 +963,11 @@
               removeInput.value = "";
             }
           });
+        }
+
+        if (notifyTeamsToggle) {
+          notifyTeamsToggle.addEventListener("change", syncTeamsWebhook);
+          syncTeamsWebhook();
         }
 
         if (form) {

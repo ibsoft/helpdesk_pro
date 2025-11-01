@@ -19,6 +19,9 @@ class User(UserMixin, db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     avatar_filename = db.Column(db.String(255))
     use_gravatar = db.Column(db.Boolean, default=False, nullable=False)
+    notify_team_ticket_email = db.Column(db.Boolean, default=False, nullable=False)
+    notify_team_ticket_teams = db.Column(db.Boolean, default=False, nullable=False)
+    teams_webhook_url = db.Column(db.String(512))
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')

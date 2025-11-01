@@ -22,7 +22,15 @@ from .base import BaseTool
 
 def _base() -> str:
     settings = get_settings()
-    base_url = getattr(settings, "base_url", None) or os.getenv("BASE_URL", "http://127.0.0.1:5000")
+    base_url = getattr(settings, "base_url", None)
+    if not base_url:
+        base_url = os.getenv("BASE_URL")
+    if not base_url:
+        base_url = os.getenv("MCP_BASE_URL")
+    if not base_url:
+        host = getattr(settings, "app_host", "127.0.0.1")
+        port = getattr(settings, "app_port", 8081)
+        base_url = f"http://{host}:{port}"
     return base_url.rstrip("/")
 
 def _article_url(article_id: int) -> str:

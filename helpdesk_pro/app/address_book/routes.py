@@ -22,7 +22,7 @@ from app.models import AddressBookEntry
 address_book_bp = Blueprint("address_book", __name__)
 
 ADDRESS_CATEGORIES = ["Vendor", "Partner", "Customer", "Internal", "Other"]
-CHUNK_SIZE = 500
+CHUNK_SIZE = 1000
 
 
 def _clean_str(field_name):
