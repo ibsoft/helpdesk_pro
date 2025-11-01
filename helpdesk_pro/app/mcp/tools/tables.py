@@ -325,7 +325,17 @@ class TableFetchResult(BaseModel):
 def _apply_computed(rows: List[Dict[str, Any]], computed: Optional[Dict[str, str]]) -> List[Dict[str, Any]]:
     if not computed:
         return rows
-    base_url = (getattr(get_settings(), "base_url", None) or os.getenv("BASE_URL", "http://127.0.0.1:5000")).rstrip("/")
+    settings = get_settings()
+    base_url = (
+        getattr(settings, "base_url", None)
+        or os.getenv("BASE_URL")
+        or os.getenv("MCP_BASE_URL")
+    )
+    if not base_url:
+        host = getattr(settings, "app_host", "127.0.0.1")
+        port = getattr(settings, "app_port", 8081)
+        base_url = f"http://{host}:{port}"
+    base_url = base_url.rstrip("/")
     out: List[Dict[str, Any]] = []
     for r in rows:
         r2 = dict(r)
@@ -344,7 +354,17 @@ def _apply_computed(rows: List[Dict[str, Any]], computed: Optional[Dict[str, str
 def _inject_default_links(table: str, rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     if not rows:
         return rows
-    base_url = (getattr(get_settings(), "base_url", None) or os.getenv("BASE_URL", "http://127.0.0.1:5000")).rstrip("/")
+    settings = get_settings()
+    base_url = (
+        getattr(settings, "base_url", None)
+        or os.getenv("BASE_URL")
+        or os.getenv("MCP_BASE_URL")
+    )
+    if not base_url:
+        host = getattr(settings, "app_host", "127.0.0.1")
+        port = getattr(settings, "app_port", 8081)
+        base_url = f"http://{host}:{port}"
+    base_url = base_url.rstrip("/")
     if table == "knowledge_article":
         for row in rows:
             article_id = row.get("id") or row.get("article_id")

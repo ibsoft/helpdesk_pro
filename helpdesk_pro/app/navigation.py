@@ -61,6 +61,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
             },
             {
+                "key": "manage_configuration",
+                "label": _("Configuration"),
+                "icon": "fa fa-gears text-info",
+                "endpoint": "manage.configuration",
+                "roles": ["admin"],
+            },
+            {
                 "key": "manage_api",
                 "label": _("API Keys"),
                 "icon": "fa fa-key text-danger",

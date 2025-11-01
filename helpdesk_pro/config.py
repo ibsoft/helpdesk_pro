@@ -42,6 +42,7 @@ class Config:
     JWT_SECRET_KEY = os.getenv('SECRET_KEY', 'changeme')
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    BASE_URL = os.getenv('BASE_URL')
     SECURITY_HEADERS = {
         "Content-Security-Policy": "default-src 'self'; img-src 'self' data:;",
         "X-Frame-Options": "DENY",
@@ -67,6 +68,7 @@ class Config:
     MCP_ENABLED = os.getenv('MCP_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
     MCP_HOST = os.getenv('MCP_HOST', '127.0.0.1')
     MCP_PORT = int(os.getenv('MCP_PORT', 8081))
+    MCP_BASE_URL = os.getenv('MCP_BASE_URL')
     MCP_DATABASE_URL = os.getenv('MCP_DATABASE_URL')
     MCP_LOG_LEVEL = os.getenv('MCP_LOG_LEVEL', LOG_LEVEL)
     MCP_ALLOWED_ORIGINS = _list_env('MCP_ALLOWED_ORIGINS', [])

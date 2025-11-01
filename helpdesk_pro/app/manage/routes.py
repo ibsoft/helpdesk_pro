@@ -4,7 +4,9 @@ Manage blueprint routes (access control, admin utilities).
 """
 
 import json
+import os
 from datetime import datetime, timedelta
+from pathlib import Path
 
 from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
 from flask_login import login_required, current_user
@@ -33,7 +35,9 @@ from app.permissions import (
     MODULE_ACCESS_LEVELS,
     clear_access_cache,
 )
-from app.mcp import start_mcp_server, stop_mcp_server
+from app.mcp import start_mcp_server, stop_mcp_server, refresh_mcp_settings
+from dotenv import dotenv_values, load_dotenv, set_key, unset_key
+from config import Config
 
 
 manage_bp = Blueprint("manage", __name__, url_prefix="/manage")
@@ -44,6 +48,397 @@ def _require_admin():
         from flask import abort
         abort(403)
 
+
+CONFIGURATION_SECTIONS = [
+    {
+        "key": "core",
+        "title": _("Core Settings"),
+        "icon": "fa fa-gears text-primary",
+        "description": _("Secrets, database settings, and general application behavior."),
+        "fields": [
+            {
+                "key": "SECRET_KEY",
+                "label": _("Secret Key"),
+                "type": "password",
+                "default": "changeme",
+                "placeholder": _("Auto-generated when empty"),
+                "help": _("Used to sign sessions and JWTs. Keep this value private."),
+                "sensitive": True,
+            },
+            {
+                "key": "SQLALCHEMY_DATABASE_URI",
+                "label": _("Database URI"),
+                "type": "text",
+                "placeholder": "postgresql+psycopg2://user:pass@host/dbname",
+                "help": _("Full SQLAlchemy connection string to the primary database."),
+            },
+            {
+                "key": "BASE_URL",
+                "label": _("Base URL"),
+                "type": "text",
+                "placeholder": "https://helpdesk.example.com",
+                "help": _("Public root URL used in generated links and downloads."),
+            },
+            {
+                "key": "SQLALCHEMY_ECHO",
+                "label": _("SQL Debug Logging"),
+                "type": "bool",
+                "default": False,
+                "help": _("Enable verbose SQL logging for troubleshooting."),
+            },
+            {
+                "key": "LOG_LEVEL",
+                "label": _("Log Level"),
+                "type": "select",
+                "default": "INFO",
+                "choices": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+                "help": _("Controls the verbosity of application logs."),
+            },
+            {
+                "key": "DEFAULT_LANGUAGE",
+                "label": _("Default Language"),
+                "type": "select",
+                "default": "en",
+                "choices": ["en", "el"],
+                "help": _("Language used when the user has not chosen a preference."),
+            },
+        ],
+    },
+    {
+        "key": "mail",
+        "title": _("Email"),
+        "icon": "fa fa-envelope text-warning",
+        "description": _("SMTP credentials for outbound notifications."),
+        "fields": [
+            {
+                "key": "MAIL_SERVER",
+                "label": _("SMTP Server"),
+                "type": "text",
+                "placeholder": "smtp.example.com",
+            },
+            {
+                "key": "MAIL_PORT",
+                "label": _("SMTP Port"),
+                "type": "int",
+                "default": 587,
+            },
+            {
+                "key": "MAIL_USE_TLS",
+                "label": _("Use TLS"),
+                "type": "bool",
+                "default": True,
+            },
+            {
+                "key": "MAIL_USERNAME",
+                "label": _("SMTP Username"),
+                "type": "text",
+            },
+            {
+                "key": "MAIL_PASSWORD",
+                "label": _("SMTP Password"),
+                "type": "password",
+                "sensitive": True,
+            },
+        ],
+    },
+    {
+        "key": "ui",
+        "title": _("Interface"),
+        "icon": "fa fa-display text-info",
+        "description": _("Fine-tune the global UI scale and layout."),
+        "fields": [
+            {
+                "key": "UI_FONT_SCALE",
+                "label": _("Font Scale"),
+                "type": "float",
+                "default": 0.95,
+                "help": _("Global font scaling factor."),
+            },
+            {
+                "key": "UI_NAVBAR_HEIGHT",
+                "label": _("Navbar Height"),
+                "type": "float",
+                "default": 30.0,
+                "help": _("Height of the top navigation bar in pixels."),
+            },
+            {
+                "key": "UI_FOOTER_HEIGHT",
+                "label": _("Footer Height"),
+                "type": "float",
+                "default": 35.0,
+                "help": _("Height of the footer in pixels."),
+            },
+            {
+                "key": "UI_DATATABLE_HEADER_FONT_SIZE",
+                "label": _("DataTable Header Font Size"),
+                "type": "float",
+                "default": 0.95,
+                "help": _("Font size (rem) for DataTable headers."),
+            },
+        ],
+    },
+    {
+        "key": "assistant",
+        "title": _("Assistant"),
+        "icon": "fa fa-robot text-success",
+        "description": _("Control AI assistant behavior and safety limits."),
+        "fields": [
+            {
+                "key": "ASSISTANT_ENABLE_LLM_OVERRIDE",
+                "label": _("Allow LLM Override"),
+                "type": "bool",
+                "default": True,
+                "help": _("Allow per-request overrides of the default LLM provider."),
+            },
+            {
+                "key": "ASSISTANT_TOOL_CALL_DEPTH_LIMIT",
+                "label": _("Tool Call Depth Limit"),
+                "type": "int",
+                "default": -1,
+                "help": _("Maximum recursive depth for tool calls (-1 to disable limit)."),
+            },
+        ],
+    },
+    {
+        "key": "mcp",
+        "title": _("MCP Server"),
+        "icon": "fa fa-server text-danger",
+        "description": _("Manage the Model Context Protocol service connection."),
+        "fields": [
+            {
+                "key": "MCP_ENABLED",
+                "label": _("Enable MCP"),
+                "type": "bool",
+                "default": True,
+            },
+            {
+                "key": "MCP_HOST",
+                "label": _("MCP Host"),
+                "type": "text",
+                "default": "127.0.0.1",
+            },
+            {
+                "key": "MCP_BASE_URL",
+                "label": _("MCP Base URL"),
+                "type": "text",
+                "placeholder": "http://127.0.0.1:8081",
+                "default": "http://127.0.0.1:8081",
+                "help": _("Override the MCP endpoint base address for assistant integrations (defaults to embedded server)."),
+            },
+            {
+                "key": "MCP_PORT",
+                "label": _("MCP Port"),
+                "type": "int",
+                "default": 8081,
+            },
+            {
+                "key": "MCP_DATABASE_URL",
+                "label": _("MCP Database URL"),
+                "type": "text",
+                "placeholder": _("Optional separate database connection string."),
+            },
+            {
+                "key": "MCP_LOG_LEVEL",
+                "label": _("MCP Log Level"),
+                "type": "select",
+                "choices": ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+                "default": "INFO",
+            },
+            {
+                "key": "MCP_ALLOWED_ORIGINS",
+                "label": _("Allowed Origins"),
+                "type": "list",
+                "default": [],
+                "help": _("One origin per line, stored as JSON."),
+            },
+            {
+                "key": "MCP_MAX_ROWS",
+                "label": _("Max Rows"),
+                "type": "int",
+                "default": 1000,
+            },
+            {
+                "key": "MCP_REQUEST_TIMEOUT",
+                "label": _("Request Timeout (s)"),
+                "type": "int",
+                "default": 10,
+            },
+            {
+                "key": "MCP_KEEP_ALIVE",
+                "label": _("Keep Alive (s)"),
+                "type": "int",
+                "default": 5,
+            },
+            {
+                "key": "MCP_ACCESS_LOG",
+                "label": _("Access Log"),
+                "type": "bool",
+                "default": False,
+            },
+        ],
+    },
+]
+
+
+def _resolve_env_path():
+    custom = current_app.config.get("ENV_FILE_PATH") or current_app.config.get("ENV_PATH")
+    if custom:
+        return Path(custom)
+    # Application root is one level above app/ package
+    return Path(current_app.root_path).parent / ".env"
+
+
+def _apply_env_overrides(flask_app):
+    """Update select config keys from current environment variables."""
+
+    base_url = os.getenv("BASE_URL")
+    mcp_base_url = os.getenv("MCP_BASE_URL")
+
+    if base_url:
+        flask_app.config["BASE_URL"] = base_url
+    else:
+        flask_app.config.pop("BASE_URL", None)
+
+    if mcp_base_url:
+        flask_app.config["MCP_BASE_URL"] = mcp_base_url
+    else:
+        flask_app.config.pop("MCP_BASE_URL", None)
+
+
+def _is_truthy(value, default=False):
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _format_default(field):
+    if "default" not in field:
+        return ""
+    default_value = field["default"]
+    if isinstance(default_value, list):
+        return ", ".join(str(item) for item in default_value)
+    return str(default_value)
+
+
+def _mask(value):
+    if not value:
+        return ""
+    return "***"
+
+
+def _truncate(value, length=60):
+    if value is None:
+        return ""
+    text = str(value)
+    return text if len(text) <= length else text[: length - 3] + "..."
+
+
+def _format_active_value(field, active_value):
+    if active_value is None:
+        return ""
+    kind = field.get("type", "text")
+    if kind == "bool":
+        return _("Enabled") if _is_truthy(active_value) else _("Disabled")
+    if kind == "list":
+        if isinstance(active_value, (list, tuple)):
+            return ", ".join(str(item) for item in active_value)
+        try:
+            parsed = json.loads(active_value)
+            if isinstance(parsed, list):
+                return ", ".join(str(item) for item in parsed)
+        except (TypeError, json.JSONDecodeError):
+            pass
+    if field.get("sensitive"):
+        return _mask(active_value)
+    return _truncate(active_value)
+
+
+def _parse_list_field(raw_value):
+    if not raw_value:
+        return ""
+    stripped = raw_value.strip()
+    if not stripped:
+        return ""
+    if stripped.startswith("["):
+        try:
+            parsed = json.loads(stripped)
+            if isinstance(parsed, list):
+                return "\n".join(str(item) for item in parsed)
+        except (TypeError, json.JSONDecodeError):
+            pass
+    lines = []
+    for piece in stripped.replace("\r", "").splitlines():
+        cleaned = piece.strip()
+        if cleaned:
+            lines.append(cleaned)
+    return "\n".join(lines)
+
+
+def _human_file_size(num_bytes):
+    if num_bytes is None:
+        return ""
+    size = float(num_bytes)
+    units = ["B", "KB", "MB", "GB", "TB"]
+    for index, unit in enumerate(units):
+        if size < 1024 or index == len(units) - 1:
+            if unit == "B":
+                return f"{int(size)} {unit}"
+            return f"{size:.1f} {unit}"
+        size /= 1024.0
+    return f"{int(size)} B"
+
+
+def _build_configuration_context(env_values, overrides=None, bool_overrides=None):
+    overrides = overrides or {}
+    bool_overrides = bool_overrides or {}
+    sections = []
+    total_fields = 0
+    configured_fields = 0
+
+    for section in CONFIGURATION_SECTIONS:
+        section_copy = {k: v for k, v in section.items() if k != "fields"}
+        field_contexts = []
+        for field in section["fields"]:
+            total_fields += 1
+            field_copy = field.copy()
+            key = field_copy["key"]
+            kind = field_copy.get("type", "text")
+            env_raw = env_values.get(key)
+            if env_raw not in (None, ""):
+                configured_fields += 1
+            default_display = _format_default(field_copy)
+            active_value = current_app.config.get(key)
+            field_copy["default_display"] = default_display
+            field_copy["active_display"] = _format_active_value(field_copy, active_value)
+            field_copy["configured"] = env_raw not in (None, "")
+            if kind == "bool":
+                if key in bool_overrides:
+                    field_copy["checked"] = bool_overrides[key]
+                else:
+                    field_copy["checked"] = _is_truthy(env_raw, field_copy.get("default", False))
+            elif kind == "list":
+                if key in overrides:
+                    field_copy["value"] = overrides[key]
+                else:
+                    field_copy["value"] = _parse_list_field(env_raw)
+            else:
+                if key in overrides:
+                    field_copy["value"] = overrides[key]
+                elif env_raw not in (None, ""):
+                    field_copy["value"] = env_raw
+                else:
+                    field_copy["value"] = ""
+            field_contexts.append(field_copy)
+        section_copy["fields"] = field_contexts
+        sections.append(section_copy)
+
+    summary = {
+        "total_fields": total_fields,
+        "configured_fields": configured_fields,
+    }
+    return sections, summary
 
 @manage_bp.route("/access", methods=["GET", "POST"])
 @login_required
@@ -293,6 +688,176 @@ def assistant_settings():
         config=config,
         headers_pretty=headers_pretty,
         mcp_defaults=mcp_defaults,
+    )
+
+
+@manage_bp.route("/configuration", methods=["GET", "POST"])
+@login_required
+def configuration():
+    _require_admin()
+
+    env_path = _resolve_env_path()
+    env_exists = env_path.exists()
+    env_values = dotenv_values(env_path) if env_exists else {}
+    env_values = {key: value for key, value in env_values.items() if value is not None}
+
+    flask_app = current_app._get_current_object()
+    _apply_env_overrides(flask_app)
+
+    form_overrides = {}
+    bool_overrides = {}
+    errors = []
+
+    if request.method == "POST":
+        action = request.form.get("action", "save")
+        if action == "reload":
+            load_dotenv(dotenv_path=env_path, override=True)
+            flask_app.config.from_object(Config)
+            _apply_env_overrides(flask_app)
+            refresh_mcp_settings(flask_app)
+            flash(_("Configuration reloaded from %(path)s.", path=str(env_path)), "success")
+            return redirect(url_for("manage.configuration"))
+
+        if action == "save":
+            updates = []
+            removals = []
+
+            for section in CONFIGURATION_SECTIONS:
+                for field in section["fields"]:
+                    key = field["key"]
+                    kind = field.get("type", "text")
+                    target_value = None
+                    field_error = False
+
+                    if kind == "bool":
+                        checked = request.form.get(key) == "on"
+                        bool_overrides[key] = checked
+                        target_value = "true" if checked else "false"
+                    else:
+                        raw_value = request.form.get(key, "")
+                        if kind == "list":
+                            form_overrides[key] = raw_value.replace("\r", "") if raw_value else ""
+                        else:
+                            form_overrides[key] = raw_value.strip() if isinstance(raw_value, str) else raw_value
+                        trimmed = form_overrides[key] if isinstance(form_overrides[key], str) else ""
+
+                        if kind == "select":
+                            choices = field.get("choices", [])
+                            if trimmed and choices and trimmed not in choices:
+                                errors.append(_("Invalid value for %(field)s.", field=field["label"]))
+                                field_error = True
+                            else:
+                                target_value = trimmed
+                        elif kind == "int":
+                            if trimmed == "":
+                                target_value = ""
+                            else:
+                                try:
+                                    target_value = str(int(trimmed))
+                                except ValueError:
+                                    errors.append(_("%(field)s must be an integer.", field=field["label"]))
+                                    field_error = True
+                        elif kind == "float":
+                            if trimmed == "":
+                                target_value = ""
+                            else:
+                                try:
+                                    target_value = str(float(trimmed))
+                                except ValueError:
+                                    errors.append(_("%(field)s must be a number.", field=field["label"]))
+                                    field_error = True
+                        elif kind == "list":
+                            cleaned = form_overrides[key]
+                            if cleaned and cleaned.strip():
+                                if cleaned.strip().startswith("["):
+                                    try:
+                                        parsed = json.loads(cleaned.strip())
+                                        if not isinstance(parsed, list):
+                                            raise ValueError
+                                        entries = [str(item).strip() for item in parsed if str(item).strip()]
+                                    except (json.JSONDecodeError, ValueError):
+                                        errors.append(_("Provide a JSON array or one entry per line for %(field)s.", field=field["label"]))
+                                        field_error = True
+                                        entries = []
+                                    else:
+                                        target_value = json.dumps(entries)
+                                else:
+                                    entries = [
+                                        line.strip()
+                                        for line in cleaned.splitlines()
+                                        if line.strip()
+                                    ]
+                                    target_value = json.dumps(entries) if entries else ""
+                            else:
+                                target_value = ""
+                        else:
+                            target_value = trimmed
+
+                    if field_error:
+                        continue
+
+                    current_value = env_values.get(key)
+
+                    if target_value == "" or target_value is None:
+                        if current_value not in (None, ""):
+                            removals.append(key)
+                    else:
+                        if current_value != target_value:
+                            updates.append((key, target_value))
+
+            if not errors:
+                changes = 0
+                for key in removals:
+                    unset_key(str(env_path), key)
+                    changes += 1
+                for key, value in updates:
+                    set_key(str(env_path), key, value, quote_mode="auto")
+                    changes += 1
+
+                if changes:
+                    load_dotenv(dotenv_path=env_path, override=True)
+                    flask_app.config.from_object(Config)
+                    _apply_env_overrides(flask_app)
+                    refresh_mcp_settings(flask_app)
+                    flash(_("Configuration saved (%(count)s changes).", count=changes), "success")
+                else:
+                    flash(_("No changes were necessary."), "info")
+                return redirect(url_for("manage.configuration"))
+            else:
+                for err in errors:
+                    flash(err, "danger")
+
+    sections, summary = _build_configuration_context(env_values, form_overrides, bool_overrides)
+
+    configured_pct = 0
+    if summary["total_fields"]:
+        configured_pct = int(round((summary["configured_fields"] / summary["total_fields"]) * 100))
+
+    last_modified = None
+    env_size = None
+    if env_exists:
+        stat = env_path.stat()
+        last_modified = datetime.fromtimestamp(stat.st_mtime)
+        env_size = stat.st_size
+
+    env_info = {
+        "path": str(env_path),
+        "exists": env_exists,
+        "last_modified": last_modified.strftime("%Y-%m-%d %H:%M:%S") if last_modified else None,
+        "size_bytes": env_size,
+        "size_display": _human_file_size(env_size),
+    }
+
+    summary.update({
+        "configured_pct": configured_pct,
+        "missing_fields": summary["total_fields"] - summary["configured_fields"],
+    })
+
+    return render_template(
+        "manage/configuration.html",
+        sections=sections,
+        summary=summary,
+        env_info=env_info,
     )
 
 

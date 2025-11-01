@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .configuration-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(224, 231, 255, 0.91) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .configuration-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .configuration-summary-card .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .configuration-summary-card .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .configuration-summary-card .metric-value {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .config-field-meta {
+    font-size: 0.8rem;
+  }
+</style>
+
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex flex-wrap align-items-center justify-content-between mb-3">
+    <div>
+      <h1 class="mb-1"><i class="fa fa-gears me-2"></i>{{ _('Configuration') }}</h1>
+      <p class="text-muted mb-0">{{ _('Manage environment-backed application settings.') }}</p>
+    </div>
+    <a href="{{ url_for('manage.access') }}?lang={{ g.locale }}" class="btn btn-outline-secondary">
+      <i class="fa fa-key me-1"></i>{{ _('Access Control') }}
+    </a>
+  </div>
+
+  <div class="card configuration-summary-card shadow-sm border-0 mb-4">
+    <div class="card-body py-3">
+      <div class="d-flex flex-wrap align-items-start justify-content-between gap-3 mb-3">
+        <div>
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('Environment file') }}</span>
+          <div class="fw-semibold">{{ env_info.path }}</div>
+          {% if env_info.last_modified %}
+            <div class="text-muted small">{{ _('Last edited at %(timestamp)s', timestamp=env_info.last_modified) }}</div>
+          {% endif %}
+        </div>
+        <div>
+          {% if env_info.exists %}
+            <span class="badge bg-success-subtle text-success-emphasis">
+              <i class="fa fa-check-circle me-1"></i>{{ _('Detected') }}
+            </span>
+          {% else %}
+            <span class="badge bg-danger-subtle text-danger-emphasis">
+              <i class="fa fa-circle-exclamation me-1"></i>{{ _('Missing - will be created on save') }}
+            </span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="row g-3">
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Fields configured') }}</span>
+            <span class="metric-value">
+              <i class="fa fa-sliders me-1"></i>{{ summary.configured_fields }}/{{ summary.total_fields }}
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Coverage') }}</span>
+            <span class="metric-value text-primary">
+              <i class="fa fa-chart-pie me-1"></i>{{ summary.configured_pct }}%
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('Using defaults') }}</span>
+            <span class="metric-value text-warning">
+              <i class="fa fa-circle-notch me-1"></i>{{ summary.missing_fields }}
+            </span>
+          </div>
+        </div>
+        <div class="col-sm-6 col-lg-3">
+          <div class="metric">
+            <span class="metric-label">{{ _('File size') }}</span>
+            <span class="metric-value text-success">
+              <i class="fa fa-file-lines me-1"></i>{{ env_info.size_display or _('N/A') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" class="mb-5">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    {% for section in sections %}
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-body-tertiary d-flex flex-column flex-lg-row justify-content-between align-items-lg-center">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-primary-subtle text-primary-emphasis rounded-pill">
+              <i class="{{ section.icon }}"></i>
+            </span>
+            <div>
+              <h5 class="mb-0">{{ section.title }}</h5>
+              {% if section.description %}
+                <div class="text-muted small">{{ section.description }}</div>
+              {% endif %}
+            </div>
+          </div>
+          <div class="text-muted small mt-3 mt-lg-0">
+            {{ _('Configured here: %(count)s item(s)', count=section.fields|length) }}
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="row g-4">
+            {% for field in section.fields %}
+              <div class="col-12 col-lg-6">
+                {% if field.type == 'bool' %}
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="{{ field.key }}" name="{{ field.key }}" {% if field.checked %}checked{% endif %}>
+                    <label class="form-check-label fw-semibold" for="{{ field.key }}">
+                      {{ field.label }}
+                    </label>
+                    {% if field.help %}
+                      <div class="form-text">{{ field.help }}</div>
+                    {% endif %}
+                    <div class="text-muted config-field-meta mt-2">
+                      <span class="me-2">{{ _('Active') }}: <span class="fw-semibold">{{ field.active_display or _('Following default') }}</span></span>
+                      {% if field.default_display %}
+                        <span>{{ _('Default') }}: {{ field.default_display }}</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                {% elif field.type == 'select' %}
+                  <div class="mb-1">
+                    <label for="{{ field.key }}" class="form-label fw-semibold">{{ field.label }}</label>
+                    <select class="form-select" id="{{ field.key }}" name="{{ field.key }}">
+                      <option value="">{{ _('Use application default') }}</option>
+                      {% for choice in field.choices %}
+                        <option value="{{ choice }}" {% if field.value == choice %}selected{% endif %}>{{ choice }}</option>
+                      {% endfor %}
+                    </select>
+                    {% if field.help %}
+                      <div class="form-text">{{ field.help }}</div>
+                    {% endif %}
+                    <div class="text-muted config-field-meta mt-2">
+                      {% if field.default_display %}
+                        <span class="me-2">{{ _('Default') }}: {{ field.default_display }}</span>
+                      {% endif %}
+                      <span>{{ _('Active') }}: {{ field.active_display or _('Following default') }}</span>
+                    </div>
+                  </div>
+                {% elif field.type == 'list' %}
+                  <div class="mb-1">
+                    <label for="{{ field.key }}" class="form-label fw-semibold">{{ field.label }}</label>
+                    <textarea class="form-control" id="{{ field.key }}" name="{{ field.key }}" rows="4" placeholder="{{ _('One value per line or JSON array') }}">{{ field.value }}</textarea>
+                    {% if field.help %}
+                      <div class="form-text">{{ field.help }}</div>
+                    {% endif %}
+                    <div class="text-muted config-field-meta mt-2">
+                      {% if field.default_display %}
+                        <span class="me-2">{{ _('Default') }}: {{ field.default_display }}</span>
+                      {% endif %}
+                      <span>{{ _('Active') }}: {{ field.active_display or _('Empty') }}</span>
+                    </div>
+                  </div>
+                {% else %}
+                  <div class="mb-1">
+                    <label for="{{ field.key }}" class="form-label fw-semibold">{{ field.label }}</label>
+                    <input
+                      type="{{ 'password' if field.type == 'password' else 'text' }}"
+                      class="form-control"
+                      id="{{ field.key }}"
+                      name="{{ field.key }}"
+                      value="{{ field.value }}"
+                      {% if field.placeholder %}placeholder="{{ field.placeholder }}"{% endif %}
+                      {% if field.sensitive %}autocomplete="new-password"{% endif %}>
+                    {% if field.help %}
+                      <div class="form-text">{{ field.help }}</div>
+                    {% endif %}
+                    <div class="text-muted config-field-meta mt-2">
+                      {% if field.default_display %}
+                        <span class="me-2">{{ _('Default') }}: {{ field.default_display }}</span>
+                      {% endif %}
+                      <span>{{ _('Active') }}: {{ field.active_display or _('Following default') }}</span>
+                    </div>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    <div class="d-flex flex-wrap gap-2">
+      <button type="submit" name="action" value="save" class="btn btn-primary">
+        <i class="fa fa-floppy-disk me-1"></i>{{ _('Save Configuration') }}
+      </button>
+      <button type="submit" name="action" value="reload" class="btn btn-outline-secondary">
+        <i class="fa fa-rotate me-1"></i>{{ _('Reload from Disk') }}
+      </button>
+    </div>
+  </form>
+</div>
+
+{% endblock %}

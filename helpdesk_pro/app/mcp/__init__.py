@@ -143,6 +143,8 @@ def _collect_overrides(app: Flask) -> Mapping[str, Any]:
     if isinstance(allowed_origins, str):
         allowed_origins = [item.strip() for item in allowed_origins.split(",") if item.strip()]
 
+    base_url = app.config.get("BASE_URL") or app.config.get("MCP_BASE_URL")
+
     return {
         "database_url": db_url,
         "app_host": app.config.get("MCP_HOST"),
@@ -150,6 +152,7 @@ def _collect_overrides(app: Flask) -> Mapping[str, Any]:
         "max_rows": app.config.get("MCP_MAX_ROWS"),
         "request_timeout_seconds": app.config.get("MCP_REQUEST_TIMEOUT_SECONDS"),
         "allowed_origins": allowed_origins,
+        "base_url": base_url,
         "environment": app.config.get("ENV", "production"),
     }
 
@@ -179,3 +182,19 @@ def _as_async_url(url: Optional[str]) -> Optional[str]:
     if url.startswith("postgresql://"):
         return url.replace("postgresql://", "postgresql+asyncpg://", 1)
     return url
+
+
+def refresh_mcp_settings(flask_app: Flask) -> None:
+    """
+    Apply the latest Flask configuration to the MCP settings cache.
+
+    Useful after environment reloads so helpers like BASE_URL take effect without
+    requiring a full server restart.
+    """
+
+    if not flask_app.config.get("MCP_ENABLED", True):
+        return
+    overrides = _collect_overrides(flask_app)
+    if not overrides.get("database_url"):
+        return
+    configure_settings(overrides)
