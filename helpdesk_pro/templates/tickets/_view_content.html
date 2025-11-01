@@ -306,107 +306,167 @@
 </div>
 
 <script>
-$(function(){
-  const $root = $('#{{ root_id }}');
-  const isPageView = String($root.data('page-view')) === 'true';
-  const $modal = $root.closest('.modal');
+(function initTicketView() {
+  const rootId = "{{ root_id }}";
+  const isPageView = {{ "true" if page_view else "false" }};
+  const commentUrl = "{{ url_for('tickets.add_comment', id=ticket.id) }}";
+  const uploadUrl = "{{ url_for('tickets.upload_file', id=ticket.id) }}";
 
-  (function renderDescription(){
-    const rawEl = document.getElementById('descRaw-{{ ticket.id }}');
-    const outEl = document.getElementById('descRendered-{{ ticket.id }}');
-    if(!rawEl || !outEl) return;
-    const raw = rawEl.textContent || '';
+  const ready = (fn) => {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", fn, { once: true });
+    } else {
+      fn();
+    }
+  };
 
-    const esc = (s)=>s
-      .replace(/&/g,'&amp;')
-      .replace(/</g,'&lt;')
-      .replace(/>/g,'&gt;');
+  const withjQuery = (fn) => {
+    if (window.jQuery) {
+      fn(window.jQuery);
+      return;
+    }
+    setTimeout(() => withjQuery(fn), 40);
+  };
 
-    let html = esc(raw)
-      .replace(/```([\s\S]*?)```/g, (m, code)=> `<pre><code>${code.replace(/^\n|\n$/g,'')}</code></pre>`);
-
-    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-    html = html.replace(/(^|\n)&gt;\s?(.*?)(?=\n|$)/g, '$1<blockquote>$2</blockquote>');
-
-    html = html.replace(/(^|\n)(?:[-*]\s.+(?:\n[-*]\s.+)*)/g, (m)=>{
-      const items = m.trim().split(/\n/).map(li => li.replace(/^[-*]\s/, '').trim());
-      return `\n<ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul>`;
-    });
-
-    html = html.replace(/(^|\n)(?:\d+\.\s.+(?:\n\d+\.\s.+)*)/g, (m)=>{
-      const items = m.trim().split(/\n/).map(li => li.replace(/^\d+\.\s/, '').trim());
-      return `\n<ol>${items.map(x=>`<li>${x}</li>`).join('')}</ol>`;
-    });
-
-    const urlRe = /\b(https?:\/\/[^\s<]+[^\s<\.)])/gi;
-    html = html.replace(urlRe, (u)=>{
-      const safe = u.replace(/"/g, '&quot;');
-      return `<a href="${safe}" target="_blank" rel="noopener">${safe}</a>`;
-    });
-
-    html = html.replace(/(?:^|>)([^<]+)(?=<|$)/g, (m, txt)=>{
-      return m.replace(txt, txt.replace(/\n/g,'<br>'));
-    });
-
-    outEl.innerHTML = html;
-  })();
-
-  $root.find('.commentForm').on('submit', function(e){
-    e.preventDefault();
-    const $form = $(this);
-    const id = $form.data('id');
-    const $btn = $form.find('button[type="submit"]');
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Adding...") }}');
-
-    $.post(`/tickets/${id}/comment`, $form.serialize())
-      .done(()=>{
-        if (isPageView) {
-          window.location.reload();
-        } else if ($modal.length) {
-          $modal.one('hidden.bs.modal', function(){ window.location.reload(); });
-          $modal.modal('hide');
-        }
-      })
-      .fail(()=>{
-        showFlash('❌ {{ _("Update failed") }}', 'danger');
-      })
-      .always(()=>{
-        $btn.prop('disabled', false).html('<i class="fa fa-comment me-1"></i> {{ _("Add Comment") }}');
-      });
-  });
-
-  $root.find('.uploadForm').on('submit', function(e){
-    e.preventDefault();
-    const $form = $(this);
-    const id = $form.data('id');
-    const formData = new FormData(this);
-    const $btn = $form.find('button[type="submit"]');
-    if ($btn.prop('disabled')) return;
-    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Uploading...") }}');
-
-    $.ajax({
-      url: `/tickets/${id}/upload`,
-      type: 'POST',
-      data: formData,
-      processData: false,
-      contentType: false
-    })
-    .done(()=>{
-      if (isPageView) {
-        window.location.reload();
-      } else if ($modal.length) {
-        $modal.one('hidden.bs.modal', function(){ window.location.reload(); });
-        $modal.modal('hide');
+  const ensureFlashHelper = () => {
+    if (typeof window.showFlash === "function") {
+      return;
+    }
+    window.showFlash = (message, type = "info") => {
+      if (!window.bootstrap || !window.bootstrap.Toast) {
+        window.alert(message);
+        return;
       }
-    })
-    .fail(()=>{
-      showFlash('❌ {{ _("Upload failed") }}', 'danger');
-    })
-    .always(()=>{
-      $btn.prop('disabled', false).html('<i class="fa fa-upload me-1"></i> {{ _("Upload") }}');
+      const toast = document.createElement("div");
+      toast.className = `toast align-items-center text-bg-${type} border-0`;
+      toast.setAttribute("role", "alert");
+      toast.innerHTML = `
+        <div class="d-flex">
+          <div class="toast-body">${message}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>`;
+      let container = document.querySelector(".toast-container");
+      if (!container) {
+        container = document.createElement("div");
+        container.className = "toast-container position-fixed top-0 end-0 p-3";
+        container.style.zIndex = "1080";
+        document.body.appendChild(container);
+      }
+      container.appendChild(toast);
+      const toastObj = bootstrap.Toast.getOrCreateInstance(toast);
+      toastObj.show();
+      toast.addEventListener("hidden.bs.toast", () => toast.remove());
+    };
+  };
+
+  const init = () => {
+    withjQuery(($) => {
+      ensureFlashHelper();
+
+      const $root = $(`#${rootId}`);
+      if (!$root.length) return;
+      const $modal = $root.closest(".modal");
+
+      (function renderDescription() {
+        const rawEl = document.getElementById('descRaw-{{ ticket.id }}');
+        const outEl = document.getElementById('descRendered-{{ ticket.id }}');
+        if(!rawEl || !outEl) return;
+        const raw = rawEl.textContent || '';
+
+        const esc = (s)=>s
+          .replace(/&/g,'&amp;')
+          .replace(/</g,'&lt;')
+          .replace(/>/g,'&gt;');
+
+        let html = esc(raw)
+          .replace(/```([\s\S]*?)```/g, (m, code)=> `<pre><code>${code.replace(/^\n|\n$/g,'')}</code></pre>`);
+
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+        html = html.replace(/(^|\n)&gt;\s?(.*?)(?=\n|$)/g, '$1<blockquote>$2</blockquote>');
+
+        html = html.replace(/(^|\n)(?:[-*]\s.+(?:\n[-*]\s.+)*)/g, (m)=>{
+          const items = m.trim().split(/\n/).map(li => li.replace(/^[-*]\s/, '').trim());
+          return `\n<ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+        });
+
+        html = html.replace(/(^|\n)(?:\d+\.\s.+(?:\n\d+\.\s.+)*)/g, (m)=>{
+          const items = m.trim().split(/\n/).map(li => li.replace(/^\d+\.\s/, '').trim());
+          return `\n<ol>${items.map(x=>`<li>${x}</li>`).join('')}</ol>`;
+        });
+
+        const urlRe = /\b(https?:\/\/[^\s<]+[^\s<\.)])/gi;
+        html = html.replace(urlRe, (u)=>{
+          const safe = u.replace(/"/g, '&quot;');
+          return `<a href="${safe}" target="_blank" rel="noopener">${safe}</a>`;
+        });
+
+        html = html.replace(/(?:^|>)([^<]+)(?=<|$)/g, (m, txt)=>{
+          return m.replace(txt, txt.replace(/\n/g,'<br>'));
+        });
+
+        outEl.innerHTML = html;
+      })();
+
+      $root.find('.commentForm').on('submit', function(e){
+        e.preventDefault();
+        const $form = $(this);
+        const $btn = $form.find('button[type="submit"]');
+        if ($btn.prop('disabled')) return;
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Adding...") }}');
+
+        $.post(commentUrl, $form.serialize())
+          .done(()=>{
+            if (isPageView) {
+              window.location.reload();
+            } else if ($modal.length) {
+              $modal.one('hidden.bs.modal', function(){ window.location.reload(); });
+              $modal.modal('hide');
+            }
+          })
+          .fail((xhr)=>{
+            const message = (xhr.responseJSON && xhr.responseJSON.error) || '❌ {{ _("Update failed") }}';
+            showFlash(message, 'danger');
+          })
+          .always(()=>{
+            $btn.prop('disabled', false).html('<i class="fa fa-comment me-1"></i> {{ _("Add Comment") }}');
+          });
+      });
+
+      $root.find('.uploadForm').on('submit', function(e){
+        e.preventDefault();
+        const $form = $(this);
+        const formData = new FormData(this);
+        const $btn = $form.find('button[type="submit"]');
+        if ($btn.prop('disabled')) return;
+        $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Uploading...") }}');
+
+        $.ajax({
+          url: uploadUrl,
+          type: 'POST',
+          data: formData,
+          processData: false,
+          contentType: false
+        })
+        .done(()=>{
+          if (isPageView) {
+            window.location.reload();
+          } else if ($modal.length) {
+            $modal.one('hidden.bs.modal', function(){ window.location.reload(); });
+            $modal.modal('hide');
+          }
+        })
+        .fail((xhr)=>{
+          const message = (xhr.responseJSON && xhr.responseJSON.error) || '❌ {{ _("Upload failed") }}';
+          showFlash(message, 'danger');
+        })
+        .always(()=>{
+          $btn.prop('disabled', false).html('<i class="fa fa-upload me-1"></i> {{ _("Upload") }}');
+        });
+      });
     });
-  });
-});
+  };
+
+  ready(init);
+})();
 </script>
