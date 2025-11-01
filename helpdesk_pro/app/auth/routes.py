@@ -4,11 +4,12 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_mail import Message
 from sqlalchemy import func
 
-from app import db, login_manager, mail
+from app import db, login_manager
 from app.models.user import User
 from app.models.auth_config import AuthConfig
 from app.utils.security import validate_password_strength
 from flask_babel import gettext as _
+from app.mail_utils import queue_mail_with_optional_auth
 
 
 auth_bp = Blueprint("auth", __name__)
@@ -264,4 +265,7 @@ def _send_password_reset_email(user: User):
         current_app.logger.warning("MAIL_DEFAULT_SENDER is not configured; password reset email not sent.")
         return
     message = Message(subject=subject, recipients=[user.email], body=body, sender=sender)
-    mail.send(message)
+    queue_mail_with_optional_auth(
+        message,
+        description=f"password reset email to {user.email}",
+    )

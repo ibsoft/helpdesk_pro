@@ -1,81 +1,12 @@
-2025-10-31 19:46:09,083 [ERROR] app: Integrity error while deleting user 32
-Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1936, in _exec_single_context
-    self.dialect.do_executemany(
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/psycopg2.py", line 794, in do_executemany
-    cursor.executemany(statement, parameters)
-psycopg2.errors.NotNullViolation: null value in column "user_id" violates not-null constraint
-DETAIL:  Failing row contains (2469, null, null, f, 2025-10-31 17:24:36.490899, 2025-10-31 17:46:09.081616).
-
-
-The above exception was the direct cause of the following exception:
-
-Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/users/routes.py", line 257, in delete_user
-    db.session.commit()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/scoping.py", line 597, in commit
-    return self._proxied.commit()
-           ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2017, in commit
-    trans.commit(_to_root=True)
-  File "<string>", line 2, in commit
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1302, in commit
-    self._prepare_impl()
-  File "<string>", line 2, in _prepare_impl
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/state_changes.py", line 139, in _go
-    ret_value = fn(self, *arg, **kw)
-                ^^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 1277, in _prepare_impl
-    self.session.flush()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4341, in flush
-    self._flush(objects)
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4476, in _flush
-    with util.safe_reraise():
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 146, in __exit__
-    raise exc_value.with_traceback(exc_tb)
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4437, in _flush
-    flush_context.execute()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 466, in execute
-    rec.execute(self)
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 642, in execute
-    util.preloaded.orm_persistence.save_obj(
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 85, in save_obj
-    _emit_update_statements(
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 912, in _emit_update_statements
-    c = connection.execute(
-        ^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1418, in execute
-    return meth(
-           ^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 515, in _execute_on_connection
-    return connection._execute_clauseelement(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1640, in _execute_clauseelement
-    ret = self._execute_context(
-          ^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1846, in _execute_context
-    return self._exec_single_context(
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1986, in _exec_single_context
-    self._handle_dbapi_exception(
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2353, in _handle_dbapi_exception
-    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1936, in _exec_single_context
-    self.dialect.do_executemany(
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/sqlalchemy/dialects/postgresql/psycopg2.py", line 794, in do_executemany
-    cursor.executemany(statement, parameters)
-sqlalchemy.exc.IntegrityError: (psycopg2.errors.NotNullViolation) null value in column "user_id" violates not-null constraint
-DETAIL:  Failing row contains (2469, null, null, f, 2025-10-31 17:24:36.490899, 2025-10-31 17:46:09.081616).
-
-[SQL: UPDATE assistant_session SET user_id=%(user_id)s, updated_at=%(updated_at)s WHERE assistant_session.id = %(assistant_session_id)s]
-[parameters: [{'user_id': None, 'updated_at': datetime.datetime(2025, 10, 31, 17, 46, 9, 81616), 'assistant_session_id': 2469}, {'user_id': None, 'updated_at': datetime.datetime(2025, 10, 31, 17, 46, 9, 81621), 'assistant_session_id': 2470}, {'user_id': None, 'updated_at': datetime.datetime(2025, 10, 31, 17, 46, 9, 81624), 'assistant_session_id': 2471}, {'user_id': None, 'updated_at': datetime.datetime(2025, 10, 31, 17, 46, 9, 81626), 'assistant_session_id': 2472}, {'user_id': None, 'updated_at': datetime.datetime(2025, 10, 31, 17, 46, 9, 81628), 'assistant_session_id': 2473}]]
-(Background on this error at: https://sqlalche.me/e/20/gkpj)
-2025-10-31 19:46:40,266 [INFO] uvicorn.error: Shutting down
-2025-10-31 19:46:40,366 [INFO] uvicorn.error: Finished server process [250896]
-2025-10-31 19:46:40,368 [ERROR] uvicorn.error: Traceback (most recent call last):
+2025-11-01 09:14:27,894 [INFO] app: Helpdesk Pro started
+2025-11-01 09:14:28,047 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:14:28,143 [INFO] uvicorn.error: Started server process [617430]
+2025-11-01 09:14:28,143 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:14:28,144 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:14:28,145 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:14:31,255 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:14:31,356 [INFO] uvicorn.error: Finished server process [617430]
+2025-11-01 09:14:31,357 [ERROR] uvicorn.error: Traceback (most recent call last):
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
     await receive()
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
@@ -85,17 +16,19 @@ DETAIL:  Failing row contains (2469, null, null, f, 2025-10-31 17:24:36.490899, 
     await getter
 asyncio.exceptions.CancelledError
 
-2025-10-31 19:46:40,368 [INFO] app: MCP server thread exited.
-2025-10-31 19:46:42,027 [INFO] app: Helpdesk Pro started
-2025-10-31 19:46:46,890 [INFO] app: Helpdesk Pro started
-2025-10-31 19:46:48,304 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 19:46:48,412 [INFO] uvicorn.error: Started server process [251966]
-2025-10-31 19:46:48,413 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 19:46:48,413 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 19:46:48,414 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 19:48:25,894 [INFO] uvicorn.error: Shutting down
-2025-10-31 19:48:25,995 [INFO] uvicorn.error: Finished server process [251966]
-2025-10-31 19:48:25,997 [ERROR] uvicorn.error: Traceback (most recent call last):
+2025-11-01 09:14:31,357 [INFO] app: MCP server thread exited.
+2025-11-01 09:14:33,014 [INFO] app: Helpdesk Pro started
+2025-11-01 09:14:36,815 [INFO] app: Helpdesk Pro started
+2025-11-01 09:14:39,983 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:14:40,031 [INFO] uvicorn.error: Started server process [617543]
+2025-11-01 09:14:40,032 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:14:40,032 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:14:40,033 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:15:08,294 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=370
+2025-11-01 09:15:37,760 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=359
+2025-11-01 09:16:40,473 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:16:40,574 [INFO] uvicorn.error: Finished server process [617543]
+2025-11-01 09:16:40,576 [ERROR] uvicorn.error: Traceback (most recent call last):
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
     await receive()
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
@@ -105,13 +38,107 @@ asyncio.exceptions.CancelledError
     await getter
 asyncio.exceptions.CancelledError
 
-2025-10-31 19:48:25,998 [INFO] app: MCP server thread exited.
-2025-10-31 19:51:50,130 [INFO] app: Helpdesk Pro started
-2025-10-31 19:51:51,496 [INFO] app: Helpdesk Pro started
-2025-10-31 19:51:53,451 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-10-31 19:51:53,494 [INFO] uvicorn.error: Started server process [254941]
-2025-10-31 19:51:53,494 [INFO] uvicorn.error: Waiting for application startup.
-2025-10-31 19:51:53,494 [INFO] uvicorn.error: Application startup complete.
-2025-10-31 19:51:53,495 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-10-31 20:04:01,674 [INFO] uvicorn.error: Shutting down
-2025-10-31 20:04:01,774 [INFO] uvicorn.error: Finished server process [254941]
+2025-11-01 09:16:40,577 [INFO] app: MCP server thread exited.
+2025-11-01 09:16:42,250 [INFO] app: Helpdesk Pro started
+2025-11-01 09:16:42,954 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:16:43,057 [INFO] uvicorn.error: Started server process [618875]
+2025-11-01 09:16:43,057 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:16:43,058 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:16:43,059 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:25:58,267 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:25:58,369 [INFO] uvicorn.error: Finished server process [618875]
+2025-11-01 09:25:58,371 [ERROR] uvicorn.error: Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
+    await receive()
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+2025-11-01 09:25:58,371 [INFO] app: MCP server thread exited.
+2025-11-01 09:26:00,023 [INFO] app: Helpdesk Pro started
+2025-11-01 09:26:00,167 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:26:00,227 [INFO] uvicorn.error: Started server process [624640]
+2025-11-01 09:26:00,227 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:26:00,228 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:26:00,228 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:26:28,799 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:26:28,900 [INFO] uvicorn.error: Finished server process [624640]
+2025-11-01 09:26:28,903 [ERROR] uvicorn.error: Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
+    await receive()
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+2025-11-01 09:26:28,904 [INFO] app: MCP server thread exited.
+2025-11-01 09:26:30,561 [INFO] app: Helpdesk Pro started
+2025-11-01 09:26:30,709 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:26:30,764 [INFO] uvicorn.error: Started server process [625000]
+2025-11-01 09:26:30,765 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:26:30,768 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:26:30,769 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:28:04,611 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:28:04,712 [INFO] uvicorn.error: Finished server process [625000]
+2025-11-01 09:28:04,714 [ERROR] uvicorn.error: Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
+    await receive()
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+2025-11-01 09:28:04,714 [INFO] app: MCP server thread exited.
+2025-11-01 09:28:06,363 [INFO] app: Helpdesk Pro started
+2025-11-01 09:28:06,503 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:28:06,542 [INFO] uvicorn.error: Started server process [626069]
+2025-11-01 09:28:06,543 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:28:06,544 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:28:06,545 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:28:14,769 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:28:14,870 [INFO] uvicorn.error: Finished server process [626069]
+2025-11-01 09:28:14,872 [ERROR] uvicorn.error: Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
+    await receive()
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+2025-11-01 09:28:14,873 [INFO] app: MCP server thread exited.
+2025-11-01 09:28:16,534 [INFO] app: Helpdesk Pro started
+2025-11-01 09:28:16,684 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:28:16,745 [INFO] uvicorn.error: Started server process [626224]
+2025-11-01 09:28:16,745 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:28:16,746 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:28:16,747 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:28:38,213 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:28:38,313 [INFO] uvicorn.error: Finished server process [626224]
+2025-11-01 09:28:38,314 [ERROR] uvicorn.error: Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
+    await receive()
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
+    return await self.receive_queue.get()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
+    await getter
+asyncio.exceptions.CancelledError
+
+2025-11-01 09:28:38,315 [INFO] app: MCP server thread exited.
+2025-11-01 09:28:39,944 [INFO] app: Helpdesk Pro started
+2025-11-01 09:28:43,221 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 09:28:43,306 [INFO] uvicorn.error: Started server process [626503]
+2025-11-01 09:28:43,306 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 09:28:43,306 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 09:28:43,307 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 09:28:45,212 [INFO] uvicorn.error: Shutting down
+2025-11-01 09:28:45,313 [INFO] uvicorn.error: Finished server process [626503]

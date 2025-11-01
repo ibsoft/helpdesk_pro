@@ -1,4 +1,5 @@
-from sqlalchemy import or_
+from sqlalchemy import or_, func
+import copy
 import os
 from datetime import datetime
 try:
@@ -6,12 +7,18 @@ try:
 except ImportError:
     from backports.zoneinfo import ZoneInfo
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort
+import requests
+
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app
 from flask_login import login_required, current_user
 from werkzeug.utils import secure_filename
+from flask_mail import Message
+
 from app import db, csrf
 from app.models.ticket import Ticket, TicketComment, Attachment, AuditLog
 from app.models.user import User
+from app.mail_utils import queue_mail_with_optional_auth
+from app.background import submit_background_task
 
 tickets_bp = Blueprint("tickets", __name__)
 
@@ -30,6 +37,165 @@ def to_local(dt):
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=ZoneInfo("UTC"))
     return dt.astimezone(LOCAL_TZ)
+
+
+def _shorten(text, length=200):
+    if not text:
+        return ""
+    text = text.strip()
+    if len(text) <= length:
+        return text
+    return text[: max(0, length - 3)] + "..."
+
+
+def _ticket_url(ticket):
+    try:
+        path = url_for("tickets.view_ticket", id=ticket.id)
+    except RuntimeError:
+        path = f"/tickets/{ticket.id}/view"
+
+    base_url = (current_app.config.get("BASE_URL") or "").rstrip("/")
+    if base_url:
+        return f"{base_url}{path}"
+    try:
+        return url_for("tickets.view_ticket", id=ticket.id, _external=True)
+    except RuntimeError:
+        return path
+
+
+def _notify_team_managers(ticket, actor, event_summary, details=None):
+    """
+    Notify managers in the actor's department when a team member updates a ticket.
+    """
+
+    if not actor or actor.role not in {"user", "technician", "manager"}:
+        return
+    department = (actor.department or "").strip()
+    if not department:
+        return
+
+    managers = (
+        User.query.filter(
+        User.role == "manager",
+        User.active.is_(True),
+        func.lower(User.department) == department.lower(),
+        or_(User.notify_team_ticket_email.is_(True), User.notify_team_ticket_teams.is_(True)),
+    ).all()
+    )
+    if not managers:
+        return
+
+    ticket_link = _ticket_url(ticket)
+    subject = f"[Ticket #{ticket.id}] {ticket.subject or 'Ticket'} – {event_summary}"
+    body_lines = [
+        f"Ticket #{ticket.id}: {ticket.subject or 'No subject'}",
+        f"Event: {event_summary}",
+        f"Actor: {actor.display_name} ({actor.username})",
+        f"Department: {department}",
+        f"Status: {ticket.status or 'Unknown'} | Priority: {ticket.priority or 'Unspecified'}",
+    ]
+    if details:
+        body_lines.append("")
+        body_lines.append(details)
+    body_lines.append("")
+    body_lines.append(f"View ticket: {ticket_link}")
+    body = "\n".join(body_lines)
+
+    teams_text = (
+        f"**{subject}**\n\n"
+        f"Ticket #{ticket.id}: {ticket.subject or 'No subject'}\n"
+        f"Event: {event_summary}\n"
+        f"Actor: {actor.display_name} ({actor.username})\n"
+        f"Department: {department}\n"
+        f"Status: {ticket.status or 'Unknown'} | Priority: {ticket.priority or 'Unspecified'}\n"
+    )
+    if details:
+        teams_text += f"\n{details}\n"
+    teams_text += f"\n[View ticket]({ticket_link})"
+
+    actor_line = f"{actor.display_name} ({actor.username})"
+    teams_facts = [
+        {"name": "Ticket", "value": f"#{ticket.id}: {ticket.subject or 'No subject'}"},
+        {"name": "Department", "value": department},
+        {"name": "Status", "value": ticket.status or 'Unknown'},
+        {"name": "Priority", "value": ticket.priority or 'Unspecified'},
+    ]
+    teams_payload = {
+        "@type": "MessageCard",
+        "@context": "https://schema.org/extensions",
+        "summary": subject,
+        "themeColor": "4B5FC1",
+        "title": subject,
+        "text": teams_text,
+        "sections": [
+            {
+                "activityTitle": actor_line,
+                "activityImage": actor.avatar_url(64) if hasattr(actor, "avatar_url") else None,
+                "activitySubtitle": event_summary,
+                "facts": teams_facts,
+                "markdown": True,
+                **({"text": details} if details else {}),
+            }
+        ],
+        "potentialAction": [
+            {
+                "@type": "OpenUri",
+                "name": "View ticket",
+                "targets": [
+                    {
+                        "os": "default",
+                        "uri": ticket_link,
+                    }
+                ],
+            }
+        ],
+    }
+    if not teams_payload["sections"][0]["activityImage"]:
+        teams_payload["sections"][0].pop("activityImage")
+    teams_payload["summary"] = actor.display_name
+
+    mail_sender = current_app.config.get("MAIL_DEFAULT_SENDER") or current_app.config.get("MAIL_USERNAME")
+    warned_mail = False
+
+    for manager in managers:
+        manager_email = (manager.email or "").strip() if manager.email else None
+        manager_username = manager.username
+        teams_webhook = manager.teams_webhook_url
+
+        if manager.notify_team_ticket_email:
+            if mail_sender and manager_email:
+                message = Message(subject=subject, recipients=[manager_email], body=body, sender=mail_sender)
+                queue_mail_with_optional_auth(
+                    message,
+                    description=f"ticket notification email to {manager_email}",
+                )
+            elif not mail_sender and not warned_mail:
+                current_app.logger.warning("MAIL_DEFAULT_SENDER is not configured; skipping ticket notification emails.")
+                warned_mail = True
+
+        if manager.notify_team_ticket_teams and teams_webhook:
+            payload = copy.deepcopy(teams_payload)
+
+            def _send_teams_notification(
+                webhook_url=teams_webhook,
+                username=manager_username,
+                data=payload,
+            ):
+                try:
+                    response = requests.post(webhook_url, json=data, timeout=6)
+                    if response.status_code >= 400:
+                        current_app.logger.warning(
+                            "Teams webhook for manager %s returned status %s", username, response.status_code
+                        )
+                except requests.RequestException:
+                    current_app.logger.exception(
+                        "Failed to send Teams ticket notification for manager %s", username
+                    )
+
+            submit_background_task(
+                _send_teams_notification,
+                description=f"Teams ticket notification for manager {manager_username}",
+            )
 
 
 # ============================================================
@@ -118,6 +284,13 @@ def create_ticket():
         ))
         db.session.commit()
 
+        _notify_team_managers(
+            t,
+            current_user,
+            "created a ticket",
+            f"Priority: {t.priority or 'Unspecified'} | Status: {t.status or 'Open'}",
+        )
+
         msg = f"Ticket #{t.id} created successfully."
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
             # Return simple success response - let frontend handle page reload
@@ -161,9 +334,16 @@ def edit_ticket(id):
             users = []
 
         if request.method == "POST":
+            original_state = {
+                "subject": ticket.subject,
+                "description": ticket.description,
+                "priority": ticket.priority,
+                "status": ticket.status,
+                "assigned_to": ticket.assigned_to,
+            }
+
             ticket.subject = request.form.get("subject", ticket.subject)
-            ticket.description = request.form.get(
-                "description", ticket.description)
+            ticket.description = request.form.get("description", ticket.description)
             ticket.priority = request.form.get("priority", ticket.priority)
             ticket.status = request.form.get("status", ticket.status)
             assigned_to_val = request.form.get("assigned_to")
@@ -198,6 +378,35 @@ def edit_ticket(id):
             db.session.add(AuditLog(action="Edit Ticket",
                            username=current_user.username, ticket_id=ticket.id))
             db.session.commit()
+
+            changes = []
+            if ticket.subject != original_state["subject"]:
+                changes.append("Subject updated.")
+            if ticket.description != original_state["description"]:
+                changes.append("Description updated.")
+            if ticket.priority != original_state["priority"]:
+                changes.append(
+                    f"Priority: {original_state['priority'] or 'Unspecified'} → {ticket.priority or 'Unspecified'}"
+                )
+            if ticket.status != original_state["status"]:
+                changes.append(
+                    f"Status: {original_state['status'] or 'Unspecified'} → {ticket.status or 'Unspecified'}"
+                )
+            if ticket.assigned_to != original_state["assigned_to"]:
+                old_assignee = None
+                new_assignee = None
+                if original_state["assigned_to"]:
+                    old_user = User.query.get(original_state["assigned_to"])
+                    old_assignee = old_user.display_name if old_user else f"User {original_state['assigned_to']}"
+                if ticket.assigned_to:
+                    new_user = User.query.get(ticket.assigned_to)
+                    new_assignee = new_user.display_name if new_user else f"User {ticket.assigned_to}"
+                changes.append(
+                    f"Assignee: {old_assignee or 'Unassigned'} → {new_assignee or 'Unassigned'}"
+                )
+
+            details = "\n".join(changes) if changes else "Ticket details were updated."
+            _notify_team_managers(ticket, current_user, "updated a ticket", details)
 
             return jsonify(success=True, message=f"Ticket #{ticket.id} updated successfully.", category="success")
 
@@ -279,12 +488,15 @@ def view_ticket(id):
             "timestamp_local": to_local(l.timestamp)
         } for l in logs]
 
+        is_modal_request = request.headers.get("X-Requested-With") == "XMLHttpRequest" or request.args.get("modal")
+        template_name = "tickets/view.html" if is_modal_request else "tickets/view_page.html"
+
         return render_template(
-            "tickets/view.html",
+            template_name,
             ticket=t,
             comments=comments_data,
             attachments=attachments_data,
-            logs=logs_data
+            logs=logs_data,
         )
     except Exception as e:
         flash(f"Error viewing ticket: {str(e)}", "danger")
@@ -332,6 +544,8 @@ def add_comment(id):
         db.session.add(AuditLog(action="Add Comment",
                                 username=current_user.username, ticket_id=id))
         db.session.commit()
+
+        _notify_team_managers(t, current_user, "commented on a ticket", f"Comment: {_shorten(text, 240)}")
 
         flash("Comment added successfully.", "success")
         return jsonify(success=True)
@@ -383,6 +597,8 @@ def upload_file(id):
         db.session.add(AuditLog(action="Upload File",
                                 username=current_user.username, ticket_id=id))
         db.session.commit()
+
+        _notify_team_managers(t, current_user, "added an attachment", f"Attachment: {filename}")
 
         flash(f"File '{filename}' uploaded successfully.", "success")
         return jsonify(success=True)

@@ -1,0 +1,412 @@
+{% set root_id = 'ticketViewRoot' ~ ticket.id %}
+{% set classes = ['ticket-view-root'] %}
+{% if page_view %}
+  {% set classes = classes + ['ticket-view-root-page'] %}
+{% else %}
+  {% set classes = classes + ['modal-content', 'fancy-modal'] %}
+{% endif %}
+
+<div id="{{ root_id }}" class="{{ ' '.join(classes) }}" data-page-view="{{ 'true' if page_view else 'false' }}">
+  <div class="ticket-view-header modal-header-gradient text-white d-flex align-items-center gap-2 justify-content-between">
+    <div class="d-flex align-items-center gap-2">
+      <i class="fa fa-ticket-alt"></i>
+      <span>{{ _('Ticket') }} #{{ ticket.id }} — {{ ticket.subject }}</span>
+    </div>
+    {% if page_view %}
+      <a href="{{ url_for('tickets.list_tickets') }}" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+        <i class="fa fa-arrow-left"></i>
+        <span>{{ _('Back to tickets') }}</span>
+      </a>
+    {% else %}
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+    {% endif %}
+  </div>
+
+  <style>
+    .ticket-view-header {
+      padding: 1.1rem 1.8rem;
+      min-height: 70px;
+    }
+    .ticket-view-root {
+      border: none;
+      border-radius: 1rem;
+      overflow: hidden;
+    }
+    .ticket-view-root-page {
+      background: var(--bs-body-bg);
+      border-radius: 1.25rem;
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.25);
+    }
+    html[data-bs-theme="light"] .ticket-view-root-page {
+      box-shadow: 0 30px 60px rgba(15, 23, 42, 0.12);
+    }
+    .ticket-view-root .ticket-view-body {
+      background:
+        radial-gradient(1200px 600px at 100% -20%, rgba(13,110,253,0.05), transparent 60%),
+        radial-gradient(900px 500px at -10% 120%, rgba(102,16,242,0.06), transparent 60%),
+        var(--bs-body-bg);
+      padding: 1.75rem 1.9rem 2rem;
+    }
+    .ticket-view-root.ticket-view-root-page .ticket-view-body {
+      padding: 2rem 2.4rem 2.4rem;
+    }
+
+    .ticket-view-root .nav-tabs{
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+    [data-bs-theme="dark"] .ticket-view-root .nav-tabs{
+      border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .ticket-view-root .nav-tabs .nav-link{
+      position: relative;
+      border: none;
+      color: #6c757d;
+      transition: color .2s ease;
+    }
+    .ticket-view-root .nav-tabs .nav-link.active,
+    .ticket-view-root .nav-tabs .nav-link:hover{
+      color: #0d6efd;
+    }
+    [data-bs-theme="dark"] .ticket-view-root .nav-tabs .nav-link{
+      color: #c9c9c9;
+    }
+    [data-bs-theme="dark"] .ticket-view-root .nav-tabs .nav-link.active,
+    [data-bs-theme="dark"] .ticket-view-root .nav-tabs .nav-link:hover{
+      color: #9ec5fe;
+    }
+    .ticket-view-root .nav-tabs .nav-link::after{
+      content: "";
+      position: absolute;
+      left: 10%;
+      right: 10%;
+      bottom: -1px;
+      height: 2px;
+      background: currentColor;
+      opacity: 0;
+      transform: scaleX(.5);
+      transition: all .25s ease;
+    }
+    .ticket-view-root .nav-tabs .nav-link.active::after{
+      opacity: 1;
+      transform: scaleX(1);
+    }
+
+    .ticket-view-root .desc-box{
+      --desc-bg: #f8f9fa;
+      --desc-fg: #212529;
+      --desc-border: #e2e6ea;
+      background-color: var(--desc-bg);
+      color: var(--desc-fg);
+      border: 1px solid var(--desc-border);
+      border-radius: .75rem;
+      padding: 1.1rem 1.2rem;
+      line-height: 1.75;
+      letter-spacing: .1px;
+      font-size: .98rem;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      hyphens: auto;
+      text-align: justify;
+      text-justify: inter-word;
+    }
+    .ticket-view-root .desc-box a{
+      text-decoration: underline;
+      text-decoration-thickness: .08em;
+      text-underline-offset: .2em;
+    }
+    .ticket-view-root .desc-box blockquote{
+      margin: .75rem 0 .75rem .75rem;
+      padding: .5rem .9rem;
+      border-left: 4px solid rgba(13,110,253,.6);
+      background: rgba(13,110,253,.06);
+      border-radius: .25rem;
+    }
+    .ticket-view-root .desc-box code{
+      background: rgba(0,0,0,.06);
+      border: 1px solid rgba(0,0,0,.08);
+      padding: .05rem .35rem;
+      border-radius: .35rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+      font-size: .92em;
+    }
+    .ticket-view-root .desc-box pre{
+      background: rgba(0,0,0,.06);
+      border: 1px solid rgba(0,0,0,.08);
+      padding: .8rem 1rem;
+      border-radius: .6rem;
+      overflow: auto;
+    }
+    .ticket-view-root .desc-box pre code{
+      background: transparent;
+      border: 0;
+      padding: 0;
+      font-size: .9em;
+    }
+    .ticket-view-root .desc-box ul,
+    .ticket-view-root .desc-box ol{
+      padding-left: 1.2rem;
+      margin: .5rem 0 .75rem;
+    }
+    .ticket-view-root .desc-box li{
+      margin: .15rem 0;
+    }
+    [data-bs-theme="dark"] .ticket-view-root .desc-box{
+      --desc-bg: #1f232a;
+      --desc-fg: #e9ecef;
+      --desc-border: #3b3f46;
+      text-shadow: 0 0 1px rgba(0,0,0,.4);
+    }
+    [data-bs-theme="dark"] .ticket-view-root .desc-box blockquote{
+      background: rgba(102,16,242,.12);
+      border-left-color: rgba(102,16,242,.7);
+    }
+    [data-bs-theme="dark"] .ticket-view-root .desc-box code,
+    [data-bs-theme="dark"] .ticket-view-root .desc-box pre{
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.12);
+    }
+
+    .ticket-view-root .panelish{
+      background: rgba(0,0,0,.02);
+      border: 1px solid rgba(0,0,0,.05);
+      border-radius: .75rem;
+      padding: .75rem .9rem;
+    }
+    [data-bs-theme="dark"] .ticket-view-root .panelish{
+      background: rgba(255,255,255,.03);
+      border-color: rgba(255,255,255,.12);
+      color: #e9ecef;
+    }
+    .ticket-view-root .list-group-item{
+      border-color: rgba(0,0,0,.08);
+    }
+    [data-bs-theme="dark"] .ticket-view-root .list-group-item{
+      background: rgba(255,255,255,.03);
+      border-color: rgba(255,255,255,.12);
+      color: #e9ecef;
+    }
+    .ticket-view-root .meta p{
+      margin-bottom: .35rem;
+    }
+  </style>
+
+  <div class="ticket-view-body">
+    <ul class="nav nav-tabs" id="ticketTabs-{{ ticket.id }}">
+      <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#details-{{ ticket.id }}">{{ _('Details') }}</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#comments-{{ ticket.id }}">{{ _('Comments') }}</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#attachments-{{ ticket.id }}">{{ _('Attachments') }}</a></li>
+      <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#activity-{{ ticket.id }}">{{ _('Activity Log') }}</a></li>
+    </ul>
+
+    <div class="tab-content pt-3">
+      <div class="tab-pane fade show active" id="details-{{ ticket.id }}">
+        <div class="row g-4">
+          <div class="col-lg-7">
+            <div class="panelish">
+              <p class="fw-semibold mb-2"><i class="fa fa-align-left me-2"></i>{{ _('Description:') }}</p>
+              <div id="descRaw-{{ ticket.id }}" class="d-none">{{ ticket.description }}</div>
+              <div id="descRendered-{{ ticket.id }}" class="desc-box" aria-label="Ticket Description"></div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-3 mt-3">
+              <div class="panelish flex-grow-1">
+                <p class="mb-1 small text-uppercase text-muted">{{ _('Priority') }}</p>
+                {% set pr = ticket.priority or 'Low' %}
+                {% set pclass = 'bg-success' if pr=='Low' else 'bg-info text-dark' if pr=='Medium' else 'bg-warning text-dark' if pr=='High' else 'bg-danger' %}
+                <span class="badge {{ pclass }} px-3 py-2">
+                  <i class="fa fa-signal me-1"></i> {{ _(pr) }}
+                </span>
+              </div>
+              <div class="panelish flex-grow-1">
+                <p class="mb-1 small text-uppercase text-muted">{{ _('Status') }}</p>
+                {% set st = ticket.status or 'Open' %}
+                {% set sclass = 'bg-success' if st=='Open' else 'bg-warning text-dark' if st=='In Progress' else 'bg-secondary' %}
+                <span class="badge {{ sclass }} px-3 py-2">
+                  <i class="fa fa-circle me-1"></i> {{ _(st) }}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="panelish meta">
+              <p><strong>{{ _('Created by:') }}</strong> {{ ticket.creator.username if ticket.creator else '—' }}</p>
+              <p><strong>{{ _('Assigned to:') }}</strong> {{ ticket.assignee.username if ticket.assignee else '—' }}</p>
+              <p><strong>{{ _('Created at:') }}</strong> {{ ticket.created_at_local.strftime('%Y-%m-%d %H:%M') if ticket.created_at_local else '—' }}</p>
+              {% if ticket.closed_at_local %}
+                <p><strong>{{ _('Closed at:') }}</strong> {{ ticket.closed_at_local.strftime('%Y-%m-%d %H:%M') }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-pane fade" id="comments-{{ ticket.id }}">
+        <div id="commentsList-{{ ticket.id }}">
+          {% for c in comments %}
+            <div class="panelish mb-2">
+              <div class="d-flex justify-content-between">
+                <strong><i class="fa fa-user me-1"></i>{{ c.user }}</strong>
+                <span class="text-muted small">{{ c.created_at_local.strftime('%Y-%m-%d %H:%M') if c.created_at_local else '' }}</span>
+              </div>
+              <p class="mb-0 mt-1" style="white-space: pre-wrap; text-align: justify;">{{ c.comment }}</p>
+            </div>
+          {% else %}
+            <p class="text-muted">{{ _('No comments yet.') }}</p>
+          {% endfor %}
+        </div>
+
+        <form class="commentForm mt-3" data-id="{{ ticket.id }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea name="comment" class="form-control mb-2" placeholder="{{ _('Add comment...') }}" required></textarea>
+          <button type="submit" class="btn btn-primary btn-sm shadow-sm">
+            <i class="fa fa-comment me-1"></i> {{ _('Add Comment') }}
+          </button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="attachments-{{ ticket.id }}">
+        <ul class="list-group mb-3 attachmentList" data-id="{{ ticket.id }}">
+          {% for a in attachments %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                <i class="fa fa-paperclip me-2"></i>
+                <a href="{{ a.filepath }}" target="_blank">{{ a.filename }}</a>
+              </span>
+              <span class="text-muted small">{{ a.uploaded_at_local.strftime('%Y-%m-%d %H:%M') if a.uploaded_at_local else '' }}</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-muted">{{ _('No attachments yet.') }}</li>
+          {% endfor %}
+        </ul>
+
+        <form class="uploadForm" data-id="{{ ticket.id }}" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="file" name="file" class="form-control mb-2" required>
+          <button type="submit" class="btn btn-secondary btn-sm shadow-sm">
+            <i class="fa fa-upload me-1"></i> {{ _('Upload') }}
+          </button>
+        </form>
+      </div>
+
+      <div class="tab-pane fade" id="activity-{{ ticket.id }}">
+        <ul class="list-group">
+          {% for log in logs %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span><i class="fa fa-history me-2"></i>{{ log.action }} — {{ log.username }}</span>
+              <span class="text-muted small">{{ log.timestamp_local.strftime('%Y-%m-%d %H:%M') if log.timestamp_local else '' }}</span>
+            </li>
+          {% else %}
+            <li class="list-group-item text-muted">{{ _('No activity recorded.') }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+$(function(){
+  const $root = $('#{{ root_id }}');
+  const isPageView = String($root.data('page-view')) === 'true';
+  const $modal = $root.closest('.modal');
+
+  (function renderDescription(){
+    const rawEl = document.getElementById('descRaw-{{ ticket.id }}');
+    const outEl = document.getElementById('descRendered-{{ ticket.id }}');
+    if(!rawEl || !outEl) return;
+    const raw = rawEl.textContent || '';
+
+    const esc = (s)=>s
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;');
+
+    let html = esc(raw)
+      .replace(/```([\s\S]*?)```/g, (m, code)=> `<pre><code>${code.replace(/^\n|\n$/g,'')}</code></pre>`);
+
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+    html = html.replace(/(^|\n)&gt;\s?(.*?)(?=\n|$)/g, '$1<blockquote>$2</blockquote>');
+
+    html = html.replace(/(^|\n)(?:[-*]\s.+(?:\n[-*]\s.+)*)/g, (m)=>{
+      const items = m.trim().split(/\n/).map(li => li.replace(/^[-*]\s/, '').trim());
+      return `\n<ul>${items.map(x=>`<li>${x}</li>`).join('')}</ul>`;
+    });
+
+    html = html.replace(/(^|\n)(?:\d+\.\s.+(?:\n\d+\.\s.+)*)/g, (m)=>{
+      const items = m.trim().split(/\n/).map(li => li.replace(/^\d+\.\s/, '').trim());
+      return `\n<ol>${items.map(x=>`<li>${x}</li>`).join('')}</ol>`;
+    });
+
+    const urlRe = /\b(https?:\/\/[^\s<]+[^\s<\.)])/gi;
+    html = html.replace(urlRe, (u)=>{
+      const safe = u.replace(/"/g, '&quot;');
+      return `<a href="${safe}" target="_blank" rel="noopener">${safe}</a>`;
+    });
+
+    html = html.replace(/(?:^|>)([^<]+)(?=<|$)/g, (m, txt)=>{
+      return m.replace(txt, txt.replace(/\n/g,'<br>'));
+    });
+
+    outEl.innerHTML = html;
+  })();
+
+  $root.find('.commentForm').on('submit', function(e){
+    e.preventDefault();
+    const $form = $(this);
+    const id = $form.data('id');
+    const $btn = $form.find('button[type="submit"]');
+    if ($btn.prop('disabled')) return;
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Adding...") }}');
+
+    $.post(`/tickets/${id}/comment`, $form.serialize())
+      .done(()=>{
+        if (isPageView) {
+          window.location.reload();
+        } else if ($modal.length) {
+          $modal.one('hidden.bs.modal', function(){ window.location.reload(); });
+          $modal.modal('hide');
+        }
+      })
+      .fail(()=>{
+        showFlash('❌ {{ _("Update failed") }}', 'danger');
+      })
+      .always(()=>{
+        $btn.prop('disabled', false).html('<i class="fa fa-comment me-1"></i> {{ _("Add Comment") }}');
+      });
+  });
+
+  $root.find('.uploadForm').on('submit', function(e){
+    e.preventDefault();
+    const $form = $(this);
+    const id = $form.data('id');
+    const formData = new FormData(this);
+    const $btn = $form.find('button[type="submit"]');
+    if ($btn.prop('disabled')) return;
+    $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> {{ _("Uploading...") }}');
+
+    $.ajax({
+      url: `/tickets/${id}/upload`,
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false
+    })
+    .done(()=>{
+      if (isPageView) {
+        window.location.reload();
+      } else if ($modal.length) {
+        $modal.one('hidden.bs.modal', function(){ window.location.reload(); });
+        $modal.modal('hide');
+      }
+    })
+    .fail(()=>{
+      showFlash('❌ {{ _("Upload failed") }}', 'danger');
+    })
+    .always(()=>{
+      $btn.prop('disabled', false).html('<i class="fa fa-upload me-1"></i> {{ _("Upload") }}');
+    });
+  });
+});
+</script>

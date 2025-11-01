@@ -139,6 +139,13 @@ CONFIGURATION_SECTIONS = [
                 "type": "password",
                 "sensitive": True,
             },
+            {
+                "key": "MAIL_FALLBACK_TO_NO_AUTH",
+                "label": _("Retry Without SMTP AUTH"),
+                "type": "bool",
+                "default": True,
+                "help": _("Attempt to resend without credentials when the SMTP server does not advertise AUTH."),
+            },
         ],
     },
     {
@@ -293,6 +300,12 @@ def _apply_env_overrides(flask_app):
 
     base_url = os.getenv("BASE_URL")
     mcp_base_url = os.getenv("MCP_BASE_URL")
+    mail_server = os.getenv("MAIL_SERVER")
+    mail_port = os.getenv("MAIL_PORT")
+    mail_use_tls = os.getenv("MAIL_USE_TLS")
+    mail_username = os.getenv("MAIL_USERNAME")
+    mail_password = os.getenv("MAIL_PASSWORD")
+    mail_fallback = os.getenv("MAIL_FALLBACK_TO_NO_AUTH")
 
     if base_url:
         flask_app.config["BASE_URL"] = base_url
@@ -303,6 +316,50 @@ def _apply_env_overrides(flask_app):
         flask_app.config["MCP_BASE_URL"] = mcp_base_url
     else:
         flask_app.config.pop("MCP_BASE_URL", None)
+
+    if mail_server is not None:
+        trimmed = mail_server.strip()
+        if trimmed:
+            flask_app.config["MAIL_SERVER"] = trimmed
+        else:
+            flask_app.config.pop("MAIL_SERVER", None)
+    else:
+        flask_app.config.pop("MAIL_SERVER", None)
+
+    if mail_port is not None:
+        try:
+            flask_app.config["MAIL_PORT"] = int(mail_port)
+        except ValueError:
+            current_app.logger.warning("Invalid MAIL_PORT value %s; keeping previous value.", mail_port)
+    else:
+        flask_app.config.pop("MAIL_PORT", None)
+
+    if mail_use_tls is not None:
+        flask_app.config["MAIL_USE_TLS"] = _is_truthy(mail_use_tls, default=True)
+    else:
+        flask_app.config.pop("MAIL_USE_TLS", None)
+
+    if mail_username is not None:
+        flask_app.config["MAIL_USERNAME"] = mail_username
+    else:
+        flask_app.config.pop("MAIL_USERNAME", None)
+
+    if mail_password is not None:
+        flask_app.config["MAIL_PASSWORD"] = mail_password
+    else:
+        flask_app.config.pop("MAIL_PASSWORD", None)
+
+    if mail_fallback is not None:
+        flask_app.config["MAIL_FALLBACK_TO_NO_AUTH"] = _is_truthy(mail_fallback, default=True)
+    else:
+        flask_app.config.pop("MAIL_FALLBACK_TO_NO_AUTH", None)
+
+
+def _refresh_mail_settings(flask_app):
+    """Reinitialize Flask-Mail with the latest configuration values."""
+    from app import mail
+
+    mail.init_app(flask_app)
 
 
 def _is_truthy(value, default=False):
@@ -714,6 +771,7 @@ def configuration():
             load_dotenv(dotenv_path=env_path, override=True)
             flask_app.config.from_object(Config)
             _apply_env_overrides(flask_app)
+            _refresh_mail_settings(flask_app)
             refresh_mcp_settings(flask_app)
             flash(_("Configuration reloaded from %(path)s.", path=str(env_path)), "success")
             return redirect(url_for("manage.configuration"))
@@ -818,6 +876,7 @@ def configuration():
                     load_dotenv(dotenv_path=env_path, override=True)
                     flask_app.config.from_object(Config)
                     _apply_env_overrides(flask_app)
+                    _refresh_mail_settings(flask_app)
                     refresh_mcp_settings(flask_app)
                     flash(_("Configuration saved (%(count)s changes).", count=changes), "success")
                 else:

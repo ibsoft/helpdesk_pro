@@ -183,7 +183,7 @@
                     <input name="full_name" class="form-control mb-2" value="{{ u.full_name or '' }}">
 
                     <label class="form-label">{{ _('Role') }}</label>
-                    <select name="role" class="form-select mb-2">
+                    <select name="role" class="form-select mb-2 role-select" data-manager-target="#managerOptions{{ u.id }}">
                       {% for r in ['admin','manager','technician','user'] %}
                         <option value="{{ r }}" {% if u.role==r %}selected{% endif %}>{{ _(r.capitalize()) }}</option>
                       {% endfor %}
@@ -191,6 +191,25 @@
 
                     <label class="form-label">{{ _('Department') }}</label>
                     <input name="department" class="form-control mb-2" value="{{ u.department or '' }}">
+
+                    <div id="managerOptions{{ u.id }}" class="manager-notify-settings mb-3 {% if u.role != 'manager' %}d-none{% endif %}">
+                      <div class="small text-muted mb-2">{{ _('Managers can receive immediate updates when their team changes tickets.') }}</div>
+                      <input type="hidden" name="notify_team_ticket_email" value="0">
+                      <div class="form-check form-switch">
+                        <input class="form-check-input manager-email-toggle" type="checkbox" id="notifyEmail{{ u.id }}" name="notify_team_ticket_email" value="1" {% if u.notify_team_ticket_email %}checked{% endif %}>
+                        <label class="form-check-label" for="notifyEmail{{ u.id }}">{{ _('Email me when my team updates tickets') }}</label>
+                      </div>
+                      <input type="hidden" name="notify_team_ticket_teams" value="0">
+                      <div class="form-check form-switch mt-2">
+                        <input class="form-check-input manager-teams-toggle" type="checkbox" id="notifyTeams{{ u.id }}" name="notify_team_ticket_teams" value="1" data-teams-target="#teamsWebhookWrap{{ u.id }}" {% if u.notify_team_ticket_teams %}checked{% endif %}>
+                        <label class="form-check-label" for="notifyTeams{{ u.id }}">{{ _('Send a Microsoft Teams alert') }}</label>
+                      </div>
+                      <div class="mt-2 teams-webhook-wrapper {% if not u.notify_team_ticket_teams %}d-none{% endif %}" id="teamsWebhookWrap{{ u.id }}">
+                        <label class="form-label mt-2" for="teamsWebhookInput{{ u.id }}">{{ _('Teams webhook URL') }}</label>
+                        <input type="url" class="form-control" id="teamsWebhookInput{{ u.id }}" name="teams_webhook_url" value="{{ u.teams_webhook_url or '' }}" placeholder="https://">
+                        <div class="form-text">{{ _('Used when Teams notifications are enabled.') }}</div>
+                      </div>
+                    </div>
 
                     <label class="form-label">{{ _('Password (leave blank to keep unchanged)') }}</label>
                     <input type="password" name="password" class="form-control mb-2" placeholder="••••••">
@@ -247,7 +266,7 @@
             <input name="password_confirm" type="password" class="form-control mb-2" required>
 
             <label class="form-label">{{ _('Role') }}</label>
-            <select name="role" class="form-select mb-2" required>
+            <select name="role" class="form-select mb-2 role-select" data-manager-target="#managerOptionsAdd" required>
               <option value="user">{{ _('User') }}</option>
               <option value="technician">{{ _('Technician') }}</option>
               <option value="manager">{{ _('Manager') }}</option>
@@ -256,6 +275,25 @@
 
             <label class="form-label">{{ _('Department') }}</label>
             <input name="department" class="form-control mb-2">
+
+            <div id="managerOptionsAdd" class="manager-notify-settings mb-3 d-none">
+              <div class="small text-muted mb-2">{{ _('Managers can receive immediate updates when their team changes tickets.') }}</div>
+              <input type="hidden" name="notify_team_ticket_email" value="0">
+              <div class="form-check form-switch">
+                <input class="form-check-input manager-email-toggle" type="checkbox" id="notifyEmailAdd" name="notify_team_ticket_email" value="1">
+                <label class="form-check-label" for="notifyEmailAdd">{{ _('Email me when my team updates tickets') }}</label>
+              </div>
+              <input type="hidden" name="notify_team_ticket_teams" value="0">
+              <div class="form-check form-switch mt-2">
+                <input class="form-check-input manager-teams-toggle" type="checkbox" id="notifyTeamsAdd" name="notify_team_ticket_teams" value="1" data-teams-target="#teamsWebhookWrapAdd">
+                <label class="form-check-label" for="notifyTeamsAdd">{{ _('Send a Microsoft Teams alert') }}</label>
+              </div>
+              <div class="mt-2 teams-webhook-wrapper d-none" id="teamsWebhookWrapAdd">
+                <label class="form-label mt-2" for="teamsWebhookInputAdd">{{ _('Teams webhook URL') }}</label>
+                <input type="url" class="form-control" id="teamsWebhookInputAdd" name="teams_webhook_url" placeholder="https://">
+                <div class="form-text">{{ _('Used when Teams notifications are enabled.') }}</div>
+              </div>
+            </div>
 
             <input type="hidden" name="active" value="0">
             <div class="form-check form-switch mt-3">
@@ -381,6 +419,53 @@
         if (instance) instance.hide();
         deleteUserId = null;
       });
+    });
+
+    function toggleManagerOptions($form) {
+      const $roleSelect = $form.find('.role-select');
+      if (!$roleSelect.length) return;
+      const targetSelector = $roleSelect.data('manager-target');
+      if (!targetSelector) return;
+      const $section = $form.find(targetSelector);
+      const isManager = ($roleSelect.val() === 'manager');
+      if (!$section.length) return;
+      if (isManager) {
+        $section.removeClass('d-none');
+      } else {
+        $section.addClass('d-none');
+        $section.find('.manager-email-toggle').prop('checked', false);
+        $section.find('.manager-teams-toggle').prop('checked', false);
+        $section.find('.teams-webhook-wrapper').addClass('d-none');
+        $section.find('input[name="teams_webhook_url"]').val('');
+      }
+    }
+
+    function toggleTeamsWebhook($toggle) {
+      const targetSelector = $toggle.data('teams-target');
+      if (!targetSelector) return;
+      const $target = $toggle.closest('form').find(targetSelector);
+      if (!$target.length) return;
+      if ($toggle.is(':checked')) {
+        $target.removeClass('d-none');
+      } else {
+        $target.addClass('d-none');
+      }
+    }
+
+    $('form').each(function () {
+      toggleManagerOptions($(this));
+    });
+
+    $(document).on('change', '.role-select', function () {
+      toggleManagerOptions($(this).closest('form'));
+    });
+
+    $(document).on('change', '.manager-teams-toggle', function () {
+      toggleTeamsWebhook($(this));
+    });
+
+    $('.manager-teams-toggle').each(function () {
+      toggleTeamsWebhook($(this));
     });
 
     function setSubmitting($btn, isSubmitting, label) {

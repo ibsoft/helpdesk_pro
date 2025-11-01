@@ -60,13 +60,7 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "endpoint": "manage.assistant_settings",
                 "roles": ["admin"],
             },
-            {
-                "key": "manage_configuration",
-                "label": _("Configuration"),
-                "icon": "fa fa-gears text-info",
-                "endpoint": "manage.configuration",
-                "roles": ["admin"],
-            },
+            
             {
                 "key": "manage_api",
                 "label": _("API Keys"),
@@ -88,6 +82,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "endpoint": "manage.email_ingest",
                 "roles": ["admin"],
             },
+            {
+                "key": "manage_configuration",
+                "label": _("Configuration"),
+                "icon": "fa fa-gears text-info",
+                "endpoint": "manage.configuration",
+                "roles": ["admin"],
+            }
         ],
     },
     {
