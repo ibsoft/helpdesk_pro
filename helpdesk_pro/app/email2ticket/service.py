@@ -20,7 +20,7 @@ from typing import Optional, Tuple, List
 import imaplib
 import poplib
 
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 
 from app import db
 from app.models import EmailIngestConfig, Ticket, Attachment, AuditLog, User
@@ -328,7 +328,7 @@ def _extract_content(email_message, app) -> Tuple[str, List[Tuple[str, str]]]:
         if "attachment" in (content_disposition or "").lower():
             filename = part.get_filename()
             decoded_name = _decode_header(filename) if filename else "attachment.bin"
-            safe_name = secure_filename(decoded_name) or "attachment.bin"
+            safe_name = secure_filename(decoded_name, allow_unicode=True) or "attachment.bin"
             stamp = int(datetime.utcnow().timestamp() * 1000)
             full_path = os.path.join(storage_dir, f"{stamp}_{safe_name}")
             with open(full_path, "wb") as handle:

@@ -23,7 +23,7 @@ from flask import (
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from sqlalchemy import and_, or_, func
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 
 from app import db, csrf
 from app.models import (
@@ -348,7 +348,7 @@ def api_post_message(conversation_id):
     if file and file.filename:
         upload_folder = _chat_upload_folder()
         attachment_original = file.filename
-        safe_name = f"{uuid.uuid4().hex}_{secure_filename(attachment_original)}"
+        safe_name = f"{uuid.uuid4().hex}_{secure_filename(attachment_original, allow_unicode=True)}"
         path = os.path.join(upload_folder, safe_name)
         file.save(path)
         attachment_filename = safe_name

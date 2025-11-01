@@ -11,7 +11,7 @@ import requests
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app
 from flask_login import login_required, current_user
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 from flask_mail import Message
 
 from app import db, csrf
@@ -586,7 +586,7 @@ def upload_file(id):
             abort(403)
 
         os.makedirs(UPLOAD_DIR, exist_ok=True)
-        filename = secure_filename(f.filename)
+        filename = secure_filename(f.filename, allow_unicode=True)
         full_path = os.path.join(UPLOAD_DIR, filename)
         f.save(full_path)
         web_path = f"/static/uploads/{filename}"

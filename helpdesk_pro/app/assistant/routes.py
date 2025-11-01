@@ -29,7 +29,7 @@ from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from sqlalchemy import func, or_, and_, literal
 from sqlalchemy.orm import joinedload
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 
 from app import csrf, db
 from app.models import (
@@ -912,7 +912,7 @@ def api_upload_document(session_id: int):
     if not file or file.filename == "":
         return jsonify({"success": False, "message": _("Please choose a file.")}), 400
 
-    filename = secure_filename(file.filename)
+    filename = secure_filename(file.filename, allow_unicode=True)
     if not filename:
         return jsonify({"success": False, "message": _("Invalid filename.")}), 400
 

@@ -1,4 +1,30 @@
-2025-11-01 09:01:28,404 [ERROR] uvicorn.error: Traceback (most recent call last):
+2025-11-01 10:23:54,289 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 10:23:54,401 [INFO] uvicorn.error: Started server process [661733]
+2025-11-01 10:23:54,401 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 10:23:54,402 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 10:23:54,403 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 10:29:53,177 [ERROR] app: Failed to send ticket notification email to ioannis.bouhras@gmail.com
+Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/tickets/routes.py", line 162, in _notify_team_managers
+    mail.send(message)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 539, in send
+    with self.connect() as connection:
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 127, in __enter__
+    self.host = self.configure_host()
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 152, in configure_host
+    host.login(self.mail.username, self.mail.password)
+  File "/usr/lib/python3.12/smtplib.py", line 750, in login
+    raise last_exception
+  File "/usr/lib/python3.12/smtplib.py", line 739, in login
+    (code, resp) = self.auth(
+                   ^^^^^^^^^^
+  File "/usr/lib/python3.12/smtplib.py", line 662, in auth
+    raise SMTPAuthenticationError(code, resp)
+smtplib.SMTPAuthenticationError: (535, b'5.7.3 Authentication unsuccessful [FR4P281CA0269.DEUP281.PROD.OUTLOOK.COM 2025-11-01T08:29:47.157Z 08DE18B7A8560F52]')
+2025-11-01 10:31:25,373 [INFO] uvicorn.error: Shutting down
+2025-11-01 10:31:25,474 [INFO] uvicorn.error: Finished server process [661733]
+2025-11-01 10:31:25,476 [ERROR] uvicorn.error: Traceback (most recent call last):
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
     await receive()
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
@@ -8,17 +34,16 @@
     await getter
 asyncio.exceptions.CancelledError
 
-2025-11-01 09:01:28,405 [INFO] app: MCP server thread exited.
-2025-11-01 09:01:30,030 [INFO] app: Helpdesk Pro started
-2025-11-01 09:01:34,814 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:01:34,859 [INFO] uvicorn.error: Started server process [609306]
-2025-11-01 09:01:34,859 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:01:34,860 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:01:34,860 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:02:17,687 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=352
-2025-11-01 09:04:36,754 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:04:36,855 [INFO] uvicorn.error: Finished server process [609306]
-2025-11-01 09:04:36,858 [ERROR] uvicorn.error: Traceback (most recent call last):
+2025-11-01 10:31:25,477 [INFO] app: MCP server thread exited.
+2025-11-01 10:31:27,131 [INFO] app: Helpdesk Pro started
+2025-11-01 10:31:27,279 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 10:31:27,394 [INFO] uvicorn.error: Started server process [666519]
+2025-11-01 10:31:27,394 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 10:31:27,395 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 10:31:27,395 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 10:45:51,341 [INFO] uvicorn.error: Shutting down
+2025-11-01 10:45:51,441 [INFO] uvicorn.error: Finished server process [666519]
+2025-11-01 10:45:51,443 [ERROR] uvicorn.error: Traceback (most recent call last):
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
     await receive()
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
@@ -28,16 +53,17 @@ asyncio.exceptions.CancelledError
     await getter
 asyncio.exceptions.CancelledError
 
-2025-11-01 09:04:36,859 [INFO] app: MCP server thread exited.
-2025-11-01 09:04:38,669 [INFO] app: Helpdesk Pro started
-2025-11-01 09:04:38,795 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:04:38,849 [INFO] uvicorn.error: Started server process [611282]
-2025-11-01 09:04:38,850 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:04:38,850 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:04:38,851 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:04:42,967 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:04:43,068 [INFO] uvicorn.error: Finished server process [611282]
-2025-11-01 09:04:43,070 [ERROR] uvicorn.error: Traceback (most recent call last):
+2025-11-01 10:45:51,443 [INFO] app: MCP server thread exited.
+2025-11-01 10:46:12,446 [INFO] app: Helpdesk Pro started
+2025-11-01 10:46:13,841 [INFO] app: Helpdesk Pro started
+2025-11-01 10:46:13,972 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 10:46:14,068 [INFO] uvicorn.error: Started server process [676973]
+2025-11-01 10:46:14,068 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 10:46:14,069 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 10:46:14,070 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 10:49:40,720 [INFO] uvicorn.error: Shutting down
+2025-11-01 10:49:40,821 [INFO] uvicorn.error: Finished server process [676973]
+2025-11-01 10:49:40,824 [ERROR] uvicorn.error: Traceback (most recent call last):
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
     await receive()
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
@@ -47,16 +73,17 @@ asyncio.exceptions.CancelledError
     await getter
 asyncio.exceptions.CancelledError
 
-2025-11-01 09:04:43,070 [INFO] app: MCP server thread exited.
-2025-11-01 09:04:44,818 [INFO] app: Helpdesk Pro started
-2025-11-01 09:04:45,905 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:04:45,951 [INFO] uvicorn.error: Started server process [611361]
-2025-11-01 09:04:45,951 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:04:45,952 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:04:45,952 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:04:50,063 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:04:50,164 [INFO] uvicorn.error: Finished server process [611361]
-2025-11-01 09:04:50,166 [ERROR] uvicorn.error: Traceback (most recent call last):
+2025-11-01 10:49:40,826 [INFO] app: MCP server thread exited.
+2025-11-01 10:49:47,683 [INFO] app: Helpdesk Pro started
+2025-11-01 10:49:49,064 [INFO] app: Helpdesk Pro started
+2025-11-01 10:49:54,087 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 10:49:54,133 [INFO] uvicorn.error: Started server process [679953]
+2025-11-01 10:49:54,134 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 10:49:54,134 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 10:49:54,135 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 10:52:33,598 [INFO] uvicorn.error: Shutting down
+2025-11-01 10:52:33,699 [INFO] uvicorn.error: Finished server process [679953]
+2025-11-01 10:52:33,701 [ERROR] uvicorn.error: Traceback (most recent call last):
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
     await receive()
   File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
@@ -66,83 +93,41 @@ asyncio.exceptions.CancelledError
     await getter
 asyncio.exceptions.CancelledError
 
-2025-11-01 09:04:50,167 [INFO] app: MCP server thread exited.
-2025-11-01 09:04:51,835 [INFO] app: Helpdesk Pro started
-2025-11-01 09:04:55,678 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:04:55,774 [INFO] uvicorn.error: Started server process [611443]
-2025-11-01 09:04:55,774 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:04:55,775 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:04:55,776 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:07:53,742 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:07:53,843 [INFO] uvicorn.error: Finished server process [611443]
-2025-11-01 09:07:53,845 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-01 09:07:53,846 [INFO] app: MCP server thread exited.
-2025-11-01 09:07:55,697 [INFO] app: Helpdesk Pro started
-2025-11-01 09:07:56,338 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:07:56,444 [INFO] uvicorn.error: Started server process [613364]
-2025-11-01 09:07:56,444 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:07:56,445 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:07:56,446 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:08:12,466 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=357
-2025-11-01 09:10:17,948 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=357
-2025-11-01 09:12:18,367 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:12:18,468 [INFO] uvicorn.error: Finished server process [613364]
-2025-11-01 09:12:18,470 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-01 09:12:18,471 [INFO] app: MCP server thread exited.
-2025-11-01 09:12:20,180 [INFO] app: Helpdesk Pro started
-2025-11-01 09:12:24,338 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:12:24,384 [INFO] uvicorn.error: Started server process [616154]
-2025-11-01 09:12:24,384 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:12:24,385 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:12:24,385 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:12:26,491 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:12:26,592 [INFO] uvicorn.error: Finished server process [616154]
-2025-11-01 09:12:26,594 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-01 09:12:26,595 [INFO] app: MCP server thread exited.
-2025-11-01 09:12:28,234 [INFO] app: Helpdesk Pro started
-2025-11-01 09:12:28,376 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-01 09:12:28,488 [INFO] uvicorn.error: Started server process [616259]
-2025-11-01 09:12:28,488 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-01 09:12:28,489 [INFO] uvicorn.error: Application startup complete.
-2025-11-01 09:12:28,490 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-01 09:12:51,311 [INFO] helpdesk_pro.mcp: tool=table_search elapsed_ms=368
-2025-11-01 09:14:26,134 [INFO] uvicorn.error: Shutting down
-2025-11-01 09:14:26,234 [INFO] uvicorn.error: Finished server process [616259]
-2025-11-01 09:14:26,237 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-01 09:14:26,238 [INFO] app: MCP server thread exited.
+2025-11-01 10:52:33,701 [INFO] app: MCP server thread exited.
+2025-11-01 10:53:04,651 [INFO] app: Helpdesk Pro started
+2025-11-01 10:53:06,043 [INFO] app: Helpdesk Pro started
+2025-11-01 10:53:09,773 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-01 10:53:09,819 [INFO] uvicorn.error: Started server process [682740]
+2025-11-01 10:53:09,819 [INFO] uvicorn.error: Waiting for application startup.
+2025-11-01 10:53:09,820 [INFO] uvicorn.error: Application startup complete.
+2025-11-01 10:53:09,821 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
+2025-11-01 10:53:26,030 [ERROR] app: Failed to send ticket notification email to ioannis.bouhras@gmail.com
+Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/tickets/routes.py", line 162, in _notify_team_managers
+    mail.send(message)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 539, in send
+    with self.connect() as connection:
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 127, in __enter__
+    self.host = self.configure_host()
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 152, in configure_host
+    host.login(self.mail.username, self.mail.password)
+  File "/usr/lib/python3.12/smtplib.py", line 716, in login
+    raise SMTPNotSupportedError(
+smtplib.SMTPNotSupportedError: SMTP AUTH extension not supported by server.
+2025-11-01 10:54:07,902 [ERROR] app: Failed to send ticket notification email to ioannis.bouhras@gmail.com
+Traceback (most recent call last):
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/tickets/routes.py", line 162, in _notify_team_managers
+    mail.send(message)
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 539, in send
+    with self.connect() as connection:
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 127, in __enter__
+    self.host = self.configure_host()
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/flask_mail/__init__.py", line 152, in configure_host
+    host.login(self.mail.username, self.mail.password)
+  File "/usr/lib/python3.12/smtplib.py", line 716, in login
+    raise SMTPNotSupportedError(
+smtplib.SMTPNotSupportedError: SMTP AUTH extension not supported by server.
+2025-11-01 10:56:32,144 [INFO] uvicorn.error: Shutting down
+2025-11-01 10:56:32,245 [INFO] uvicorn.error: Finished server process [682740]

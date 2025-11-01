@@ -3,7 +3,7 @@ import time
 import shutil
 from flask import Blueprint, render_template, request, jsonify, abort, current_app
 from flask_login import login_required, current_user
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 from app import db, csrf
 from app.models.user import User
 from app.models.ticket import Ticket
@@ -253,7 +253,7 @@ def update_profile():
                 return jsonify(success=False, message="Profile image must be smaller than 5MB."), 400
             filename_root = f"user_{user.id}_{int(time.time())}"
             extension = avatar_file.filename.rsplit(".", 1)[1].lower()
-            filename = secure_filename(f"{filename_root}.{extension}")
+            filename = secure_filename(f"{filename_root}.{extension}", allow_unicode=True)
             upload_folder = _avatar_upload_folder()
             upload_path = os.path.join(upload_folder, filename)
             avatar_file.save(upload_path)
