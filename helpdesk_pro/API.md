@@ -1,129 +1,89 @@
 # Helpdesk Pro REST API
 
-The Helpdesk Pro API allows external systems to integrate with the platform for ticketing, knowledge base, and inventory operations. All endpoints are JSON-based and live under `/api/v1`.
-
-## Table of Contents
-
-1. [Getting Access](#getting-access)
-2. [Authentication](#authentication)
-3. [Error Handling](#error-handling)
-4. [Tickets](#tickets)
-   - [List Tickets](#list-tickets)
-   - [Create Ticket](#create-ticket)
-   - [Retrieve Ticket](#retrieve-ticket)
-   - [Update Ticket](#update-ticket)
-   - [Delete Ticket](#delete-ticket)
-5. [Knowledge Base](#knowledge-base)
-   - [Search Articles](#search-articles)
-   - [Create Article](#create-article)
-6. [Software Inventory](#software-inventory)
-   - [List Software Assets](#list-software-assets)
-   - [Create Software Asset](#create-software-asset)
-   - [Retrieve Software Asset](#retrieve-software-asset)
-   - [Update Software Asset](#update-software-asset)
-   - [Delete Software Asset](#delete-software-asset)
-7. [Hardware Inventory](#hardware-inventory)
-   - [List Hardware Assets](#list-hardware-assets)
-   - [Create Hardware Asset](#create-hardware-asset)
-   - [Retrieve Hardware Asset](#retrieve-hardware-asset)
-   - [Update Hardware Asset](#update-hardware-asset)
-   - [Delete Hardware Asset](#delete-hardware-asset)
-8. [Swagger / OpenAPI](#swagger--openapi)
+All public API endpoints live under `/api/v1` and are designed for automation integrations (RPA, ITSM orchestration, chatbots, etc.). This document covers access management, conventions, and endpoint details with concrete curl examples.
 
 ---
 
-## Getting Access
+## 1. Access & Authentication
 
-1. Log in as an admin.
+1. Sign in as an administrator.
 2. Navigate to **Manage → API Keys**.
-3. Create an API client and copy the generated key (shown once).
-4. Optionally assign a default user context for audit fields.
+3. Create a new API client, capture the generated key (displayed once), and optionally assign a default user context.
 
-Keys are hashed server-side and cannot be retrieved after creation. Rotate as needed.
+Include the key with every request using one of the headers below:
+
+```
+X-API-Key: hp_prefix_secret
+```
+
+```
+Authorization: Bearer hp_prefix_secret
+```
+
+Missing or invalid credentials produce `401 {"error": "Valid API key required."}`.
 
 ---
 
-## Authentication
+## 2. Request Conventions
 
-Include your key in every request using either header:
-
-```
-X-API-Key: hp_<prefix>_<secret>
-```
-
-or
-
-```
-Authorization: Bearer hp_<prefix>_<secret>
-```
-
-If authentication fails, the API responds with HTTP `401` and `{"error": "Valid API key required."}`.
-
----
-
-## Error Handling
-
-Errors follow a simple JSON envelope:
-
-```json
-{
-  "error": "Description of the issue."
-}
-```
+- **Content type:** `application/json` (UTF-8).
+- **Dates:** ISO 8601 (`YYYY-MM-DD`, `YYYY-MM-DDTHH:MM:SS`).
+- **User references:** Accept numeric IDs or usernames (case-insensitive). Omit the field to fall back to the API client’s default user (if configured).
+- **Errors:** JSON envelope `{"error": "<message>"}` with appropriate status codes.
+- **Pagination:** Ticket and inventory list endpoints return full collections; apply query filters to scope results.
 
 Common status codes:
 
-| Code | Meaning                     |
-|------|-----------------------------|
-| 400  | Validation error            |
-| 401  | Missing/invalid API key     |
-| 404  | Resource not found          |
-| 500  | Unexpected server error     |
+| Status | Meaning |
+| --- | --- |
+| 200 | Success |
+| 201 | Resource created |
+| 400 | Validation error or malformed payload |
+| 401 | Authentication failure |
+| 404 | Resource not found |
+| 500 | Unexpected server error |
 
 ---
 
-## Tickets
+## 3. Meta
 
-### List Tickets
+### 3.1 GET `/api/v1/status`
 
-`GET /api/v1/tickets`
-
-Optional query parameters:
-- `status`
-- `department`
-- `assigned_to` (username or user id)
+Returns service health, timestamp, and API client metadata.
 
 ```bash
-curl -sS https://helpdesk.example.com/api/v1/tickets \
+curl -sS https://helpdesk.example.com/api/v1/status \
   -H "X-API-Key: hp_demo_abc123"
 ```
 
-Response:
-
 ```json
 {
-  "tickets": [
-    {
-      "id": 42,
-      "subject": "VPN outage",
-      "description": "Users cannot connect",
-      "priority": "High",
-      "status": "Open",
-      "department": "Network",
-      "created_by": 5,
-      "assigned_to": 2,
-      "assignee": "alex",
-      "created_at": "2025-10-24T09:15:00",
-      "updated_at": "2025-10-24T10:00:00",
-      "closed_at": null
-    }
-  ]
+  "status": "ok",
+  "timestamp": "2025-03-01T09:12:24.532184",
+  "client": {
+    "id": 4,
+    "name": "Automation Bot",
+    "default_user": "integration-user"
+  }
 }
 ```
 
-### Create Ticket
+---
 
-`POST /api/v1/tickets`
+## 4. Tickets
+
+### 4.1 GET `/api/v1/tickets`
+
+List tickets. Optional query parameters: `status`, `department`, `assigned_to`.
+
+```bash
+curl -sS "https://helpdesk.example.com/api/v1/tickets?status=Open&department=Network" \
+  -H "X-API-Key: hp_demo_abc123"
+```
+
+### 4.2 POST `/api/v1/tickets`
+
+Create a ticket. Required fields: `subject`, `description`. `created_by` defaults to the API client’s default user.
 
 ```bash
 curl -sS https://helpdesk.example.com/api/v1/tickets \
@@ -139,59 +99,98 @@ curl -sS https://helpdesk.example.com/api/v1/tickets \
       }'
 ```
 
-Required fields: `subject`, `description`, `created_by` (directly or via default user).
+201 response:
 
-### Retrieve Ticket
+```json
+{
+  "ticket": {
+    "id": 202,
+    "subject": "Printer jam",
+    "status": "Open",
+    "priority": "Medium",
+    "department": "Facilities",
+    "created_by": 18,
+    "assigned_to": 7,
+    "assignee": "tech01",
+    "created_at": "2025-02-28T09:45:03.104281",
+    "updated_at": "2025-02-28T09:45:03.104281",
+    "closed_at": null
+  }
+}
+```
 
-`GET /api/v1/tickets/<id>`
+### 4.3 GET `/api/v1/tickets/<id>`
+
+Retrieve a single ticket.
 
 ```bash
-curl -sS https://helpdesk.example.com/api/v1/tickets/42 \
+curl -sS https://helpdesk.example.com/api/v1/tickets/202 \
   -H "X-API-Key: hp_demo_abc123"
 ```
 
-### Update Ticket
+### 4.4 PATCH `/api/v1/tickets/<id>`
 
-`PATCH /api/v1/tickets/<id>`
+Partial updates. Allowed fields: `subject`, `description`, `priority`, `status`, `department`, `assigned_to`, `closed_at`.
 
 ```bash
-curl -sS -X PATCH https://helpdesk.example.com/api/v1/tickets/42 \
+curl -sS -X PATCH https://helpdesk.example.com/api/v1/tickets/202 \
   -H "Content-Type: application/json" \
   -H "X-API-Key: hp_demo_abc123" \
-  -d '{
-        "status": "Resolved",
-        "assigned_to": null,
-        "closed_at": "2025-10-25T11:30:00"
-      }'
+  -d '{ "status": "Resolved", "assigned_to": null, "closed_at": "2025-02-28T11:30:00" }'
 ```
 
-### Delete Ticket
+### 4.5 DELETE `/api/v1/tickets/<id>`
 
-`DELETE /api/v1/tickets/<id>`
+Removes the ticket, its attachments, and comments.
 
 ```bash
-curl -sS -X DELETE https://helpdesk.example.com/api/v1/tickets/42 \
+curl -sS -X DELETE https://helpdesk.example.com/api/v1/tickets/202 \
   -H "X-API-Key: hp_demo_abc123"
 ```
 
 ---
 
-## Knowledge Base
+## 5. Knowledge Base
 
-### Search Articles
+### 5.1 GET `/api/v1/knowledge`
 
-`GET /api/v1/knowledge?q=<query>`
+Search published articles with `q` parameter.
 
 ```bash
 curl -sS "https://helpdesk.example.com/api/v1/knowledge?q=vpn" \
   -H "X-API-Key: hp_demo_abc123"
 ```
 
-Response includes top 50 published articles matching title/summary/content/tags/attachments.
+Response snippet:
 
-### Create Article
+```json
+{
+  "results": [
+    {
+      "id": 12,
+      "title": "Reset VPN profile",
+      "summary": "Steps to fix VPN client issues",
+      "tags": ["vpn", "network"],
+      "category": "Networking",
+      "is_published": true,
+      "created_by": 5,
+      "created_at": "2025-01-04T16:21:00",
+      "attachments": [
+        {
+          "id": 91,
+          "filename": "vpn_profile_reset.pdf",
+          "uploaded_at": "2025-01-04T16:21:22",
+          "size": 145223
+        }
+      ]
+    }
+  ]
+}
+```
 
-`POST /api/v1/knowledge`
+### 5.2 POST `/api/v1/knowledge`
+
+Create a knowledge article. Required fields: `title`, `content`.
 
 ```bash
 curl -sS https://helpdesk.example.com/api/v1/knowledge \
@@ -200,7 +199,7 @@ curl -sS https://helpdesk.example.com/api/v1/knowledge \
   -d '{
         "title": "Reset VPN profile",
         "summary": "Steps to fix VPN client issues",
-        "content": "1. Open VPN client ...",
+        "content": "1. Open VPN client...",
         "tags": ["vpn", "network"],
         "category": "Networking",
         "is_published": true,
@@ -208,26 +207,22 @@ curl -sS https://helpdesk.example.com/api/v1/knowledge \
       }'
 ```
 
-Tags may be passed as an array or comma-separated string.
+`tags` accepts either an array or comma-separated string.
 
 ---
 
-## Software Inventory
+## 6. Software Inventory
 
-### List Software Assets
+### 6.1 GET `/api/v1/inventory/software`
 
-`GET /api/v1/inventory/software`
-
-Filters: `vendor`, `name`
+Optional filters: `vendor`, `name`.
 
 ```bash
 curl -sS "https://helpdesk.example.com/api/v1/inventory/software?vendor=Microsoft" \
   -H "X-API-Key: hp_demo_abc123"
 ```
 
-### Create Software Asset
-
-`POST /api/v1/inventory/software`
+### 6.2 POST `/api/v1/inventory/software`
 
 ```bash
 curl -sS https://helpdesk.example.com/api/v1/inventory/software \
@@ -243,18 +238,13 @@ curl -sS https://helpdesk.example.com/api/v1/inventory/software \
       }'
 ```
 
-### Retrieve Software Asset
+### 6.3 GET `/api/v1/inventory/software/<id>`
 
-`GET /api/v1/inventory/software/<id>`
+Fetch a single software asset.
 
-```bash
-curl -sS https://helpdesk.example.com/api/v1/inventory/software/15 \
-  -H "X-API-Key: hp_demo_abc123"
-```
+### 6.4 PATCH `/api/v1/inventory/software/<id>`
 
-### Update Software Asset
-
-`PATCH /api/v1/inventory/software/<id>`
+Partial update. Any field in the creation payload can be changed.
 
 ```bash
 curl -sS -X PATCH https://helpdesk.example.com/api/v1/inventory/software/15 \
@@ -263,33 +253,24 @@ curl -sS -X PATCH https://helpdesk.example.com/api/v1/inventory/software/15 \
   -d '{ "expiration_date": "2026-06-30", "assigned_to": null }'
 ```
 
-### Delete Software Asset
+### 6.5 DELETE `/api/v1/inventory/software/<id>`
 
-`DELETE /api/v1/inventory/software/<id>`
-
-```bash
-curl -sS -X DELETE https://helpdesk.example.com/api/v1/inventory/software/15 \
-  -H "X-API-Key: hp_demo_abc123"
-```
+Remove the asset.
 
 ---
 
-## Hardware Inventory
+## 7. Hardware Inventory
 
-### List Hardware Assets
+### 7.1 GET `/api/v1/inventory/hardware`
 
-`GET /api/v1/inventory/hardware`
-
-Filters: `manufacturer`, `category`
+Optional filters: `manufacturer`, `category`.
 
 ```bash
 curl -sS "https://helpdesk.example.com/api/v1/inventory/hardware?manufacturer=Dell" \
   -H "X-API-Key: hp_demo_abc123"
 ```
 
-### Create Hardware Asset
-
-`POST /api/v1/inventory/hardware`
+### 7.2 POST `/api/v1/inventory/hardware`
 
 ```bash
 curl -sS https://helpdesk.example.com/api/v1/inventory/hardware \
@@ -305,13 +286,11 @@ curl -sS https://helpdesk.example.com/api/v1/inventory/hardware \
       }'
 ```
 
-### Retrieve Hardware Asset
+### 7.3 GET `/api/v1/inventory/hardware/<id>`
 
-`GET /api/v1/inventory/hardware/<id>`
+Retrieve details for a single hardware asset.
 
-### Update Hardware Asset
-
-`PATCH /api/v1/inventory/hardware/<id>`
+### 7.4 PATCH `/api/v1/inventory/hardware/<id>`
 
 ```bash
 curl -sS -X PATCH https://helpdesk.example.com/api/v1/inventory/hardware/21 \
@@ -320,33 +299,33 @@ curl -sS -X PATCH https://helpdesk.example.com/api/v1/inventory/hardware/21 \
   -d '{ "status": "In Repair", "assigned_to": "workshop" }'
 ```
 
-### Delete Hardware Asset
+### 7.5 DELETE `/api/v1/inventory/hardware/<id>`
 
-`DELETE /api/v1/inventory/hardware/<id>`
+Remove the asset.
 
 ---
 
-## Swagger / OpenAPI
+## 8. OpenAPI Specification
 
-- OpenAPI spec: `GET /api/v1/openapi.json` (no authentication required).
-- Embedded documentation: **Manage → API Docs** (Swagger UI).
-
-Example download:
+- `GET /api/v1/openapi.json` – on-demand OpenAPI 3.0 document (no authentication required).
+- Import the document into Postman, Insomnia, Stoplight, or similar to explore interactively.
 
 ```bash
 curl -sS https://helpdesk.example.com/api/v1/openapi.json > openapi.json
 ```
 
-Import this file into Postman, Insomnia, or other tooling to explore the API interactively.
+Swagger UI is also embedded in the admin console under **Manage → API Docs**.
 
 ---
 
-## Notes
+## 9. Best Practices
 
-- All date/time fields use ISO 8601 format (`YYYY-MM-DD` or `YYYY-MM-DDTHH:MM:SS`).
-- User references accept either numeric IDs or usernames (case-insensitive).
-- When omitting `created_by` or `assigned_to`, the API uses the default user configured for the API key (if any).
-- Rate limiting is not enforced by default; consider adding a reverse proxy for production environments.
+- **Environment isolation:** Use separate API clients per environment (dev/test/prod) and rotate keys periodically.
+- **Rate control:** Helpdesk Pro does not enforce rate limiting; apply limits at your reverse proxy or automation layer.
+- **Idempotency:** For create/update workflows, store the returned `id` and use PATCH to modify existing resources instead of repeated POST calls.
+- **Error handling:** Inspect `error` messages and HTTP status codes. Many validation errors include field-specific hints (e.g., invalid usernames).
+- **Change tracking:** Ticket and knowledge updates automatically generate audit entries viewable in the UI.
 
-For assistance or to request additional endpoints, contact the Helpdesk Pro maintainers.
+---
 
+For additional endpoints (assistant APIs, MCP service, etc.) consult the [Helpdesk Pro Handbook](docs/handbook.md) or contact the maintainers.
