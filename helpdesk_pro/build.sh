@@ -1,1 +1,1 @@
-docker build -t helpdesk-pro:latest .
+sudo docker compose up -d --build
