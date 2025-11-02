@@ -169,8 +169,8 @@ class BackupJobsExpiringArgs(BaseModel):
     window_days: int = Field(
         30,
         ge=1,
-        le=365,
-        description="Number of days ahead to look for expiring backup jobs.",
+        le=3650,
+        description="Number of days ahead to look for expiring backup jobs (up to 10 years).",
     )
     limit: int = Field(
         50,
