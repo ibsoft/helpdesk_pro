@@ -86,4 +86,4 @@ class Config:
     MCP_KEEP_ALIVE_SECONDS = int(os.getenv('MCP_KEEP_ALIVE', 5))
     MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {
         '1', 'true', 'yes'}
-    APP_VERSION = os.getenv('APP_VERSION', '2.0.7')
+    APP_VERSION = os.getenv('APP_VERSION', '2.0.9')
