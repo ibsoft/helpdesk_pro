@@ -656,6 +656,15 @@ helpdesk_pro/
 - [ ] Confirm background worker running (Email → status OK).
 - [ ] Rotate API keys if necessary and inform integrators.
 
+
+Translations
+
+pybabel extract -F babel.cfg -k _ -k _l -o messages.pot .
+
+pybabel update -i messages.pot -d translations
+
+pybabel compile -d translations
+
 ---
 
 This handbook should be kept up-to-date whenever modules evolve or new endpoints are introduced. Contributions are welcome—open a pull request with documentation updates alongside feature branches.

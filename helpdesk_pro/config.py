@@ -26,7 +26,7 @@ def _list_env(key: str, default: list[str]) -> list[str]:
 
 
 class Config:
-    SECRET_KEY = os.getenv('SECRET_KEY', 'changeme')
+    SECRET_KEY = os.getenv('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = os.getenv('SQLALCHEMY_ECHO', 'False').lower() == 'true'
@@ -41,7 +41,7 @@ class Config:
     BABEL_DEFAULT_LOCALE = os.getenv('DEFAULT_LANGUAGE', 'en')
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=45)
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
-    JWT_SECRET_KEY = os.getenv('SECRET_KEY', 'changeme')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or SECRET_KEY
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     BASE_URL = os.getenv('BASE_URL')

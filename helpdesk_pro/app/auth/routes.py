@@ -3,6 +3,7 @@ from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_mail import Message
 from sqlalchemy import func
+from urllib.parse import urlparse, urljoin
 
 from app import db, login_manager
 from app.models.user import User
@@ -13,6 +14,17 @@ from app.mail_utils import queue_mail_with_optional_auth
 
 
 auth_bp = Blueprint("auth", __name__)
+
+
+def _is_safe_redirect(target: str) -> bool:
+    if not target:
+        return False
+    ref_url = urlparse(request.host_url)
+    test_url = urlparse(urljoin(request.host_url, target))
+    return (
+        test_url.scheme in {"http", "https"}
+        and ref_url.netloc == test_url.netloc
+    )
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -35,7 +47,7 @@ def login():
             display_name = user.full_name or user.username
             flash(_("Welcome, %(username)s!", username=display_name), "success")
             next_url = request.args.get("next")
-            if next_url:
+            if next_url and _is_safe_redirect(next_url):
                 return redirect(next_url)
             return redirect(url_for("dashboard.index"))
     return render_template("auth/login.html")

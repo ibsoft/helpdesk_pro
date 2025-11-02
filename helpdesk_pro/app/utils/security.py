@@ -1,23 +1,57 @@
-import base64, os, sys, re
-from typing import List, Tuple
+import base64, os, sys, re, hashlib
+from typing import List, Tuple, Optional
 from cryptography.fernet import Fernet
+from flask import current_app, has_app_context
 if sys.platform.startswith('win'):
     import win32crypt
+
+_FERNET_INSTANCE: Optional[Fernet] = None
+
+
+def _get_fernet() -> Fernet:
+    global _FERNET_INSTANCE
+    if _FERNET_INSTANCE is not None:
+        return _FERNET_INSTANCE
+    key = os.environ.get('FERNET_KEY')
+    has_ctx = has_app_context()
+    if not key and has_ctx:
+        key = current_app.config.get('FERNET_KEY')
+    if not key:
+        seed = os.environ.get('SECRET_KEY')
+        if not seed and has_ctx:
+            seed = current_app.config.get('SECRET_KEY')
+        if seed:
+            digest = hashlib.sha256(seed.encode()).digest()
+            key = base64.urlsafe_b64encode(digest).decode()
+    if not key:
+        raise RuntimeError(
+            "FERNET_KEY is not configured and no SECRET_KEY available to derive one."
+        )
+    if has_ctx and key and not current_app.config.get('FERNET_KEY'):
+        current_app.config['FERNET_KEY'] = key.decode() if isinstance(key, bytes) else key
+    key_bytes = key.encode() if isinstance(key, str) else key
+    _FERNET_INSTANCE = Fernet(key_bytes)
+    return _FERNET_INSTANCE
+
 
 def encrypt_secret(secret: str) -> str:
     if sys.platform.startswith('win'):
         data = win32crypt.CryptProtectData(secret.encode(), None, None, None, None, 0)
         return base64.b64encode(data[1]).decode()
     else:
-        key = os.environ.get('FERNET_KEY') or Fernet.generate_key()
-        f = Fernet(key)
-        return 'fernet:' + key.decode() + ':' + f.encrypt(secret.encode()).decode()
+        token = _get_fernet().encrypt(secret.encode()).decode()
+        return 'fernet:' + token
 
 def decrypt_secret(token: str) -> str:
     if token.startswith('fernet:'):
-        _, key, enc = token.split(':', 2)
-        f = Fernet(key.encode())
-        return f.decrypt(enc.encode()).decode()
+        parts = token.split(':', 2)
+        # Legacy format stored the key alongside the ciphertext.
+        if len(parts) == 3:
+            _, key, enc = parts
+            f = Fernet(key.encode())
+            return f.decrypt(enc.encode()).decode()
+        _, enc = parts
+        return _get_fernet().decrypt(enc.encode()).decode()
     if sys.platform.startswith('win'):
         data = base64.b64decode(token)
         return win32crypt.CryptUnprotectData(data, None, None, None, 0)[1].decode()

@@ -334,7 +334,7 @@
 
 </style>
 
-<div class="assistant-widget assistant-pos-{{ cfg.position }}" id="assistantWidgetRoot" data-provider="{{ cfg.provider }}">
+<div class="assistant-widget assistant-pos-{{ cfg.position }}" id="assistantWidgetRoot" data-provider="{{ cfg.provider }}" data-csrf-token="{{ csrf_token() }}">
   <button type="button" class="btn btn-danger assistant-fab position-relative" id="assistantToggle" aria-label="{{ cfg.button_label }}" title="{{ cfg.button_label }}">
     <i class="fa fa-comments"></i>
     <span class="badge bg-danger rounded-pill assistant-badge d-none" id="assistantUnreadBadge">1</span>
@@ -417,6 +417,7 @@
   const speechStopLabel = "{{ _('Stop listening') }}";
 
   if (!root || !form) return;
+  const csrfToken = root.dataset.csrfToken || (document.querySelector('input[name="csrf_token"]') || {}).value || "";
 
   function updatePanelOffset() {
     const nav = document.querySelector(".navbar");
@@ -520,6 +521,11 @@
   let isFullscreen = false;
   let pending = false;
   let sessionReadyPromise = null;
+  const csrfHeaders = () => {
+    const headers = {};
+    if (csrfToken) headers["X-CSRFToken"] = csrfToken;
+    return headers;
+  };
 
   function toggle(open) {
     isOpen = typeof open === "boolean" ? open : !isOpen;
@@ -625,7 +631,7 @@
     const body = sessionId ? { session_id: sessionId } : {};
     sessionReadyPromise = fetch("{{ url_for('assistant.api_create_or_fetch_session') }}", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: Object.assign({ "Content-Type": "application/json" }, csrfHeaders()),
       body: JSON.stringify(body),
     })
       .then((resp) => resp.json())
@@ -724,7 +730,7 @@
     try {
       const response = await fetch("{{ url_for('assistant.api_message') }}", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: Object.assign({ "Content-Type": "application/json" }, csrfHeaders()),
         body: JSON.stringify({ message, session_id: currentSession.id }),
       });
       const data = await response.json();
@@ -803,8 +809,12 @@
         setUploadLoading(true);
         const formData = new FormData();
         formData.append("file", file);
+        if (csrfToken) {
+          formData.append("csrf_token", csrfToken);
+        }
         fetch(`{{ url_for('assistant.api_upload_document', session_id=0) }}`.replace("0", currentSession.id), {
           method: "POST",
+          headers: csrfHeaders(),
           body: formData,
         })
           .then((resp) => resp.json())
@@ -849,7 +859,7 @@
             "0/0",
             `${currentSession.id}/${documentId}`,
           ),
-          { method: "DELETE" },
+          { method: "DELETE", headers: csrfHeaders() },
         )
           .then((resp) => resp.json())
           .then((data) => {

@@ -37,7 +37,6 @@ from app.models import (
 
 
 collab_bp = Blueprint("collab", __name__, url_prefix="/collab")
-csrf.exempt(collab_bp)
 
 _TYPING_TTL_SECONDS = 5
 _typing_states = {}

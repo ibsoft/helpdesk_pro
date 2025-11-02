@@ -540,7 +540,6 @@ PHRASE_PATTERN = re.compile(
 QUOTED_PATTERN = re.compile(r"\"([^\"]+)\"|'([^']+)'")
 
 assistant_bp = Blueprint("assistant", __name__, url_prefix="/assistant")
-csrf.exempt(assistant_bp)
 
 
 def _load_config():
