@@ -1,6 +1,7 @@
 from sqlalchemy import or_, func
 import copy
 import os
+import uuid
 from datetime import datetime
 try:
     from zoneinfo import ZoneInfo
@@ -9,7 +10,7 @@ except ImportError:
 
 import requests
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app, send_from_directory
 from flask_login import login_required, current_user
 from app.utils.files import secure_filename
 from flask_mail import Message
@@ -22,11 +23,15 @@ from app.background import submit_background_task
 
 tickets_bp = Blueprint("tickets", __name__)
 
-UPLOAD_DIR = os.path.join(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")),
-    "static",
-    "uploads"
-)
+
+def _ensure_ticket_upload_folder():
+    """Ensure instance-level tickets upload folder exists and return its path."""
+    upload_folder = current_app.config.get("TICKETS_UPLOAD_FOLDER")
+    if not upload_folder:
+        upload_folder = os.path.join(current_app.instance_path, "tickets_uploads")
+        current_app.config["TICKETS_UPLOAD_FOLDER"] = upload_folder
+    os.makedirs(upload_folder, exist_ok=True)
+    return upload_folder
 
 LOCAL_TZ = ZoneInfo("Europe/Athens")
 
@@ -585,22 +590,47 @@ def upload_file(id):
             flash("You are not authorized to upload to this ticket.", "danger")
             abort(403)
 
-        os.makedirs(UPLOAD_DIR, exist_ok=True)
-        filename = secure_filename(f.filename, allow_unicode=True)
-        full_path = os.path.join(UPLOAD_DIR, filename)
-        f.save(full_path)
-        web_path = f"/static/uploads/{filename}"
+        upload_folder = _ensure_ticket_upload_folder()
 
-        a = Attachment(ticket_id=id, filename=filename,
-                       filepath=web_path, uploaded_by=current_user.username)
+        original_name = (f.filename or "").strip()
+        safe_name = secure_filename(original_name, allow_unicode=True)
+        if not safe_name:
+            base, ext = os.path.splitext(original_name)
+            fallback = (base or "attachment").strip().replace(" ", "_")
+            safe_name = secure_filename(f"{fallback}{ext}", allow_unicode=True) or "attachment"
+
+        # Prefix with UUID to avoid collisions and keep URL-safe length
+        unique_prefix = uuid.uuid4().hex
+        max_safe_length = max(1, 255 - len(unique_prefix) - 1)
+        if len(safe_name) > max_safe_length:
+            base, safe_ext = os.path.splitext(safe_name)
+            allowed = max_safe_length - len(safe_ext)
+            safe_name = (f"{base[:max(0, allowed)]}{safe_ext}" if allowed > 0 else safe_name[:max_safe_length])
+        safe_name = (safe_name[:max_safe_length] or "attachment").strip(".")
+        stored_name = f"{unique_prefix}_{safe_name}"
+
+        stored_path = os.path.join(upload_folder, stored_name)
+        f.save(stored_path)
+
+        # Public web path is now a protected route
+        web_path = f"/tickets/attachments/{stored_name}"
+
+        display_name = original_name or safe_name
+
+        a = Attachment(
+            ticket_id=id,
+            filename=display_name,
+            filepath=web_path,
+            uploaded_by=current_user.username,
+        )
         db.session.add(a)
         db.session.add(AuditLog(action="Upload File",
                                 username=current_user.username, ticket_id=id))
         db.session.commit()
 
-        _notify_team_managers(t, current_user, "added an attachment", f"Attachment: {filename}")
+        _notify_team_managers(t, current_user, "added an attachment", f"Attachment: {display_name}")
 
-        flash(f"File '{filename}' uploaded successfully.", "success")
+        flash(f"File '{display_name}' uploaded successfully.", "success")
         return jsonify(success=True)
     except Exception as e:
         flash(f"Error uploading file: {str(e)}", "danger")
@@ -615,6 +645,37 @@ def upload_file(id):
 def delete_ticket(id):
     try:
         t = Ticket.query.get_or_404(id)
+        # Remove attachment files from disk before deleting DB records
+        try:
+            upload_folder = _ensure_ticket_upload_folder()
+            static_upload_dir = os.path.join(
+                os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")),
+                "static",
+                "uploads",
+            )
+            for a in list(t.attachments or []):
+                path_val = a.filepath or ""
+                # Instance-stored files (new behavior)
+                stored_name = os.path.basename(path_val)
+                if path_val.startswith("/tickets/attachments/") and stored_name:
+                    file_path = os.path.join(upload_folder, stored_name)
+                    if os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except OSError:
+                            pass
+                # Legacy static files cleanup (best-effort)
+                elif path_val.startswith("/static/uploads/"):
+                    legacy_name = os.path.basename(path_val)
+                    legacy_path = os.path.join(static_upload_dir, legacy_name)
+                    if os.path.exists(legacy_path):
+                        try:
+                            os.remove(legacy_path)
+                        except OSError:
+                            pass
+        except Exception:
+            # Continue with DB deletion even if file cleanup fails
+            pass
         db.session.delete(t)
         db.session.add(AuditLog(action="Delete Ticket",
                                 username=current_user.username, ticket_id=id))
@@ -628,3 +689,44 @@ def delete_ticket(id):
     except Exception as e:
         flash(f"Error deleting ticket: {str(e)}", "danger")
         return redirect(url_for("tickets.list_tickets"))
+
+
+# ============================================================
+# DOWNLOAD ATTACHMENT
+# ============================================================
+@tickets_bp.route("/tickets/attachments/<path:filename>")
+@login_required
+def download_ticket_attachment(filename):
+    # Find attachment by its web path suffix
+    path_value = f"/tickets/attachments/{filename}"
+    attachment = Attachment.query.filter(Attachment.filepath == path_value).first_or_404()
+    ticket = Ticket.query.get_or_404(attachment.ticket_id)
+
+    # Authorization similar to viewing a ticket
+    allowed = False
+    if current_user.role == "admin":
+        allowed = True
+    elif current_user.role == "manager":
+        dept_user_ids = {u.id for u in User.query.filter_by(department=current_user.department).all()}
+        if (
+            ticket.created_by == current_user.id
+            or ticket.assigned_to == current_user.id
+            or (ticket.created_by in dept_user_ids)
+            or (ticket.assigned_to in dept_user_ids)
+        ):
+            allowed = True
+    else:
+        if ticket.created_by == current_user.id or ticket.assigned_to == current_user.id:
+            allowed = True
+
+    if not allowed:
+        flash("You are not authorized to access this attachment.", "danger")
+        abort(403)
+
+    upload_folder = _ensure_ticket_upload_folder()
+    return send_from_directory(
+        upload_folder,
+        filename,
+        as_attachment=True,
+        download_name=(attachment.filename or os.path.basename(filename)),
+    )
