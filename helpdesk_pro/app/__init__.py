@@ -21,6 +21,7 @@ from flask_jwt_extended import JWTManager
 from logging.handlers import RotatingFileHandler
 from config import Config
 from app.mcp import init_app as init_mcp
+from app.utils.i18n import PoFallbackDomain
 
 # ───────── Extensions ───────── #
 db = SQLAlchemy()
@@ -36,7 +37,17 @@ def create_app():
     app = Flask(__name__, template_folder="../templates",
                 static_folder="../static")
     app.config.from_object(Config)
-    app.config.setdefault("SECRET_KEY", os.urandom(24))
+    secret_key = app.config.get("SECRET_KEY")
+    if not secret_key or str(secret_key).lower() == "changeme":
+        raise RuntimeError(
+            "SECURITY ERROR: SECRET_KEY must be configured via environment or .env before starting Helpdesk Pro."
+        )
+    jwt_secret = app.config.get("JWT_SECRET_KEY")
+    if not jwt_secret or str(jwt_secret).lower() == "changeme":
+        raise RuntimeError(
+            "SECURITY ERROR: JWT_SECRET_KEY must be configured (or explicitly set to match SECRET_KEY)."
+        )
+    app.config.setdefault("JWT_SECRET_KEY", jwt_secret)
     app.config.setdefault("LANGUAGES", ["en", "el"])
     app.config.setdefault("BABEL_DEFAULT_LOCALE", "en")
     app.config.setdefault("BABEL_TRANSLATION_DIRECTORIES", "translations")
@@ -74,6 +85,11 @@ def create_app():
         return g.locale
 
     babel.init_app(app, locale_selector=get_locale)
+    babel_cfg = app.extensions["babel"]
+    babel.domain_instance = PoFallbackDomain(
+        translation_directories=babel_cfg.translation_directories,
+        domain=babel_cfg.default_domain,
+    )
 
     @app.before_request
     def _set_g_locale():

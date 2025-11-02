@@ -511,7 +511,6 @@ def view_ticket(id):
 # ============================================================
 # COMMENT
 # ============================================================
-@csrf.exempt
 @tickets_bp.route("/tickets/<int:id>/comment", methods=["POST"])
 @login_required
 def add_comment(id):
@@ -562,7 +561,6 @@ def add_comment(id):
 # ============================================================
 # UPLOAD
 # ============================================================
-@csrf.exempt
 @tickets_bp.route("/tickets/<int:id>/upload", methods=["POST"])
 @login_required
 def upload_file(id):

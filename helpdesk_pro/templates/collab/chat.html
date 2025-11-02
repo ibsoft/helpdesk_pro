@@ -78,6 +78,7 @@
   data-text-general-chat="{{ _('General Chat') }}"
   data-text-everyone="{{ _('Everyone in the organization') }}"
   data-text-direct="{{ _('Direct conversation') }}"
+  data-csrf-token="{{ csrf_token() }}"
 >
   <div class="card collab-summary-card border-0 shadow-sm">
     <div class="card-body py-3">
@@ -229,6 +230,15 @@
   const root = document.getElementById('collabRoot');
   const D = root.dataset;
   const parseIntSafe = (v, def=0) => { const n = parseInt(v,10); return Number.isFinite(n) ? n : def; };
+  const csrfToken = D.csrfToken || (document.querySelector('input[name="csrf_token"]') || {}).value || '';
+
+  $.ajaxSetup({
+    beforeSend: function(xhr, settings){
+      if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && csrfToken){
+        xhr.setRequestHeader('X-CSRFToken', csrfToken);
+      }
+    }
+  });
 
   let currentConversationId = parseIntSafe(D.generalId);
   let autoScroll = true;
@@ -456,6 +466,9 @@
   $('#chatForm').on('submit', function(e){
     e.preventDefault();
     const formData = new FormData(this);
+    if (csrfToken && !formData.has('csrf_token')){
+      formData.append('csrf_token', csrfToken);
+    }
     const att = formData.get('attachment');
     if (!formData.get('body') && !(att && att.name)){ showToast(txtMsgEmpty, 'warning'); return; }
     $.ajax({

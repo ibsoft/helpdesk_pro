@@ -66,7 +66,6 @@ def list_users():
     )
 
 
-@csrf.exempt
 @users_bp.route("/users/add", methods=["POST"])
 @login_required
 @role_required('admin')
@@ -121,7 +120,6 @@ def add_user():
     return jsonify(success=True, message="User created successfully")
 
 
-@csrf.exempt
 @users_bp.route("/users/<int:id>/edit", methods=["POST"])
 @login_required
 @role_required('admin', 'manager')
@@ -453,7 +451,6 @@ def _cleanup_user_relationships(target: User, acting: User) -> None:
     db.session.flush()
 
 
-@csrf.exempt
 @users_bp.route("/users/<int:id>/delete", methods=["POST"])
 @login_required
 @role_required('admin')
