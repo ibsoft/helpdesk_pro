@@ -53,18 +53,22 @@ Create (or edit) a `.env` file in the project root (same directory as `requireme
 ```env
 FLASK_ENV=production
 SECRET_KEY=supersecretkey
-SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:superpass@192.168.1.123:5432/helpdesk_pro
-
-MAIL_SERVER=smtp.office365.com
-MAIL_PORT=587
-MAIL_USE_TLS=True
-MAIL_USERNAME=support@company.com
-MAIL_PASSWORD="Encrypted: <generated>"
+SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://postgres:superpass@192.168.7.10:5432/helpdesk_pro
+MAIL_SERVER='127.0.0.1'
+MAIL_PORT=25
+MAIL_USE_TLS=true
+MAIL_USERNAME='demo@example.com'
+MAIL_PASSWORD='superpass'
 MAIL_DEFAULT_SENDER=support@company.com
-
 DEFAULT_LANGUAGE=en
 LOG_LEVEL=INFO
-ASSISTANT_TOOL_CALL_DEPTH_LIMIT=100
+ASSISTANT_TOOL_CALL_DEPTH_LIMIT=-1
+SQLALCHEMY_ECHO=false
+ASSISTANT_ENABLE_LLM_OVERRIDE=true
+MCP_ENABLED=true
+MCP_ACCESS_LOG=false
+BASE_URL='http://localhost:5000'
+MAIL_FALLBACK_TO_NO_AUTH=true
 ```
 
 > **Tip:** If you change the database credentials, remember to adjust firewall rules and create the target database beforehand.

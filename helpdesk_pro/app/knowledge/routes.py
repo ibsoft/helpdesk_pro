@@ -226,6 +226,19 @@ def delete_article(article_id):
         flash(_("You do not have permission to delete articles."), "warning")
         return redirect(url_for("knowledge.list_articles"))
     article = KnowledgeArticle.query.get_or_404(article_id)
+    # Remove attachment files from disk before deleting DB records
+    try:
+        upload_folder = _ensure_upload_folder()
+        for attachment in list(article.attachments or []):
+            file_path = os.path.join(upload_folder, attachment.stored_filename)
+            if os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
+    except Exception:
+        # Proceed with DB delete even if file cleanup fails
+        pass
     db.session.delete(article)
     db.session.commit()
     flash(_("Article deleted."), "warning")

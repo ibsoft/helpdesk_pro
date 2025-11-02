@@ -35,7 +35,8 @@ class Config:
     MAIL_USE_TLS = os.getenv('MAIL_USE_TLS', 'True').lower() == 'true'
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
-    MAIL_FALLBACK_TO_NO_AUTH = os.getenv('MAIL_FALLBACK_TO_NO_AUTH', 'True').lower() == 'true'
+    MAIL_FALLBACK_TO_NO_AUTH = os.getenv(
+        'MAIL_FALLBACK_TO_NO_AUTH', 'True').lower() == 'true'
     LANGUAGES = ['en', 'el']
     BABEL_DEFAULT_LOCALE = os.getenv('DEFAULT_LANGUAGE', 'en')
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=45)
@@ -49,9 +50,12 @@ class Config:
         "X-Frame-Options": "DENY",
         "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload"
     }
-    KNOWLEDGE_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'knowledge_uploads')
-    COLLAB_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'chat_uploads')
-    ASSISTANT_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'assistant_uploads')
+    KNOWLEDGE_UPLOAD_FOLDER = os.path.join(
+        os.getcwd(), 'instance', 'knowledge_uploads')
+    COLLAB_UPLOAD_FOLDER = os.path.join(
+        os.getcwd(), 'instance', 'chat_uploads')
+    ASSISTANT_UPLOAD_FOLDER = os.path.join(
+        os.getcwd(), 'instance', 'assistant_uploads')
 
     LANGUAGES = ['en', 'el']
     BABEL_DEFAULT_LOCALE = 'en'
@@ -60,13 +64,17 @@ class Config:
     UI_FONT_SCALE = _float_env('UI_FONT_SCALE', 0.95)
     UI_NAVBAR_HEIGHT = _float_env('UI_NAVBAR_HEIGHT', 30.0)
     UI_FOOTER_HEIGHT = _float_env('UI_FOOTER_HEIGHT', 35.0)
-    UI_DATATABLE_HEADER_FONT_SIZE = _float_env('UI_DATATABLE_HEADER_FONT_SIZE', 0.95)
-    ASSISTANT_ENABLE_LLM_OVERRIDE = os.getenv('ASSISTANT_ENABLE_LLM_OVERRIDE', 'True').lower() == 'true'
+    UI_DATATABLE_HEADER_FONT_SIZE = _float_env(
+        'UI_DATATABLE_HEADER_FONT_SIZE', 0.95)
+    ASSISTANT_ENABLE_LLM_OVERRIDE = os.getenv(
+        'ASSISTANT_ENABLE_LLM_OVERRIDE', 'True').lower() == 'true'
     try:
-        ASSISTANT_TOOL_CALL_DEPTH_LIMIT = int(os.getenv('ASSISTANT_TOOL_CALL_DEPTH_LIMIT', '-1'))
+        ASSISTANT_TOOL_CALL_DEPTH_LIMIT = int(
+            os.getenv('ASSISTANT_TOOL_CALL_DEPTH_LIMIT', '-1'))
     except (TypeError, ValueError):
         ASSISTANT_TOOL_CALL_DEPTH_LIMIT = -1
-    MCP_ENABLED = os.getenv('MCP_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
+    MCP_ENABLED = os.getenv('MCP_ENABLED', 'True').lower() not in {
+        '0', 'false', 'no'}
     MCP_HOST = os.getenv('MCP_HOST', '127.0.0.1')
     MCP_PORT = int(os.getenv('MCP_PORT', 8081))
     MCP_BASE_URL = os.getenv('MCP_BASE_URL')
@@ -76,4 +84,6 @@ class Config:
     MCP_MAX_ROWS = int(os.getenv('MCP_MAX_ROWS', 1000))
     MCP_REQUEST_TIMEOUT_SECONDS = int(os.getenv('MCP_REQUEST_TIMEOUT', 10))
     MCP_KEEP_ALIVE_SECONDS = int(os.getenv('MCP_KEEP_ALIVE', 5))
-    MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {'1', 'true', 'yes'}
+    MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {
+        '1', 'true', 'yes'}
+    APP_VERSION = os.getenv('APP_VERSION', '2.0.7')
