@@ -1,0 +1,71 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: helpdesk
+      POSTGRES_PASSWORD: helpdesk
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U helpdesk -d helpdesk"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file: [.env]
+    environment:
+      # Pydantic settings your app expects:
+      FLASK_ENV=production
+      SECRET_KEY=supersecretkey
+      SQLALCHEMY_DATABASE_URI=postgresql+psycopg2://helpdesk:helpdesks@localhost:5432/helpdesk
+      MAIL_SERVER='127.0.0.1'
+      MAIL_PORT=25
+      MAIL_USE_TLS=true
+      MAIL_USERNAME='demo@example.com'
+      MAIL_PASSWORD='superpass'
+      MAIL_DEFAULT_SENDER=support@company.com
+      DEFAULT_LANGUAGE=en
+      LOG_LEVEL=INFO
+      ASSISTANT_TOOL_CALL_DEPTH_LIMIT=-1
+      SQLALCHEMY_ECHO=false
+      ASSISTANT_ENABLE_LLM_OVERRIDE=true
+      MCP_ENABLED=true
+      MCP_ACCESS_LOG=false
+      BASE_URL='http://localhost:5000'
+      MAIL_FALLBACK_TO_NO_AUTH=true
+
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      # Persist the whole instance folder (includes uploads)
+      - app_instance:/app/instance
+      # Optional: keep logs outside the container
+      - app_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:5000/healthz || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      app:
+        condition: service_started
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/nginx.conf:ro
+
+volumes:
+  pgdata:
+  app_instance:
+  app_logs:
