@@ -5,6 +5,11 @@ Provides management pages for IP network maps and networking tools.
 """
 
 import ipaddress
+import platform
+import re
+import socket
+import subprocess
+from typing import List
 from flask import (
     Blueprint,
     render_template,
@@ -39,6 +44,52 @@ def _json_response(success, message, category="info", status=200, **extra):
     payload = {"success": success, "message": message, "category": category}
     payload.update(extra)
     return jsonify(payload), status
+
+
+_HOST_PATTERN = re.compile(r"^[A-Za-z0-9_.:-]+$")
+
+
+def _validate_host(value: str) -> bool:
+    if not value or len(value) > 253:
+        return False
+    return bool(_HOST_PATTERN.fullmatch(value))
+
+
+def _parse_ports(raw_ports: List[str]) -> List[int]:
+    ports: List[int] = []
+    for item in raw_ports:
+        item = str(item).strip()
+        if not item:
+            continue
+        try:
+            port = int(item)
+        except ValueError:
+            raise ValueError(f"Invalid port '{item}'")
+        if port < 1 or port > 65535:
+            raise ValueError(f"Port {port} out of range (1-65535)")
+        ports.append(port)
+    if not ports:
+        raise ValueError("No valid ports provided")
+    if len(ports) > 25:
+        raise ValueError("Maximum 25 ports per scan")
+    return ports
+
+
+def _run_ping_command(target: str) -> subprocess.CompletedProcess:
+    system = platform.system().lower()
+    if system == "windows":
+        command = ["ping", "-n", "3", "-w", "2000", target]
+    else:
+        command = ["ping", "-c", "3", "-W", "2", target]
+    return subprocess.run(command, capture_output=True, text=True, timeout=10)
+
+
+def _scan_tcp_port(host: str, port: int, timeout: float = 1.5) -> bool:
+    try:
+        with socket.create_connection((host, port), timeout=timeout):
+            return True
+    except (socket.timeout, OSError):
+        return False
 
 
 @networks_bp.route("/maps")
@@ -311,3 +362,88 @@ def network_tools():
     _require_roles("admin", "technician")
     module_access = get_module_access(current_user, "networks")
     return render_template("networks/tools.html", module_access=module_access)
+
+
+@networks_bp.route("/tools/ping", methods=["POST"])
+@login_required
+def run_ping():
+    _require_roles("admin", "technician")
+    data = request.get_json(silent=True) or request.form
+    target = (data.get("target") or "").strip()
+    if not target:
+        return _json_response(False, "Target host is required.", "warning", 400)
+    if not _validate_host(target):
+        return _json_response(False, "Target contains invalid characters.", "danger", 400)
+
+    try:
+        socket.getaddrinfo(target, None)
+    except socket.gaierror:
+        return _json_response(False, "Unable to resolve host.", "danger", 400)
+
+    try:
+        result = _run_ping_command(target)
+    except FileNotFoundError:
+        return _json_response(False, "Ping utility is not available on this server.", "danger", 500)
+    except subprocess.TimeoutExpired:
+        return _json_response(False, "Ping command timed out.", "warning", 504)
+
+    output = (result.stdout or result.stderr or "").strip()
+    if not output:
+        output = "Ping completed with no output."
+    return jsonify(
+        success=result.returncode == 0,
+        output=output,
+        return_code=result.returncode,
+        target=target,
+    )
+
+
+@networks_bp.route("/tools/scan-ports", methods=["POST"])
+@login_required
+def run_port_scan():
+    _require_roles("admin", "technician")
+    data = request.get_json(silent=True) or request.form
+    target = (data.get("target") or "").strip()
+    protocol = (data.get("protocol") or "tcp").strip().lower()
+    ports_raw = data.get("ports")
+
+    if not target:
+        return _json_response(False, "Target host is required.", "warning", 400)
+    if not _validate_host(target):
+        return _json_response(False, "Target contains invalid characters.", "danger", 400)
+    if protocol not in {"tcp", "udp"}:
+        return _json_response(False, "Unsupported protocol.", "danger", 400)
+
+    if isinstance(ports_raw, str):
+        raw_list = [p for p in ports_raw.split(",")]
+    elif isinstance(ports_raw, list):
+        raw_list = ports_raw
+    else:
+        raw_list = []
+
+    try:
+        ports = _parse_ports(raw_list) if raw_list else _parse_ports(["22", "80", "443"])
+    except ValueError as exc:
+        return _json_response(False, str(exc), "danger", 400)
+
+    try:
+        socket.getaddrinfo(target, None)
+    except socket.gaierror:
+        return _json_response(False, "Unable to resolve host.", "danger", 400)
+
+    results = []
+    for port in ports:
+        if protocol == "tcp":
+            is_open = _scan_tcp_port(target, port)
+            status = "open" if is_open else "closed"
+        else:
+            status = "unsupported"
+        results.append({"port": port, "protocol": protocol, "status": status})
+
+    summary = {
+        "open": sum(1 for r in results if r["status"] == "open"),
+        "closed": sum(1 for r in results if r["status"] == "closed"),
+        "unsupported": sum(1 for r in results if r["status"] == "unsupported"),
+    }
+
+    return jsonify(success=True, target=target, protocol=protocol, results=results, summary=summary)
