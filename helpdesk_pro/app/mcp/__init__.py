@@ -8,10 +8,12 @@ Flask app starts, sharing configuration and logging facilities.
 from __future__ import annotations
 
 import atexit
+import fcntl
 import logging
+import os
 import threading
 from contextlib import suppress
-from typing import Any, Mapping, Optional
+from typing import Any, Mapping, Optional, TextIO
 
 import uvicorn
 from flask import Flask
@@ -23,6 +25,47 @@ _thread: Optional[threading.Thread] = None
 _server: Optional[uvicorn.Server] = None
 _start_lock = threading.Lock()
 _atexit_registered = False
+_lock_handle: Optional[TextIO] = None
+_lock_file_path: Optional[str] = None
+
+
+def _should_start_in_process(flask_app: Flask) -> bool:
+    """Return True if the current process should host the embedded MCP server."""
+
+    global _lock_handle, _lock_file_path
+
+    lock_path = flask_app.config.get("MCP_LOCK_FILE") or os.getenv("MCP_LOCK_FILE") or "/tmp/helpdesk_pro_mcp.lock"
+    _lock_file_path = lock_path
+
+    if _lock_handle is not None:
+        return True
+
+    try:
+        fh = open(lock_path, "a+")
+    except OSError:
+        flask_app.logger.warning("Unable to open MCP lock file %s; starting MCP anyway.", lock_path)
+        return True
+
+    try:
+        fcntl.flock(fh.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        fh.close()
+        return False
+
+    try:
+        fh.seek(0)
+        fh.truncate()
+        fh.write(str(os.getpid()))
+        fh.flush()
+        os.fsync(fh.fileno())
+    except OSError:
+        # If we fail to write the PID, release the lock and allow another worker to try.
+        fcntl.flock(fh.fileno(), fcntl.LOCK_UN)
+        fh.close()
+        return False
+
+    _lock_handle = fh
+    return True
 
 
 def init_app(flask_app: Flask) -> None:
@@ -67,6 +110,12 @@ def start_mcp_server(flask_app: Flask) -> None:
 
     with _start_lock:
         if _thread and _thread.is_alive():
+            return
+
+        if not _should_start_in_process(flask_app):
+            flask_app.logger.info(
+                "Skipping MCP server startup in worker %s", os.getenv("GUNICORN_WORKER_ID")
+            )
             return
 
         overrides = _collect_overrides(flask_app)
@@ -120,7 +169,7 @@ def start_mcp_server(flask_app: Flask) -> None:
 def stop_mcp_server(flask_app: Optional[Flask] = None) -> None:
     """Signal the MCP server to shut down and wait briefly for completion."""
 
-    global _thread, _server
+    global _thread, _server, _lock_handle, _lock_file_path
 
     if _server:
         _server.should_exit = True
@@ -130,6 +179,16 @@ def stop_mcp_server(flask_app: Optional[Flask] = None) -> None:
             _thread.join(timeout=5)
     _thread = None
     _server = None
+    if _lock_handle is not None:
+        with suppress(OSError):
+            fcntl.flock(_lock_handle.fileno(), fcntl.LOCK_UN)
+        with suppress(OSError):
+            _lock_handle.close()
+        _lock_handle = None
+    if _lock_file_path:
+        with suppress(OSError):
+            os.remove(_lock_file_path)
+        _lock_file_path = None
     if flask_app is not None:
         state = flask_app.extensions.setdefault("mcp_server", {})
         state["started"] = False
