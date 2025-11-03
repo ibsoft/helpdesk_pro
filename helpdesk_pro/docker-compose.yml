@@ -43,7 +43,7 @@ services:
       MCP_DATABASE_URL: postgresql+asyncpg://helpdesk:helpdesk@db:5432/helpdesk
 
       # --- Dangerous: set to "true" to wipe schema on start ---
-      DB_RESET: "false"
+      DB_RESET: "True"
 
       # Optional: override MCP launcher
       # MCP_CMD: python -m app.mcp.server --host 0.0.0.0 --port 8081

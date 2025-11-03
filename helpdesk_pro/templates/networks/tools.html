@@ -140,6 +140,7 @@
       </div>
       <div class="card-body">
         <form id="pingForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="row g-3 align-items-end">
             <div class="col-md-8">
               <label class="form-label">{{ _('Target Host / IP') }}</label>
@@ -163,6 +164,7 @@
       </div>
       <div class="card-body">
         <form id="portForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="row g-3">
             <div class="col-md-6">
               <label class="form-label">{{ _('Target Host / IP') }}</label>
@@ -197,6 +199,10 @@
 {% block extra_js %}
 <script>
 $(function() {
+  const csrfToken = "{{ csrf_token() }}";
+  const pingEndpoint = "{{ url_for('networks.run_ping') }}";
+  const portEndpoint = "{{ url_for('networks.run_port_scan') }}";
+
   function toIPv4Int(ip) {
     const parts = ip.split('.');
     if (parts.length !== 4) throw new Error();
@@ -284,22 +290,62 @@ $(function() {
     e.preventDefault();
     const target = $('#pingTarget').val().trim();
     if (!target) return;
-    const now = new Date().toLocaleTimeString();
-    $('#pingOutput').text(`[${now}] Ping to ${target}\nReply from ${target}: bytes=32 time=10ms TTL=60\nReply from ${target}: bytes=32 time=11ms TTL=60\nReply from ${target}: bytes=32 time=9ms TTL=60\n---\nPing statistics for ${target}:\n    Packets: Sent = 3, Received = 3, Lost = 0 (0% loss)`);
+    $('#pingOutput').text('{{ _("Running ping...") }}');
+    fetch(pingEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ target })
+    }).then(async (response) => {
+      const payload = await response.json().catch(() => null);
+      if (!payload) {
+        throw new Error('Invalid response');
+      }
+      if (!response.ok || payload.success === false) {
+        const message = payload.message || '{{ _("Ping failed") }}';
+        const output = payload.output || '';
+        throw new Error(output ? `${message}\n\n${output}` : message);
+      }
+      $('#pingOutput').text(payload.output);
+    }).catch((err) => {
+      $('#pingOutput').text(err.message || '{{ _("Ping failed") }}');
+    });
   });
 
   $('#portForm').on('submit', function(e) {
     e.preventDefault();
     const target = $('#portTarget').val().trim();
-    const ports = $('#portList').val().trim() || '22,80,443';
+    const ports = $('#portList').val().trim();
     const protocol = $('#portProtocol').val();
-    const portArray = ports.split(',').map(p => p.trim()).filter(Boolean);
-    const lines = [`Scanning ${protocol.toUpperCase()} ports on ${target}...`];
-    portArray.forEach(port => {
-      const open = ['22','80','443','3389','53'].includes(port);
-      lines.push(`Port ${port}/${protocol.toUpperCase()}: ${open ? 'Open' : 'Closed'}`);
+    $('#portOutput').text('{{ _("Running port scan...") }}');
+    fetch(portEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ target, protocol, ports })
+    }).then(async (response) => {
+      const payload = await response.json().catch(() => null);
+      if (!payload) {
+        throw new Error('Invalid response');
+      }
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.message || '{{ _("Port scan failed") }}');
+      }
+      const lines = [`{{ _("Results for") }} ${payload.target} (${payload.protocol.toUpperCase()}):`];
+      (payload.results || []).forEach(result => {
+        lines.push(`Port ${result.port}/${result.protocol.toUpperCase()}: ${result.status}`);
+      });
+      if (payload.summary) {
+        lines.push('', `Open: ${payload.summary.open}`, `Closed: ${payload.summary.closed}`, `Unsupported: ${payload.summary.unsupported}`);
+      }
+      $('#portOutput').text(lines.join('\n'));
+    }).catch((err) => {
+      $('#portOutput').text(err.message || '{{ _("Port scan failed") }}');
     });
-    $('#portOutput').text(lines.join('\n'));
   });
 });
 </script>

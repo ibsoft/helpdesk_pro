@@ -1,0 +1,19 @@
+[Unit]
+Description=Helpdesk Pro (Flask) via Gunicorn
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/it/helpdesk_pro
+Environment="PATH=/opt/it/helpdesk_pro/.venv/bin"
+Environment="PYTHONUNBUFFERED=1"
+Environment="FLASK_ENV=production"
+ExecStart=/opt/it/helpdesk_pro/.venv/bin/gunicorn -w 4 -k gthread --threads 8 --timeout 120 -b 192.168.1.123:7771 wsgi:app
+Restart=always
+RestartSec=3
+RuntimeDirectory=helpdesk_pro
+UMask=027
+
+[Install]
+WantedBy=multi-user.target
