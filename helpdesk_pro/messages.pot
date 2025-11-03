@@ -1,0 +1,4993 @@
+# Translations template for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-11-01 12:46+0200\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: app/navigation.py:22
+msgid "Dashboard"
+msgstr ""
+
+#: app/navigation.py:30
+msgid "Manage"
+msgstr ""
+
+#: app/navigation.py:37 templates/dashboard/index.html:64
+#: templates/users/list.html:59
+msgid "Users"
+msgstr ""
+
+#: app/navigation.py:44
+msgid "Access"
+msgstr ""
+
+#: app/navigation.py:51
+msgid "Authentication"
+msgstr ""
+
+#: app/navigation.py:58
+msgid "AI Assistant"
+msgstr ""
+
+#: app/navigation.py:66 templates/manage/api_keys.html:55
+msgid "API Keys"
+msgstr ""
+
+#: app/navigation.py:73
+msgid "API Docs"
+msgstr ""
+
+#: app/navigation.py:80 templates/manage/email_ingest.html:54
+msgid "Email to Ticket"
+msgstr ""
+
+#: app/navigation.py:87 templates/manage/configuration.html:41
+msgid "Configuration"
+msgstr ""
+
+#: app/navigation.py:96 templates/tickets/list.html:188
+msgid "Tickets"
+msgstr ""
+
+#: app/navigation.py:104 templates/knowledge/list.html:177
+msgid "Knowledge Base"
+msgstr ""
+
+#: app/navigation.py:112
+msgid "Collaboration"
+msgstr ""
+
+#: app/navigation.py:120
+msgid "IT Works"
+msgstr ""
+
+#: app/navigation.py:127
+msgid "Software"
+msgstr ""
+
+#: app/navigation.py:134
+msgid "Hardware"
+msgstr ""
+
+#: app/navigation.py:141
+msgid "Contracts"
+msgstr ""
+
+#: app/navigation.py:148 templates/address_book/address_book.html:88
+msgid "Address Book"
+msgstr ""
+
+#: app/navigation.py:155 templates/networks/maps.html:102
+msgid "Network Maps"
+msgstr ""
+
+#: app/navigation.py:162
+msgid "Network Tools"
+msgstr ""
+
+#: app/navigation.py:169 templates/backup/job_detail.html:34
+#: templates/backup/tape_detail.html:34
+msgid "Backup Monitor"
+msgstr ""
+
+#: app/navigation.py:176
+msgid "LTO Barcode Generator"
+msgstr ""
+
+#: app/navigation.py:183 templates/tools/password_generator.html:15
+msgid "Password & PIN Studio"
+msgstr ""
+
+#: app/navigation.py:192 templates/manage/assistant_settings.html:65
+msgid "AI Assistant Widget"
+msgstr ""
+
+#: app/navigation.py:201
+msgid "Email to Ticket Worker"
+msgstr ""
+
+#: app/assistant/routes.py:870 app/assistant/routes.py:889
+#: app/assistant/routes.py:905 app/assistant/routes.py:964
+#: app/assistant/routes.py:1025
+msgid "Session not found."
+msgstr ""
+
+#: app/assistant/routes.py:910
+msgid "No file provided."
+msgstr ""
+
+#: app/assistant/routes.py:913
+msgid "Please choose a file."
+msgstr ""
+
+#: app/assistant/routes.py:917 app/knowledge/routes.py:249
+msgid "Invalid filename."
+msgstr ""
+
+#: app/assistant/routes.py:972
+msgid "Document not found."
+msgstr ""
+
+#: app/assistant/routes.py:1017
+msgid "Assistant is disabled."
+msgstr ""
+
+#: app/assistant/routes.py:1032 app/collab/routes.py:342
+#: templates/collab/chat.html:682
+msgid "Message cannot be empty."
+msgstr ""
+
+#: app/assistant/routes.py:1058
+msgid "OpenAI API key is not configured."
+msgstr ""
+
+#: app/assistant/routes.py:1067 app/assistant/routes.py:1262
+msgid "OpenWebUI base URL is not configured."
+msgstr ""
+
+#: app/assistant/routes.py:1076
+msgid "Webhook URL is not configured."
+msgstr ""
+
+#: app/assistant/routes.py:1079
+msgid "Unsupported assistant provider configured."
+msgstr ""
+
+#: app/assistant/routes.py:1081
+#, python-format
+msgid "Connection error: %(error)s"
+msgstr ""
+
+#: app/assistant/routes.py:1088
+msgid "Assistant did not return a reply."
+msgstr ""
+
+#: app/assistant/routes.py:1129
+#, python-format
+msgid "OpenAI error: %(status)s %(body)s"
+msgstr ""
+
+#: app/assistant/routes.py:1236
+#, python-format
+msgid "Remote tool execution failed: %(status)s %(body)s"
+msgstr ""
+
+#: app/assistant/routes.py:1279
+#, python-format
+msgid "OpenWebUI error: %(status)s %(body)s"
+msgstr ""
+
+#: app/assistant/routes.py:1367
+#, python-format
+msgid "Webhook error: %(status)s %(body)s"
+msgstr ""
+
+#: app/assistant/routes.py:1371
+#, python-format
+msgid "Invalid webhook response: %(error)s"
+msgstr ""
+
+#: app/assistant/routes.py:1375
+msgid "Webhook response is missing a 'reply' field."
+msgstr ""
+
+#: app/assistant/routes.py:1385
+#, python-format
+msgid "Tool `%(tool)s` returned no rows."
+msgstr ""
+
+#: app/assistant/routes.py:1395
+msgid "Untitled article"
+msgstr ""
+
+#: app/assistant/routes.py:1437 app/assistant/routes.py:1443
+#, python-format
+msgid ""
+"Results from `%(tool)s`:\n"
+"%(rows)s"
+msgstr ""
+
+#: app/assistant/routes.py:1438
+#, python-format
+msgid ""
+"Tool `%(tool)s` response:\n"
+"%(payload)s"
+msgstr ""
+
+#: app/assistant/routes.py:1441
+#, python-format
+msgid "Tool `%(tool)s` returned no data."
+msgstr ""
+
+#: app/assistant/routes.py:1445
+#, python-format
+msgid "Tool `%(tool)s` completed with no data."
+msgstr ""
+
+#: app/assistant/routes.py:1446
+#, python-format
+msgid "Tool `%(tool)s` response: %(payload)s"
+msgstr ""
+
+#: app/assistant/routes.py:1465
+#, python-format
+msgid "MCP invocation failed (%(status)s): %(detail)s"
+msgstr ""
+
+#: app/assistant/routes.py:1470
+#, python-format
+msgid "Invalid response from MCP server: %(error)s"
+msgstr ""
+
+#: app/assistant/routes.py:2052
+msgid "retention already expired"
+msgstr ""
+
+#: app/assistant/routes.py:2067
+#, python-format
+msgid "retention due within %(days)s day(s)"
+msgstr ""
+
+#: app/assistant/routes.py:2070
+#, python-format
+msgid "No storage media matched %(label)s."
+msgstr ""
+
+#: app/assistant/routes.py:2073
+#, python-format
+msgid "Storage media with %(label)s: showing %(count)s item(s)."
+msgstr ""
+
+#: app/assistant/routes.py:2080
+#, python-format
+msgid "%(days)s day(s) overdue"
+msgstr ""
+
+#: app/assistant/routes.py:2082
+#, python-format
+msgid "%(days)s day(s) remaining"
+msgstr ""
+
+#: app/assistant/routes.py:2084
+#, python-format
+msgid "ends %(date)s"
+msgstr ""
+
+#: app/assistant/routes.py:2090
+msgid "limited to first 25 media."
+msgstr ""
+
+#: app/assistant/routes.py:2102
+msgid "No storage media are currently marked as off-site."
+msgstr ""
+
+#: app/assistant/routes.py:2103
+#, python-format
+msgid "Off-site storage media (%(count)s found):"
+msgstr ""
+
+#: app/assistant/routes.py:2114
+msgid "No external disks have been registered yet."
+msgstr ""
+
+#: app/assistant/routes.py:2116
+msgid "No tape cartridges have been registered yet."
+msgstr ""
+
+#: app/assistant/routes.py:2117
+msgid "No storage media have been registered yet."
+msgstr ""
+
+#: app/assistant/routes.py:2134
+msgid "tape cartridges"
+msgstr ""
+
+#: app/assistant/routes.py:2135
+msgid "external disks"
+msgstr ""
+
+#: app/assistant/routes.py:2139
+#, python-format
+msgid "Storage media summary (filtered by %(type)s):"
+msgstr ""
+
+#: app/assistant/routes.py:2141
+msgid "Storage media summary:"
+msgstr ""
+
+#: app/assistant/routes.py:2142
+#, python-format
+msgid "Total media: %(count)s"
+msgstr ""
+
+#: app/assistant/routes.py:2144
+#, python-format
+msgid "- %(label)s: %(count)s"
+msgstr ""
+
+#: app/assistant/routes.py:2147
+#, python-format
+msgid "- Location %(loc)s: %(count)s"
+msgstr ""
+
+#: app/assistant/routes.py:2148
+#, python-format
+msgid "Retention overdue: %(count)s"
+msgstr ""
+
+#: app/assistant/routes.py:2149
+#, python-format
+msgid "Retention due within 7 days: %(count)s"
+msgstr ""
+
+#: app/assistant/routes.py:2922 app/assistant/routes.py:2947
+msgid "Unspecified vendor"
+msgstr ""
+
+#: app/assistant/routes.py:2923 app/assistant/routes.py:2948
+msgid "Unspecified currency"
+msgstr ""
+
+#: app/assistant/routes.py:2938 app/assistant/routes.py:2963
+msgid "Overall contract value"
+msgstr ""
+
+#: app/assistant/routes.py:2967
+msgid "Total contract value by vendor and currency"
+msgstr ""
+
+#: app/assistant/routes.py:2969
+msgid "Total contract value breakdown by vendor and currency"
+msgstr ""
+
+#: app/auth/routes.py:29
+msgid "Incorrect credentials."
+msgstr ""
+
+#: app/auth/routes.py:31
+msgid "Account is disabled."
+msgstr ""
+
+#: app/auth/routes.py:36
+#, python-format
+msgid "Welcome, %(username)s!"
+msgstr ""
+
+#: app/auth/routes.py:48
+msgid "You have been logged out."
+msgstr ""
+
+#: app/auth/routes.py:59 app/auth/routes.py:150
+msgid "Password reset is disabled."
+msgstr ""
+
+#: app/auth/routes.py:75
+msgid "Please provide an email address."
+msgstr ""
+
+#: app/auth/routes.py:95
+msgid "Registration is currently disabled."
+msgstr ""
+
+#: app/auth/routes.py:106
+msgid "Username must be at least 3 characters long."
+msgstr ""
+
+#: app/auth/routes.py:108
+msgid "Email is required."
+msgstr ""
+
+#: app/auth/routes.py:110
+msgid "Username is already taken."
+msgstr ""
+
+#: app/auth/routes.py:112
+msgid "An account with that email already exists."
+msgstr ""
+
+#: app/auth/routes.py:117 app/auth/routes.py:165 templates/users/list.html:490
+#: templates/users/list.html:526
+msgid "Passwords do not match."
+msgstr ""
+
+#: app/auth/routes.py:137
+msgid "Account created successfully. You can now sign in."
+msgstr ""
+
+#: app/auth/routes.py:169
+msgid "Your password has been updated. Please sign in."
+msgstr ""
+
+#: app/auth/routes.py:194
+msgid "Username is required."
+msgstr ""
+
+#: app/auth/routes.py:196
+msgid "Password is required."
+msgstr ""
+
+#: app/auth/routes.py:217
+msgid "Administrator account created successfully."
+msgstr ""
+
+#: app/auth/routes.py:253
+msgid "Helpdesk Pro password reset"
+msgstr ""
+
+#: app/auth/routes.py:255
+#, python-format
+msgid ""
+"Hello %(username)s,\n"
+"\n"
+"You requested a password reset for your Helpdesk Pro account. Click the "
+"link below to choose a new password (valid for 1 hour):\n"
+"\n"
+"%(reset_url)s\n"
+"\n"
+"If you did not request this change, please ignore this email."
+msgstr ""
+
+#: app/backup/routes.py:50 templates/manage/configuration.html:179
+msgid "Empty"
+msgstr ""
+
+#: app/backup/routes.py:51
+msgid "In Use"
+msgstr ""
+
+#: app/backup/routes.py:52
+msgid "Full"
+msgstr ""
+
+#: app/backup/routes.py:53
+msgid "Pending Destruction"
+msgstr ""
+
+#: app/backup/routes.py:57
+msgid "On-Site"
+msgstr ""
+
+#: app/backup/routes.py:58
+msgid "In Transit"
+msgstr ""
+
+#: app/backup/routes.py:59
+msgid "Off-Site"
+msgstr ""
+
+#: app/backup/routes.py:67
+msgid "Daily"
+msgstr ""
+
+#: app/backup/routes.py:68
+msgid "Weekly"
+msgstr ""
+
+#: app/backup/routes.py:69
+msgid "Monthly"
+msgstr ""
+
+#: app/backup/routes.py:145 templates/backup/job_detail.html:133
+#: templates/backup/job_detail.html:190 templates/backup/monitor.html:131
+#: templates/backup/monitor.html:222 templates/backup/monitor.html:330
+#: templates/backup/tape_detail.html:127
+#: templates/contracts/contract_list.html:301
+#: templates/contracts/contract_list.html:419
+#: templates/inventory/hardware_list.html:419
+#: templates/inventory/hardware_list.html:588
+#: templates/inventory/software_list.html:115
+#: templates/inventory/software_list.html:378
+#: templates/inventory/software_list.html:530
+msgid "Unassigned"
+msgstr ""
+
+#: app/backup/routes.py:167 app/backup/routes.py:173 app/backup/routes.py:189
+#: app/backup/routes.py:229 app/backup/routes.py:239 app/backup/routes.py:242
+#: app/backup/routes.py:252
+msgid "—"
+msgstr ""
+
+#: app/backup/routes.py:175 templates/backup/monitor.html:190
+#: templates/backup/monitor.html:304 templates/backup/monitor.html:408
+#: templates/backup/tape_detail.html:61 templates/backup/tape_detail.html:156
+msgid "External Disk"
+msgstr ""
+
+#: app/backup/routes.py:177 templates/backup/monitor.html:407
+#: templates/backup/tape_detail.html:63 templates/backup/tape_detail.html:155
+msgid "Tape Cartridge"
+msgstr ""
+
+#: app/backup/routes.py:183 app/backup/routes.py:233
+#: templates/backup/monitor.html:241 templates/backup/tape_detail.html:102
+msgid "Not set"
+msgstr ""
+
+#: app/backup/routes.py:184 app/backup/routes.py:234
+#, python-format
+msgid "%(days)s day(s)"
+msgstr ""
+
+#: app/backup/routes.py:199 app/backup/routes.py:201
+#: templates/backup/job_detail.html:225
+msgid "Event"
+msgstr ""
+
+#: app/backup/routes.py:202 templates/backup/job_detail.html:177
+#: templates/backup/tape_detail.html:113
+msgid "Current location"
+msgstr ""
+
+#: app/backup/routes.py:203 templates/backup/job_detail.html:176
+#: templates/backup/monitor.html:175 templates/backup/monitor.html:445
+#: templates/backup/tape_detail.html:75 templates/backup/tape_detail.html:195
+#: templates/contracts/contract_list.html:136
+#: templates/contracts/contract_list.html:254
+#: templates/contracts/contract_list.html:372
+#: templates/inventory/hardware_list.html:177
+#: templates/inventory/hardware_list.html:347
+#: templates/inventory/hardware_list.html:516
+#: templates/inventory/software_list.html:169
+#: templates/inventory/software_list.html:305
+#: templates/inventory/software_list.html:457
+#: templates/manage/api_keys.html:147
+#: templates/manage/assistant_settings.html:78
+#: templates/tickets/_view_content.html:221 templates/tickets/edit.html:24
+#: templates/tickets/list.html:201
+msgid "Status"
+msgstr ""
+
+#: app/backup/routes.py:204
+msgid "Lifecycle policy"
+msgstr ""
+
+#: app/backup/routes.py:205 templates/backup/tape_detail.html:130
+msgid "Usage tags"
+msgstr ""
+
+#: app/backup/routes.py:206 templates/address_book/address_book.html:112
+#: templates/address_book/address_book.html:259
+#: templates/address_book/address_book.html:353
+#: templates/backup/job_detail.html:150 templates/backup/monitor.html:469
+#: templates/backup/tape_detail.html:226 templates/backup/tape_detail.html:481
+#: templates/backup/tape_detail.html:532
+#: templates/contracts/contract_list.html:152
+#: templates/contracts/contract_list.html:330
+#: templates/contracts/contract_list.html:448
+#: templates/inventory/hardware_list.html:194
+#: templates/inventory/hardware_list.html:430
+#: templates/inventory/hardware_list.html:599
+#: templates/inventory/software_list.html:180 templates/networks/hosts.html:226
+#: templates/networks/maps.html:128 templates/networks/maps.html:212
+#: templates/networks/maps.html:266
+msgid "Notes"
+msgstr ""
+
+#: app/backup/routes.py:207 templates/backup/tape_detail.html:58
+msgid "Medium type"
+msgstr ""
+
+#: app/backup/routes.py:208 templates/backup/monitor.html:421
+#: templates/backup/tape_detail.html:160
+msgid "Generation / Model"
+msgstr ""
+
+#: app/backup/routes.py:209 templates/backup/tape_detail.html:73
+msgid "Serial number"
+msgstr ""
+
+#: app/backup/routes.py:210 templates/backup/monitor.html:433
+#: templates/backup/tape_detail.html:71 templates/backup/tape_detail.html:181
+#: templates/inventory/hardware_list.html:170
+#: templates/inventory/hardware_list.html:319
+#: templates/inventory/hardware_list.html:488
+msgid "Manufacturer"
+msgstr ""
+
+#: app/backup/routes.py:211 templates/backup/monitor.html:429
+#: templates/backup/tape_detail.html:217
+#: templates/inventory/hardware_list.html:171
+#: templates/inventory/hardware_list.html:323
+#: templates/inventory/hardware_list.html:492
+#: templates/manage/assistant_settings.html:197
+msgid "Model"
+msgstr ""
+
+#: app/backup/routes.py:212 templates/backup/job_detail.html:103
+#: templates/backup/monitor.html:453 templates/backup/tape_detail.html:203
+msgid "Retention (days)"
+msgstr ""
+
+#: app/backup/routes.py:213
+msgid "Retention start"
+msgstr ""
+
+#: app/backup/routes.py:214
+msgid "Retention end"
+msgstr ""
+
+#: app/backup/routes.py:215 templates/backup/tape_detail.html:105
+msgid "Last inventory check"
+msgstr ""
+
+#: app/backup/routes.py:360 templates/backup/monitor.html:231
+#: templates/contracts/contract_list.html:110
+#: templates/contracts/contract_list.html:167
+#: templates/inventory/software_list.html:205
+msgid "Expired"
+msgstr ""
+
+#: app/backup/routes.py:362
+#, python-format
+msgid "Due in %(days)s day(s)"
+msgstr ""
+
+#: app/backup/routes.py:364
+#, python-format
+msgid "Active (%(days)s days remaining)"
+msgstr ""
+
+#: app/backup/routes.py:384
+msgid "Barcode is required."
+msgstr ""
+
+#: app/backup/routes.py:389
+msgid "A storage medium with this barcode already exists."
+msgstr ""
+
+#: app/backup/routes.py:435
+#, python-format
+msgid "Storage medium “%(barcode)s” created."
+msgstr ""
+
+#: app/backup/routes.py:554
+msgid "No changes detected for the storage medium."
+msgstr ""
+
+#: app/backup/routes.py:561
+msgid "Storage medium updated."
+msgstr ""
+
+#: app/backup/routes.py:572
+msgid "Invalid location type."
+msgstr ""
+
+#: app/backup/routes.py:613
+msgid "Location entry added."
+msgstr ""
+
+#: app/backup/routes.py:644
+msgid "Custody event recorded."
+msgstr ""
+
+#: app/backup/routes.py:690
+#, python-format
+msgid "Storage medium “%(barcode)s” deleted."
+msgstr ""
+
+#: app/backup/routes.py:698
+#, python-format
+msgid "Failed to delete storage medium: %(error)s"
+msgstr ""
+
+#: app/collab/routes.py:57 templates/collab/chat.html:335
+#: templates/collab/chat.html:839
+msgid "General Chat"
+msgstr ""
+
+#: app/collab/routes.py:86
+msgid "Direct Chat"
+msgstr ""
+
+#: app/collab/routes.py:210
+msgid "Invalid user."
+msgstr ""
+
+#: app/collab/routes.py:214 app/collab/routes.py:428
+msgid "User not found."
+msgstr ""
+
+#: app/collab/routes.py:277 templates/contracts/contract_list.html:173
+#: templates/inventory/hardware_list.html:225
+#: templates/inventory/software_list.html:211
+#: templates/knowledge/detail.html:125
+msgid "Unknown"
+msgstr ""
+
+#: app/collab/routes.py:291 app/collab/routes.py:328 app/collab/routes.py:384
+msgid "You are not part of this conversation."
+msgstr ""
+
+#: app/collab/routes.py:394
+msgid "You are not authorized to do this."
+msgstr ""
+
+#: app/collab/routes.py:398
+msgid "Only the general chat can be purged."
+msgstr ""
+
+#: app/collab/routes.py:425
+msgid "Cannot favorite yourself."
+msgstr ""
+
+#: app/collab/routes.py:463
+msgid "You do not have access to this file."
+msgstr ""
+
+#: app/collab/routes.py:472 app/collab/routes.py:483
+msgid "You cannot delete this conversation."
+msgstr ""
+
+#: app/knowledge/routes.py:138
+msgid "You do not have access to this article."
+msgstr ""
+
+#: app/knowledge/routes.py:151
+msgid "You do not have permission to create articles."
+msgstr ""
+
+#: app/knowledge/routes.py:163 app/knowledge/routes.py:203
+msgid "Title and content are required."
+msgstr ""
+
+#: app/knowledge/routes.py:180
+msgid "Article created successfully."
+msgstr ""
+
+#: app/knowledge/routes.py:190
+msgid "You do not have permission to edit articles."
+msgstr ""
+
+#: app/knowledge/routes.py:215
+msgid "Article updated successfully."
+msgstr ""
+
+#: app/knowledge/routes.py:225
+msgid "You do not have permission to delete articles."
+msgstr ""
+
+#: app/knowledge/routes.py:230
+msgid "Article deleted."
+msgstr ""
+
+#: app/knowledge/routes.py:238
+msgid "You do not have permission to upload attachments."
+msgstr ""
+
+#: app/knowledge/routes.py:244
+msgid "Please select a file to upload."
+msgstr ""
+
+#: app/knowledge/routes.py:275
+msgid "Attachment uploaded."
+msgstr ""
+
+#: app/knowledge/routes.py:283
+msgid "You do not have permission to delete attachments."
+msgstr ""
+
+#: app/knowledge/routes.py:293
+msgid "Attachment removed."
+msgstr ""
+
+#: app/knowledge/routes.py:303
+msgid "You do not have access to this attachment."
+msgstr ""
+
+#: app/knowledge/routes.py:313
+msgid "You do not have permission to view historical versions."
+msgstr ""
+
+#: app/manage/routes.py:55
+msgid "Core Settings"
+msgstr ""
+
+#: app/manage/routes.py:57
+msgid "Secrets, database settings, and general application behavior."
+msgstr ""
+
+#: app/manage/routes.py:61
+msgid "Secret Key"
+msgstr ""
+
+#: app/manage/routes.py:64
+msgid "Auto-generated when empty"
+msgstr ""
+
+#: app/manage/routes.py:65
+msgid "Used to sign sessions and JWTs. Keep this value private."
+msgstr ""
+
+#: app/manage/routes.py:70
+msgid "Database URI"
+msgstr ""
+
+#: app/manage/routes.py:73
+msgid "Full SQLAlchemy connection string to the primary database."
+msgstr ""
+
+#: app/manage/routes.py:77 templates/manage/assistant_settings.html:189
+#: templates/manage/assistant_settings.html:267
+msgid "Base URL"
+msgstr ""
+
+#: app/manage/routes.py:80
+msgid "Public root URL used in generated links and downloads."
+msgstr ""
+
+#: app/manage/routes.py:84
+msgid "SQL Debug Logging"
+msgstr ""
+
+#: app/manage/routes.py:87
+msgid "Enable verbose SQL logging for troubleshooting."
+msgstr ""
+
+#: app/manage/routes.py:91
+msgid "Log Level"
+msgstr ""
+
+#: app/manage/routes.py:95
+msgid "Controls the verbosity of application logs."
+msgstr ""
+
+#: app/manage/routes.py:99
+msgid "Default Language"
+msgstr ""
+
+#: app/manage/routes.py:103
+msgid "Language used when the user has not chosen a preference."
+msgstr ""
+
+#: app/manage/routes.py:109 templates/address_book/address_book.html:102
+#: templates/address_book/address_book.html:219
+#: templates/address_book/address_book.html:313 templates/users/list.html:114
+#: templates/users/list.html:179 templates/users/list.html:256
+msgid "Email"
+msgstr ""
+
+#: app/manage/routes.py:111
+msgid "SMTP credentials for outbound notifications."
+msgstr ""
+
+#: app/manage/routes.py:115
+msgid "SMTP Server"
+msgstr ""
+
+#: app/manage/routes.py:121
+msgid "SMTP Port"
+msgstr ""
+
+#: app/manage/routes.py:127
+msgid "Use TLS"
+msgstr ""
+
+#: app/manage/routes.py:133
+msgid "SMTP Username"
+msgstr ""
+
+#: app/manage/routes.py:138
+msgid "SMTP Password"
+msgstr ""
+
+#: app/manage/routes.py:144
+msgid "Retry Without SMTP AUTH"
+msgstr ""
+
+#: app/manage/routes.py:147
+msgid ""
+"Attempt to resend without credentials when the SMTP server does not "
+"advertise AUTH."
+msgstr ""
+
+#: app/manage/routes.py:153
+msgid "Interface"
+msgstr ""
+
+#: app/manage/routes.py:155
+msgid "Fine-tune the global UI scale and layout."
+msgstr ""
+
+#: app/manage/routes.py:159
+msgid "Font Scale"
+msgstr ""
+
+#: app/manage/routes.py:162
+msgid "Global font scaling factor."
+msgstr ""
+
+#: app/manage/routes.py:166
+msgid "Navbar Height"
+msgstr ""
+
+#: app/manage/routes.py:169
+msgid "Height of the top navigation bar in pixels."
+msgstr ""
+
+#: app/manage/routes.py:173
+msgid "Footer Height"
+msgstr ""
+
+#: app/manage/routes.py:176
+msgid "Height of the footer in pixels."
+msgstr ""
+
+#: app/manage/routes.py:180
+msgid "DataTable Header Font Size"
+msgstr ""
+
+#: app/manage/routes.py:183
+msgid "Font size (rem) for DataTable headers."
+msgstr ""
+
+#: app/manage/routes.py:189
+msgid "Assistant"
+msgstr ""
+
+#: app/manage/routes.py:191
+msgid "Control AI assistant behavior and safety limits."
+msgstr ""
+
+#: app/manage/routes.py:195
+msgid "Allow LLM Override"
+msgstr ""
+
+#: app/manage/routes.py:198
+msgid "Allow per-request overrides of the default LLM provider."
+msgstr ""
+
+#: app/manage/routes.py:202
+msgid "Tool Call Depth Limit"
+msgstr ""
+
+#: app/manage/routes.py:205
+msgid "Maximum recursive depth for tool calls (-1 to disable limit)."
+msgstr ""
+
+#: app/manage/routes.py:211
+msgid "MCP Server"
+msgstr ""
+
+#: app/manage/routes.py:213
+msgid "Manage the Model Context Protocol service connection."
+msgstr ""
+
+#: app/manage/routes.py:217
+msgid "Enable MCP"
+msgstr ""
+
+#: app/manage/routes.py:223
+msgid "MCP Host"
+msgstr ""
+
+#: app/manage/routes.py:229
+msgid "MCP Base URL"
+msgstr ""
+
+#: app/manage/routes.py:233
+msgid ""
+"Override the MCP endpoint base address for assistant integrations "
+"(defaults to embedded server)."
+msgstr ""
+
+#: app/manage/routes.py:237
+msgid "MCP Port"
+msgstr ""
+
+#: app/manage/routes.py:243
+msgid "MCP Database URL"
+msgstr ""
+
+#: app/manage/routes.py:245
+msgid "Optional separate database connection string."
+msgstr ""
+
+#: app/manage/routes.py:249
+msgid "MCP Log Level"
+msgstr ""
+
+#: app/manage/routes.py:256
+msgid "Allowed Origins"
+msgstr ""
+
+#: app/manage/routes.py:259
+msgid "One origin per line, stored as JSON."
+msgstr ""
+
+#: app/manage/routes.py:263
+msgid "Max Rows"
+msgstr ""
+
+#: app/manage/routes.py:269
+msgid "Request Timeout (s)"
+msgstr ""
+
+#: app/manage/routes.py:275
+msgid "Keep Alive (s)"
+msgstr ""
+
+#: app/manage/routes.py:281
+msgid "Access Log"
+msgstr ""
+
+#: app/manage/routes.py:400 templates/manage/assistant_settings.html:82
+#: templates/manage/email_ingest.html:147
+msgid "Enabled"
+msgstr ""
+
+#: app/manage/routes.py:400 templates/manage/assistant_settings.html:82
+#: templates/manage/assistant_settings.html:252
+msgid "Disabled"
+msgstr ""
+
+#: app/manage/routes.py:561
+msgid "Access settings updated."
+msgstr ""
+
+#: app/manage/routes.py:563 app/manage/routes.py:883
+msgid "No changes were necessary."
+msgstr ""
+
+#: app/manage/routes.py:695
+msgid "Webhook headers must be valid JSON object."
+msgstr ""
+
+#: app/manage/routes.py:697
+msgid "Webhook headers must be valid JSON."
+msgstr ""
+
+#: app/manage/routes.py:721
+msgid "Assistant settings saved."
+msgstr ""
+
+#: app/manage/routes.py:776
+#, python-format
+msgid "Configuration reloaded from %(path)s."
+msgstr ""
+
+#: app/manage/routes.py:805
+#, python-format
+msgid "Invalid value for %(field)s."
+msgstr ""
+
+#: app/manage/routes.py:816
+#, python-format
+msgid "%(field)s must be an integer."
+msgstr ""
+
+#: app/manage/routes.py:825
+#, python-format
+msgid "%(field)s must be a number."
+msgstr ""
+
+#: app/manage/routes.py:837
+#, python-format
+msgid "Provide a JSON array or one entry per line for %(field)s."
+msgstr ""
+
+#: app/manage/routes.py:881
+#, python-format
+msgid "Configuration saved (%(count)s changes)."
+msgstr ""
+
+#: app/manage/routes.py:940
+msgid "Authentication settings saved."
+msgstr ""
+
+#: app/manage/routes.py:966
+msgid "Selected default user does not exist."
+msgstr ""
+
+#: app/manage/routes.py:973 app/manage/routes.py:975
+msgid "New API Client"
+msgstr ""
+
+#: app/manage/routes.py:980
+msgid "API key created. Copy it now, it will not be shown again."
+msgstr ""
+
+#: app/manage/routes.py:984 app/manage/routes.py:994 app/manage/routes.py:1005
+#: app/manage/routes.py:1013
+msgid "API client not found."
+msgstr ""
+
+#: app/manage/routes.py:990
+msgid "API key rotated. Copy the new key immediately."
+msgstr ""
+
+#: app/manage/routes.py:1001
+msgid "API client details updated."
+msgstr ""
+
+#: app/manage/routes.py:1009
+msgid "API key revoked."
+msgstr ""
+
+#: app/manage/routes.py:1017
+msgid "API client deleted."
+msgstr ""
+
+#: app/manage/routes.py:1019
+msgid "Unsupported action."
+msgstr ""
+
+#: app/manage/routes.py:1022
+#, python-format
+msgid "Error processing request: %(error)s"
+msgstr ""
+
+#: app/manage/routes.py:1071
+msgid ""
+"Email ingestion is temporarily unavailable because the database schema is"
+" out of date. Please run the latest migrations and reload this page."
+msgstr ""
+
+#: app/manage/routes.py:1081
+msgid ""
+"Unable to save email ingestion settings because the required database "
+"table is missing. Run the database migrations and try again."
+msgstr ""
+
+#: app/manage/routes.py:1093
+#, python-format
+msgid "Processed %(count)s email(s) and created tickets."
+msgstr ""
+
+#: app/manage/routes.py:1095
+msgid "Mailbox checked. No new emails were ingested."
+msgstr ""
+
+#: app/manage/routes.py:1097
+#, python-format
+msgid "Failed to process mailbox: %(error)s"
+msgstr ""
+
+#: app/manage/routes.py:1106
+msgid "Mail server host is required when email ingestion is enabled."
+msgstr ""
+
+#: app/manage/routes.py:1108
+msgid "Mailbox username is required when email ingestion is enabled."
+msgstr ""
+
+#: app/manage/routes.py:1110
+msgid "Mailbox password is required when email ingestion is enabled."
+msgstr ""
+
+#: app/manage/routes.py:1121
+msgid "Please select a ticket creator account."
+msgstr ""
+
+#: app/manage/routes.py:1129
+msgid "Email ingestion settings saved."
+msgstr ""
+
+#: templates/base.html:11
+msgid "Helpdesk Pro"
+msgstr ""
+
+#: templates/base.html:476
+msgid "Toggle theme"
+msgstr ""
+
+#: templates/base.html:496
+msgid "Profile avatar"
+msgstr ""
+
+#: templates/base.html:502 templates/base.html:588
+msgid "Profile & Preferences"
+msgstr ""
+
+#: templates/base.html:508 templates/base.html:522 templates/base.html:524
+msgid "About"
+msgstr ""
+
+#: templates/base.html:515
+msgid "Logout"
+msgstr ""
+
+#: templates/base.html:571
+msgid "All Rights Reserved"
+msgstr ""
+
+#: templates/base.html:596
+msgid "Profile avatar preview"
+msgstr ""
+
+#: templates/base.html:600
+msgid "Use uploaded profile picture"
+msgstr ""
+
+#: templates/base.html:604
+msgid "Use Gravatar (based on email)"
+msgstr ""
+
+#: templates/base.html:610
+msgid "Remove current picture"
+msgstr ""
+
+#: templates/base.html:613
+msgid "Supported formats: PNG, JPG, JPEG, GIF, WEBP (max 5MB)."
+msgstr ""
+
+#: templates/base.html:619
+msgid "Personal Details"
+msgstr ""
+
+#: templates/auth/login.html:117 templates/auth/register.html:18
+#: templates/auth/setup_admin.html:49 templates/base.html:622
+#: templates/manage/email_ingest.html:151 templates/users/list.html:113
+#: templates/users/list.html:176 templates/users/list.html:253
+msgid "Username"
+msgstr ""
+
+#: templates/auth/register.html:28 templates/base.html:626
+msgid "Full name"
+msgstr ""
+
+#: templates/auth/forgot_password.html:22 templates/auth/register.html:23
+#: templates/base.html:630
+msgid "Email address"
+msgstr ""
+
+#: templates/address_book/address_book.html:101
+#: templates/address_book/address_book.html:215
+#: templates/address_book/address_book.html:309 templates/base.html:634
+#: templates/tickets/create.html:9 templates/users/list.html:116
+#: templates/users/list.html:192 templates/users/list.html:276
+msgid "Department"
+msgstr ""
+
+#: templates/base.html:640
+msgid "Team Ticket Notifications"
+msgstr ""
+
+#: templates/base.html:641
+msgid "Receive alerts when users in your department update tickets."
+msgstr ""
+
+#: templates/base.html:645
+msgid "Email notifications"
+msgstr ""
+
+#: templates/base.html:650
+msgid "Teams webhook notifications"
+msgstr ""
+
+#: templates/base.html:653 templates/users/list.html:208
+#: templates/users/list.html:292
+msgid "Teams webhook URL"
+msgstr ""
+
+#: templates/base.html:655
+msgid "Required when Teams notifications are enabled."
+msgstr ""
+
+#: templates/base.html:663
+msgid "Account active"
+msgstr ""
+
+#: templates/base.html:663
+msgid "Account inactive"
+msgstr ""
+
+#: templates/base.html:667
+msgid "Change Password"
+msgstr ""
+
+#: templates/base.html:670
+msgid "Current password"
+msgstr ""
+
+#: templates/auth/reset_password.html:17 templates/base.html:675
+msgid "New password"
+msgstr ""
+
+#: templates/base.html:679
+msgid "Confirm new password"
+msgstr ""
+
+#: templates/base.html:685
+msgid ""
+"Passwords must be at least 12 characters and include uppercase, "
+"lowercase, number, and symbol."
+msgstr ""
+
+#: templates/address_book/address_book.html:265
+#: templates/address_book/address_book.html:363
+#: templates/address_book/address_book.html:388
+#: templates/backup/job_detail.html:254 templates/backup/monitor.html:361
+#: templates/backup/monitor.html:478 templates/backup/tape_detail.html:414
+#: templates/backup/tape_detail.html:487 templates/backup/tape_detail.html:538
+#: templates/base.html:693 templates/collab/chat.html:903
+#: templates/collab/chat.html:922 templates/contracts/contract_list.html:336
+#: templates/contracts/contract_list.html:458
+#: templates/contracts/contract_list.html:483
+#: templates/inventory/hardware_list.html:436
+#: templates/inventory/hardware_list.html:609
+#: templates/inventory/hardware_list.html:635
+#: templates/inventory/software_list.html:399
+#: templates/inventory/software_list.html:555
+#: templates/inventory/software_list.html:580
+#: templates/knowledge/detail.html:33 templates/knowledge/edit.html:42
+#: templates/manage/api_keys.html:271 templates/networks/hosts.html:231
+#: templates/networks/hosts.html:255 templates/networks/maps.html:218
+#: templates/networks/maps.html:272 templates/networks/maps.html:296
+#: templates/tickets/list.html:334 templates/users/list.html:323
+msgid "Cancel"
+msgstr ""
+
+#: templates/base.html:695 templates/base.html:919
+msgid "Save changes"
+msgstr ""
+
+#: templates/base.html:708
+msgid "About Helpdesk Pro"
+msgstr ""
+
+#: templates/base.html:709 templates/base.html:719
+#: templates/knowledge/detail.html:25 templates/tickets/_view_content.html:21
+msgid "Close"
+msgstr ""
+
+#: templates/base.html:712 templates/inventory/software_list.html:160
+#: templates/inventory/software_list.html:279
+#: templates/inventory/software_list.html:431
+#: templates/knowledge/detail.html:195 templates/knowledge/version.html:18
+msgid "Version"
+msgstr ""
+
+#: templates/base.html:714 templates/knowledge/detail.html:197
+msgid "Author"
+msgstr ""
+
+#: templates/base.html:752
+msgid "Loading data..."
+msgstr ""
+
+#: templates/base.html:918
+msgid "Saving"
+msgstr ""
+
+#: templates/base.html:986
+msgid "Failed to update profile."
+msgstr ""
+
+#: templates/base.html:989
+msgid "Profile updated successfully."
+msgstr ""
+
+#: templates/base.html:1015
+msgid "Unexpected error updating profile."
+msgstr ""
+
+#: templates/index.html:105
+msgid "Welcome to Helpdesk Pro"
+msgstr ""
+
+#: templates/index.html:107
+msgid "Your smart support & ticketing platform for modern IT operations."
+msgstr ""
+
+#: templates/index.html:111
+msgid "Login to Continue"
+msgstr ""
+
+#: templates/index.html:121
+msgid "Empowering Secure IT Helpdesk Automation"
+msgstr ""
+
+#: templates/address_book/address_book.html:73
+msgid "Total Contacts"
+msgstr ""
+
+#: templates/address_book/address_book.html:90
+#: templates/address_book/address_book.html:188
+msgid "New Contact"
+msgstr ""
+
+#: templates/address_book/address_book.html:97
+#: templates/address_book/address_book.html:194
+#: templates/address_book/address_book.html:288
+#: templates/contracts/contract_list.html:134
+#: templates/contracts/contract_list.html:241
+#: templates/contracts/contract_list.html:359
+#: templates/inventory/software_list.html:158
+#: templates/inventory/software_list.html:271
+#: templates/inventory/software_list.html:423
+#: templates/manage/api_keys.html:142 templates/manage/api_keys.html:249
+#: templates/networks/maps.html:119 templates/networks/maps.html:188
+#: templates/networks/maps.html:242
+msgid "Name"
+msgstr ""
+
+#: templates/address_book/address_book.html:98
+#: templates/address_book/address_book.html:198
+#: templates/address_book/address_book.html:292
+#: templates/inventory/hardware_list.html:168
+#: templates/inventory/hardware_list.html:301
+#: templates/inventory/hardware_list.html:470
+#: templates/inventory/software_list.html:161
+#: templates/inventory/software_list.html:287
+#: templates/inventory/software_list.html:439 templates/knowledge/edit.html:19
+msgid "Category"
+msgstr ""
+
+#: templates/address_book/address_book.html:99
+#: templates/address_book/address_book.html:207
+#: templates/address_book/address_book.html:301
+msgid "Company"
+msgstr ""
+
+#: templates/address_book/address_book.html:100
+#: templates/address_book/address_book.html:211
+#: templates/address_book/address_book.html:305
+msgid "Job Title"
+msgstr ""
+
+#: templates/address_book/address_book.html:103
+#: templates/address_book/address_book.html:223
+#: templates/address_book/address_book.html:317
+msgid "Phone"
+msgstr ""
+
+#: templates/address_book/address_book.html:104
+#: templates/address_book/address_book.html:227
+#: templates/address_book/address_book.html:321
+msgid "Mobile"
+msgstr ""
+
+#: templates/address_book/address_book.html:105
+#: templates/address_book/address_book.html:231
+#: templates/address_book/address_book.html:325
+msgid "Website"
+msgstr ""
+
+#: templates/address_book/address_book.html:106
+#: templates/address_book/address_book.html:235
+#: templates/address_book/address_book.html:329
+msgid "Address"
+msgstr ""
+
+#: templates/address_book/address_book.html:107
+#: templates/address_book/address_book.html:239
+#: templates/address_book/address_book.html:333
+msgid "City"
+msgstr ""
+
+#: templates/address_book/address_book.html:108
+#: templates/address_book/address_book.html:243
+#: templates/address_book/address_book.html:337
+msgid "State"
+msgstr ""
+
+#: templates/address_book/address_book.html:109
+#: templates/address_book/address_book.html:247
+#: templates/address_book/address_book.html:341
+msgid "Postal Code"
+msgstr ""
+
+#: templates/address_book/address_book.html:110
+#: templates/address_book/address_book.html:251
+#: templates/address_book/address_book.html:345
+msgid "Country"
+msgstr ""
+
+#: templates/address_book/address_book.html:111
+#: templates/address_book/address_book.html:255
+#: templates/address_book/address_book.html:349
+#: templates/knowledge/list.html:164
+msgid "Tags"
+msgstr ""
+
+#: templates/address_book/address_book.html:113
+#: templates/backup/monitor.html:181 templates/contracts/contract_list.html:153
+#: templates/inventory/hardware_list.html:195
+#: templates/inventory/software_list.html:181
+#: templates/manage/api_keys.html:148 templates/networks/hosts.html:132
+#: templates/networks/maps.html:129 templates/tickets/list.html:206
+#: templates/users/list.html:119
+msgid "Actions"
+msgstr ""
+
+#: templates/address_book/address_book.html:135
+#: templates/address_book/address_book.html:426
+#: templates/contracts/contract_list.html:198
+msgid "Link"
+msgstr ""
+
+#: templates/address_book/address_book.html:175
+#, python-brace-format
+msgid "Load next {count} contacts"
+msgstr ""
+
+#: templates/address_book/address_book.html:177
+#, python-format
+msgid "Load next %(count)s contacts"
+msgstr ""
+
+#: templates/address_book/address_book.html:200
+#: templates/address_book/address_book.html:294
+#: templates/backup/job_detail.html:119 templates/backup/monitor.html:414
+#: templates/backup/tape_detail.html:172
+#: templates/contracts/contract_list.html:247
+#: templates/contracts/contract_list.html:256
+#: templates/contracts/contract_list.html:365
+#: templates/contracts/contract_list.html:374
+#: templates/inventory/hardware_list.html:303
+#: templates/inventory/hardware_list.html:312
+#: templates/inventory/hardware_list.html:349
+#: templates/inventory/hardware_list.html:358
+#: templates/inventory/hardware_list.html:472
+#: templates/inventory/hardware_list.html:481
+#: templates/inventory/hardware_list.html:518
+#: templates/inventory/hardware_list.html:527
+#: templates/inventory/software_list.html:289
+#: templates/inventory/software_list.html:298
+#: templates/inventory/software_list.html:307
+#: templates/inventory/software_list.html:328
+#: templates/inventory/software_list.html:337
+#: templates/inventory/software_list.html:441
+#: templates/inventory/software_list.html:450
+#: templates/inventory/software_list.html:459
+#: templates/inventory/software_list.html:480
+#: templates/inventory/software_list.html:489 templates/networks/hosts.html:206
+msgid "Select..."
+msgstr ""
+
+#: templates/address_book/address_book.html:256
+#: templates/address_book/address_book.html:350
+msgid "Comma separated"
+msgstr ""
+
+#: templates/address_book/address_book.html:267
+#: templates/contracts/contract_list.html:338
+#: templates/inventory/hardware_list.html:438
+#: templates/inventory/software_list.html:401 templates/knowledge/edit.html:45
+#: templates/networks/maps.html:220 templates/tickets/edit.html:49
+#: templates/users/list.html:227
+msgid "Save"
+msgstr ""
+
+#: templates/address_book/address_book.html:282
+msgid "Edit Contact"
+msgstr ""
+
+#: templates/address_book/address_book.html:360
+#: templates/address_book/address_book.html:390
+#: templates/backup/job_detail.html:255 templates/backup/monitor.html:362
+#: templates/backup/tape_detail.html:415 templates/collab/chat.html:923
+#: templates/contracts/contract_list.html:455
+#: templates/contracts/contract_list.html:485
+#: templates/inventory/hardware_list.html:606
+#: templates/inventory/hardware_list.html:637
+#: templates/inventory/software_list.html:552
+#: templates/inventory/software_list.html:582
+#: templates/knowledge/detail.html:60 templates/manage/api_keys.html:233
+#: templates/networks/hosts.html:257 templates/networks/maps.html:298
+#: templates/tickets/_row.html:53 templates/tickets/list.html:269
+#: templates/tickets/list.html:335 templates/tickets/list.html:433
+#: templates/users/list.html:324
+msgid "Delete"
+msgstr ""
+
+#: templates/address_book/address_book.html:365
+#: templates/backup/job_detail.html:155 templates/backup/tape_detail.html:231
+#: templates/contracts/contract_list.html:460 templates/manage/access.html:149
+#: templates/manage/access.html:211 templates/manage/api_keys.html:274
+msgid "Save Changes"
+msgstr ""
+
+#: templates/address_book/address_book.html:381
+msgid "Delete Contact"
+msgstr ""
+
+#: templates/address_book/address_book.html:385
+#: templates/contracts/contract_list.html:480
+#: templates/inventory/hardware_list.html:632
+#: templates/inventory/software_list.html:577 templates/networks/maps.html:293
+msgid "Are you sure you want to delete"
+msgstr ""
+
+#: templates/address_book/address_book.html:416
+#: templates/contracts/contract_list.html:513
+#: templates/inventory/hardware_list.html:669
+#: templates/inventory/software_list.html:609 templates/networks/hosts.html:285
+#: templates/networks/maps.html:345 templates/tickets/list.html:365
+#: templates/users/list.html:356
+msgid "Excel"
+msgstr ""
+
+#: templates/address_book/address_book.html:417
+#: templates/contracts/contract_list.html:514
+#: templates/inventory/hardware_list.html:670
+#: templates/inventory/software_list.html:610 templates/networks/hosts.html:286
+#: templates/networks/maps.html:346 templates/tickets/list.html:366
+#: templates/users/list.html:365
+msgid "Print"
+msgstr ""
+
+#: templates/address_book/address_book.html:418
+#: templates/contracts/contract_list.html:515
+#: templates/inventory/hardware_list.html:671
+#: templates/inventory/software_list.html:611 templates/networks/hosts.html:287
+#: templates/networks/maps.html:347 templates/tickets/list.html:367
+#: templates/users/list.html:377
+msgid "Advanced Filters"
+msgstr ""
+
+#: templates/address_book/address_book.html:433
+msgid "Loading"
+msgstr ""
+
+#: templates/address_book/address_book.html:435
+msgid "Load more contacts"
+msgstr ""
+
+#: templates/address_book/address_book.html:543
+#: templates/address_book/address_book.html:565
+msgid "Failed to load additional contacts."
+msgstr ""
+
+#: templates/address_book/address_book.html:580
+#: templates/contracts/contract_list.html:529
+#: templates/inventory/hardware_list.html:687
+#: templates/inventory/software_list.html:624 templates/networks/hosts.html:297
+#: templates/networks/maps.html:357 templates/tickets/list.html:466
+#: templates/users/list.html:474 templates/users/list.html:530
+msgid "Saving..."
+msgstr ""
+
+#: templates/address_book/address_book.html:589
+#: templates/address_book/address_book.html:607
+#: templates/contracts/contract_list.html:544
+#: templates/contracts/contract_list.html:562
+#: templates/inventory/hardware_list.html:702
+#: templates/inventory/hardware_list.html:720
+#: templates/inventory/software_list.html:639
+#: templates/inventory/software_list.html:657 templates/networks/hosts.html:312
+#: templates/networks/hosts.html:330 templates/networks/maps.html:372
+#: templates/networks/maps.html:390
+msgid "Unexpected error while saving."
+msgstr ""
+
+#: templates/address_book/address_book.html:602
+#: templates/contracts/contract_list.html:557
+#: templates/inventory/hardware_list.html:715
+#: templates/inventory/software_list.html:652 templates/networks/hosts.html:325
+#: templates/networks/maps.html:385
+msgid "Operation completed successfully"
+msgstr ""
+
+#: templates/address_book/address_book.html:668
+msgid "Failed to load contact"
+msgstr ""
+
+#: templates/address_book/address_book.html:675
+msgid "Failed to load contact."
+msgstr ""
+
+#: templates/auth/forgot_password.html:8
+msgid "Reset your password"
+msgstr ""
+
+#: templates/auth/forgot_password.html:11
+msgid ""
+"Password reset via email is currently disabled. Contact an administrator "
+"for assistance."
+msgstr ""
+
+#: templates/auth/forgot_password.html:15
+msgid ""
+"If the email you entered exists, a reset link has been sent. Check your "
+"inbox for further instructions."
+msgstr ""
+
+#: templates/auth/forgot_password.html:18
+msgid ""
+"Enter the email address associated with your account and we will send you"
+" a reset link."
+msgstr ""
+
+#: templates/auth/forgot_password.html:26
+msgid "Send reset link"
+msgstr ""
+
+#: templates/auth/forgot_password.html:34 templates/auth/register.html:54
+#: templates/auth/reset_password.html:34
+msgid "Back to sign in"
+msgstr ""
+
+#: templates/auth/login.html:108
+msgid "Sign in to Helpdesk Pro"
+msgstr ""
+
+#: templates/auth/login.html:109
+msgid "Your secure access to IT support and ticketing"
+msgstr ""
+
+#: templates/auth/login.html:122 templates/auth/register.html:33
+#: templates/auth/setup_admin.html:61 templates/backup/lto_barcode.html:133
+#: templates/manage/email_ingest.html:155
+#: templates/tools/password_generator.html:408 templates/users/list.html:262
+msgid "Password"
+msgstr ""
+
+#: templates/auth/login.html:127
+msgid "Remember me"
+msgstr ""
+
+#: templates/auth/login.html:131
+msgid "Sign in"
+msgstr ""
+
+#: templates/auth/login.html:138
+msgid "Forgot password?"
+msgstr ""
+
+#: templates/auth/login.html:141
+msgid "Create an account"
+msgstr ""
+
+#: templates/auth/register.html:8
+msgid "Create your account"
+msgstr ""
+
+#: templates/auth/register.html:11
+msgid ""
+"Self-registration is currently disabled. Contact an administrator if you "
+"need access."
+msgstr ""
+
+#: templates/auth/register.html:36 templates/auth/reset_password.html:19
+#: templates/auth/setup_admin.html:64
+msgid ""
+"Use at least 12 characters including uppercase, lowercase, number, and "
+"symbol."
+msgstr ""
+
+#: templates/auth/register.html:41 templates/auth/reset_password.html:22
+msgid "Confirm password"
+msgstr ""
+
+#: templates/auth/register.html:46
+msgid "Create account"
+msgstr ""
+
+#: templates/auth/reset_password.html:8
+msgid "Choose a new password"
+msgstr ""
+
+#: templates/auth/reset_password.html:11
+msgid "This reset link is invalid or has expired. Please request a new one."
+msgstr ""
+
+#: templates/auth/reset_password.html:26
+msgid "Update password"
+msgstr ""
+
+#: templates/auth/setup_admin.html:42
+msgid "Initial Administrator Setup"
+msgstr ""
+
+#: templates/auth/setup_admin.html:43
+msgid "No users found. Create the first administrator account to continue."
+msgstr ""
+
+#: templates/auth/setup_admin.html:53
+msgid "Full name (optional)"
+msgstr ""
+
+#: templates/auth/setup_admin.html:57
+msgid "Email (optional)"
+msgstr ""
+
+#: templates/auth/setup_admin.html:67
+msgid "Create Admin Account"
+msgstr ""
+
+#: templates/backup/job_detail.html:32 templates/backup/tape_detail.html:32
+msgid "Breadcrumb"
+msgstr ""
+
+#: templates/backup/job_detail.html:46
+msgid "Delete Job"
+msgstr ""
+
+#: templates/backup/job_detail.html:50
+msgid ""
+"Backup job overview with retention, verification outcome, linked tapes, "
+"and audit trail."
+msgstr ""
+
+#: templates/backup/job_detail.html:56
+msgid "Job Summary"
+msgstr ""
+
+#: templates/backup/job_detail.html:58
+msgid "Job date"
+msgstr ""
+
+#: templates/backup/job_detail.html:60 templates/backup/monitor.html:177
+#: templates/backup/tape_detail.html:89
+msgid "Retention"
+msgstr ""
+
+#: templates/backup/job_detail.html:61 templates/backup/monitor.html:227
+#: templates/backup/tape_detail.html:92
+msgid "days"
+msgstr ""
+
+#: templates/backup/job_detail.html:62
+msgid "Expires on"
+msgstr ""
+
+#: templates/backup/job_detail.html:70 templates/backup/job_detail.html:107
+msgid "Total files"
+msgstr ""
+
+#: templates/backup/job_detail.html:72 templates/backup/job_detail.html:111
+msgid "Total size (bytes)"
+msgstr ""
+
+#: templates/backup/job_detail.html:74
+msgid "Verification result"
+msgstr ""
+
+#: templates/backup/job_detail.html:75
+#: templates/contracts/contract_list.html:98
+#: templates/contracts/contract_list.html:169
+msgid "Pending"
+msgstr ""
+
+#: templates/backup/job_detail.html:76
+msgid "Source system"
+msgstr ""
+
+#: templates/backup/job_detail.html:78
+msgid "Responsible technician"
+msgstr ""
+
+#: templates/backup/job_detail.html:88
+msgid "Update Backup Job"
+msgstr ""
+
+#: templates/backup/job_detail.html:93
+msgid "Job Name"
+msgstr ""
+
+#: templates/backup/job_detail.html:97
+msgid "Job Date"
+msgstr ""
+
+#: templates/backup/job_detail.html:117
+msgid "Verify Result"
+msgstr ""
+
+#: templates/backup/job_detail.html:126
+msgid "Source System"
+msgstr ""
+
+#: templates/backup/job_detail.html:131
+msgid "Responsible Technician"
+msgstr ""
+
+#: templates/backup/job_detail.html:140 templates/backup/monitor.html:104
+msgid "Tape Cartridges"
+msgstr ""
+
+#: templates/backup/job_detail.html:147
+msgid "Select multiple tapes to represent spanning jobs."
+msgstr ""
+
+#: templates/backup/job_detail.html:167
+msgid "Associated Tape Cartridges"
+msgstr ""
+
+#: templates/backup/job_detail.html:174
+msgid "Barcode"
+msgstr ""
+
+#: templates/backup/job_detail.html:175
+msgid "LTO Generation"
+msgstr ""
+
+#: templates/backup/job_detail.html:196
+msgid "No tapes linked to this job yet."
+msgstr ""
+
+#: templates/backup/job_detail.html:207 templates/backup/tape_detail.html:367
+msgid "Audit Trail"
+msgstr ""
+
+#: templates/backup/job_detail.html:214 templates/backup/tape_detail.html:328
+#: templates/backup/tape_detail.html:374 templates/backup/tape_detail.html:508
+msgid "Timestamp"
+msgstr ""
+
+#: templates/backup/job_detail.html:215 templates/backup/tape_detail.html:375
+msgid "Field"
+msgstr ""
+
+#: templates/backup/job_detail.html:216 templates/backup/tape_detail.html:376
+msgid "Old value"
+msgstr ""
+
+#: templates/backup/job_detail.html:217 templates/backup/tape_detail.html:377
+msgid "New value"
+msgstr ""
+
+#: templates/backup/job_detail.html:218 templates/backup/tape_detail.html:378
+msgid "Changed by"
+msgstr ""
+
+#: templates/backup/job_detail.html:232 templates/backup/tape_detail.html:392
+msgid "No audit entries yet."
+msgstr ""
+
+#: templates/backup/job_detail.html:247
+msgid "Delete Backup Job"
+msgstr ""
+
+#: templates/backup/job_detail.html:251
+#, python-format
+msgid ""
+"Delete job “%(name)s”? Tape assignments will be removed but cartridges "
+"remain available for new jobs."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:15
+msgid "LTO Barcode Label Studio"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:17
+msgid ""
+"Design, preview, and export barcode labels for your tape library directly"
+" within Helpdesk Pro. Configure prefixes, numbering, and styling, then "
+"generate a printable sheet or individual stickers."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:20
+msgid "Instant preview"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:21
+msgid "PDF export ready"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:22
+msgid "Batch generation"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:29
+msgid "Tape type"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:44 templates/manage/api_keys.html:143
+msgid "Prefix"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:46
+msgid "Up to 3 alphanumeric characters."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:49
+msgid "Starting number"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:53
+msgid "Number of labels"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:57
+msgid "Digits per number"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:59
+msgid "Numbers are padded with leading zeros."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:62
+msgid "Layout"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:72
+msgid "Tri-optic vibrant palette"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:76
+msgid "Clear"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:77
+msgid "Generate labels"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:78
+msgid "Download PDF"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:85 templates/collab/chat.html:878
+msgid "Preview"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:86
+msgid ""
+"Click a label to toggle selection before exporting. Selected labels only "
+"will be included in the PDF."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:103
+msgid "Wi-Fi Access Point QR Generator"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:104
+msgid ""
+"Share wireless credentials securely. Generate a QR code or create a fresh"
+" strong passphrase and copy it with one click."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:106
+msgid "Instant QR preview"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:107
+msgid "Strong password builder"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:108
+msgid "One-click copy"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:115
+msgid "SSID (Network name)"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:119
+msgid "Security"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:123 templates/backup/lto_barcode.html:497
+msgid "Open network"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:129 templates/backup/lto_barcode.html:501
+msgid "Hidden SSID"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:139
+msgid ""
+"Leave empty for open networks. Generated passwords are 16 characters with"
+" mixed complexity."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:142
+msgid "Reset form"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:143
+msgid "Add card"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:154
+msgid "Sharing tips"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:156
+msgid "Print the QR code and place it near the access point for visitors."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:157
+msgid "Most modern phones connect automatically after scanning the code."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:158
+msgid ""
+"Rotate the password regularly and reprint the QR code to keep your "
+"network secure."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:164
+msgid "Saved Wi-Fi Cards"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:166
+msgid "Clear cards"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:167
+msgid "Download cards PDF"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:170
+msgid ""
+"Click a card to toggle selection. Only selected cards are included when "
+"exporting."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:344
+msgid "Please provide a valid prefix (A-Z, 0-9)."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:356
+msgid "No labels were generated. Adjust the parameters and try again."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:367
+msgid "Select at least one label before exporting."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:405
+msgid "PDF generated successfully."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:449
+msgid "Nothing to copy."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:453 templates/backup/lto_barcode.html:516
+msgid "Password copied to clipboard."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:454 templates/backup/lto_barcode.html:517
+msgid "Unable to copy password."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:511
+msgid "Copy password"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:519
+msgid "This network has no password."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:525
+msgid "Remove"
+msgstr ""
+
+#: templates/backup/lto_barcode.html:553
+msgid "SSID is required to generate a QR code."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:557
+msgid "Provide a password or select open network."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:574
+msgid "Wi-Fi card added."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:579
+msgid "All Wi-Fi cards cleared."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:585
+msgid "Select at least one Wi-Fi card before exporting."
+msgstr ""
+
+#: templates/backup/lto_barcode.html:611
+msgid "Wi-Fi cards PDF generated."
+msgstr ""
+
+#: templates/backup/monitor.html:78
+msgid "Storage Media Monitor"
+msgstr ""
+
+#: templates/backup/monitor.html:80
+msgid ""
+"Track tape cartridges and external disks as they leave the library, "
+"monitor retention windows, and record custody history."
+msgstr ""
+
+#: templates/backup/monitor.html:85 templates/backup/monitor.html:395
+msgid "Register Storage Medium"
+msgstr ""
+
+#: templates/backup/monitor.html:98
+msgid "Total Media"
+msgstr ""
+
+#: templates/backup/monitor.html:106
+msgid "External Disks"
+msgstr ""
+
+#: templates/backup/monitor.html:137
+msgid "Retention expired"
+msgstr ""
+
+#: templates/backup/monitor.html:140
+msgid "Due within 7 days"
+msgstr ""
+
+#: templates/backup/monitor.html:143
+msgid "Active retention"
+msgstr ""
+
+#: templates/backup/monitor.html:146
+msgid "No retention set"
+msgstr ""
+
+#: templates/backup/monitor.html:157
+msgid "Tip"
+msgstr ""
+
+#: templates/backup/monitor.html:158
+msgid ""
+"Use the “Register Storage Medium” button to add new tapes or disks. "
+"Lifecycle policies help you group media by backup frequency across the "
+"inventory."
+msgstr ""
+
+#: templates/backup/monitor.html:165
+msgid "Storage Media Inventory"
+msgstr ""
+
+#: templates/backup/monitor.html:173 templates/backup/monitor.html:401
+msgid "Barcode / Label"
+msgstr ""
+
+#: templates/backup/monitor.html:174 templates/backup/monitor.html:293
+#: templates/backup/tape_detail.html:437
+#: templates/contracts/contract_list.html:135
+#: templates/contracts/contract_list.html:245
+#: templates/contracts/contract_list.html:363
+#: templates/inventory/hardware_list.html:169
+#: templates/inventory/hardware_list.html:310
+#: templates/inventory/hardware_list.html:479
+#: templates/knowledge/detail.html:111
+msgid "Type"
+msgstr ""
+
+#: templates/backup/monitor.html:176 templates/backup/monitor.html:296
+#: templates/backup/tape_detail.html:257
+#: templates/inventory/hardware_list.html:179
+#: templates/inventory/hardware_list.html:365
+#: templates/inventory/hardware_list.html:534
+msgid "Location"
+msgstr ""
+
+#: templates/backup/monitor.html:178
+msgid "Usage Tags"
+msgstr ""
+
+#: templates/backup/monitor.html:179
+msgid "Last Inventory"
+msgstr ""
+
+#: templates/backup/monitor.html:180 templates/knowledge/detail.html:47
+#: templates/knowledge/list.html:250
+msgid "Updated"
+msgstr ""
+
+#: templates/backup/monitor.html:192 templates/backup/monitor.html:304
+msgid "Tape"
+msgstr ""
+
+#: templates/backup/monitor.html:233
+#, python-format
+msgid "Due in %(days)s d"
+msgstr ""
+
+#: templates/backup/monitor.html:238
+msgid "Start date needed"
+msgstr ""
+
+#: templates/backup/monitor.html:263
+#, python-format
+msgid ""
+"Delete storage medium “%(barcode)s”? All associated locations and custody"
+" events will also be removed."
+msgstr ""
+
+#: templates/backup/monitor.html:273
+msgid "No storage media registered yet."
+msgstr ""
+
+#: templates/backup/monitor.html:284
+msgid "Retention Alerts"
+msgstr ""
+
+#: templates/backup/monitor.html:292 templates/tickets/_row.html:10
+#: templates/tickets/list.html:220 templates/tickets/list.html:300
+msgid "Medium"
+msgstr ""
+
+#: templates/backup/monitor.html:294
+msgid "Retention Ends"
+msgstr ""
+
+#: templates/backup/monitor.html:295
+msgid "Days Remaining"
+msgstr ""
+
+#: templates/backup/monitor.html:309
+#, python-format
+msgid "%(days)s overdue"
+msgstr ""
+
+#: templates/backup/monitor.html:336
+msgid "No retention alerts. All media are within their retention window."
+msgstr ""
+
+#: templates/backup/monitor.html:354 templates/backup/tape_detail.html:46
+#: templates/backup/tape_detail.html:407
+msgid "Delete Storage Medium"
+msgstr ""
+
+#: templates/backup/monitor.html:405 templates/backup/tape_detail.html:153
+msgid "Medium Type"
+msgstr ""
+
+#: templates/backup/monitor.html:412 templates/backup/tape_detail.html:170
+msgid "Lifecycle Policy"
+msgstr ""
+
+#: templates/backup/monitor.html:425 templates/backup/tape_detail.html:164
+#: templates/inventory/hardware_list.html:167
+#: templates/inventory/hardware_list.html:297
+#: templates/inventory/hardware_list.html:466
+#: templates/inventory/software_list.html:165
+#: templates/inventory/software_list.html:322
+#: templates/inventory/software_list.html:474
+msgid "Serial Number"
+msgstr ""
+
+#: templates/backup/monitor.html:437 templates/backup/tape_detail.html:185
+msgid "Nominal TB"
+msgstr ""
+
+#: templates/backup/monitor.html:441 templates/backup/tape_detail.html:189
+msgid "Usable TB"
+msgstr ""
+
+#: templates/backup/monitor.html:457 templates/backup/tape_detail.html:207
+msgid "Retention Start"
+msgstr ""
+
+#: templates/backup/monitor.html:461 templates/backup/tape_detail.html:213
+msgid "Last Inventory Check"
+msgstr ""
+
+#: templates/backup/monitor.html:465 templates/backup/tape_detail.html:222
+msgid "Usage Tags (comma separated)"
+msgstr ""
+
+#: templates/backup/monitor.html:470
+msgid "e.g. Sent to Iron Mountain storage"
+msgstr ""
+
+#: templates/backup/monitor.html:474
+msgid ""
+"Retention dates help you plan returns to the library. Set a start date "
+"when the medium leaves controlled storage."
+msgstr ""
+
+#: templates/backup/monitor.html:479
+msgid "Register Medium"
+msgstr ""
+
+#: templates/backup/tape_detail.html:50
+msgid ""
+"Detailed traceability for the selected storage medium, including "
+"retention status and custody history."
+msgstr ""
+
+#: templates/backup/tape_detail.html:56
+msgid "Storage Medium Overview"
+msgstr ""
+
+#: templates/backup/tape_detail.html:85
+msgid "Nominal capacity"
+msgstr ""
+
+#: templates/backup/tape_detail.html:87
+msgid "Usable capacity"
+msgstr ""
+
+#: templates/backup/tape_detail.html:94
+#, python-format
+msgid "Ends %(date)s"
+msgstr ""
+
+#: templates/backup/tape_detail.html:99
+msgid "Set retention start date"
+msgstr ""
+
+#: templates/backup/tape_detail.html:148
+msgid "Update Storage Medium"
+msgstr ""
+
+#: templates/backup/tape_detail.html:245
+msgid "Location History"
+msgstr ""
+
+#: templates/backup/tape_detail.html:248 templates/backup/tape_detail.html:431
+#: templates/backup/tape_detail.html:488
+msgid "Add Location Entry"
+msgstr ""
+
+#: templates/backup/tape_detail.html:258
+#: templates/tickets/_view_content.html:195
+msgid "Details"
+msgstr ""
+
+#: templates/backup/tape_detail.html:259 templates/backup/tape_detail.html:473
+msgid "Check-in"
+msgstr ""
+
+#: templates/backup/tape_detail.html:260 templates/backup/tape_detail.html:477
+msgid "Check-out"
+msgstr ""
+
+#: templates/backup/tape_detail.html:275
+msgid "Current"
+msgstr ""
+
+#: templates/backup/tape_detail.html:281 templates/networks/maps.html:125
+msgid "Site"
+msgstr ""
+
+#: templates/backup/tape_detail.html:284
+msgid "Shelf/Slot"
+msgstr ""
+
+#: templates/backup/tape_detail.html:287
+msgid "Locker Code"
+msgstr ""
+
+#: templates/backup/tape_detail.html:290
+#: templates/manage/assistant_settings.html:89
+#: templates/manage/assistant_settings.html:165
+msgid "Provider"
+msgstr ""
+
+#: templates/backup/tape_detail.html:293
+msgid "Holder"
+msgstr ""
+
+#: templates/backup/tape_detail.html:304
+msgid "No location history yet."
+msgstr ""
+
+#: templates/backup/tape_detail.html:316
+msgid "Custody Chain"
+msgstr ""
+
+#: templates/backup/tape_detail.html:319 templates/backup/tape_detail.html:502
+msgid "Record Custody Event"
+msgstr ""
+
+#: templates/backup/tape_detail.html:329
+msgid "Action"
+msgstr ""
+
+#: templates/backup/tape_detail.html:330 templates/backup/tape_detail.html:516
+msgid "Handed over by"
+msgstr ""
+
+#: templates/backup/tape_detail.html:331 templates/backup/tape_detail.html:524
+msgid "Received by"
+msgstr ""
+
+#: templates/backup/tape_detail.html:342 templates/backup/tape_detail.html:348
+msgid "Signature"
+msgstr ""
+
+#: templates/backup/tape_detail.html:354
+msgid "No custody events recorded yet."
+msgstr ""
+
+#: templates/backup/tape_detail.html:411
+#, python-format
+msgid ""
+"Delete storage medium “%(barcode)s”? All related locations and custody "
+"records will be removed."
+msgstr ""
+
+#: templates/backup/tape_detail.html:445
+msgid "Site / Vault / Address"
+msgstr ""
+
+#: templates/backup/tape_detail.html:449
+msgid "Shelf / Slot Code"
+msgstr ""
+
+#: templates/backup/tape_detail.html:453
+msgid "Locker / Deposit Code"
+msgstr ""
+
+#: templates/backup/tape_detail.html:457
+msgid "Provider / Courier"
+msgstr ""
+
+#: templates/backup/tape_detail.html:461
+msgid "Contact details"
+msgstr ""
+
+#: templates/backup/tape_detail.html:465
+msgid "Custody holder"
+msgstr ""
+
+#: templates/backup/tape_detail.html:469
+msgid "Reference / Ticket"
+msgstr ""
+
+#: templates/backup/tape_detail.html:512
+msgid "Event type"
+msgstr ""
+
+#: templates/backup/tape_detail.html:520 templates/backup/tape_detail.html:528
+msgid "Signature / ID"
+msgstr ""
+
+#: templates/backup/tape_detail.html:539
+msgid "Add Custody Entry"
+msgstr ""
+
+#: templates/collab/chat.html:263
+msgid "Total Conversations"
+msgstr ""
+
+#: templates/collab/chat.html:270
+msgid "Direct Messages"
+msgstr ""
+
+#: templates/collab/chat.html:276
+msgid "Team Channels"
+msgstr ""
+
+#: templates/collab/chat.html:282
+msgid "Unread"
+msgstr ""
+
+#: templates/collab/chat.html:288
+msgid "Messages Today"
+msgstr ""
+
+#: templates/collab/chat.html:294
+msgid "Favorites"
+msgstr ""
+
+#: templates/collab/chat.html:305
+msgid "Conversations"
+msgstr ""
+
+#: templates/collab/chat.html:336 templates/collab/chat.html:658
+msgid "Everyone in the organization"
+msgstr ""
+
+#: templates/collab/chat.html:340 templates/collab/chat.html:896
+msgid "Purge General Chat"
+msgstr ""
+
+#: templates/collab/chat.html:350
+msgid "Select or start a conversation to view messages."
+msgstr ""
+
+#: templates/collab/chat.html:365 templates/partials/assistant_widget.html:376
+#: templates/partials/assistant_widget.html:954
+#: templates/partials/assistant_widget.html:961
+msgid "Type your message..."
+msgstr ""
+
+#: templates/collab/chat.html:378
+msgid "People"
+msgstr ""
+
+#: templates/collab/chat.html:421
+msgid "is typing"
+msgstr ""
+
+#: templates/collab/chat.html:422
+msgid "are typing"
+msgstr ""
+
+#: templates/collab/chat.html:423
+msgid "Someone is typing"
+msgstr ""
+
+#: templates/collab/chat.html:425
+msgid "General chat cleared."
+msgstr ""
+
+#: templates/collab/chat.html:426
+msgid "Unable to purge general chat."
+msgstr ""
+
+#: templates/collab/chat.html:547
+msgid "'Someone is typing'"
+msgstr ""
+
+#: templates/collab/chat.html:658
+msgid "Direct conversation"
+msgstr ""
+
+#: templates/collab/chat.html:704
+msgid "Send failed"
+msgstr ""
+
+#: templates/collab/chat.html:757
+msgid "Unable to open conversation"
+msgstr ""
+
+#: templates/collab/chat.html:843 templates/collab/chat.html:847
+msgid "Unable to delete conversation"
+msgstr ""
+
+#: templates/collab/chat.html:884 templates/partials/assistant_widget.html:594
+msgid "Download"
+msgstr ""
+
+#: templates/collab/chat.html:900
+msgid ""
+"This will permanently delete all messages in the General chat for "
+"everyone. This action cannot be undone."
+msgstr ""
+
+#: templates/collab/chat.html:904
+msgid "Purge"
+msgstr ""
+
+#: templates/collab/chat.html:915
+msgid "Delete Conversation"
+msgstr ""
+
+#: templates/collab/chat.html:919
+msgid ""
+"Are you sure you want to delete this conversation? This action cannot be "
+"undone."
+msgstr ""
+
+#: templates/contracts/contract_list.html:85
+msgid "Total Contracts"
+msgstr ""
+
+#: templates/contracts/contract_list.html:92
+#: templates/contracts/contract_list.html:163
+#: templates/inventory/software_list.html:201 templates/manage/api_keys.html:74
+#: templates/manage/api_keys.html:187 templates/manage/configuration.html:143
+#: templates/manage/configuration.html:165
+#: templates/manage/configuration.html:179
+#: templates/manage/configuration.html:200
+#: templates/manage/email_ingest.html:120 templates/users/list.html:80
+#: templates/users/list.html:117 templates/users/list.html:143
+msgid "Active"
+msgstr ""
+
+#: templates/contracts/contract_list.html:104
+#: templates/contracts/contract_list.html:165
+#: templates/inventory/software_list.html:127
+#: templates/inventory/software_list.html:203
+msgid "Expiring Soon"
+msgstr ""
+
+#: templates/contracts/contract_list.html:117
+msgid "Contract Registry"
+msgstr ""
+
+#: templates/contracts/contract_list.html:125
+#: templates/inventory/hardware_list.html:156
+#: templates/inventory/software_list.html:148 templates/networks/maps.html:110
+msgid "Read-only access. Contact an administrator for write permissions."
+msgstr ""
+
+#: templates/contracts/contract_list.html:127
+#: templates/contracts/contract_list.html:235
+msgid "New Contract"
+msgstr ""
+
+#: templates/contracts/contract_list.html:137
+#: templates/contracts/contract_list.html:263
+#: templates/contracts/contract_list.html:381
+#: templates/inventory/software_list.html:159
+#: templates/inventory/software_list.html:275
+#: templates/inventory/software_list.html:427
+msgid "Vendor"
+msgstr ""
+
+#: templates/contracts/contract_list.html:138
+msgid "Contract #"
+msgstr ""
+
+#: templates/contracts/contract_list.html:139
+msgid "PO #"
+msgstr ""
+
+#: templates/contracts/contract_list.html:140
+msgid "Value"
+msgstr ""
+
+#: templates/contracts/contract_list.html:141
+#: templates/contracts/contract_list.html:279
+#: templates/contracts/contract_list.html:397
+msgid "Currency"
+msgstr ""
+
+#: templates/contracts/contract_list.html:142
+#: templates/contracts/contract_list.html:283
+#: templates/contracts/contract_list.html:401
+msgid "Start Date"
+msgstr ""
+
+#: templates/contracts/contract_list.html:143
+#: templates/contracts/contract_list.html:287
+#: templates/contracts/contract_list.html:405
+msgid "End Date"
+msgstr ""
+
+#: templates/contracts/contract_list.html:144
+#: templates/contracts/contract_list.html:291
+#: templates/contracts/contract_list.html:409
+#: templates/inventory/software_list.html:172
+#: templates/inventory/software_list.html:356
+#: templates/inventory/software_list.html:508
+msgid "Renewal Date"
+msgstr ""
+
+#: templates/contracts/contract_list.html:145
+#: templates/contracts/contract_list.html:310
+#: templates/contracts/contract_list.html:428
+msgid "Auto Renew"
+msgstr ""
+
+#: templates/contracts/contract_list.html:146
+#: templates/contracts/contract_list.html:295
+#: templates/contracts/contract_list.html:413
+msgid "Notice Period (days)"
+msgstr ""
+
+#: templates/contracts/contract_list.html:147
+#: templates/contracts/contract_list.html:314
+#: templates/contracts/contract_list.html:432
+msgid "Coverage Scope"
+msgstr ""
+
+#: templates/contracts/contract_list.html:148
+#: templates/contracts/contract_list.html:299
+#: templates/contracts/contract_list.html:417
+msgid "Owner"
+msgstr ""
+
+#: templates/contracts/contract_list.html:149
+#: templates/contracts/contract_list.html:318
+#: templates/contracts/contract_list.html:436
+#: templates/inventory/software_list.html:177
+#: templates/inventory/software_list.html:364
+#: templates/inventory/software_list.html:516
+msgid "Support Email"
+msgstr ""
+
+#: templates/contracts/contract_list.html:150
+#: templates/contracts/contract_list.html:322
+#: templates/contracts/contract_list.html:440
+#: templates/inventory/software_list.html:178
+#: templates/inventory/software_list.html:368
+#: templates/inventory/software_list.html:520
+msgid "Support Phone"
+msgstr ""
+
+#: templates/contracts/contract_list.html:151
+#: templates/contracts/contract_list.html:326
+#: templates/contracts/contract_list.html:444
+msgid "Support URL"
+msgstr ""
+
+#: templates/contracts/contract_list.html:171
+msgid "Terminated"
+msgstr ""
+
+#: templates/contracts/contract_list.html:186
+msgid "Yes"
+msgstr ""
+
+#: templates/contracts/contract_list.html:188
+msgid "No"
+msgstr ""
+
+#: templates/contracts/contract_list.html:267
+#: templates/contracts/contract_list.html:385
+msgid "Contract Number"
+msgstr ""
+
+#: templates/contracts/contract_list.html:271
+#: templates/contracts/contract_list.html:389
+msgid "PO Number"
+msgstr ""
+
+#: templates/contracts/contract_list.html:275
+#: templates/contracts/contract_list.html:393
+msgid "Contract Value"
+msgstr ""
+
+#: templates/contracts/contract_list.html:353
+msgid "Edit Contract"
+msgstr ""
+
+#: templates/contracts/contract_list.html:476
+msgid "Delete Contract"
+msgstr ""
+
+#: templates/contracts/contract_list.html:533
+#: templates/inventory/hardware_list.html:691
+#: templates/inventory/software_list.html:628 templates/networks/hosts.html:301
+#: templates/networks/maps.html:361
+msgid "Read-only access. Changes cannot be saved."
+msgstr ""
+
+#: templates/contracts/contract_list.html:628
+msgid "Failed to load contract"
+msgstr ""
+
+#: templates/contracts/contract_list.html:635
+msgid "Failed to load contract."
+msgstr ""
+
+#: templates/contracts/contract_list.html:641
+#: templates/contracts/contract_list.html:649
+#: templates/contracts/contract_list.html:661
+#: templates/contracts/contract_list.html:678
+#: templates/contracts/contract_list.html:686
+msgid "You have read-only access to Contracts."
+msgstr ""
+
+#: templates/dashboard/index.html:50
+msgid "Dashboard Overview"
+msgstr ""
+
+#: templates/dashboard/index.html:55
+msgid "Showing statistics only for your tickets (created or assigned)."
+msgstr ""
+
+#: templates/dashboard/index.html:73
+msgid "Open Tickets"
+msgstr ""
+
+#: templates/dashboard/index.html:82 templates/dashboard/index.html:176
+#: templates/tickets/_row.html:22 templates/tickets/list.html:175
+#: templates/tickets/list.html:232
+msgid "In Progress"
+msgstr ""
+
+#: templates/dashboard/index.html:91
+msgid "Closed Tickets"
+msgstr ""
+
+#: templates/dashboard/index.html:101
+msgid "Daily Tickets"
+msgstr ""
+
+#: templates/dashboard/index.html:107
+msgid "Weekly Tickets"
+msgstr ""
+
+#: templates/dashboard/index.html:116
+msgid "Monthly Resolution Rate"
+msgstr ""
+
+#: templates/dashboard/index.html:122
+msgid "Yearly Tickets Closed"
+msgstr ""
+
+#: templates/dashboard/index.html:132
+msgid "Hardware Assignment"
+msgstr ""
+
+#: templates/dashboard/index.html:138
+msgid "Software Assignment"
+msgstr ""
+
+#: templates/dashboard/index.html:151
+msgid "Knowledge Base Articles Published"
+msgstr ""
+
+#: templates/dashboard/index.html:159
+msgid "Network Utilisation (Top 8)"
+msgstr ""
+
+#: templates/dashboard/index.html:169
+msgid "Department Workload Summary"
+msgstr ""
+
+#: templates/dashboard/index.html:174 templates/users/list.html:135
+#: templates/users/list.html:271
+msgid "Technician"
+msgstr ""
+
+#: templates/dashboard/index.html:175 templates/tickets/_row.html:20
+#: templates/tickets/list.html:169 templates/tickets/list.html:230
+msgid "Open"
+msgstr ""
+
+#: templates/dashboard/index.html:177 templates/tickets/_row.html:24
+#: templates/tickets/list.html:181 templates/tickets/list.html:205
+#: templates/tickets/list.html:234
+msgid "Closed"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:110
+msgid "Total Hardware Assets"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:117
+#: templates/inventory/software_list.html:109
+msgid "Assigned"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:123
+msgid "In Inventory"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:129
+msgid "Maintenance"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:135
+#: templates/inventory/hardware_list.html:215
+msgid "In Service"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:141
+#: templates/inventory/hardware_list.html:217
+msgid "In Stock"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:148
+msgid "Hardware Inventory"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:158
+#: templates/inventory/hardware_list.html:283
+msgid "New Hardware Asset"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:165
+#: templates/inventory/hardware_list.html:289
+#: templates/inventory/hardware_list.html:458
+msgid "Asset Tag"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:166
+#: templates/inventory/hardware_list.html:293
+#: templates/inventory/hardware_list.html:462
+#: templates/inventory/software_list.html:164
+#: templates/inventory/software_list.html:318
+#: templates/inventory/software_list.html:470
+msgid "Custom Serial"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:172
+#: templates/inventory/hardware_list.html:327
+#: templates/inventory/hardware_list.html:496
+msgid "CPU"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:173
+#: templates/inventory/hardware_list.html:331
+#: templates/inventory/hardware_list.html:500
+msgid "RAM"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:174
+#: templates/inventory/hardware_list.html:335
+#: templates/inventory/hardware_list.html:504
+msgid "Storage"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:175
+#: templates/inventory/hardware_list.html:339
+#: templates/inventory/hardware_list.html:508
+msgid "GPU"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:176
+#: templates/inventory/hardware_list.html:343
+#: templates/inventory/hardware_list.html:512
+msgid "Operating System"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:178
+#: templates/inventory/hardware_list.html:356
+#: templates/inventory/hardware_list.html:525
+msgid "Condition"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:180
+#: templates/inventory/hardware_list.html:369
+#: templates/inventory/hardware_list.html:538
+msgid "Rack/Room"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:181
+#: templates/inventory/hardware_list.html:373
+#: templates/inventory/hardware_list.html:542 templates/networks/hosts.html:125
+#: templates/networks/hosts.html:192
+msgid "IP Address"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:182
+#: templates/inventory/hardware_list.html:377
+#: templates/inventory/hardware_list.html:546 templates/networks/hosts.html:127
+#: templates/networks/hosts.html:200
+msgid "MAC Address"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:183
+#: templates/inventory/hardware_list.html:381
+#: templates/inventory/hardware_list.html:550 templates/networks/hosts.html:126
+#: templates/networks/hosts.html:196
+msgid "Hostname"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:184
+#: templates/inventory/hardware_list.html:385
+#: templates/inventory/hardware_list.html:554
+#: templates/inventory/software_list.html:170
+#: templates/inventory/software_list.html:348
+#: templates/inventory/software_list.html:500
+msgid "Purchase Date"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:185
+#: templates/inventory/hardware_list.html:389
+#: templates/inventory/hardware_list.html:558
+msgid "Warranty End"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:186
+#: templates/inventory/hardware_list.html:393
+#: templates/inventory/hardware_list.html:562
+#: templates/inventory/software_list.html:176
+#: templates/inventory/software_list.html:360
+#: templates/inventory/software_list.html:512
+msgid "Support Vendor"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:187
+#: templates/inventory/hardware_list.html:397
+#: templates/inventory/hardware_list.html:566
+msgid "Support Contract"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:188
+#: templates/inventory/hardware_list.html:417
+#: templates/inventory/hardware_list.html:586
+#: templates/inventory/software_list.html:173
+#: templates/inventory/software_list.html:376
+#: templates/inventory/software_list.html:528 templates/networks/hosts.html:129
+#: templates/tickets/list.html:203
+msgid "Assigned To"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:189
+#: templates/inventory/hardware_list.html:426
+#: templates/inventory/hardware_list.html:595
+#: templates/inventory/software_list.html:174
+#: templates/inventory/software_list.html:385
+#: templates/inventory/software_list.html:537
+msgid "Assigned On"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:190
+#: templates/inventory/hardware_list.html:401
+#: templates/inventory/hardware_list.html:570
+msgid "Accessories"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:191
+#: templates/inventory/hardware_list.html:405
+#: templates/inventory/hardware_list.html:574
+msgid "Power Supply"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:192
+msgid "BIOS"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:193
+msgid "Firmware"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:219
+msgid "Under Maintenance"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:221
+#: templates/inventory/software_list.html:209
+msgid "Retired"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:223
+msgid "Disposed"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:409
+#: templates/inventory/hardware_list.html:578
+msgid "BIOS Version"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:413
+#: templates/inventory/hardware_list.html:582
+msgid "Firmware Version"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:452
+msgid "Edit Hardware Asset"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:611
+#: templates/inventory/software_list.html:557 templates/networks/hosts.html:233
+#: templates/networks/maps.html:274
+msgid "Update"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:628
+msgid "Delete Hardware Asset"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:797
+msgid "Failed to load hardware asset"
+msgstr ""
+
+#: templates/inventory/hardware_list.html:804
+msgid "Failed to load hardware asset."
+msgstr ""
+
+#: templates/inventory/hardware_list.html:811
+#: templates/inventory/hardware_list.html:821
+#: templates/inventory/hardware_list.html:829
+#: templates/inventory/hardware_list.html:842
+#: templates/inventory/hardware_list.html:856
+msgid "You have read-only access to Hardware Inventory."
+msgstr ""
+
+#: templates/inventory/software_list.html:102
+msgid "Total Software Assets"
+msgstr ""
+
+#: templates/inventory/software_list.html:121
+msgid "Active Licenses"
+msgstr ""
+
+#: templates/inventory/software_list.html:133
+msgid "Already Expired"
+msgstr ""
+
+#: templates/inventory/software_list.html:140
+msgid "Software Inventory"
+msgstr ""
+
+#: templates/inventory/software_list.html:150
+#: templates/inventory/software_list.html:265
+msgid "New Software Asset"
+msgstr ""
+
+#: templates/inventory/software_list.html:162
+#: templates/inventory/software_list.html:296
+#: templates/inventory/software_list.html:448
+msgid "License Type"
+msgstr ""
+
+#: templates/inventory/software_list.html:163
+#: templates/inventory/software_list.html:314
+#: templates/inventory/software_list.html:466
+msgid "License Key"
+msgstr ""
+
+#: templates/inventory/software_list.html:166
+#: templates/inventory/software_list.html:283
+#: templates/inventory/software_list.html:435
+msgid "Seats"
+msgstr ""
+
+#: templates/inventory/software_list.html:167
+#: templates/inventory/software_list.html:326
+#: templates/inventory/software_list.html:478
+msgid "Platform"
+msgstr ""
+
+#: templates/inventory/software_list.html:168
+#: templates/inventory/software_list.html:335
+#: templates/inventory/software_list.html:487
+msgid "Environment"
+msgstr ""
+
+#: templates/inventory/software_list.html:171
+#: templates/inventory/software_list.html:352
+#: templates/inventory/software_list.html:504
+msgid "Expiration Date"
+msgstr ""
+
+#: templates/inventory/software_list.html:175
+#: templates/inventory/software_list.html:344
+#: templates/inventory/software_list.html:496
+msgid "Cost Center"
+msgstr ""
+
+#: templates/inventory/software_list.html:179
+#: templates/inventory/software_list.html:389
+#: templates/inventory/software_list.html:541
+msgid "Usage Scope"
+msgstr ""
+
+#: templates/inventory/software_list.html:207
+msgid "Planned"
+msgstr ""
+
+#: templates/inventory/software_list.html:372
+#: templates/inventory/software_list.html:524
+msgid "Contract URL"
+msgstr ""
+
+#: templates/inventory/software_list.html:393
+#: templates/inventory/software_list.html:545
+msgid "Deployment Notes"
+msgstr ""
+
+#: templates/inventory/software_list.html:417
+msgid "Edit Software Asset"
+msgstr ""
+
+#: templates/inventory/software_list.html:573
+msgid "Delete Software Asset"
+msgstr ""
+
+#: templates/inventory/software_list.html:728
+msgid "Failed to load software asset"
+msgstr ""
+
+#: templates/inventory/software_list.html:735
+msgid "Failed to load software asset."
+msgstr ""
+
+#: templates/inventory/software_list.html:741
+#: templates/inventory/software_list.html:749
+#: templates/inventory/software_list.html:763
+#: templates/inventory/software_list.html:779
+#: templates/inventory/software_list.html:787
+msgid "You have read-only access to Software Inventory."
+msgstr ""
+
+#: templates/knowledge/detail.html:24 templates/knowledge/detail.html:36
+msgid "Delete Article"
+msgstr ""
+
+#: templates/knowledge/detail.html:28
+msgid "Are you sure you want to delete this article?"
+msgstr ""
+
+#: templates/knowledge/detail.html:30
+msgid ""
+"This action cannot be undone. All article content, attachments, and "
+"version history will be permanently deleted."
+msgstr ""
+
+#: templates/knowledge/detail.html:48 templates/knowledge/list.html:250
+#: templates/knowledge/version.html:22
+msgid "n/a"
+msgstr ""
+
+#: templates/knowledge/detail.html:53
+msgid "Back"
+msgstr ""
+
+#: templates/knowledge/detail.html:57 templates/manage/api_keys.html:199
+#: templates/tickets/_row.html:49 templates/tickets/list.html:265
+msgid "Edit"
+msgstr ""
+
+#: templates/knowledge/detail.html:83 templates/knowledge/edit.html:23
+msgid "Summary"
+msgstr ""
+
+#: templates/knowledge/detail.html:104 templates/knowledge/detail.html:168
+msgid "Upload Attachment"
+msgstr ""
+
+#: templates/knowledge/detail.html:104 templates/knowledge/list.html:170
+#: templates/tickets/_view_content.html:197
+msgid "Attachments"
+msgstr ""
+
+#: templates/knowledge/detail.html:110
+msgid "File"
+msgstr ""
+
+#: templates/knowledge/detail.html:112
+msgid "Size"
+msgstr ""
+
+#: templates/knowledge/detail.html:113
+msgid "Uploaded"
+msgstr ""
+
+#: templates/knowledge/detail.html:136
+msgid "Remove this attachment?"
+msgstr ""
+
+#: templates/knowledge/detail.html:158 templates/knowledge/detail.html:178
+#: templates/tickets/_view_content.html:287
+#: templates/tickets/_view_content.html:408
+msgid "Upload"
+msgstr ""
+
+#: templates/knowledge/detail.html:189
+msgid "Version History"
+msgstr ""
+
+#: templates/knowledge/detail.html:196 templates/knowledge/version.html:21
+#: templates/manage/api_keys.html:145 templates/tickets/list.html:204
+#: templates/users/list.html:118
+msgid "Created"
+msgstr ""
+
+#: templates/knowledge/detail.html:198 templates/knowledge/edit.html:15
+msgid "Title"
+msgstr ""
+
+#: templates/knowledge/detail.html:212 templates/knowledge/list.html:260
+#: templates/tickets/_row.html:45 templates/tickets/list.html:261
+msgid "View"
+msgstr ""
+
+#: templates/knowledge/edit.html:6
+msgid "Edit Article"
+msgstr ""
+
+#: templates/knowledge/edit.html:8
+msgid "New Knowledge Article"
+msgstr ""
+
+#: templates/knowledge/edit.html:27
+msgid "Content"
+msgstr ""
+
+#: templates/knowledge/edit.html:31
+msgid "Tags (comma separated)"
+msgstr ""
+
+#: templates/knowledge/edit.html:37 templates/knowledge/list.html:146
+msgid "Published"
+msgstr ""
+
+#: templates/knowledge/list.html:139
+msgid "Total Articles"
+msgstr ""
+
+#: templates/knowledge/list.html:152
+msgid "Drafts"
+msgstr ""
+
+#: templates/knowledge/list.html:158
+msgid "Categories"
+msgstr ""
+
+#: templates/knowledge/list.html:180
+msgid "New Article"
+msgstr ""
+
+#: templates/knowledge/list.html:187
+msgid "Search the Knowledge Base"
+msgstr ""
+
+#: templates/knowledge/list.html:188
+msgid "Find articles, procedures, and attachments in a single sweep."
+msgstr ""
+
+#: templates/knowledge/list.html:195
+msgid "Start typing keywords, tags, or attachment names..."
+msgstr ""
+
+#: templates/knowledge/list.html:199
+msgid "All Categories"
+msgstr ""
+
+#: templates/knowledge/list.html:205
+msgid "All Tags"
+msgstr ""
+
+#: templates/knowledge/list.html:211
+msgid "Search"
+msgstr ""
+
+#: templates/knowledge/list.html:231
+msgid "Showing"
+msgstr ""
+
+#: templates/knowledge/list.html:231 templates/knowledge/list.html:233
+msgid "of"
+msgstr ""
+
+#: templates/knowledge/list.html:231
+msgid "articles"
+msgstr ""
+
+#: templates/knowledge/list.html:233
+msgid "Page"
+msgstr ""
+
+#: templates/knowledge/list.html:270
+msgid "No articles found. Try adjusting your filters or create a new one."
+msgstr ""
+
+#: templates/knowledge/list.html:279
+msgid "Previous"
+msgstr ""
+
+#: templates/knowledge/list.html:297
+msgid "Next"
+msgstr ""
+
+#: templates/knowledge/version.html:27
+msgid "Back to Article"
+msgstr ""
+
+#: templates/manage/access.html:60 templates/manage/assistant_settings.html:69
+#: templates/manage/configuration.html:45
+msgid "Access Control"
+msgstr ""
+
+#: templates/manage/access.html:62
+msgid "Manage Users"
+msgstr ""
+
+#: templates/manage/access.html:71
+msgid "Menu items"
+msgstr ""
+
+#: templates/manage/access.html:77
+msgid "Menu overrides"
+msgstr ""
+
+#: templates/manage/access.html:83
+msgid "Module overrides"
+msgstr ""
+
+#: templates/manage/access.html:89
+msgid "Read-only assignments"
+msgstr ""
+
+#: templates/manage/access.html:93 templates/users/list.html:92
+msgid "Roles"
+msgstr ""
+
+#: templates/manage/access.html:96
+msgid "Modules"
+msgstr ""
+
+#: templates/manage/access.html:107
+msgid ""
+"Toggle which roles can see each menu item. Defaults apply when no "
+"override is set."
+msgstr ""
+
+#: templates/manage/access.html:115
+msgid "Menu Permissions"
+msgstr ""
+
+#: templates/manage/access.html:122
+msgid "Menu Item"
+msgstr ""
+
+#: templates/manage/access.html:156
+msgid ""
+"Define read or read/write permissions for sensitive modules. Admins "
+"always retain full access."
+msgstr ""
+
+#: templates/manage/access.html:164
+msgid "Module Permissions"
+msgstr ""
+
+#: templates/manage/access.html:171
+msgid "Module"
+msgstr ""
+
+#: templates/manage/access.html:192
+msgid "Read"
+msgstr ""
+
+#: templates/manage/access.html:200
+msgid "Read / Write"
+msgstr ""
+
+#: templates/manage/api_docs.html:6
+msgid "API Documentation"
+msgstr ""
+
+#: templates/manage/api_docs.html:7
+msgid "Interactive Swagger UI for the Helpdesk Pro REST API."
+msgstr ""
+
+#: templates/manage/api_docs.html:10
+msgid "Manage API Keys"
+msgstr ""
+
+#: templates/manage/api_keys.html:56
+msgid ""
+"Generate, rotate, and revoke REST API credentials for trusted "
+"integrations."
+msgstr ""
+
+#: templates/manage/api_keys.html:59
+#: templates/tools/password_generator.html:145
+msgid "Refresh"
+msgstr ""
+
+#: templates/manage/api_keys.html:68
+msgid "Clients"
+msgstr ""
+
+#: templates/manage/api_keys.html:80 templates/manage/api_keys.html:185
+msgid "Revoked"
+msgstr ""
+
+#: templates/manage/api_keys.html:86
+#, python-format
+msgid "Used in last %(days)s days"
+msgstr ""
+
+#: templates/manage/api_keys.html:96
+msgid "New API key generated"
+msgstr ""
+
+#: templates/manage/api_keys.html:97
+msgid "Copy this key now. For security reasons it will not be shown again."
+msgstr ""
+
+#: templates/manage/api_keys.html:104
+msgid "Create API Client"
+msgstr ""
+
+#: templates/manage/api_keys.html:110
+msgid "Integration name"
+msgstr ""
+
+#: templates/manage/api_keys.html:111
+msgid "e.g. ServiceNow bridge"
+msgstr ""
+
+#: templates/manage/api_keys.html:114 templates/manage/api_keys.html:257
+msgid "Default user context"
+msgstr ""
+
+#: templates/manage/api_keys.html:116
+msgid "None (API must supply actor)"
+msgstr ""
+
+#: templates/manage/api_keys.html:121
+msgid "Used when requests omit created_by / updated_by."
+msgstr ""
+
+#: templates/manage/api_keys.html:124
+msgid "Description (optional)"
+msgstr ""
+
+#: templates/manage/api_keys.html:128
+msgid "Generate Key"
+msgstr ""
+
+#: templates/manage/api_keys.html:135
+msgid "Existing API Clients"
+msgstr ""
+
+#: templates/manage/api_keys.html:136
+msgid "client(s) total"
+msgstr ""
+
+#: templates/manage/api_keys.html:144
+msgid "Default User"
+msgstr ""
+
+#: templates/manage/api_keys.html:146
+msgid "Last used"
+msgstr ""
+
+#: templates/manage/api_keys.html:155
+msgid "No API clients yet. Generate one using the form above."
+msgstr ""
+
+#: templates/manage/api_keys.html:172 templates/manage/api_keys.html:259
+#: templates/manage/email_ingest.html:103
+#: templates/manage/email_ingest.html:237
+msgid "None"
+msgstr ""
+
+#: templates/manage/api_keys.html:180 templates/manage/email_ingest.html:91
+#: templates/manage/email_ingest.html:230
+msgid "Never"
+msgstr ""
+
+#: templates/manage/api_keys.html:201
+msgid ""
+"Rotate key for this client? The previous key will stop working "
+"immediately."
+msgstr ""
+
+#: templates/manage/api_keys.html:206
+msgid "Rotate"
+msgstr ""
+
+#: templates/manage/api_keys.html:210
+msgid "Generate a new key and reactivate this client?"
+msgstr ""
+
+#: templates/manage/api_keys.html:215
+msgid "Reactivate"
+msgstr ""
+
+#: templates/manage/api_keys.html:219
+msgid "Revoke this API key? Integration will lose access immediately."
+msgstr ""
+
+#: templates/manage/api_keys.html:224
+msgid "Revoke"
+msgstr ""
+
+#: templates/manage/api_keys.html:228
+msgid "Delete this API client? This cannot be undone."
+msgstr ""
+
+#: templates/manage/api_keys.html:253 templates/networks/hosts.html:131
+#: templates/networks/maps.html:127 templates/networks/maps.html:208
+#: templates/networks/maps.html:262 templates/tickets/create.html:6
+#: templates/tickets/edit.html:14 templates/tickets/list.html:199
+#: templates/tickets/list.html:294
+msgid "Description"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:66
+msgid "Configure the floating assistant widget and provider credentials."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:97
+#: templates/manage/assistant_settings.html:136
+msgid "Button label"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:103
+#: templates/manage/assistant_settings.html:153
+msgid "Button position"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:106
+#: templates/manage/assistant_settings.html:156
+msgid "Bottom left"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:106
+#: templates/manage/assistant_settings.html:155
+msgid "Bottom right"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:117
+msgid ""
+"Use the Access Control page to choose which roles can see the assistant "
+"widget (menu entry “AI Assistant Widget”)."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:126
+msgid "Widget Appearance"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:131
+msgid "Enable assistant widget"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:140
+msgid "Window title"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:144
+msgid "Welcome message"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:148
+msgid "System prompt / instructions"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:149
+msgid "Describe how the assistant should behave"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:150
+msgid ""
+"Used as the system message so the assistant behaves like your IT expert "
+"with PostgreSQL module context."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:174
+msgid "OpenAI (MCP tools)"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:177
+msgid ""
+"Uses OpenAI function-calling with the embedded MCP tool catalogue. "
+"Requires the API key below."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:185
+msgid "OpenWebUI API"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:193
+msgid "API key (optional)"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:200
+msgid ""
+"Uses an OpenAI-compatible endpoint exposed by OpenWebUI. Ensure the base "
+"URL points to `/api/v1/chat/completions`."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:208
+msgid "Custom webhook (n8n, etc.)"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:212
+msgid "Webhook URL"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:216
+msgid "HTTP method"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:223
+msgid "Custom headers (JSON)"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:226
+msgid ""
+"The webhook receives JSON payloads with the current message, history, and"
+" user context. It must return JSON with a “reply” field."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:233
+msgid "OpenAI API key"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:237
+msgid "OpenAI model"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:241
+msgid ""
+"These credentials are required for the OpenAI-based providers. OpenWebUI "
+"fields are used when that provider is selected."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:249
+msgid "Embedded MCP Server"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:252
+msgid "Running"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:257
+msgid ""
+"The MCP server runs inside Helpdesk Pro and exposes read-only tools over "
+"HTTP."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:258
+msgid "Share these coordinates with external AI agents or MCP-compatible clients."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:262
+msgid "Enable embedded MCP server"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:263
+msgid "No OpenAI API key is required for the MCP provider."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:271
+msgid "Host"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:275
+#: templates/manage/email_ingest.html:140
+msgid "Port"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:279
+msgid "Allowed origins"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:287
+msgid "No CORS restrictions configured (local access only)."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:291
+msgid "Log level"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:294
+#, python-format
+msgid "Adjust using the %(var)s environment variable."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:300
+msgid ""
+"Default tools are available under `/mcp/tools` and `/mcp/invoke` on the "
+"above base URL."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:310
+msgid "Role visibility"
+msgstr ""
+
+#: templates/manage/assistant_settings.html:311
+msgid ""
+"Use the Access Control page to limit which roles can open the assistant "
+"widget."
+msgstr ""
+
+#: templates/manage/assistant_settings.html:317
+msgid "Save Settings"
+msgstr ""
+
+#: templates/manage/auth_settings.html:6
+msgid "Authentication Settings"
+msgstr ""
+
+#: templates/manage/auth_settings.html:16
+msgid "Allow users to create their own accounts"
+msgstr ""
+
+#: templates/manage/auth_settings.html:18
+msgid "When enabled, a “Create an account” link appears on the sign-in page."
+msgstr ""
+
+#: templates/manage/auth_settings.html:25
+msgid "Allow password reset emails"
+msgstr ""
+
+#: templates/manage/auth_settings.html:28
+msgid ""
+"Requires outbound email to be configured. Users receive a time-limited "
+"link to pick a new password."
+msgstr ""
+
+#: templates/manage/auth_settings.html:33
+msgid "Default role for new self-registered users"
+msgstr ""
+
+#: templates/manage/auth_settings.html:41
+msgid "Choose the least-privileged role that should be assigned automatically."
+msgstr ""
+
+#: templates/manage/auth_settings.html:45
+#: templates/manage/email_ingest.html:243
+msgid "Save settings"
+msgstr ""
+
+#: templates/manage/configuration.html:42
+msgid "Manage environment-backed application settings."
+msgstr ""
+
+#: templates/manage/configuration.html:53
+msgid "Environment file"
+msgstr ""
+
+#: templates/manage/configuration.html:56
+#, python-format
+msgid "Last edited at %(timestamp)s"
+msgstr ""
+
+#: templates/manage/configuration.html:62
+msgid "Detected"
+msgstr ""
+
+#: templates/manage/configuration.html:66
+msgid "Missing - will be created on save"
+msgstr ""
+
+#: templates/manage/configuration.html:74
+msgid "Fields configured"
+msgstr ""
+
+#: templates/manage/configuration.html:82
+msgid "Coverage"
+msgstr ""
+
+#: templates/manage/configuration.html:90
+msgid "Using defaults"
+msgstr ""
+
+#: templates/manage/configuration.html:98
+msgid "File size"
+msgstr ""
+
+#: templates/manage/configuration.html:100
+msgid "N/A"
+msgstr ""
+
+#: templates/manage/configuration.html:126
+#, python-format
+msgid "Configured here: %(count)s item(s)"
+msgstr ""
+
+#: templates/manage/configuration.html:143
+#: templates/manage/configuration.html:165
+#: templates/manage/configuration.html:200
+msgid "Following default"
+msgstr ""
+
+#: templates/manage/configuration.html:145
+#: templates/manage/configuration.html:163
+#: templates/manage/configuration.html:177
+#: templates/manage/configuration.html:198
+msgid "Default"
+msgstr ""
+
+#: templates/manage/configuration.html:153
+msgid "Use application default"
+msgstr ""
+
+#: templates/manage/configuration.html:171
+msgid "One value per line or JSON array"
+msgstr ""
+
+#: templates/manage/configuration.html:213
+msgid "Save Configuration"
+msgstr ""
+
+#: templates/manage/configuration.html:216
+msgid "Reload from Disk"
+msgstr ""
+
+#: templates/manage/email_ingest.html:55
+msgid "Automatically convert incoming emails into Helpdesk tickets."
+msgstr ""
+
+#: templates/manage/email_ingest.html:60
+msgid "Service Enabled"
+msgstr ""
+
+#: templates/manage/email_ingest.html:60
+msgid "Service Disabled"
+msgstr ""
+
+#: templates/manage/email_ingest.html:70 templates/manage/email_ingest.html:124
+#: templates/networks/tools.html:176
+msgid "Protocol"
+msgstr ""
+
+#: templates/manage/email_ingest.html:78
+msgid "Poll Interval"
+msgstr ""
+
+#: templates/manage/email_ingest.html:80
+msgid "seconds"
+msgstr ""
+
+#: templates/manage/email_ingest.html:86
+msgid "Last Run"
+msgstr ""
+
+#: templates/manage/email_ingest.html:98
+msgid "Last Error"
+msgstr ""
+
+#: templates/manage/email_ingest.html:117
+msgid "Enable polling service"
+msgstr ""
+
+#: templates/manage/email_ingest.html:131
+msgid "Mailbox / Folder"
+msgstr ""
+
+#: templates/manage/email_ingest.html:133
+msgid "For IMAP this is the folder to monitor (default INBOX)."
+msgstr ""
+
+#: templates/manage/email_ingest.html:136
+msgid "Mail server host"
+msgstr ""
+
+#: templates/manage/email_ingest.html:141
+msgid "Auto"
+msgstr ""
+
+#: templates/manage/email_ingest.html:144
+msgid "Use SSL/TLS"
+msgstr ""
+
+#: templates/manage/email_ingest.html:157
+msgid "Leave as *** to keep the stored password."
+msgstr ""
+
+#: templates/manage/email_ingest.html:160
+msgid "Poll interval (seconds)"
+msgstr ""
+
+#: templates/manage/email_ingest.html:164
+msgid "Default priority"
+msgstr ""
+
+#: templates/manage/email_ingest.html:168
+msgid "Default department"
+msgstr ""
+
+#: templates/manage/email_ingest.html:172
+msgid "Ticket creator"
+msgstr ""
+
+#: templates/manage/email_ingest.html:174
+msgid "Select user"
+msgstr ""
+
+#: templates/manage/email_ingest.html:179
+msgid "Tickets will be created under this user's account."
+msgstr ""
+
+#: templates/manage/email_ingest.html:182
+msgid "Assign to (optional)"
+msgstr ""
+
+#: templates/manage/email_ingest.html:184
+msgid "Do not auto-assign"
+msgstr ""
+
+#: templates/manage/email_ingest.html:195
+msgid "Only create tickets when the email subject matches one of these patterns"
+msgstr ""
+
+#: templates/manage/email_ingest.html:197
+msgid "Subject patterns (one per line)"
+msgstr ""
+
+#: templates/manage/email_ingest.html:200
+msgid ""
+"Use simple text, * wildcards, or prefix with regex: to run a regular "
+"expression. Patterns are compared case-insensitively."
+msgstr ""
+
+#: templates/manage/email_ingest.html:203
+msgid "Sample patterns"
+msgstr ""
+
+#: templates/manage/email_ingest.html:205
+msgid "only accept subjects that include the exact tag `[1234]`."
+msgstr ""
+
+#: templates/manage/email_ingest.html:206
+msgid "match subjects such as `[INV-001]` where the wildcard fills in the rest."
+msgstr ""
+
+#: templates/manage/email_ingest.html:207
+msgid "allow any prefix but require the suffix `2024`."
+msgstr ""
+
+#: templates/manage/email_ingest.html:208
+msgid "match any subject that starts with `PROD-`."
+msgstr ""
+
+#: templates/manage/email_ingest.html:209
+msgid ""
+"match subjects containing a four-digit code in square brackets (regular "
+"expression)."
+msgstr ""
+
+#: templates/manage/email_ingest.html:215
+msgid ""
+"Delete emails that do not match any pattern (skipped emails will not "
+"remain unread)."
+msgstr ""
+
+#: templates/manage/email_ingest.html:226
+msgid "Last run"
+msgstr ""
+
+#: templates/manage/email_ingest.html:233
+msgid "Last error"
+msgstr ""
+
+#: templates/manage/email_ingest.html:246
+msgid "Run now"
+msgstr ""
+
+#: templates/networks/hosts.html:77 templates/networks/maps.html:121
+msgid "Network"
+msgstr ""
+
+#: templates/networks/hosts.html:83 templates/networks/maps.html:120
+msgid "CIDR"
+msgstr ""
+
+#: templates/networks/hosts.html:89
+msgid "Hosts Managed"
+msgstr ""
+
+#: templates/networks/hosts.html:95
+msgid "Capacity"
+msgstr ""
+
+#: templates/networks/hosts.html:102
+msgid "Hosts in"
+msgstr ""
+
+#: templates/networks/hosts.html:105
+msgid "Back to Networks"
+msgstr ""
+
+#: templates/networks/hosts.html:111 templates/networks/hosts.html:116
+msgid "Generate Hosts"
+msgstr ""
+
+#: templates/networks/hosts.html:115
+msgid "Read-only access"
+msgstr ""
+
+#: templates/networks/hosts.html:128 templates/networks/hosts.html:204
+msgid "Device Type"
+msgstr ""
+
+#: templates/networks/hosts.html:130 templates/networks/hosts.html:153
+msgid "Reserved"
+msgstr ""
+
+#: templates/networks/hosts.html:155
+msgid "Available"
+msgstr ""
+
+#: templates/networks/hosts.html:187
+msgid "Edit Host"
+msgstr ""
+
+#: templates/networks/hosts.html:207
+msgid "Server"
+msgstr ""
+
+#: templates/networks/hosts.html:208
+msgid "Printer"
+msgstr ""
+
+#: templates/networks/hosts.html:209
+msgid "Workstation"
+msgstr ""
+
+#: templates/networks/hosts.html:210
+msgid "Network Device"
+msgstr ""
+
+#: templates/networks/hosts.html:211
+msgid "IoT Device"
+msgstr ""
+
+#: templates/networks/hosts.html:212
+msgid "VoIP / Telephony"
+msgstr ""
+
+#: templates/networks/hosts.html:213
+msgid "Camera / CCTV"
+msgstr ""
+
+#: templates/networks/hosts.html:214
+msgid "Other"
+msgstr ""
+
+#: templates/networks/hosts.html:218
+msgid "Assigned To (User / Asset)"
+msgstr ""
+
+#: templates/networks/hosts.html:223
+msgid "Reserve this IP address"
+msgstr ""
+
+#: templates/networks/hosts.html:248
+msgid "Delete Host"
+msgstr ""
+
+#: templates/networks/hosts.html:252
+msgid "Are you sure you want to delete host"
+msgstr ""
+
+#: templates/networks/hosts.html:350 templates/networks/hosts.html:379
+#: templates/networks/hosts.html:392 templates/networks/maps.html:435
+#: templates/networks/maps.html:457 templates/networks/maps.html:472
+msgid "You have read-only access to Network Maps."
+msgstr ""
+
+#: templates/networks/maps.html:88
+msgid "Total Networks"
+msgstr ""
+
+#: templates/networks/maps.html:95
+msgid "Aggregate Host Capacity"
+msgstr ""
+
+#: templates/networks/maps.html:112
+msgid "Add Network"
+msgstr ""
+
+#: templates/networks/maps.html:122
+msgid "Broadcast"
+msgstr ""
+
+#: templates/networks/maps.html:123
+msgid "Hosts"
+msgstr ""
+
+#: templates/networks/maps.html:124 templates/networks/maps.html:204
+#: templates/networks/maps.html:258
+msgid "Gateway"
+msgstr ""
+
+#: templates/networks/maps.html:126 templates/networks/maps.html:200
+#: templates/networks/maps.html:254
+msgid "VLAN"
+msgstr ""
+
+#: templates/networks/maps.html:182
+msgid "New Network"
+msgstr ""
+
+#: templates/networks/maps.html:192 templates/networks/maps.html:246
+msgid "Network (CIDR)"
+msgstr ""
+
+#: templates/networks/maps.html:196 templates/networks/maps.html:250
+msgid "Site / Location"
+msgstr ""
+
+#: templates/networks/maps.html:236
+msgid "Edit Network"
+msgstr ""
+
+#: templates/networks/maps.html:289
+msgid "Delete Network"
+msgstr ""
+
+#: templates/networks/maps.html:312 templates/networks/maps.html:497
+#: templates/networks/maps.html:522
+msgid "Network Hosts"
+msgstr ""
+
+#: templates/networks/maps.html:511
+msgid "Unable to load host list."
+msgstr ""
+
+#: templates/networks/maps.html:523
+msgid "addresses listed"
+msgstr ""
+
+#: templates/networks/maps.html:524
+msgid "capacity"
+msgstr ""
+
+#: templates/networks/maps.html:525
+msgid "reserved"
+msgstr ""
+
+#: templates/networks/maps.html:526
+msgid "Partial list"
+msgstr ""
+
+#: templates/networks/maps.html:529
+msgid "No IP addresses available for this network yet."
+msgstr ""
+
+#: templates/networks/maps.html:543
+msgid "Showing a partial list. Generate hosts for the full set."
+msgstr ""
+
+#: templates/networks/maps.html:547
+msgid "Failed to load host list."
+msgstr ""
+
+#: templates/networks/tools.html:55
+msgid "Subnet Calculator"
+msgstr ""
+
+#: templates/networks/tools.html:57
+msgid ""
+"Plan networks, see usable hosts, broadcast, masks and wildcard masks "
+"instantly."
+msgstr ""
+
+#: templates/networks/tools.html:61
+msgid "Ping / Reachability"
+msgstr ""
+
+#: templates/networks/tools.html:63
+msgid "Test ICMP responses and basic TCP reachability to critical hosts."
+msgstr ""
+
+#: templates/networks/tools.html:67 templates/networks/tools.html:161
+msgid "Port Scanner"
+msgstr ""
+
+#: templates/networks/tools.html:69
+msgid "Check TCP/UDP port status to validate services and firewall rules."
+msgstr ""
+
+#: templates/networks/tools.html:79
+msgid "Network Calculator"
+msgstr ""
+
+#: templates/networks/tools.html:80
+msgid "Supports IPv4 & CIDR notation"
+msgstr ""
+
+#: templates/networks/tools.html:87
+msgid "Calculate"
+msgstr ""
+
+#: templates/networks/tools.html:94
+msgid "Network Address"
+msgstr ""
+
+#: templates/networks/tools.html:100
+msgid "Broadcast Address"
+msgstr ""
+
+#: templates/networks/tools.html:106
+msgid "Netmask"
+msgstr ""
+
+#: templates/networks/tools.html:112
+msgid "Wildcard Mask"
+msgstr ""
+
+#: templates/networks/tools.html:118
+msgid "Usable Host Range"
+msgstr ""
+
+#: templates/networks/tools.html:124
+msgid "Host Capacity"
+msgstr ""
+
+#: templates/networks/tools.html:138
+msgid "ICMP Ping Check"
+msgstr ""
+
+#: templates/networks/tools.html:139
+msgid "Quick reachability test (simulated)"
+msgstr ""
+
+#: templates/networks/tools.html:145 templates/networks/tools.html:168
+msgid "Target Host / IP"
+msgstr ""
+
+#: templates/networks/tools.html:150
+msgid "Ping"
+msgstr ""
+
+#: templates/networks/tools.html:155
+msgid "Use the form to run a simulated ping test."
+msgstr ""
+
+#: templates/networks/tools.html:162
+msgid "Check TCP/UDP port state (simulated)"
+msgstr ""
+
+#: templates/networks/tools.html:172
+msgid "Ports (e.g. 22,80,443)"
+msgstr ""
+
+#: templates/networks/tools.html:184
+msgid "Scan Ports"
+msgstr ""
+
+#: templates/networks/tools.html:189
+msgid "Use the form to run a simulated port scan."
+msgstr ""
+
+#: templates/networks/tools.html:278
+msgid "Invalid network format. Use something like 192.168.1.0/24"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:349
+msgid "Toggle full screen"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:361
+#: templates/partials/assistant_widget.html:413
+msgid "Copy message"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:370
+msgid "Attached documents"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:371
+msgid "Used as knowledge for this chat."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:378
+msgid "Attach document"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:382
+msgid "Start voice input"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:382
+#: templates/partials/assistant_widget.html:416
+msgid "Start voice input (GR → EN fallback)"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:385
+msgid "Send message"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:414
+msgid "Copied!"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:415
+msgid "Speech recognition is not supported in this browser."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:417
+msgid "Stop listening"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:483
+#: templates/partials/assistant_widget.html:497
+msgid "Clipboard copy failed. Try again manually."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:579
+msgid "Document"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:604
+msgid "Remove document"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:634
+#: templates/partials/assistant_widget.html:640
+msgid "Unable to start session."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:656
+#: templates/partials/assistant_widget.html:657
+msgid "Exit full screen"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:660
+#: templates/partials/assistant_widget.html:661
+msgid "Enter full screen"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:714
+#: templates/partials/assistant_widget.html:799
+msgid "Session not ready yet."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:722
+msgid "Thinking..."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:733
+msgid "Assistant error"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:748
+msgid "Connection error"
+msgstr ""
+
+#: templates/partials/assistant_widget.html:813
+#: templates/partials/assistant_widget.html:827
+msgid "Upload failed."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:857
+#: templates/partials/assistant_widget.html:864
+msgid "Unable to remove document."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:948
+#: templates/partials/assistant_widget.html:989
+msgid "Unable to start voice capture."
+msgstr ""
+
+#: templates/partials/assistant_widget.html:953
+msgid "Microphone permission denied."
+msgstr ""
+
+#: templates/tickets/_row.html:8 templates/tickets/list.html:218
+#: templates/tickets/list.html:299
+msgid "Low"
+msgstr ""
+
+#: templates/tickets/_row.html:12 templates/tickets/list.html:222
+#: templates/tickets/list.html:301
+msgid "High"
+msgstr ""
+
+#: templates/tickets/_row.html:14 templates/tickets/list.html:224
+#: templates/tickets/list.html:302
+msgid "Critical"
+msgstr ""
+
+#: templates/tickets/_row.html:38 templates/tickets/list.html:254
+msgid "No comments"
+msgstr ""
+
+#: templates/tickets/_row.html:38 templates/tickets/list.html:254
+msgid "comment(s) exist"
+msgstr ""
+
+#: templates/tickets/_row.html:43 templates/tickets/list.html:259
+msgid "No attachments"
+msgstr ""
+
+#: templates/tickets/_row.html:43 templates/tickets/list.html:259
+msgid "attachment(s) exist"
+msgstr ""
+
+#: templates/tickets/_view_content.html:13 templates/tickets/view_page.html:3
+msgid "Ticket"
+msgstr ""
+
+#: templates/tickets/_view_content.html:18
+msgid "Back to tickets"
+msgstr ""
+
+#: templates/tickets/_view_content.html:196
+msgid "Comments"
+msgstr ""
+
+#: templates/tickets/_view_content.html:198
+msgid "Activity Log"
+msgstr ""
+
+#: templates/tickets/_view_content.html:206
+msgid "Description:"
+msgstr ""
+
+#: templates/tickets/_view_content.html:213 templates/tickets/create.html:7
+#: templates/tickets/edit.html:17 templates/tickets/list.html:200
+#: templates/tickets/list.html:297
+msgid "Priority"
+msgstr ""
+
+#: templates/tickets/_view_content.html:233
+msgid "Created by:"
+msgstr ""
+
+#: templates/tickets/_view_content.html:234
+msgid "Assigned to:"
+msgstr ""
+
+#: templates/tickets/_view_content.html:235
+msgid "Created at:"
+msgstr ""
+
+#: templates/tickets/_view_content.html:237
+msgid "Closed at:"
+msgstr ""
+
+#: templates/tickets/_view_content.html:255
+msgid "No comments yet."
+msgstr ""
+
+#: templates/tickets/_view_content.html:261
+msgid "Add comment..."
+msgstr ""
+
+#: templates/tickets/_view_content.html:263
+#: templates/tickets/_view_content.html:376
+msgid "Add Comment"
+msgstr ""
+
+#: templates/tickets/_view_content.html:279
+msgid "No attachments yet."
+msgstr ""
+
+#: templates/tickets/_view_content.html:300
+msgid "No activity recorded."
+msgstr ""
+
+#: templates/tickets/_view_content.html:361
+msgid "Adding..."
+msgstr ""
+
+#: templates/tickets/_view_content.html:373
+msgid "Update failed"
+msgstr ""
+
+#: templates/tickets/_view_content.html:387
+msgid "Uploading..."
+msgstr ""
+
+#: templates/tickets/_view_content.html:405
+msgid "Upload failed"
+msgstr ""
+
+#: templates/tickets/create.html:3
+msgid "Create Ticket"
+msgstr ""
+
+#: templates/tickets/create.html:5 templates/tickets/edit.html:11
+#: templates/tickets/list.html:198 templates/tickets/list.html:291
+msgid "Subject"
+msgstr ""
+
+#: templates/tickets/create.html:10
+msgid "Submit"
+msgstr ""
+
+#: templates/tickets/edit.html:6
+msgid "Edit Ticket"
+msgstr ""
+
+#: templates/tickets/edit.html:32
+msgid "Assign To"
+msgstr ""
+
+#: templates/tickets/edit.html:34
+msgid "— Unassigned —"
+msgstr ""
+
+#: templates/tickets/list.html:162
+msgid "Total Tickets"
+msgstr ""
+
+#: templates/tickets/list.html:190 templates/tickets/list.html:286
+msgid "New Ticket"
+msgstr ""
+
+#: templates/tickets/list.html:197 templates/users/list.html:111
+msgid "ID"
+msgstr ""
+
+#: templates/tickets/list.html:202
+msgid "Created By"
+msgstr ""
+
+#: templates/tickets/list.html:306 templates/users/list.html:305
+msgid "Create"
+msgstr ""
+
+#: templates/tickets/list.html:329 templates/users/list.html:318
+msgid "Confirm Delete"
+msgstr ""
+
+#: templates/tickets/list.html:332
+msgid "Are you sure you want to delete this ticket?"
+msgstr ""
+
+#: templates/tickets/list.html:426
+msgid "Deleting..."
+msgstr ""
+
+#: templates/tickets/list.html:434
+msgid "Delete failed"
+msgstr ""
+
+#: templates/tickets/list.html:453
+msgid "Failed to load edit form"
+msgstr ""
+
+#: templates/tickets/list.html:500 templates/users/list.html:494
+msgid "Creating..."
+msgstr ""
+
+#: templates/tools/password_generator.html:17
+msgid ""
+"Craft ultra-strong passwords, memorable passphrases, and secure PIN codes"
+" in seconds. Toggle your style, fine-tune complexity, and copy the result"
+" with a single click."
+msgstr ""
+
+#: templates/tools/password_generator.html:20
+msgid "Entropy rich"
+msgstr ""
+
+#: templates/tools/password_generator.html:21
+msgid "Memorable phrases"
+msgstr ""
+
+#: templates/tools/password_generator.html:22
+msgid "PIN friendly"
+msgstr ""
+
+#: templates/tools/password_generator.html:28
+msgid "Password type"
+msgstr ""
+
+#: templates/tools/password_generator.html:30
+msgid "Random"
+msgstr ""
+
+#: templates/tools/password_generator.html:33
+#: templates/tools/password_generator.html:409
+msgid "Passphrase"
+msgstr ""
+
+#: templates/tools/password_generator.html:36
+#: templates/tools/password_generator.html:410
+msgid "PIN"
+msgstr ""
+
+#: templates/tools/password_generator.html:40
+msgid "Customise your random password"
+msgstr ""
+
+#: templates/tools/password_generator.html:42
+msgid "Characters"
+msgstr ""
+
+#: templates/tools/password_generator.html:54
+msgid "Uppercase (A-Z)"
+msgstr ""
+
+#: templates/tools/password_generator.html:60
+msgid "Lowercase (a-z)"
+msgstr ""
+
+#: templates/tools/password_generator.html:66
+msgid "Numbers (0-9)"
+msgstr ""
+
+#: templates/tools/password_generator.html:72
+msgid "Symbols (!@#$)"
+msgstr ""
+
+#: templates/tools/password_generator.html:78
+msgid "Exclude ambiguous characters (O0, l1, etc.)"
+msgstr ""
+
+#: templates/tools/password_generator.html:85
+msgid "Craft an easy-to-remember passphrase"
+msgstr ""
+
+#: templates/tools/password_generator.html:87
+msgid "Words"
+msgstr ""
+
+#: templates/tools/password_generator.html:99
+msgid "Capitalise words"
+msgstr ""
+
+#: templates/tools/password_generator.html:105
+msgid "Use special separators"
+msgstr ""
+
+#: templates/tools/password_generator.html:111
+msgid "Add number tail"
+msgstr ""
+
+#: templates/tools/password_generator.html:118
+msgid "Generate a secure PIN"
+msgstr ""
+
+#: templates/tools/password_generator.html:120
+msgid "Digits"
+msgstr ""
+
+#: templates/tools/password_generator.html:130
+msgid "Allow repeated digits"
+msgstr ""
+
+#: templates/tools/password_generator.html:136
+msgid "Generated credential"
+msgstr ""
+
+#: templates/tools/password_generator.html:139
+#: templates/tools/password_generator.html:269
+msgid "Strength"
+msgstr ""
+
+#: templates/tools/password_generator.html:144
+msgid "Copy"
+msgstr ""
+
+#: templates/tools/password_generator.html:146
+msgid "Add to session log"
+msgstr ""
+
+#: templates/tools/password_generator.html:155
+msgid "Session clipboard"
+msgstr ""
+
+#: templates/tools/password_generator.html:156
+msgid ""
+"Keep track of generated credentials. Nothing is stored server-side — "
+"clearing or leaving the page removes the list."
+msgstr ""
+
+#: templates/tools/password_generator.html:158
+msgid "Copy list"
+msgstr ""
+
+#: templates/tools/password_generator.html:159
+msgid "Clear list"
+msgstr ""
+
+#: templates/tools/password_generator.html:257
+msgid "Weak"
+msgstr ""
+
+#: templates/tools/password_generator.html:260
+msgid "Excellent"
+msgstr ""
+
+#: templates/tools/password_generator.html:263
+msgid "Strong"
+msgstr ""
+
+#: templates/tools/password_generator.html:266
+msgid "OK"
+msgstr ""
+
+#: templates/tools/password_generator.html:375
+msgid "Value copied to clipboard."
+msgstr ""
+
+#: templates/tools/password_generator.html:376
+msgid "Unable to copy value."
+msgstr ""
+
+#: templates/tools/password_generator.html:384
+msgid "Generate a value first."
+msgstr ""
+
+#: templates/tools/password_generator.html:395
+msgid "Saved to session clipboard."
+msgstr ""
+
+#: templates/tools/password_generator.html:401
+msgid "No entries yet."
+msgstr ""
+
+#: templates/tools/password_generator.html:422
+msgid "Clipboard is empty."
+msgstr ""
+
+#: templates/tools/password_generator.html:427
+msgid "Session clipboard copied."
+msgstr ""
+
+#: templates/tools/password_generator.html:428
+msgid "Unable to copy clipboard."
+msgstr ""
+
+#: templates/tools/password_generator.html:434
+msgid "Session clipboard cleared."
+msgstr ""
+
+#: templates/users/list.html:60
+msgid "Manage helpdesk accounts, roles, and activation status."
+msgstr ""
+
+#: templates/users/list.html:64
+msgid "New User"
+msgstr ""
+
+#: templates/users/list.html:74
+msgid "Total Users"
+msgstr ""
+
+#: templates/users/list.html:86 templates/users/list.html:145
+msgid "Inactive"
+msgstr ""
+
+#: templates/users/list.html:112 templates/users/list.html:182
+#: templates/users/list.html:259
+msgid "Full Name"
+msgstr ""
+
+#: templates/users/list.html:115 templates/users/list.html:185
+#: templates/users/list.html:268
+msgid "Role"
+msgstr ""
+
+#: templates/users/list.html:131 templates/users/list.html:273
+msgid "Admin"
+msgstr ""
+
+#: templates/users/list.html:133 templates/users/list.html:272
+msgid "Manager"
+msgstr ""
+
+#: templates/users/list.html:137 templates/users/list.html:270
+msgid "User"
+msgstr ""
+
+#: templates/users/list.html:171
+msgid "Edit User"
+msgstr ""
+
+#: templates/users/list.html:196 templates/users/list.html:280
+msgid "Managers can receive immediate updates when their team changes tickets."
+msgstr ""
+
+#: templates/users/list.html:200 templates/users/list.html:284
+msgid "Email me when my team updates tickets"
+msgstr ""
+
+#: templates/users/list.html:205 templates/users/list.html:289
+msgid "Send a Microsoft Teams alert"
+msgstr ""
+
+#: templates/users/list.html:210 templates/users/list.html:294
+msgid "Used when Teams notifications are enabled."
+msgstr ""
+
+#: templates/users/list.html:214
+msgid "Password (leave blank to keep unchanged)"
+msgstr ""
+
+#: templates/users/list.html:217 templates/users/list.html:265
+msgid "Confirm Password"
+msgstr ""
+
+#: templates/users/list.html:223 templates/users/list.html:301
+msgid "Active account"
+msgstr ""
+
+#: templates/users/list.html:248
+msgid "Add New User"
+msgstr ""
+
+#: templates/users/list.html:321
+msgid "Are you sure you want to delete this user?"
+msgstr ""
+
+#: templates/users/list.html:369
+msgid "Helpdesk Users"
+msgstr ""
+
+#: templates/users/list.html:407
+msgid "User deleted successfully."
+msgstr ""
+
+#: templates/users/list.html:409 templates/users/list.html:414
+msgid "Failed to delete user."
+msgstr ""
+
+#: templates/users/list.html:502 templates/users/list.html:511
+msgid "Failed to create user."
+msgstr ""
+
+#: templates/users/list.html:506
+msgid "User created successfully."
+msgstr ""
+
+#: templates/users/list.html:538 templates/users/list.html:552
+msgid "Failed to update user."
+msgstr ""
+
+#: templates/users/list.html:542
+msgid "User updated successfully."
+msgstr ""
+
