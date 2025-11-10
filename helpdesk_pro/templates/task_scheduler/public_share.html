@@ -105,7 +105,7 @@
             </div>
             <div class="col-md-7">
               <label class="form-label">{{ _('Preferred start (Europe/Athens)') }}</label>
-              <input type="datetime-local" class="form-control" name="start_at" id="publicSlotStart" required>
+              <input type="datetime-local" class="form-control" name="start_at" id="publicSlotStart" required lang="en-GB">
             </div>
             <div class="col-md-5">
               <label class="form-label">{{ _('Comment (optional)') }}</label>
@@ -131,7 +131,7 @@
               {% for slot in upcoming[:5] %}
                 <div class="d-flex justify-content-between align-items-center slot-entry py-2">
                   <span>{{ slot.display_name }}</span>
-                  <span class="slot-time small">{{ format_local(slot.start_at) }}</span>
+                  <span class="slot-time small">{{ format_local(slot.start_at, "%d/%m/%Y %H:%M") }}</span>
                 </div>
               {% endfor %}
             </div>
