@@ -34,6 +34,15 @@
     font-size: 0.78rem;
     letter-spacing: 0.06em;
   }
+  .scheduler-summary-card .card-body {
+    padding-inline: 2rem;
+    padding-block: 1.15rem;
+  }
+  @media (max-width: 576px) {
+    .scheduler-summary-card .card-body {
+      padding-inline: 1.25rem;
+    }
+  }
   .scheduler-actions .btn {
     border-radius: 999px;
   }
@@ -58,6 +67,15 @@
     border-radius: 999px;
     padding: 0.2rem 0.75rem;
     font-size: 0.75rem;
+  }
+  html[data-bs-theme="dark"] body .scheduler-actions-inline .btn-outline-dark {
+    color: #e2e8f0;
+    border-color: rgba(226, 232, 240, 0.65);
+  }
+  html[data-bs-theme="dark"] body .scheduler-actions-inline .btn-outline-dark:hover,
+  html[data-bs-theme="dark"] body .scheduler-actions-inline .btn-outline-dark:focus {
+    background-color: rgba(226, 232, 240, 0.15);
+    color: #0f172a;
   }
   .btn-readonly {
     opacity: 0.55;
@@ -171,6 +189,9 @@
                     </button>
                     <button class="btn btn-outline-info btn-sm share-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
                       <i class="fa fa-share-nodes"></i>
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm email-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
+                      <i class="fa fa-envelope"></i>
                     </button>
                     <button class="btn btn-outline-danger btn-sm delete-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
                       <i class="fa fa-trash"></i>
@@ -338,6 +359,50 @@
     </div>
   </div>
 
+  {# Email modal #}
+  <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="emailForm" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-envelope me-2"></i>{{ _('Email Task') }} <small class="text-uppercase text-white-50 ms-2" id="emailModalTaskName"></small></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">{{ _('Audience') }}</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scope" id="emailScopeCustom" value="custom" checked>
+                <label class="form-check-label" for="emailScopeCustom">{{ _('Choose recipients') }}</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scope" id="emailScopeAll" value="all">
+                <label class="form-check-label" for="emailScopeAll">{{ _('All active users') }}</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Recipients') }}</label>
+              <select class="form-select" name="recipients" id="emailRecipientsSelect" multiple size="8"></select>
+              <div class="form-text">{{ _('Hold Ctrl/Cmd to select multiple recipients.') }}</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Optional message') }}</label>
+              <textarea class="form-control" name="message" id="emailMessageInput" rows="3" placeholder="{{ _('Add a short note (optional)') }}"></textarea>
+            </div>
+            <div class="alert alert-warning d-none" id="emailModalAlert"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-paper-plane"></i> {{ _('Send Email') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   {# Delete modal #}
   <div class="modal fade" id="taskDeleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -378,6 +443,7 @@
   }
 
   $(function() {
+    let emailRecipientsCache = null;
     const table = $('#taskSchedulerTable').DataTable({
       order: [[0, 'asc']],
       pageLength: 25,
@@ -594,6 +660,83 @@
       const input = document.getElementById('shareLinkOutput');
       if (!input.value) return;
       navigator.clipboard.writeText(input.value).then(() => showToast('{{ _("Link copied") }}', 'success'));
+    });
+
+    function populateEmailRecipients(options) {
+      const select = $('#emailRecipientsSelect');
+      select.empty();
+      options.forEach(opt => {
+        const label = opt.email ? `${opt.label} (${opt.email})` : opt.label;
+        select.append(`<option value="${opt.id}">${label}</option>`);
+      });
+    }
+
+    function loadEmailRecipients() {
+      if (emailRecipientsCache) {
+        return Promise.resolve(emailRecipientsCache);
+      }
+      return new Promise((resolve, reject) => {
+        $.get('/task-scheduler/email/recipients')
+          .done(res => {
+            emailRecipientsCache = res.options || [];
+            resolve(emailRecipientsCache);
+          })
+          .fail(() => reject());
+      });
+    }
+
+    function toggleEmailRecipients(disabled) {
+      $('#emailRecipientsSelect').prop('disabled', disabled);
+    }
+
+    $('.email-task-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      $('#emailModalTaskName').text($(this).data('title') || '');
+      const modal = $('#emailModal');
+      modal.find('form').attr('action', `/task-scheduler/${taskId}/email`);
+      $('#emailMessageInput').val('');
+      $('#emailScopeCustom').prop('checked', true);
+      toggleEmailRecipients(false);
+      $('#emailModalAlert').addClass('d-none').text('');
+      loadEmailRecipients()
+        .then(options => {
+          populateEmailRecipients(options);
+          modal.modal('show');
+        })
+        .catch(() => {
+          showToast('{{ _("Unable to load recipients.") }}', 'danger');
+        });
+    });
+
+    $('#emailScopeAll').on('change', function() {
+      if (this.checked) {
+        toggleEmailRecipients(true);
+      }
+    });
+
+    $('#emailScopeCustom').on('change', function() {
+      if (this.checked) {
+        toggleEmailRecipients(false);
+      }
+    });
+
+    $('#emailForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      ajaxJson({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        success(res) {
+          showToast(res.message || '{{ _("Task link emailed successfully.") }}', 'success');
+          $('#emailModal').modal('hide');
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Unable to send email.") }}';
+          $('#emailModalAlert').removeClass('d-none').text(msg);
+          showToast(msg, 'danger');
+        }
+      });
     });
 
     $('.delete-task-btn').on('click', function() {

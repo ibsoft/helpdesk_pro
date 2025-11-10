@@ -297,6 +297,35 @@ Each module corresponds to a Flask blueprint or service housed under `app/`.
 ### 6.18 Utilities (`app/utils`, `app/mail_utils.py`)
 
 - Shared helpers for file handling, validation, mail queuing, and security utilities (password strength, CSRF bypass for API).
+- `mail_utils` transparently retries SMTP sends without AUTH if the server does not advertise it.
+- `background.py` wraps `submit_background_task`, the lightweight executor used by email notifications and ingestion.
+
+### 6.19 Task Scheduler (`app/task_scheduler`)
+
+- **Purpose** – Coordinate maintenance windows, onsite visits, and long-running chores without double-booking the engineering team. Managers publish internal calendars, accept self-service bookings, and convert confirmed slots into Helpdesk tickets.
+- **Data model** – `TaskSchedulerTask` (core definition), `TaskSchedulerSlot` (individual reservations), `TaskSchedulerShareToken` (public/restricted share links), and `TaskSchedulerAuditLog` (immutable record of slot creation, ticket conversions, share link activity, and outbound email).
+- **Access control** – Technicians can read shared tasks; managers/admins create and manage them. Administrators and managers only see the tasks they personally created to avoid cross-team edits.
+- **List view (`templates/task_scheduler/list.html`)** – Provides summary metrics plus per-task actions:
+  - CRUD operations via modal forms (title, status, estimated duration, rich descriptions).
+  - Slot management (add/remove with conflict detection and auto-suggested alternatives).
+  - Share link creation (`/task-scheduler/<id>/share`) with copy-to-clipboard helpers.
+  - **Email Task** button that opens a modal, lets managers select “All active users” or multi-select recipients, add an optional note, and sends the active share link through the configured SMTP account.
+  - Ticket creation from slots (enforces that managers belong to a department so tickets inherit the proper scope).
+- **Public share page (`templates/task_scheduler/public_share.html`)** – Minimal landing page for external recipients. Highlights:
+  - Displays task metadata, description, share visibility, and status.
+  - Booking form validates start times through `/task-scheduler/share/<token>/check`, showing friendly availability messages.
+  - “Upcoming slots” section now shows each attendee plus the exact date/time they selected, helping others pick open windows.
+- **Email workflow** – `/task-scheduler/<id>/email` verifies that a valid share link exists, gathers recipients from `/task-scheduler/email/recipients`, and queues the message through `queue_mail_with_optional_auth`. The endpoint refuses to send when no sender address is configured (requires `MAIL_DEFAULT_SENDER` or `MAIL_USERNAME`) and emits localized error messages for the UI.
+- **Auditing & logs** – Every significant action (task create/update/delete, slot creation/removal, ticket conversion, share creation/revoke, email sends) writes to `TaskSchedulerAuditLog`. This makes it easy to review who invited whom or removed a slot.
+- **Localization** – Strings live in the translation catalogs. After tweaking the module, regenerate/compile translations:
+
+  ```bash
+  pybabel extract -F babel.cfg -o messages.pot .
+  pybabel update -i messages.pot -d translations
+  pybabel compile -d translations
+  ```
+
+- **Operational reminders** – Task Scheduler is part of the main Flask app; no extra services needed. Ensure SMTP credentials are valid if you plan to use the email action. Share links follow the task status—closing a task renders public booking forms read-only.
 
 ---
 

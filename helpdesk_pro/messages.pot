@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-01 12:46+0200\n"
+"POT-Creation-Date: 2025-11-10 11:49+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -111,343 +111,348 @@ msgstr ""
 msgid "Password & PIN Studio"
 msgstr ""
 
-#: app/navigation.py:192 templates/manage/assistant_settings.html:65
+#: app/navigation.py:190 templates/task_scheduler/list.html:77
+#: templates/task_scheduler/public_share.html:6
+msgid "Task Scheduler"
+msgstr ""
+
+#: app/navigation.py:199 templates/manage/assistant_settings.html:65
 msgid "AI Assistant Widget"
 msgstr ""
 
-#: app/navigation.py:201
+#: app/navigation.py:208
 msgid "Email to Ticket Worker"
 msgstr ""
 
-#: app/assistant/routes.py:870 app/assistant/routes.py:889
-#: app/assistant/routes.py:905 app/assistant/routes.py:964
-#: app/assistant/routes.py:1025
+#: app/assistant/routes.py:869 app/assistant/routes.py:888
+#: app/assistant/routes.py:904 app/assistant/routes.py:963
+#: app/assistant/routes.py:1024
 msgid "Session not found."
 msgstr ""
 
-#: app/assistant/routes.py:910
+#: app/assistant/routes.py:909
 msgid "No file provided."
 msgstr ""
 
-#: app/assistant/routes.py:913
+#: app/assistant/routes.py:912
 msgid "Please choose a file."
 msgstr ""
 
-#: app/assistant/routes.py:917 app/knowledge/routes.py:249
+#: app/assistant/routes.py:916
 msgid "Invalid filename."
 msgstr ""
 
-#: app/assistant/routes.py:972
+#: app/assistant/routes.py:971
 msgid "Document not found."
 msgstr ""
 
-#: app/assistant/routes.py:1017
+#: app/assistant/routes.py:1016
 msgid "Assistant is disabled."
 msgstr ""
 
-#: app/assistant/routes.py:1032 app/collab/routes.py:342
-#: templates/collab/chat.html:682
+#: app/assistant/routes.py:1031 app/collab/routes.py:341
+#: templates/collab/chat.html:72
 msgid "Message cannot be empty."
 msgstr ""
 
-#: app/assistant/routes.py:1058
+#: app/assistant/routes.py:1057
 msgid "OpenAI API key is not configured."
 msgstr ""
 
-#: app/assistant/routes.py:1067 app/assistant/routes.py:1262
+#: app/assistant/routes.py:1066 app/assistant/routes.py:1261
 msgid "OpenWebUI base URL is not configured."
 msgstr ""
 
-#: app/assistant/routes.py:1076
+#: app/assistant/routes.py:1075
 msgid "Webhook URL is not configured."
 msgstr ""
 
-#: app/assistant/routes.py:1079
+#: app/assistant/routes.py:1078
 msgid "Unsupported assistant provider configured."
 msgstr ""
 
-#: app/assistant/routes.py:1081
+#: app/assistant/routes.py:1080
 #, python-format
 msgid "Connection error: %(error)s"
 msgstr ""
 
-#: app/assistant/routes.py:1088
+#: app/assistant/routes.py:1087
 msgid "Assistant did not return a reply."
 msgstr ""
 
-#: app/assistant/routes.py:1129
+#: app/assistant/routes.py:1128
 #, python-format
 msgid "OpenAI error: %(status)s %(body)s"
 msgstr ""
 
-#: app/assistant/routes.py:1236
+#: app/assistant/routes.py:1235
 #, python-format
 msgid "Remote tool execution failed: %(status)s %(body)s"
 msgstr ""
 
-#: app/assistant/routes.py:1279
+#: app/assistant/routes.py:1278
 #, python-format
 msgid "OpenWebUI error: %(status)s %(body)s"
 msgstr ""
 
-#: app/assistant/routes.py:1367
+#: app/assistant/routes.py:1366
 #, python-format
 msgid "Webhook error: %(status)s %(body)s"
 msgstr ""
 
-#: app/assistant/routes.py:1371
+#: app/assistant/routes.py:1370
 #, python-format
 msgid "Invalid webhook response: %(error)s"
 msgstr ""
 
-#: app/assistant/routes.py:1375
+#: app/assistant/routes.py:1374
 msgid "Webhook response is missing a 'reply' field."
 msgstr ""
 
-#: app/assistant/routes.py:1385
+#: app/assistant/routes.py:1384
 #, python-format
 msgid "Tool `%(tool)s` returned no rows."
 msgstr ""
 
-#: app/assistant/routes.py:1395
+#: app/assistant/routes.py:1394
 msgid "Untitled article"
 msgstr ""
 
-#: app/assistant/routes.py:1437 app/assistant/routes.py:1443
+#: app/assistant/routes.py:1436 app/assistant/routes.py:1442
 #, python-format
 msgid ""
 "Results from `%(tool)s`:\n"
 "%(rows)s"
 msgstr ""
 
-#: app/assistant/routes.py:1438
+#: app/assistant/routes.py:1437
 #, python-format
 msgid ""
 "Tool `%(tool)s` response:\n"
 "%(payload)s"
 msgstr ""
 
-#: app/assistant/routes.py:1441
+#: app/assistant/routes.py:1440
 #, python-format
 msgid "Tool `%(tool)s` returned no data."
 msgstr ""
 
-#: app/assistant/routes.py:1445
+#: app/assistant/routes.py:1444
 #, python-format
 msgid "Tool `%(tool)s` completed with no data."
 msgstr ""
 
-#: app/assistant/routes.py:1446
+#: app/assistant/routes.py:1445
 #, python-format
 msgid "Tool `%(tool)s` response: %(payload)s"
 msgstr ""
 
-#: app/assistant/routes.py:1465
+#: app/assistant/routes.py:1464
 #, python-format
 msgid "MCP invocation failed (%(status)s): %(detail)s"
 msgstr ""
 
-#: app/assistant/routes.py:1470
+#: app/assistant/routes.py:1469
 #, python-format
 msgid "Invalid response from MCP server: %(error)s"
 msgstr ""
 
-#: app/assistant/routes.py:2052
+#: app/assistant/routes.py:2051
 msgid "retention already expired"
 msgstr ""
 
-#: app/assistant/routes.py:2067
+#: app/assistant/routes.py:2066
 #, python-format
 msgid "retention due within %(days)s day(s)"
 msgstr ""
 
-#: app/assistant/routes.py:2070
+#: app/assistant/routes.py:2069
 #, python-format
 msgid "No storage media matched %(label)s."
 msgstr ""
 
-#: app/assistant/routes.py:2073
+#: app/assistant/routes.py:2072
 #, python-format
 msgid "Storage media with %(label)s: showing %(count)s item(s)."
 msgstr ""
 
-#: app/assistant/routes.py:2080
+#: app/assistant/routes.py:2079
 #, python-format
 msgid "%(days)s day(s) overdue"
 msgstr ""
 
-#: app/assistant/routes.py:2082
+#: app/assistant/routes.py:2081
 #, python-format
 msgid "%(days)s day(s) remaining"
 msgstr ""
 
-#: app/assistant/routes.py:2084
+#: app/assistant/routes.py:2083
 #, python-format
 msgid "ends %(date)s"
 msgstr ""
 
-#: app/assistant/routes.py:2090
+#: app/assistant/routes.py:2089
 msgid "limited to first 25 media."
 msgstr ""
 
-#: app/assistant/routes.py:2102
+#: app/assistant/routes.py:2101
 msgid "No storage media are currently marked as off-site."
 msgstr ""
 
-#: app/assistant/routes.py:2103
+#: app/assistant/routes.py:2102
 #, python-format
 msgid "Off-site storage media (%(count)s found):"
 msgstr ""
 
-#: app/assistant/routes.py:2114
+#: app/assistant/routes.py:2113
 msgid "No external disks have been registered yet."
 msgstr ""
 
-#: app/assistant/routes.py:2116
+#: app/assistant/routes.py:2115
 msgid "No tape cartridges have been registered yet."
 msgstr ""
 
-#: app/assistant/routes.py:2117
+#: app/assistant/routes.py:2116
 msgid "No storage media have been registered yet."
 msgstr ""
 
-#: app/assistant/routes.py:2134
+#: app/assistant/routes.py:2133
 msgid "tape cartridges"
 msgstr ""
 
-#: app/assistant/routes.py:2135
+#: app/assistant/routes.py:2134
 msgid "external disks"
 msgstr ""
 
-#: app/assistant/routes.py:2139
+#: app/assistant/routes.py:2138
 #, python-format
 msgid "Storage media summary (filtered by %(type)s):"
 msgstr ""
 
-#: app/assistant/routes.py:2141
+#: app/assistant/routes.py:2140
 msgid "Storage media summary:"
 msgstr ""
 
-#: app/assistant/routes.py:2142
+#: app/assistant/routes.py:2141
 #, python-format
 msgid "Total media: %(count)s"
 msgstr ""
 
-#: app/assistant/routes.py:2144
+#: app/assistant/routes.py:2143
 #, python-format
 msgid "- %(label)s: %(count)s"
 msgstr ""
 
-#: app/assistant/routes.py:2147
+#: app/assistant/routes.py:2146
 #, python-format
 msgid "- Location %(loc)s: %(count)s"
 msgstr ""
 
-#: app/assistant/routes.py:2148
+#: app/assistant/routes.py:2147
 #, python-format
 msgid "Retention overdue: %(count)s"
 msgstr ""
 
-#: app/assistant/routes.py:2149
+#: app/assistant/routes.py:2148
 #, python-format
 msgid "Retention due within 7 days: %(count)s"
 msgstr ""
 
-#: app/assistant/routes.py:2922 app/assistant/routes.py:2947
+#: app/assistant/routes.py:2921 app/assistant/routes.py:2946
 msgid "Unspecified vendor"
 msgstr ""
 
-#: app/assistant/routes.py:2923 app/assistant/routes.py:2948
+#: app/assistant/routes.py:2922 app/assistant/routes.py:2947
 msgid "Unspecified currency"
 msgstr ""
 
-#: app/assistant/routes.py:2938 app/assistant/routes.py:2963
+#: app/assistant/routes.py:2937 app/assistant/routes.py:2962
 msgid "Overall contract value"
 msgstr ""
 
-#: app/assistant/routes.py:2967
+#: app/assistant/routes.py:2966
 msgid "Total contract value by vendor and currency"
 msgstr ""
 
-#: app/assistant/routes.py:2969
+#: app/assistant/routes.py:2968
 msgid "Total contract value breakdown by vendor and currency"
 msgstr ""
 
-#: app/auth/routes.py:29
+#: app/auth/routes.py:41
 msgid "Incorrect credentials."
 msgstr ""
 
-#: app/auth/routes.py:31
+#: app/auth/routes.py:43
 msgid "Account is disabled."
 msgstr ""
 
-#: app/auth/routes.py:36
+#: app/auth/routes.py:48
 #, python-format
 msgid "Welcome, %(username)s!"
 msgstr ""
 
-#: app/auth/routes.py:48
+#: app/auth/routes.py:60
 msgid "You have been logged out."
 msgstr ""
 
-#: app/auth/routes.py:59 app/auth/routes.py:150
+#: app/auth/routes.py:71 app/auth/routes.py:162
 msgid "Password reset is disabled."
 msgstr ""
 
-#: app/auth/routes.py:75
+#: app/auth/routes.py:87
 msgid "Please provide an email address."
 msgstr ""
 
-#: app/auth/routes.py:95
+#: app/auth/routes.py:107
 msgid "Registration is currently disabled."
 msgstr ""
 
-#: app/auth/routes.py:106
+#: app/auth/routes.py:118
 msgid "Username must be at least 3 characters long."
 msgstr ""
 
-#: app/auth/routes.py:108
+#: app/auth/routes.py:120
 msgid "Email is required."
 msgstr ""
 
-#: app/auth/routes.py:110
+#: app/auth/routes.py:122
 msgid "Username is already taken."
 msgstr ""
 
-#: app/auth/routes.py:112
+#: app/auth/routes.py:124
 msgid "An account with that email already exists."
 msgstr ""
 
-#: app/auth/routes.py:117 app/auth/routes.py:165 templates/users/list.html:490
+#: app/auth/routes.py:129 app/auth/routes.py:177 templates/users/list.html:490
 #: templates/users/list.html:526
 msgid "Passwords do not match."
 msgstr ""
 
-#: app/auth/routes.py:137
+#: app/auth/routes.py:149
 msgid "Account created successfully. You can now sign in."
 msgstr ""
 
-#: app/auth/routes.py:169
+#: app/auth/routes.py:181
 msgid "Your password has been updated. Please sign in."
 msgstr ""
 
-#: app/auth/routes.py:194
+#: app/auth/routes.py:206 app/task_scheduler/routes.py:347
 msgid "Username is required."
 msgstr ""
 
-#: app/auth/routes.py:196
+#: app/auth/routes.py:208
 msgid "Password is required."
 msgstr ""
 
-#: app/auth/routes.py:217
+#: app/auth/routes.py:229
 msgid "Administrator account created successfully."
 msgstr ""
 
-#: app/auth/routes.py:253
+#: app/auth/routes.py:265
 msgid "Helpdesk Pro password reset"
 msgstr ""
 
-#: app/auth/routes.py:255
+#: app/auth/routes.py:267
 #, python-format
 msgid ""
 "Hello %(username)s,\n"
@@ -565,6 +570,10 @@ msgstr ""
 #: templates/inventory/software_list.html:457
 #: templates/manage/api_keys.html:147
 #: templates/manage/assistant_settings.html:78
+#: templates/task_scheduler/detail.html:270
+#: templates/task_scheduler/detail.html:333
+#: templates/task_scheduler/list.html:136
+#: templates/task_scheduler/list.html:209
 #: templates/tickets/_view_content.html:221 templates/tickets/edit.html:24
 #: templates/tickets/list.html:201
 msgid "Status"
@@ -647,6 +656,7 @@ msgstr ""
 #: templates/contracts/contract_list.html:110
 #: templates/contracts/contract_list.html:167
 #: templates/inventory/software_list.html:205
+#: templates/task_scheduler/detail.html:287
 msgid "Expired"
 msgstr ""
 
@@ -703,111 +713,115 @@ msgstr ""
 msgid "Failed to delete storage medium: %(error)s"
 msgstr ""
 
-#: app/collab/routes.py:57 templates/collab/chat.html:335
-#: templates/collab/chat.html:839
+#: app/collab/routes.py:56 templates/collab/chat.html:78
+#: templates/collab/chat.html:162
 msgid "General Chat"
 msgstr ""
 
-#: app/collab/routes.py:86
+#: app/collab/routes.py:85
 msgid "Direct Chat"
 msgstr ""
 
-#: app/collab/routes.py:210
+#: app/collab/routes.py:209
 msgid "Invalid user."
 msgstr ""
 
-#: app/collab/routes.py:214 app/collab/routes.py:428
+#: app/collab/routes.py:213 app/collab/routes.py:427
 msgid "User not found."
 msgstr ""
 
-#: app/collab/routes.py:277 templates/contracts/contract_list.html:173
+#: app/collab/routes.py:276 templates/contracts/contract_list.html:173
 #: templates/inventory/hardware_list.html:225
 #: templates/inventory/software_list.html:211
 #: templates/knowledge/detail.html:125
 msgid "Unknown"
 msgstr ""
 
-#: app/collab/routes.py:291 app/collab/routes.py:328 app/collab/routes.py:384
+#: app/collab/routes.py:290 app/collab/routes.py:327 app/collab/routes.py:383
 msgid "You are not part of this conversation."
 msgstr ""
 
-#: app/collab/routes.py:394
+#: app/collab/routes.py:393
 msgid "You are not authorized to do this."
 msgstr ""
 
-#: app/collab/routes.py:398
+#: app/collab/routes.py:397
 msgid "Only the general chat can be purged."
 msgstr ""
 
-#: app/collab/routes.py:425
+#: app/collab/routes.py:424
 msgid "Cannot favorite yourself."
 msgstr ""
 
-#: app/collab/routes.py:463
+#: app/collab/routes.py:462
 msgid "You do not have access to this file."
 msgstr ""
 
-#: app/collab/routes.py:472 app/collab/routes.py:483
+#: app/collab/routes.py:471 app/collab/routes.py:482
 msgid "You cannot delete this conversation."
 msgstr ""
 
-#: app/knowledge/routes.py:138
+#: app/knowledge/routes.py:139
 msgid "You do not have access to this article."
 msgstr ""
 
-#: app/knowledge/routes.py:151
+#: app/knowledge/routes.py:152
 msgid "You do not have permission to create articles."
 msgstr ""
 
-#: app/knowledge/routes.py:163 app/knowledge/routes.py:203
+#: app/knowledge/routes.py:164 app/knowledge/routes.py:204
 msgid "Title and content are required."
 msgstr ""
 
-#: app/knowledge/routes.py:180
+#: app/knowledge/routes.py:181
 msgid "Article created successfully."
 msgstr ""
 
-#: app/knowledge/routes.py:190
+#: app/knowledge/routes.py:191
 msgid "You do not have permission to edit articles."
 msgstr ""
 
-#: app/knowledge/routes.py:215
+#: app/knowledge/routes.py:216
 msgid "Article updated successfully."
 msgstr ""
 
-#: app/knowledge/routes.py:225
+#: app/knowledge/routes.py:226
 msgid "You do not have permission to delete articles."
 msgstr ""
 
-#: app/knowledge/routes.py:230
+#: app/knowledge/routes.py:244
 msgid "Article deleted."
 msgstr ""
 
-#: app/knowledge/routes.py:238
+#: app/knowledge/routes.py:252
 msgid "You do not have permission to upload attachments."
 msgstr ""
 
-#: app/knowledge/routes.py:244
+#: app/knowledge/routes.py:258
 msgid "Please select a file to upload."
 msgstr ""
 
-#: app/knowledge/routes.py:275
+#: app/knowledge/routes.py:263 app/knowledge/routes.py:275
+msgid "Attachment"
+msgstr ""
+
+#: app/knowledge/routes.py:310
 msgid "Attachment uploaded."
 msgstr ""
 
-#: app/knowledge/routes.py:283
+#: app/knowledge/routes.py:318
 msgid "You do not have permission to delete attachments."
 msgstr ""
 
-#: app/knowledge/routes.py:293
+#: app/knowledge/routes.py:328
 msgid "Attachment removed."
 msgstr ""
 
-#: app/knowledge/routes.py:303
+#: app/knowledge/routes.py:338
 msgid "You do not have access to this attachment."
 msgstr ""
 
-#: app/knowledge/routes.py:313
+#: app/knowledge/routes.py:362
 msgid "You do not have permission to view historical versions."
 msgstr ""
 
@@ -1195,6 +1209,120 @@ msgstr ""
 msgid "Email ingestion settings saved."
 msgstr ""
 
+#: app/task_scheduler/routes.py:280
+msgid "Title is required."
+msgstr ""
+
+#: app/task_scheduler/routes.py:297
+msgid "Task updated successfully."
+msgstr ""
+
+#: app/task_scheduler/routes.py:311
+msgid "Task created successfully."
+msgstr ""
+
+#: app/task_scheduler/routes.py:341 templates/task_scheduler/detail.html:570
+#: templates/task_scheduler/list.html:615
+msgid "Task deleted."
+msgstr ""
+
+#: app/task_scheduler/routes.py:350
+msgid "Invalid date/time. Use dd/MM/yyyy HH:mm."
+msgstr ""
+
+#: app/task_scheduler/routes.py:352
+msgid "This task is closed and no longer accepts bookings."
+msgstr ""
+
+#: app/task_scheduler/routes.py:358
+msgid "Selected slot overlaps with an existing booking."
+msgstr ""
+
+#: app/task_scheduler/routes.py:385
+msgid "Unable to schedule slot."
+msgstr ""
+
+#: app/task_scheduler/routes.py:410
+msgid "Slot added successfully."
+msgstr ""
+
+#: app/task_scheduler/routes.py:427 templates/task_scheduler/detail.html:483
+#: templates/task_scheduler/list.html:556
+msgid "Slot removed."
+msgstr ""
+
+#: app/task_scheduler/routes.py:436
+msgid "Unnamed user"
+msgstr ""
+
+#: app/task_scheduler/routes.py:443
+#, python-format
+msgid "Requested slot by %(name)s on %(start)s (duration %(duration)s)."
+msgstr ""
+
+#: app/task_scheduler/routes.py:443 templates/knowledge/detail.html:48
+#: templates/knowledge/list.html:250 templates/knowledge/version.html:22
+msgid "n/a"
+msgstr ""
+
+#: app/task_scheduler/routes.py:446
+#, python-format
+msgid "User comment: %(comment)s"
+msgstr ""
+
+#: app/task_scheduler/routes.py:469 templates/task_scheduler/detail.html:513
+msgid "Unable to create ticket."
+msgstr ""
+
+#: app/task_scheduler/routes.py:471 templates/task_scheduler/detail.html:506
+msgid "Ticket created successfully."
+msgstr ""
+
+#: app/task_scheduler/routes.py:493 app/task_scheduler/routes.py:641
+msgid "Invalid date/time."
+msgstr ""
+
+#: app/task_scheduler/routes.py:499 app/task_scheduler/routes.py:647
+msgid "Slot is already taken."
+msgstr ""
+
+#: app/task_scheduler/routes.py:503 app/task_scheduler/routes.py:655
+msgid "Slot is available."
+msgstr ""
+
+#: app/task_scheduler/routes.py:539 templates/task_scheduler/detail.html:535
+#: templates/task_scheduler/list.html:584
+msgid "Share link created."
+msgstr ""
+
+#: app/task_scheduler/routes.py:555 templates/task_scheduler/detail.html:558
+msgid "Share link revoked."
+msgstr ""
+
+#: app/task_scheduler/routes.py:571
+msgid "This link is no longer available."
+msgstr ""
+
+#: app/task_scheduler/routes.py:622 app/task_scheduler/routes.py:654
+msgid "Link is no longer active."
+msgstr ""
+
+#: app/task_scheduler/routes.py:624
+msgid "You must sign in to use this link."
+msgstr ""
+
+#: app/task_scheduler/routes.py:627
+msgid "Could not schedule slot."
+msgstr ""
+
+#: app/task_scheduler/routes.py:628
+msgid "Your time slot is confirmed."
+msgstr ""
+
+#: app/task_scheduler/routes.py:652
+msgid "This task is closed."
+msgstr ""
+
 #: templates/base.html:11
 msgid "Helpdesk Pro"
 msgstr ""
@@ -1249,7 +1377,10 @@ msgstr ""
 
 #: templates/auth/login.html:117 templates/auth/register.html:18
 #: templates/auth/setup_admin.html:49 templates/base.html:622
-#: templates/manage/email_ingest.html:151 templates/users/list.html:113
+#: templates/manage/email_ingest.html:151
+#: templates/task_scheduler/detail.html:153
+#: templates/task_scheduler/detail.html:229
+#: templates/task_scheduler/list.html:249 templates/users/list.html:113
 #: templates/users/list.html:176 templates/users/list.html:253
 msgid "Username"
 msgstr ""
@@ -1332,8 +1463,8 @@ msgstr ""
 #: templates/backup/job_detail.html:254 templates/backup/monitor.html:361
 #: templates/backup/monitor.html:478 templates/backup/tape_detail.html:414
 #: templates/backup/tape_detail.html:487 templates/backup/tape_detail.html:538
-#: templates/base.html:693 templates/collab/chat.html:903
-#: templates/collab/chat.html:922 templates/contracts/contract_list.html:336
+#: templates/base.html:693 templates/collab/chat.html:622
+#: templates/collab/chat.html:641 templates/contracts/contract_list.html:336
 #: templates/contracts/contract_list.html:458
 #: templates/contracts/contract_list.html:483
 #: templates/inventory/hardware_list.html:436
@@ -1342,11 +1473,17 @@ msgstr ""
 #: templates/inventory/software_list.html:399
 #: templates/inventory/software_list.html:555
 #: templates/inventory/software_list.html:580
-#: templates/knowledge/detail.html:33 templates/knowledge/edit.html:42
-#: templates/manage/api_keys.html:271 templates/networks/hosts.html:231
-#: templates/networks/hosts.html:255 templates/networks/maps.html:218
-#: templates/networks/maps.html:272 templates/networks/maps.html:296
-#: templates/tickets/list.html:334 templates/users/list.html:323
+#: templates/knowledge/detail.html:33 templates/knowledge/detail.html:202
+#: templates/knowledge/edit.html:42 templates/manage/api_keys.html:271
+#: templates/networks/hosts.html:231 templates/networks/hosts.html:255
+#: templates/networks/maps.html:218 templates/networks/maps.html:272
+#: templates/networks/maps.html:296 templates/task_scheduler/detail.html:351
+#: templates/task_scheduler/detail.html:414
+#: templates/task_scheduler/list.html:227
+#: templates/task_scheduler/list.html:264
+#: templates/task_scheduler/list.html:289
+#: templates/task_scheduler/list.html:355 templates/tickets/list.html:334
+#: templates/users/list.html:323
 msgid "Cancel"
 msgstr ""
 
@@ -1359,18 +1496,21 @@ msgid "About Helpdesk Pro"
 msgstr ""
 
 #: templates/base.html:709 templates/base.html:719
-#: templates/knowledge/detail.html:25 templates/tickets/_view_content.html:21
+#: templates/knowledge/detail.html:25 templates/knowledge/detail.html:195
+#: templates/task_scheduler/detail.html:393
+#: templates/task_scheduler/list.html:333
+#: templates/tickets/_view_content.html:21
 msgid "Close"
 msgstr ""
 
 #: templates/base.html:712 templates/inventory/software_list.html:160
 #: templates/inventory/software_list.html:279
 #: templates/inventory/software_list.html:431
-#: templates/knowledge/detail.html:195 templates/knowledge/version.html:18
+#: templates/knowledge/detail.html:221 templates/knowledge/version.html:18
 msgid "Version"
 msgstr ""
 
-#: templates/base.html:714 templates/knowledge/detail.html:197
+#: templates/base.html:714 templates/knowledge/detail.html:223
 msgid "Author"
 msgstr ""
 
@@ -1518,7 +1658,9 @@ msgstr ""
 #: templates/inventory/hardware_list.html:195
 #: templates/inventory/software_list.html:181
 #: templates/manage/api_keys.html:148 templates/networks/hosts.html:132
-#: templates/networks/maps.html:129 templates/tickets/list.html:206
+#: templates/networks/maps.html:129 templates/task_scheduler/detail.html:160
+#: templates/task_scheduler/detail.html:271
+#: templates/task_scheduler/list.html:139 templates/tickets/list.html:206
 #: templates/users/list.html:119
 msgid "Actions"
 msgstr ""
@@ -1526,6 +1668,7 @@ msgstr ""
 #: templates/address_book/address_book.html:135
 #: templates/address_book/address_book.html:426
 #: templates/contracts/contract_list.html:198
+#: templates/task_scheduler/detail.html:385
 msgid "Link"
 msgstr ""
 
@@ -1577,7 +1720,8 @@ msgstr ""
 #: templates/contracts/contract_list.html:338
 #: templates/inventory/hardware_list.html:438
 #: templates/inventory/software_list.html:401 templates/knowledge/edit.html:45
-#: templates/networks/maps.html:220 templates/tickets/edit.html:49
+#: templates/networks/maps.html:220 templates/task_scheduler/list.html:229
+#: templates/task_scheduler/list.html:420 templates/tickets/edit.html:49
 #: templates/users/list.html:227
 msgid "Save"
 msgstr ""
@@ -1589,7 +1733,7 @@ msgstr ""
 #: templates/address_book/address_book.html:360
 #: templates/address_book/address_book.html:390
 #: templates/backup/job_detail.html:255 templates/backup/monitor.html:362
-#: templates/backup/tape_detail.html:415 templates/collab/chat.html:923
+#: templates/backup/tape_detail.html:415 templates/collab/chat.html:642
 #: templates/contracts/contract_list.html:455
 #: templates/contracts/contract_list.html:485
 #: templates/inventory/hardware_list.html:606
@@ -1598,9 +1742,11 @@ msgstr ""
 #: templates/inventory/software_list.html:582
 #: templates/knowledge/detail.html:60 templates/manage/api_keys.html:233
 #: templates/networks/hosts.html:257 templates/networks/maps.html:298
-#: templates/tickets/_row.html:53 templates/tickets/list.html:269
-#: templates/tickets/list.html:335 templates/tickets/list.html:433
-#: templates/users/list.html:324
+#: templates/task_scheduler/detail.html:88
+#: templates/task_scheduler/detail.html:415
+#: templates/task_scheduler/list.html:356 templates/tickets/_row.html:53
+#: templates/tickets/list.html:269 templates/tickets/list.html:335
+#: templates/tickets/list.html:433 templates/users/list.html:324
 msgid "Delete"
 msgstr ""
 
@@ -1608,6 +1754,7 @@ msgstr ""
 #: templates/backup/job_detail.html:155 templates/backup/tape_detail.html:231
 #: templates/contracts/contract_list.html:460 templates/manage/access.html:149
 #: templates/manage/access.html:211 templates/manage/api_keys.html:274
+#: templates/task_scheduler/detail.html:352
 msgid "Save Changes"
 msgstr ""
 
@@ -1619,6 +1766,7 @@ msgstr ""
 #: templates/contracts/contract_list.html:480
 #: templates/inventory/hardware_list.html:632
 #: templates/inventory/software_list.html:577 templates/networks/maps.html:293
+#: templates/task_scheduler/list.html:352
 msgid "Are you sure you want to delete"
 msgstr ""
 
@@ -1626,8 +1774,8 @@ msgstr ""
 #: templates/contracts/contract_list.html:513
 #: templates/inventory/hardware_list.html:669
 #: templates/inventory/software_list.html:609 templates/networks/hosts.html:285
-#: templates/networks/maps.html:345 templates/tickets/list.html:365
-#: templates/users/list.html:356
+#: templates/networks/maps.html:345 templates/task_scheduler/list.html:391
+#: templates/tickets/list.html:365 templates/users/list.html:356
 msgid "Excel"
 msgstr ""
 
@@ -1635,8 +1783,8 @@ msgstr ""
 #: templates/contracts/contract_list.html:514
 #: templates/inventory/hardware_list.html:670
 #: templates/inventory/software_list.html:610 templates/networks/hosts.html:286
-#: templates/networks/maps.html:346 templates/tickets/list.html:366
-#: templates/users/list.html:365
+#: templates/networks/maps.html:346 templates/task_scheduler/list.html:392
+#: templates/tickets/list.html:366 templates/users/list.html:365
 msgid "Print"
 msgstr ""
 
@@ -2040,7 +2188,7 @@ msgstr ""
 msgid "Download PDF"
 msgstr ""
 
-#: templates/backup/lto_barcode.html:85 templates/collab/chat.html:878
+#: templates/backup/lto_barcode.html:85 templates/collab/chat.html:597
 msgid "Preview"
 msgstr ""
 
@@ -2174,7 +2322,7 @@ msgstr ""
 msgid "This network has no password."
 msgstr ""
 
-#: templates/backup/lto_barcode.html:525
+#: templates/backup/lto_barcode.html:525 templates/task_scheduler/list.html:290
 msgid "Remove"
 msgstr ""
 
@@ -2557,115 +2705,111 @@ msgstr ""
 msgid "Add Custody Entry"
 msgstr ""
 
-#: templates/collab/chat.html:263
-msgid "Total Conversations"
-msgstr ""
-
-#: templates/collab/chat.html:270
-msgid "Direct Messages"
-msgstr ""
-
-#: templates/collab/chat.html:276
-msgid "Team Channels"
-msgstr ""
-
-#: templates/collab/chat.html:282
-msgid "Unread"
-msgstr ""
-
-#: templates/collab/chat.html:288
-msgid "Messages Today"
-msgstr ""
-
-#: templates/collab/chat.html:294
-msgid "Favorites"
-msgstr ""
-
-#: templates/collab/chat.html:305
-msgid "Conversations"
-msgstr ""
-
-#: templates/collab/chat.html:336 templates/collab/chat.html:658
-msgid "Everyone in the organization"
-msgstr ""
-
-#: templates/collab/chat.html:340 templates/collab/chat.html:896
-msgid "Purge General Chat"
-msgstr ""
-
-#: templates/collab/chat.html:350
-msgid "Select or start a conversation to view messages."
-msgstr ""
-
-#: templates/collab/chat.html:365 templates/partials/assistant_widget.html:376
-#: templates/partials/assistant_widget.html:954
-#: templates/partials/assistant_widget.html:961
-msgid "Type your message..."
-msgstr ""
-
-#: templates/collab/chat.html:378
-msgid "People"
-msgstr ""
-
-#: templates/collab/chat.html:421
+#: templates/collab/chat.html:69
 msgid "is typing"
 msgstr ""
 
-#: templates/collab/chat.html:422
+#: templates/collab/chat.html:70
 msgid "are typing"
 msgstr ""
 
-#: templates/collab/chat.html:423
+#: templates/collab/chat.html:71
 msgid "Someone is typing"
 msgstr ""
 
-#: templates/collab/chat.html:425
-msgid "General chat cleared."
-msgstr ""
-
-#: templates/collab/chat.html:426
-msgid "Unable to purge general chat."
-msgstr ""
-
-#: templates/collab/chat.html:547
-msgid "'Someone is typing'"
-msgstr ""
-
-#: templates/collab/chat.html:658
-msgid "Direct conversation"
-msgstr ""
-
-#: templates/collab/chat.html:704
+#: templates/collab/chat.html:73
 msgid "Send failed"
 msgstr ""
 
-#: templates/collab/chat.html:757
+#: templates/collab/chat.html:74
 msgid "Unable to open conversation"
 msgstr ""
 
-#: templates/collab/chat.html:843 templates/collab/chat.html:847
+#: templates/collab/chat.html:75
+msgid "General chat cleared."
+msgstr ""
+
+#: templates/collab/chat.html:76
+msgid "Unable to purge general chat."
+msgstr ""
+
+#: templates/collab/chat.html:77
 msgid "Unable to delete conversation"
 msgstr ""
 
-#: templates/collab/chat.html:884 templates/partials/assistant_widget.html:594
+#: templates/collab/chat.html:79 templates/collab/chat.html:163
+msgid "Everyone in the organization"
+msgstr ""
+
+#: templates/collab/chat.html:80
+msgid "Direct conversation"
+msgstr ""
+
+#: templates/collab/chat.html:90
+msgid "Total Conversations"
+msgstr ""
+
+#: templates/collab/chat.html:97
+msgid "Direct Messages"
+msgstr ""
+
+#: templates/collab/chat.html:103
+msgid "Team Channels"
+msgstr ""
+
+#: templates/collab/chat.html:109
+msgid "Unread"
+msgstr ""
+
+#: templates/collab/chat.html:115
+msgid "Messages Today"
+msgstr ""
+
+#: templates/collab/chat.html:121
+msgid "Favorites"
+msgstr ""
+
+#: templates/collab/chat.html:132
+msgid "Conversations"
+msgstr ""
+
+#: templates/collab/chat.html:167 templates/collab/chat.html:615
+msgid "Purge General Chat"
+msgstr ""
+
+#: templates/collab/chat.html:177
+msgid "Select or start a conversation to view messages."
+msgstr ""
+
+#: templates/collab/chat.html:190 templates/partials/assistant_widget.html:376
+#: templates/partials/assistant_widget.html:964
+#: templates/partials/assistant_widget.html:971
+msgid "Type your message..."
+msgstr ""
+
+#: templates/collab/chat.html:203
+msgid "People"
+msgstr ""
+
+#: templates/collab/chat.html:603 templates/partials/assistant_widget.html:600
 msgid "Download"
 msgstr ""
 
-#: templates/collab/chat.html:900
+#: templates/collab/chat.html:619
 msgid ""
 "This will permanently delete all messages in the General chat for "
 "everyone. This action cannot be undone."
 msgstr ""
 
-#: templates/collab/chat.html:904
+#: templates/collab/chat.html:623
 msgid "Purge"
 msgstr ""
 
-#: templates/collab/chat.html:915
+#: templates/collab/chat.html:634
 msgid "Delete Conversation"
 msgstr ""
 
-#: templates/collab/chat.html:919
+#: templates/collab/chat.html:638
 msgid ""
 "Are you sure you want to delete this conversation? This action cannot be "
 "undone."
@@ -2682,7 +2826,8 @@ msgstr ""
 #: templates/manage/configuration.html:165
 #: templates/manage/configuration.html:179
 #: templates/manage/configuration.html:200
-#: templates/manage/email_ingest.html:120 templates/users/list.html:80
+#: templates/manage/email_ingest.html:120
+#: templates/task_scheduler/detail.html:283 templates/users/list.html:80
 #: templates/users/list.html:117 templates/users/list.html:143
 msgid "Active"
 msgstr ""
@@ -2931,7 +3076,11 @@ msgstr ""
 msgid "Open"
 msgstr ""
 
-#: templates/dashboard/index.html:177 templates/tickets/_row.html:24
+#: templates/dashboard/index.html:177 templates/task_scheduler/detail.html:74
+#: templates/task_scheduler/detail.html:336
+#: templates/task_scheduler/list.html:79 templates/task_scheduler/list.html:153
+#: templates/task_scheduler/list.html:212
+#: templates/task_scheduler/public_share.html:60 templates/tickets/_row.html:24
 #: templates/tickets/list.html:181 templates/tickets/list.html:205
 #: templates/tickets/list.html:234
 msgid "Closed"
@@ -3149,7 +3298,7 @@ msgstr ""
 
 #: templates/inventory/hardware_list.html:611
 #: templates/inventory/software_list.html:557 templates/networks/hosts.html:233
-#: templates/networks/maps.html:274
+#: templates/networks/maps.html:274 templates/task_scheduler/list.html:431
 msgid "Update"
 msgstr ""
 
@@ -3294,17 +3443,13 @@ msgid ""
 "version history will be permanently deleted."
 msgstr ""
 
-#: templates/knowledge/detail.html:48 templates/knowledge/list.html:250
-#: templates/knowledge/version.html:22
-msgid "n/a"
-msgstr ""
-
 #: templates/knowledge/detail.html:53
 msgid "Back"
 msgstr ""
 
 #: templates/knowledge/detail.html:57 templates/manage/api_keys.html:199
-#: templates/tickets/_row.html:49 templates/tickets/list.html:265
+#: templates/task_scheduler/detail.html:82 templates/tickets/_row.html:49
+#: templates/tickets/list.html:265
 msgid "Edit"
 msgstr ""
 
@@ -3312,7 +3457,7 @@ msgstr ""
 msgid "Summary"
 msgstr ""
 
-#: templates/knowledge/detail.html:104 templates/knowledge/detail.html:168
+#: templates/knowledge/detail.html:104 templates/knowledge/detail.html:170
 msgid "Upload Attachment"
 msgstr ""
 
@@ -3333,31 +3478,38 @@ msgstr ""
 msgid "Uploaded"
 msgstr ""
 
-#: templates/knowledge/detail.html:136
-msgid "Remove this attachment?"
-msgstr ""
-
-#: templates/knowledge/detail.html:158 templates/knowledge/detail.html:178
+#: templates/knowledge/detail.html:160 templates/knowledge/detail.html:180
 #: templates/tickets/_view_content.html:287
-#: templates/tickets/_view_content.html:408
+#: templates/tickets/_view_content.html:464
 msgid "Upload"
 msgstr ""
 
-#: templates/knowledge/detail.html:189
+#: templates/knowledge/detail.html:194 templates/knowledge/detail.html:205
+msgid "Delete Attachment"
+msgstr ""
+
+#: templates/knowledge/detail.html:198
+msgid "Are you sure you want to delete this attachment?"
+msgstr ""
+
+#: templates/knowledge/detail.html:215
 msgid "Version History"
 msgstr ""
 
-#: templates/knowledge/detail.html:196 templates/knowledge/version.html:21
-#: templates/manage/api_keys.html:145 templates/tickets/list.html:204
-#: templates/users/list.html:118
+#: templates/knowledge/detail.html:222 templates/knowledge/version.html:21
+#: templates/manage/api_keys.html:145 templates/task_scheduler/detail.html:122
+#: templates/tickets/list.html:204 templates/users/list.html:118
 msgid "Created"
 msgstr ""
 
-#: templates/knowledge/detail.html:198 templates/knowledge/edit.html:15
+#: templates/knowledge/detail.html:224 templates/knowledge/edit.html:15
+#: templates/task_scheduler/detail.html:329
+#: templates/task_scheduler/list.html:133
+#: templates/task_scheduler/list.html:205
 msgid "Title"
 msgstr ""
 
-#: templates/knowledge/detail.html:212 templates/knowledge/list.html:260
+#: templates/knowledge/detail.html:238 templates/knowledge/list.html:260
 #: templates/tickets/_row.html:45 templates/tickets/list.html:261
 msgid "View"
 msgstr ""
@@ -3551,6 +3703,7 @@ msgid "Clients"
 msgstr ""
 
 #: templates/manage/api_keys.html:80 templates/manage/api_keys.html:185
+#: templates/task_scheduler/detail.html:285
 msgid "Revoked"
 msgstr ""
 
@@ -3662,7 +3815,9 @@ msgstr ""
 
 #: templates/manage/api_keys.html:253 templates/networks/hosts.html:131
 #: templates/networks/maps.html:127 templates/networks/maps.html:208
-#: templates/networks/maps.html:262 templates/tickets/create.html:6
+#: templates/networks/maps.html:262 templates/task_scheduler/detail.html:98
+#: templates/task_scheduler/detail.html:345
+#: templates/task_scheduler/list.html:134 templates/tickets/create.html:6
 #: templates/tickets/edit.html:14 templates/tickets/list.html:199
 #: templates/tickets/list.html:294
 msgid "Description"
@@ -3983,7 +4138,7 @@ msgid "Service Disabled"
 msgstr ""
 
 #: templates/manage/email_ingest.html:70 templates/manage/email_ingest.html:124
-#: templates/networks/tools.html:176
+#: templates/networks/tools.html:178
 msgid "Protocol"
 msgstr ""
 
@@ -4328,7 +4483,7 @@ msgstr ""
 msgid "Test ICMP responses and basic TCP reachability to critical hosts."
 msgstr ""
 
-#: templates/networks/tools.html:67 templates/networks/tools.html:161
+#: templates/networks/tools.html:67 templates/networks/tools.html:162
 msgid "Port Scanner"
 msgstr ""
 
@@ -4380,36 +4535,56 @@ msgstr ""
 msgid "Quick reachability test (simulated)"
 msgstr ""
 
-#: templates/networks/tools.html:145 templates/networks/tools.html:168
+#: templates/networks/tools.html:146 templates/networks/tools.html:170
 msgid "Target Host / IP"
 msgstr ""
 
-#: templates/networks/tools.html:150
+#: templates/networks/tools.html:151
 msgid "Ping"
 msgstr ""
 
-#: templates/networks/tools.html:155
-msgid "Use the form to run a simulated ping test."
+#: templates/networks/tools.html:156
+msgid "Use the form to run a ping test."
 msgstr ""
 
-#: templates/networks/tools.html:162
+#: templates/networks/tools.html:163
 msgid "Check TCP/UDP port state (simulated)"
 msgstr ""
 
-#: templates/networks/tools.html:172
+#: templates/networks/tools.html:174
 msgid "Ports (e.g. 22,80,443)"
 msgstr ""
 
-#: templates/networks/tools.html:184
+#: templates/networks/tools.html:186
 msgid "Scan Ports"
 msgstr ""
 
-#: templates/networks/tools.html:189
-msgid "Use the form to run a simulated port scan."
+#: templates/networks/tools.html:191
+msgid "Use the form to run a port scan."
 msgstr ""
 
-#: templates/networks/tools.html:278
+#: templates/networks/tools.html:284
 msgid "Invalid network format. Use something like 192.168.1.0/24"
+msgstr ""
+
+#: templates/networks/tools.html:293
+msgid "Running ping..."
+msgstr ""
+
+#: templates/networks/tools.html:307 templates/networks/tools.html:313
+msgid "Ping failed"
+msgstr ""
+
+#: templates/networks/tools.html:322
+msgid "Running port scan..."
+msgstr ""
+
+#: templates/networks/tools.html:336 templates/networks/tools.html:347
+msgid "Port scan failed"
+msgstr ""
+
+#: templates/networks/tools.html:338
+msgid "Results for"
 msgstr ""
 
 #: templates/partials/assistant_widget.html:349
@@ -4458,68 +4633,459 @@ msgstr ""
 msgid "Stop listening"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:483
-#: templates/partials/assistant_widget.html:497
+#: templates/partials/assistant_widget.html:484
+#: templates/partials/assistant_widget.html:498
 msgid "Clipboard copy failed. Try again manually."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:579
+#: templates/partials/assistant_widget.html:585
 msgid "Document"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:604
+#: templates/partials/assistant_widget.html:610
 msgid "Remove document"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:634
 #: templates/partials/assistant_widget.html:640
+#: templates/partials/assistant_widget.html:646
 msgid "Unable to start session."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:656
-#: templates/partials/assistant_widget.html:657
+#: templates/partials/assistant_widget.html:662
+#: templates/partials/assistant_widget.html:663
 msgid "Exit full screen"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:660
-#: templates/partials/assistant_widget.html:661
+#: templates/partials/assistant_widget.html:666
+#: templates/partials/assistant_widget.html:667
 msgid "Enter full screen"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:714
-#: templates/partials/assistant_widget.html:799
+#: templates/partials/assistant_widget.html:720
+#: templates/partials/assistant_widget.html:805
 msgid "Session not ready yet."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:722
+#: templates/partials/assistant_widget.html:728
 msgid "Thinking..."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:733
+#: templates/partials/assistant_widget.html:739
 msgid "Assistant error"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:748
+#: templates/partials/assistant_widget.html:754
 msgid "Connection error"
 msgstr ""
 
-#: templates/partials/assistant_widget.html:813
-#: templates/partials/assistant_widget.html:827
+#: templates/partials/assistant_widget.html:823
+#: templates/partials/assistant_widget.html:837
 msgid "Upload failed."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:857
-#: templates/partials/assistant_widget.html:864
+#: templates/partials/assistant_widget.html:867
+#: templates/partials/assistant_widget.html:874
 msgid "Unable to remove document."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:948
-#: templates/partials/assistant_widget.html:989
+#: templates/partials/assistant_widget.html:958
+#: templates/partials/assistant_widget.html:999
 msgid "Unable to start voice capture."
 msgstr ""
 
-#: templates/partials/assistant_widget.html:953
+#: templates/partials/assistant_widget.html:963
 msgid "Microphone permission denied."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:66
+msgid "Back to Task Scheduler"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:72
+#: templates/task_scheduler/detail.html:335
+#: templates/task_scheduler/list.html:78 templates/task_scheduler/list.html:151
+#: templates/task_scheduler/list.html:211
+#: templates/task_scheduler/public_share.html:58
+msgid "Shared"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:85
+msgid "Share"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:103
+msgid "No description provided."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:114
+#: templates/task_scheduler/detail.html:340
+#: templates/task_scheduler/list.html:216
+msgid "Estimated Duration"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:118
+msgid "Last Updated"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:126
+msgid "Bookings"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:138
+msgid "Scheduled Slots"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:139
+#: templates/task_scheduler/list.html:322
+msgid "Timezone: Europe/Athens"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:143
+#: templates/task_scheduler/detail.html:246
+#: templates/task_scheduler/list.html:265
+msgid "Add Slot"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:154
+msgid "Start"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:155
+#: templates/task_scheduler/list.html:135
+msgid "Duration"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:156
+#: templates/task_scheduler/detail.html:238
+#: templates/task_scheduler/list.html:259
+msgid "Comment"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:157
+msgid "Source"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:158
+#: templates/tickets/_view_content.html:13 templates/tickets/view_page.html:3
+msgid "Ticket"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:176 templates/users/list.html:131
+#: templates/users/list.html:273
+msgid "Admin"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:178
+msgid "Shared (login)"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:180
+msgid "Shared (public)"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:196
+msgid "View ticket"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:200
+msgid "Create ticket"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:220
+msgid "No scheduled slots to display."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:233
+#: templates/task_scheduler/list.html:253
+msgid "Start (Europe/Athens)"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:235
+msgid "Format dd/MM/yyyy HH:mm"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:257
+msgid "Share Links"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:259
+msgid "Generate"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:268
+#: templates/task_scheduler/detail.html:370
+#: templates/task_scheduler/list.html:309
+msgid "Visibility"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:269
+msgid "Expires"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:279
+#: templates/task_scheduler/public_share.html:65
+msgid "Public"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:279
+msgid "Restricted"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:280
+msgid "No expiry"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:310
+msgid "No share links yet. Generate one to collect bookings."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:323
+#: templates/task_scheduler/list.html:423
+msgid "Edit Task"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:342
+msgid "Example: 2-3 hours"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:365
+msgid "Generate Share Link"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:373
+msgid "Public (no login)"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:377
+msgid "Authenticated users only"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:381
+#: templates/task_scheduler/list.html:320
+msgid "Expires at (optional)"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:394
+msgid "Create Link"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:407
+#: templates/task_scheduler/list.html:348
+msgid "Delete Task"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:411
+msgid "This action removes the task, slots, and share history. Continue?"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:445
+msgid "Request failed."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:448
+#: templates/task_scheduler/list.html:516
+#: templates/task_scheduler/public_share.html:170
+#: templates/task_scheduler/public_share.html:196
+msgid "Try:"
+msgstr ""
+
+#: templates/task_scheduler/detail.html:465
+#: templates/task_scheduler/public_share.html:163
+msgid "Checking availability..."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:472
+#: templates/task_scheduler/public_share.html:168
+msgid "Slot unavailable."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:478
+msgid "Slot added."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:492
+msgid "Missing security token. Please refresh the page."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:523
+msgid "Task updated."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:539
+msgid "Unable to create link."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:547
+#: templates/task_scheduler/detail.html:553
+msgid "Link copied."
+msgstr ""
+
+#: templates/task_scheduler/detail.html:574
+#: templates/task_scheduler/list.html:619
+msgid "Unable to delete task."
+msgstr ""
+
+#: templates/task_scheduler/list.html:81
+msgid "Coordinate maintenance and IT chores without overlapping slots."
+msgstr ""
+
+#: templates/task_scheduler/list.html:86 templates/task_scheduler/list.html:199
+#: templates/task_scheduler/list.html:414
+msgid "New Task"
+msgstr ""
+
+#: templates/task_scheduler/list.html:99
+msgid "Total Tasks"
+msgstr ""
+
+#: templates/task_scheduler/list.html:109
+msgid "Booked Slots"
+msgstr ""
+
+#: templates/task_scheduler/list.html:119
+msgid "Active Share Links"
+msgstr ""
+
+#: templates/task_scheduler/list.html:137
+msgid "Slots"
+msgstr ""
+
+#: templates/task_scheduler/list.html:218
+msgid "Use free range e.g. 2-3 or 1.5-2."
+msgstr ""
+
+#: templates/task_scheduler/list.html:221
+msgid "Description (rich text allowed)"
+msgstr ""
+
+#: templates/task_scheduler/list.html:222
+msgid "Supports Markdown/HTML formatting"
+msgstr ""
+
+#: templates/task_scheduler/list.html:244
+msgid "Add User Slot"
+msgstr ""
+
+#: templates/task_scheduler/list.html:255
+msgid "Format dd/MM/yyyy HH:mm. Conflicts checked automatically."
+msgstr ""
+
+#: templates/task_scheduler/list.html:279
+msgid "Remove Slot"
+msgstr ""
+
+#: templates/task_scheduler/list.html:283
+msgid "Select booking"
+msgstr ""
+
+#: templates/task_scheduler/list.html:285
+#: templates/task_scheduler/list.html:527
+msgid "Choose..."
+msgstr ""
+
+#: templates/task_scheduler/list.html:304
+msgid "Share Task"
+msgstr ""
+
+#: templates/task_scheduler/list.html:312
+msgid "Public link (no login)"
+msgstr ""
+
+#: templates/task_scheduler/list.html:316
+msgid "Only authenticated users"
+msgstr ""
+
+#: templates/task_scheduler/list.html:325
+msgid "Generated link"
+msgstr ""
+
+#: templates/task_scheduler/list.html:334
+msgid "Generate Link"
+msgstr ""
+
+#: templates/task_scheduler/list.html:444
+#: templates/task_scheduler/list.html:451
+msgid "Could not save task."
+msgstr ""
+
+#: templates/task_scheduler/list.html:485
+msgid "Validation failed."
+msgstr ""
+
+#: templates/task_scheduler/list.html:513
+msgid "Unable to add slot."
+msgstr ""
+
+#: templates/task_scheduler/list.html:539
+msgid "Unable to load slots."
+msgstr ""
+
+#: templates/task_scheduler/list.html:548
+msgid "Select a slot to remove."
+msgstr ""
+
+#: templates/task_scheduler/list.html:560
+msgid "Unable to remove slot."
+msgstr ""
+
+#: templates/task_scheduler/list.html:587
+msgid "Unable to create share link."
+msgstr ""
+
+#: templates/task_scheduler/list.html:596
+msgid "Link copied"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:53
+msgid "Estimated duration"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:67
+msgid "Login required"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:76
+msgid "No description supplied."
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:86
+msgid "This task is closed. Submissions are no longer accepted."
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:93
+msgid "Your name"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:97
+msgid "Preferred start (Europe/Athens)"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:101
+msgid "Comment (optional)"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:102
+msgid "Short note"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:109
+msgid "Reserve slot"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:117
+msgid "Upcoming slots"
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:129
+msgid "No bookings yet."
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:188
+msgid "Slot confirmed."
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:194
+msgid "Submission failed."
 msgstr ""
 
 #: templates/tickets/_row.html:8 templates/tickets/list.html:218
@@ -4551,10 +5117,6 @@ msgstr ""
 
 #: templates/tickets/_row.html:43 templates/tickets/list.html:259
 msgid "attachment(s) exist"
-msgstr ""
-
-#: templates/tickets/_view_content.html:13 templates/tickets/view_page.html:3
-msgid "Ticket"
 msgstr ""
 
 #: templates/tickets/_view_content.html:18
@@ -4604,7 +5166,7 @@ msgid "Add comment..."
 msgstr ""
 
 #: templates/tickets/_view_content.html:263
-#: templates/tickets/_view_content.html:376
+#: templates/tickets/_view_content.html:432
 msgid "Add Comment"
 msgstr ""
 
@@ -4616,19 +5178,19 @@ msgstr ""
 msgid "No activity recorded."
 msgstr ""
 
-#: templates/tickets/_view_content.html:361
+#: templates/tickets/_view_content.html:416
 msgid "Adding..."
 msgstr ""
 
-#: templates/tickets/_view_content.html:373
+#: templates/tickets/_view_content.html:428
 msgid "Update failed"
 msgstr ""
 
-#: templates/tickets/_view_content.html:387
+#: templates/tickets/_view_content.html:442
 msgid "Uploading..."
 msgstr ""
 
-#: templates/tickets/_view_content.html:405
+#: templates/tickets/_view_content.html:460
 msgid "Upload failed"
 msgstr ""
 
@@ -4909,10 +5471,6 @@ msgstr ""
 #: templates/users/list.html:115 templates/users/list.html:185
 #: templates/users/list.html:268
 msgid "Role"
-msgstr ""
-
-#: templates/users/list.html:131 templates/users/list.html:273
-msgid "Admin"
 msgstr ""
 
 #: templates/users/list.html:133 templates/users/list.html:272

@@ -144,6 +144,7 @@ def create_app():
     from app.address_book.routes import address_book_bp
     from app.backup.routes import backup_bp
     from app.tools.routes import tools_bp
+    from app.task_scheduler.routes import task_scheduler_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -160,6 +161,7 @@ def create_app():
     app.register_blueprint(address_book_bp)
     app.register_blueprint(backup_bp)
     app.register_blueprint(tools_bp)
+    app.register_blueprint(task_scheduler_bp)
 
     with app.app_context():
         from app.models.module_permission import ModulePermission
@@ -168,6 +170,12 @@ def create_app():
             TapeLocation,
             TapeCustodyEvent,
             BackupAuditLog,
+        )
+        from app.models.task_scheduler import (
+            TaskSchedulerTask,
+            TaskSchedulerSlot,
+            TaskSchedulerShareToken,
+            TaskSchedulerAuditLog,
         )
 
         ModulePermission.__table__.create(bind=db.engine, checkfirst=True)
@@ -183,6 +191,10 @@ def create_app():
             TapeLocation.__table__.create(bind=db.engine, checkfirst=True)
             TapeCustodyEvent.__table__.create(bind=db.engine, checkfirst=True)
             BackupAuditLog.__table__.create(bind=db.engine, checkfirst=True)
+        TaskSchedulerTask.__table__.create(bind=db.engine, checkfirst=True)
+        TaskSchedulerSlot.__table__.create(bind=db.engine, checkfirst=True)
+        TaskSchedulerShareToken.__table__.create(bind=db.engine, checkfirst=True)
+        TaskSchedulerAuditLog.__table__.create(bind=db.engine, checkfirst=True)
 
     from app.email2ticket import init_app as init_email2ticket
 

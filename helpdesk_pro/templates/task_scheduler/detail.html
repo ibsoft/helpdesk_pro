@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .scheduler-detail-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.96) 0%, rgba(224, 231, 255, 0.9) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+  }
+  html[data-bs-theme="dark"] body .scheduler-detail-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(10px);
+  }
+  .badge-soft {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+  .meta-tile {
+    border-radius: 0.85rem;
+    border: 1px dashed rgba(148, 163, 184, 0.45);
+    padding: 0.85rem;
+  }
+  .meta-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.65;
+  }
+  .meta-value {
+    font-weight: 600;
+  }
+  .schedule-actions .btn {
+    border-radius: 999px;
+  }
+  .schedule-table th,
+  .schedule-table td {
+    vertical-align: middle;
+  }
+  .share-token-pill {
+    border-radius: 999px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+  }
+</style>
+
+{% set can_admin = can_admin if can_admin is defined else False %}
+{% set slot_ticket_map = slot_ticket_map if slot_ticket_map is defined else {} %}
+{% if can_admin %}
+  {% set page_csrf = csrf_token() %}
+{% endif %}
+{% set status_variant = 'success' if task.status == 'Shared' else 'secondary' %}
+{% set share_base = config.BASE_URL or request.url_root.rstrip('/') %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-3">
+  <div>
+    <a href="{{ url_for('task_scheduler.list_tasks') }}" class="text-decoration-none small">
+      <i class="fa fa-arrow-left"></i> {{ _('Back to Task Scheduler') }}
+    </a>
+    <div class="d-flex flex-wrap align-items-center gap-2 mt-1">
+      <h1 class="h3 mb-0">{{ task.title }}</h1>
+      <span class="badge-soft bg-{{ status_variant }}-subtle text-{{ status_variant }}-emphasis">
+        {% if task.status == 'Shared' %}
+          {{ _('Shared') }}
+        {% else %}
+          {{ _('Closed') }}
+        {% endif %}
+      </span>
+    </div>
+  </div>
+  {% if can_admin %}
+    <div class="schedule-actions d-flex flex-wrap gap-2">
+      <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#taskModal" data-action="edit" data-title="{{ task.title|e }}" data-duration="{{ task.estimated_duration_label }}" data-status="{{ task.status }}" data-description="{{ task.description|default('', true)|e }}" data-task="{{ task.id }}">
+        <i class="fa fa-pen"></i> {{ _('Edit') }}
+      </button>
+      <button class="btn btn-outline-info btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+        <i class="fa fa-share-nodes"></i> {{ _('Share') }}
+      </button>
+      <button class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#taskDeleteModal">
+        <i class="fa fa-trash"></i> {{ _('Delete') }}
+      </button>
+    </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card scheduler-detail-card shadow-sm h-100">
+      <div class="card-body">
+        <h5 class="text-uppercase text-muted small">{{ _('Description') }}</h5>
+        <div class="mt-2">
+          {% if task.description %}
+            <div class="content-body">{{ task.description|safe }}</div>
+          {% else %}
+            <div class="text-muted fst-italic">{{ _('No description provided.') }}</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="meta-grid">
+          <div class="meta-tile">
+            <div class="meta-label">{{ _('Estimated Duration') }}</div>
+            <div class="meta-value">{{ task.estimated_duration_label or '—' }}</div>
+          </div>
+          <div class="meta-tile">
+            <div class="meta-label">{{ _('Last Updated') }}</div>
+            <div class="meta-value">{{ format_local(task.updated_at) }}</div>
+          </div>
+          <div class="meta-tile">
+            <div class="meta-label">{{ _('Created') }}</div>
+            <div class="meta-value">{{ format_local(task.created_at) }}</div>
+          </div>
+          <div class="meta-tile">
+            <div class="meta-label">{{ _('Bookings') }}</div>
+            <div class="meta-value">{{ slots|length }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <div>
+      <span class="fw-semibold">{{ _('Scheduled Slots') }}</span>
+      <small class="text-muted ms-2">{{ _('Timezone: Europe/Athens') }}</small>
+    </div>
+    {% if can_admin %}
+      <button class="btn btn-sm btn-primary" data-action="scroll-to-form">
+        <i class="fa fa-user-plus"></i> {{ _('Add Slot') }}
+      </button>
+    {% endif %}
+  </div>
+  <div class="card-body">
+    {% if slots %}
+      <div class="table-responsive">
+        <table class="table table-striped schedule-table">
+          <thead class="table-light">
+            <tr>
+              <th>{{ _('Username') }}</th>
+              <th>{{ _('Start') }}</th>
+              <th>{{ _('Duration') }}</th>
+              <th>{{ _('Comment') }}</th>
+              <th>{{ _('Source') }}</th>
+              <th>{{ _('Ticket') }}</th>
+              {% if can_admin %}
+                <th>{{ _('Actions') }}</th>
+              {% endif %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for slot in slots %}
+              {% set duration_hours = (slot.duration_minutes or 0) / 60 %}
+              {% set fallback_duration = ('%.2f h' % duration_hours) if duration_hours else '—' %}
+              {% set ticket_id = slot_ticket_map.get(slot.id) %}
+              <tr class="{% if ticket_id %}table-success{% endif %}">
+                <td>{{ slot.display_name }}</td>
+                <td>{{ format_local(slot.start_at) }}</td>
+                <td>{{ task.estimated_duration_label or fallback_duration }}</td>
+                <td>{{ slot.comment or '—' }}</td>
+                <td>
+                  {% if slot.created_via == 'admin' %}
+                    <span class="share-token-pill bg-primary-subtle text-primary-emphasis">{{ _('Admin') }}</span>
+                  {% elif slot.created_via == 'share_auth' %}
+                    <span class="share-token-pill bg-success-subtle text-success-emphasis">{{ _('Shared (login)') }}</span>
+                  {% else %}
+                    <span class="share-token-pill bg-secondary-subtle text-secondary-emphasis">{{ _('Shared (public)') }}</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if ticket_id %}
+                    <a href="{{ url_for('tickets.view_ticket', id=ticket_id) }}" class="badge-soft bg-primary-subtle text-primary-emphasis text-decoration-none">
+                      <i class="fa fa-ticket"></i> #{{ ticket_id }}
+                    </a>
+                  {% else %}
+                    <span class="text-muted">—</span>
+                  {% endif %}
+                </td>
+                {% if can_admin %}
+                  <td>
+                    <div class="d-flex gap-2">
+                      {% if ticket_id %}
+                        <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tickets.view_ticket', id=ticket_id) }}" title="{{ _('View ticket') }}">
+                          <i class="fa fa-up-right-from-square"></i>
+                        </a>
+                      {% else %}
+                        <button class="btn btn-sm btn-outline-primary create-ticket-btn" data-slot="{{ slot.id }}" title="{{ _('Create ticket') }}">
+                          <i class="fa fa-ticket"></i>
+                        </button>
+                      {% endif %}
+                      <form class="d-inline remove-slot-inline" method="post" action="{{ url_for('task_scheduler.delete_slot', slot_id=slot.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ page_csrf }}">
+                        <button class="btn btn-sm btn-outline-danger">
+                          <i class="fa fa-trash"></i>
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="alert alert-info mb-0">
+        <i class="fa fa-info-circle"></i> {{ _('No scheduled slots to display.') }}
+      </div>
+    {% endif %}
+    {% if can_admin %}
+      <hr>
+      <div id="slotFormAnchor"></div>
+      <form id="detailSlotForm" class="row g-3 mt-2" method="post" action="{{ url_for('task_scheduler.add_slot', task_id=task.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ page_csrf }}">
+        <div class="col-md-4">
+          <label class="form-label">{{ _('Username') }}</label>
+          <input type="text" class="form-control" name="username" placeholder="John Doe" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ _('Start (Europe/Athens)') }}</label>
+          <input type="datetime-local" class="form-control" name="start_at" id="detailSlotStartInput" required>
+          <div class="form-text">{{ _('Format dd/MM/yyyy HH:mm') }}</div>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">{{ _('Comment') }}</label>
+          <input type="text" class="form-control" name="comment">
+        </div>
+        <div class="col-12">
+          <div id="detailSlotAvailability" class="small"></div>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-success">
+            <i class="fa fa-user-plus"></i> {{ _('Add Slot') }}
+          </button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+
+{% if can_admin %}
+  <div class="card shadow-sm mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <span>{{ _('Share Links') }}</span>
+      <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#shareModal">
+        <i class="fa fa-link"></i> {{ _('Generate') }}
+      </button>
+    </div>
+    <div class="card-body">
+      {% if task.share_tokens %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>{{ _('Visibility') }}</th>
+                <th>{{ _('Expires') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th>{{ _('Actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for token in task.share_tokens %}
+                {% set token_link = share_base + url_for('task_scheduler.share_page', token=token.token) %}
+                {% set active = token.is_active() %}
+                <tr>
+                  <td>{{ _('Public') if token.visibility == 'public' else _('Restricted') }}</td>
+                  <td>{{ format_local(token.expires_at) if token.expires_at else _('No expiry') }}</td>
+                  <td>
+                    {% if active %}
+                      <span class="badge-soft bg-success-subtle text-success-emphasis">{{ _('Active') }}</span>
+                    {% elif token.revoked_at %}
+                      <span class="badge-soft bg-danger-subtle text-danger-emphasis">{{ _('Revoked') }}</span>
+                    {% else %}
+                      <span class="badge-soft bg-secondary-subtle text-secondary-emphasis">{{ _('Expired') }}</span>
+                    {% endif %}
+                  </td>
+                  <td class="d-flex flex-wrap gap-2">
+                    <button class="btn btn-outline-secondary btn-sm copy-share-link" type="button" data-link="{{ token_link }}">
+                      <i class="fa fa-copy"></i>
+                    </button>
+                    {% if active %}
+                      <form class="d-inline revoke-share-form" method="post" action="{{ url_for('task_scheduler.revoke_share', token_id=token.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ page_csrf }}">
+                        <button class="btn btn-outline-danger btn-sm" type="submit">
+                          <i class="fa fa-ban"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="alert alert-info mb-0">
+          <i class="fa fa-info-circle"></i> {{ _('No share links yet. Generate one to collect bookings.') }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="taskForm" method="post" action="{{ url_for('task_scheduler.save_task') }}">
+          <input type="hidden" name="csrf_token" value="{{ page_csrf }}">
+          <input type="hidden" name="task_id" value="{{ task.id }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-calendar-pen me-2"></i>{{ _('Edit Task') }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">{{ _('Title') }}</label>
+                <input type="text" class="form-control" name="title" value="{{ task.title|e }}" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Status') }}</label>
+                <select class="form-select" name="status">
+                  <option value="Shared" {% if task.status == 'Shared' %}selected{% endif %}>{{ _('Shared') }}</option>
+                  <option value="Closed" {% if task.status == 'Closed' %}selected{% endif %}>{{ _('Closed') }}</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Estimated Duration') }}</label>
+                <input type="text" class="form-control" name="estimated_duration" value="{{ task.estimated_duration_label }}">
+                <div class="form-text">{{ _('Example: 2-3 hours') }}</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ _('Description') }}</label>
+                <textarea class="form-control" name="description" rows="4">{{ task.description|default('', true)|e }}</textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-success">{{ _('Save Changes') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="shareForm" method="post" action="{{ url_for('task_scheduler.create_share', task_id=task.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ page_csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-share-nodes me-2"></i>{{ _('Generate Share Link') }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">{{ _('Visibility') }}</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="visibility" value="public" id="sharePublicDetail" checked>
+                <label class="form-check-label" for="sharePublicDetail">{{ _('Public (no login)') }}</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="visibility" value="restricted" id="shareRestrictedDetail">
+                <label class="form-check-label" for="shareRestrictedDetail">{{ _('Authenticated users only') }}</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Expires at (optional)') }}</label>
+              <input type="datetime-local" class="form-control" name="expires_at">
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Link') }}</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="shareLinkOutput" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="shareLinkCopy"><i class="fa fa-copy"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+            <button type="submit" class="btn btn-primary">{{ _('Create Link') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="taskDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="taskDeleteForm" method="post" action="{{ url_for('task_scheduler.delete_task', task_id=task.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ page_csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Task') }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">{{ _('This action removes the task, slots, and share history. Continue?') }}</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-danger">{{ _('Delete') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const schedulerDetail = {
+    checkEndpoint: "{{ url_for('task_scheduler.slot_check', task_id=task.id) }}",
+    shareLocale: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}",
+    listUrl: "{{ url_for('task_scheduler.list_tasks') }}"
+  };
+
+  function handleAjaxForm($form, successMessage, reload = true) {
+    $.ajax({
+      url: $form.attr('action'),
+      type: $form.attr('method') || 'POST',
+      data: $form.serialize(),
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      success(res) {
+        showToast(res.message || successMessage, 'success');
+        if (reload) setTimeout(() => window.location.reload(), 350);
+      },
+      error(xhr) {
+        const res = xhr.responseJSON || {};
+        const msg = res.message || '{{ _("Request failed.") }}';
+        showToast(msg, 'danger');
+        if (res.suggestions && res.suggestions.length) {
+          $('#detailSlotAvailability').text('{{ _("Try:") }} ' + res.suggestions.join(', ')).addClass('text-warning');
+        }
+      }
+    });
+  }
+
+  function resolveCsrfToken() {
+    const field = document.querySelector('#detailSlotForm input[name="csrf_token"]') ||
+                  document.querySelector('form input[name="csrf_token"]');
+    return field ? field.value : "";
+  }
+
+  $(function() {
+    const availabilityEl = $('#detailSlotAvailability');
+    $('#detailSlotStartInput').on('change', function() {
+      const value = $(this).val();
+      if (!value) return;
+      availabilityEl.removeClass('text-danger text-success text-warning').text('{{ _("Checking availability...") }}');
+      $.get(schedulerDetail.checkEndpoint, { start_at: value })
+        .done(res => {
+          availabilityEl.text(res.message).addClass('text-success');
+        })
+        .fail(xhr => {
+          const res = xhr.responseJSON || {};
+          availabilityEl.text(res.message || '{{ _("Slot unavailable.") }}').addClass('text-danger');
+        });
+    });
+
+    $('#detailSlotForm').on('submit', function(ev) {
+      ev.preventDefault();
+      handleAjaxForm($(this), '{{ _("Slot added.") }}');
+    });
+
+    $('.remove-slot-inline').on('submit', function(ev) {
+      ev.preventDefault();
+      handleAjaxForm($(this), '{{ _("Slot removed.") }}');
+    });
+
+    $('.create-ticket-btn').on('click', function(ev) {
+      ev.preventDefault();
+      const slotId = $(this).data('slot');
+      if (!slotId) return;
+      const csrfToken = resolveCsrfToken();
+      if (!csrfToken) {
+        showToast('{{ _("Missing security token. Please refresh the page.") }}', 'danger');
+        return;
+      }
+      const $btn = $(this);
+      $btn.prop('disabled', true).addClass('disabled');
+      $.ajax({
+        url: `/task-scheduler/slots/${slotId}/ticket`,
+        type: 'POST',
+        data: { csrf_token: csrfToken },
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrfToken
+        },
+        success(res) {
+          showToast(res.message || '{{ _("Ticket created successfully.") }}', 'success');
+          if (res.ticket_url) {
+            setTimeout(() => window.location.href = res.ticket_url, 400);
+          }
+        },
+        error(xhr) {
+          const res = xhr.responseJSON || {};
+          showToast(res.message || '{{ _("Unable to create ticket.") }}', 'danger');
+        },
+        complete() {
+          $btn.prop('disabled', false).removeClass('disabled');
+        }
+      });
+    });
+
+    $('#taskForm').on('submit', function(ev) {
+      ev.preventDefault();
+      handleAjaxForm($(this), '{{ _("Task updated.") }}');
+    });
+
+    $('#shareForm').on('submit', function(ev) {
+      ev.preventDefault();
+      $.ajax({
+        url: $(this).attr('action'),
+        type: 'POST',
+        data: $(this).serialize(),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success(res) {
+          $('#shareLinkOutput').val(res.link || '');
+          showToast(res.message || '{{ _("Share link created.") }}', 'success');
+        },
+        error(xhr) {
+          const res = xhr.responseJSON || {};
+          showToast(res.message || '{{ _("Unable to create link.") }}', 'danger');
+        }
+      });
+    });
+
+    $('#shareLinkCopy').on('click', function() {
+      const input = document.getElementById('shareLinkOutput');
+      if (!input.value) return;
+      navigator.clipboard.writeText(input.value).then(() => showToast('{{ _("Link copied.") }}', 'success'));
+    });
+
+    $('.copy-share-link').on('click', function() {
+      const link = $(this).data('link');
+      if (!link) return;
+      navigator.clipboard.writeText(link).then(() => showToast('{{ _("Link copied.") }}', 'success'));
+    });
+
+    $('.revoke-share-form').on('submit', function(ev) {
+      ev.preventDefault();
+      handleAjaxForm($(this), '{{ _("Share link revoked.") }}');
+    });
+
+    $('#taskDeleteForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      $.ajax({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success(res) {
+          showToast(res.message || '{{ _("Task deleted.") }}', 'success');
+          setTimeout(() => window.location.href = schedulerDetail.listUrl, 350);
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Unable to delete task.") }}';
+          showToast(msg, 'danger');
+        }
+      });
+    });
+
+    $('[data-action="scroll-to-form"]').on('click', function() {
+      document.getElementById('slotFormAnchor').scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+{% endblock %}
