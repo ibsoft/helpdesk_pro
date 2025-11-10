@@ -1,0 +1,769 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+  .scheduler-summary-card {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.96) 0%, rgba(224, 231, 255, 0.9) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    overflow: hidden;
+  }
+  html[data-bs-theme="dark"] body .scheduler-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(12px);
+  }
+  .metric {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+  }
+  .metric-value {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .scheduler-status-badges .badge {
+    font-size: 0.78rem;
+    letter-spacing: 0.06em;
+  }
+  .scheduler-summary-card .card-body {
+    padding-inline: 2rem;
+    padding-block: 1.15rem;
+  }
+  @media (max-width: 576px) {
+    .scheduler-summary-card .card-body {
+      padding-inline: 1.25rem;
+    }
+  }
+  .scheduler-actions .btn {
+    border-radius: 999px;
+  }
+  .scheduler-table th,
+  .scheduler-table td {
+    vertical-align: middle;
+  }
+  .scheduler-table .task-title {
+    font-weight: 600;
+  }
+  .scheduler-table .task-desc {
+    max-width: 320px;
+  }
+  .scheduler-actions-inline .btn {
+    border-radius: 999px;
+    padding-inline: 0.6rem;
+  }
+  .scheduler-actions-inline .btn i {
+    margin-right: 0.15rem;
+  }
+  .badge-soft {
+    border-radius: 999px;
+    padding: 0.2rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  html[data-bs-theme="dark"] body .scheduler-actions-inline .btn-outline-dark {
+    color: #e2e8f0;
+    border-color: rgba(226, 232, 240, 0.65);
+  }
+  html[data-bs-theme="dark"] body .scheduler-actions-inline .btn-outline-dark:hover,
+  html[data-bs-theme="dark"] body .scheduler-actions-inline .btn-outline-dark:focus {
+    background-color: rgba(226, 232, 240, 0.15);
+    color: #0f172a;
+  }
+  .btn-readonly {
+    opacity: 0.55;
+  }
+</style>
+
+{% set can_admin = can_admin if can_admin is defined else False %}
+{% set status_shared = status_counts.get('Shared', 0) %}
+{% set status_closed = status_counts.get('Closed', 0) %}
+{% set total_tasks = tasks|length %}
+
+<div class="scheduler-summary-card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+      <div class="d-flex flex-column">
+        <div class="d-flex flex-wrap align-items-center gap-2 scheduler-status-badges">
+          <h1 class="h4 mb-0"><i class="fa fa-calendar-check text-primary me-2"></i>{{ _('Task Scheduler') }}</h1>
+          <span class="badge bg-success-subtle text-success-emphasis">{{ _('Shared') }}: {{ status_shared }}</span>
+          <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ _('Closed') }}: {{ status_closed }}</span>
+        </div>
+        <small class="text-muted">{{ _('Coordinate maintenance and IT chores without overlapping slots.') }}</small>
+      </div>
+      {% if can_admin %}
+        <div class="scheduler-actions d-flex flex-wrap gap-2">
+          <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#taskModal" data-action="create">
+            <i class="fa fa-plus"></i> {{ _('New Task') }}
+          </button>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="metric">
+          <span class="metric-label text-muted">{{ _('Total Tasks') }}</span>
+          <span class="metric-value">{{ total_tasks }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="metric">
+          <span class="metric-label text-muted">{{ _('Booked Slots') }}</span>
+          <span class="metric-value">{{ total_slots }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="metric">
+          <span class="metric-label text-muted">{{ _('Active Share Links') }}</span>
+          <span class="metric-value">{{ active_share_links }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table id="taskSchedulerTable" class="table table-hover scheduler-table w-100">
+        <thead class="table-dark">
+          <tr>
+            <th>{{ _('Title') }}</th>
+            <th>{{ _('Description') }}</th>
+            <th>{{ _('Duration') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Slots') }}</th>
+            {% if can_admin %}
+              <th>{{ _('Actions') }}</th>
+            {% endif %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for task in tasks %}
+            <tr data-task-id="{{ task.id }}" data-detail-url="{{ url_for('task_scheduler.task_detail', task_id=task.id) }}">
+              <td class="task-title">{{ task.title }}</td>
+              <td class="task-desc text-muted small">{{ (task.description or '')|striptags|truncate(120, True, '...') }}</td>
+              <td>{{ task.estimated_duration_label or '—' }}</td>
+              <td>
+                {% if task.status == 'Shared' %}
+                  <span class="badge-soft bg-success-subtle text-success-emphasis">{{ _('Shared') }}</span>
+                {% else %}
+                  <span class="badge-soft bg-secondary-subtle text-secondary-emphasis">{{ _('Closed') }}</span>
+                {% endif %}
+              </td>
+              <td>{{ slot_counts.get(task.id, 0) }}</td>
+              {% if can_admin %}
+                <td>
+                  <div class="d-flex flex-wrap gap-1 scheduler-actions-inline">
+                    <button class="btn btn-outline-secondary btn-sm view-task-btn" data-task="{{ task.id }}">
+                      <i class="fa fa-eye"></i>
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm edit-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}" data-description="{{ task.description|default('', true)|e }}" data-duration="{{ task.estimated_duration_label }}" data-status="{{ task.status }}">
+                      <i class="fa fa-pen"></i>
+                    </button>
+                    <button class="btn btn-outline-success btn-sm add-slot-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
+                      <i class="fa fa-user-plus"></i>
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm remove-slot-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
+                      <i class="fa fa-user-minus"></i>
+                    </button>
+                    <button class="btn btn-outline-info btn-sm share-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
+                      <i class="fa fa-share-nodes"></i>
+                    </button>
+                    <button class="btn btn-outline-dark btn-sm email-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
+                      <i class="fa fa-envelope"></i>
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm delete-task-btn" data-task="{{ task.id }}" data-title="{{ task.title|e }}">
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </div>
+                </td>
+              {% endif %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% if can_admin %}
+  {% set csrf = csrf_token() %}
+  {# Task modal #}
+  <div class="modal fade" id="taskModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="taskForm" method="post" action="{{ url_for('task_scheduler.save_task') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <input type="hidden" name="task_id" id="taskIdInput">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-calendar-plus me-2"></i><span data-modal-title>{{ _('New Task') }}</span></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-8">
+                <label class="form-label">{{ _('Title') }}</label>
+                <input type="text" class="form-control" name="title" id="taskTitleInput" required>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Status') }}</label>
+                <select class="form-select" name="status" id="taskStatusInput">
+                  <option value="Shared">{{ _('Shared') }}</option>
+                  <option value="Closed">{{ _('Closed') }}</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Estimated Duration') }}</label>
+                <input type="text" class="form-control" name="estimated_duration" id="taskDurationInput" placeholder="2-3 hours">
+                <div class="form-text">{{ _('Use free range e.g. 2-3 or 1.5-2.') }}</div>
+              </div>
+              <div class="col-12">
+                <label class="form-label">{{ _('Description (rich text allowed)') }}</label>
+                <textarea class="form-control" name="description" id="taskDescriptionInput" rows="4" placeholder="{{ _('Supports Markdown/HTML formatting') }}"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-success" data-submit-label>
+              <i class="fa fa-save"></i> {{ _('Save') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Add slot modal #}
+  <div class="modal fade" id="slotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="slotForm" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-user-plus me-2"></i>{{ _('Add User Slot') }} <small class="text-uppercase text-white-50 ms-2" id="slotModalTaskName"></small></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">{{ _('Username') }}</label>
+              <input type="text" class="form-control" name="username" placeholder="John Doe" required>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Start (Europe/Athens)') }}</label>
+              <input type="datetime-local" class="form-control slot-start-input" name="start_at" required lang="en-GB">
+              <div class="form-text">{{ _('Format dd/MM/yyyy HH:mm. Conflicts checked automatically.') }}</div>
+              <div class="small mt-2" id="slotModalAvailability"></div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Comment') }}</label>
+              <textarea class="form-control" name="comment" rows="2"></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-success">{{ _('Add Slot') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Remove slot modal #}
+  <div class="modal fade" id="slotRemoveModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="slotRemoveForm" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-user-minus me-2"></i>{{ _('Remove Slot') }} <small class="text-uppercase text-white-50 ms-2" id="slotRemoveTaskName"></small></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <label class="form-label">{{ _('Select booking') }}</label>
+            <select class="form-select" name="slot_id" required id="slotRemoveSelect">
+              <option value="">{{ _('Choose...') }}</option>
+            </select>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-danger">{{ _('Remove') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Share modal #}
+  <div class="modal fade" id="shareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="shareForm" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-share-nodes me-2"></i>{{ _('Share Task') }} <small class="text-uppercase text-white-50 ms-2" id="shareModalTaskName"></small></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">{{ _('Visibility') }}</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="visibility" id="sharePublic" value="public" checked>
+                <label class="form-check-label" for="sharePublic">{{ _('Public link (no login)') }}</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="visibility" id="shareRestricted" value="restricted">
+                <label class="form-check-label" for="shareRestricted">{{ _('Only authenticated users') }}</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Expires at (optional)') }}</label>
+              <input type="datetime-local" class="form-control" name="expires_at" lang="en-GB">
+              <div class="form-text">{{ _('Timezone: Europe/Athens') }}</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Generated link') }}</label>
+              <div class="input-group">
+                <input type="text" class="form-control" id="shareLinkOutput" readonly>
+                <button class="btn btn-outline-secondary" type="button" id="shareLinkCopy"><i class="fa fa-copy"></i></button>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+            <button type="submit" class="btn btn-primary">{{ _('Generate Link') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Email modal #}
+  <div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <form id="emailForm" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-envelope me-2"></i>{{ _('Email Task') }} <small class="text-uppercase text-white-50 ms-2" id="emailModalTaskName"></small></h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">{{ _('Audience') }}</label>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scope" id="emailScopeCustom" value="custom" checked>
+                <label class="form-check-label" for="emailScopeCustom">{{ _('Choose recipients') }}</label>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="scope" id="emailScopeAll" value="all">
+                <label class="form-check-label" for="emailScopeAll">{{ _('All active users') }}</label>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Recipients') }}</label>
+              <select class="form-select" name="recipients" id="emailRecipientsSelect" multiple size="8"></select>
+              <div class="form-text">{{ _('Hold Ctrl/Cmd to select multiple recipients.') }}</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">{{ _('Optional message') }}</label>
+              <textarea class="form-control" name="message" id="emailMessageInput" rows="3" placeholder="{{ _('Add a short note (optional)') }}"></textarea>
+            </div>
+            <div class="alert alert-warning d-none" id="emailModalAlert"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fa fa-paper-plane"></i> {{ _('Send Email') }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  {# Delete modal #}
+  <div class="modal fade" id="taskDeleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="taskDeleteForm" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf }}">
+          <div class="modal-header modal-header-gradient text-white">
+            <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Task') }}</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p class="mb-0">{{ _('Are you sure you want to delete') }} <strong id="deleteTaskName"></strong>?</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+            <button type="submit" class="btn btn-danger">{{ _('Delete') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const schedulerConfig = {
+    canAdmin: {{ 'true' if can_admin else 'false' }},
+    localeUrl: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}"
+  };
+
+  function ajaxJson(options) {
+    return $.ajax({
+      ...options,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    });
+  }
+
+  $(function() {
+    let emailRecipientsCache = null;
+    const table = $('#taskSchedulerTable').DataTable({
+      order: [[0, 'asc']],
+      pageLength: 25,
+      language: { url: schedulerConfig.localeUrl },
+      autoWidth: false,
+      responsive: true,
+      dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
+           "<'row'<'col-sm-12'tr>>" +
+           "<'row mt-3'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+      buttons: [
+        { extend: 'excelHtml5', text: '<i class="fa fa-file-excel"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+        { extend: 'print', text: '<i class="fa fa-print"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' }
+      ]
+    });
+
+    $('#taskSchedulerTable tbody').on('dblclick', 'tr', function() {
+      const url = $(this).data('detail-url');
+      if (url) window.location.href = url;
+    });
+
+    $('.view-task-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      if (taskId) window.location.href = "{{ url_for('task_scheduler.task_detail', task_id=0) }}".replace('/0', '/' + taskId);
+    });
+
+    $('#taskModal').on('show.bs.modal', function(event) {
+      const button = event.relatedTarget;
+      const action = button ? button.getAttribute('data-action') : null;
+      const modal = $(this);
+      if (!schedulerConfig.canAdmin) {
+        modal.find('button[type="submit"]').addClass('btn-readonly').prop('disabled', true);
+      }
+      if (action === 'create' || !button || !button.classList.contains('edit-task-btn')) {
+        modal.find('[data-modal-title]').text('{{ _("New Task") }}');
+        modal.find('#taskIdInput').val('');
+        modal.find('#taskTitleInput').val('');
+        modal.find('#taskDescriptionInput').val('');
+        modal.find('#taskDurationInput').val('');
+        modal.find('#taskStatusInput').val('Shared');
+        modal.find('[data-submit-label]').text('{{ _("Save") }}');
+      } else {
+        const $btn = $(button);
+        modal.find('[data-modal-title]').text('{{ _("Edit Task") }}');
+        modal.find('#taskIdInput').val($btn.data('task'));
+        const rawTitle = $btn.data('title') || '';
+        const rawDescription = $btn.data('description') || '';
+        modal.find('#taskTitleInput').val($('<textarea />').html(rawTitle).text());
+        modal.find('#taskDescriptionInput').val($('<textarea />').html(rawDescription).text());
+        modal.find('#taskDurationInput').val($btn.data('duration'));
+        modal.find('#taskStatusInput').val($btn.data('status'));
+        modal.find('[data-submit-label]').text('{{ _("Update") }}');
+      }
+    });
+
+    $('#taskForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      ajaxJson({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        success(res) {
+          if (!res.success) {
+            showToast(res.message || '{{ _("Could not save task.") }}', 'danger');
+            return;
+          }
+          showToast(res.message, 'success');
+          setTimeout(() => window.location.reload(), 400);
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Could not save task.") }}';
+          showToast(msg, 'danger');
+        }
+      });
+    });
+
+    $('.edit-task-btn').on('click', function() {
+      const modal = new bootstrap.Modal(document.getElementById('taskModal'));
+      modal.show(this);
+    });
+
+    $('.add-slot-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      $('#slotModalTaskName').text($(this).data('title') || '');
+      const modal = $('#slotModal');
+      modal.find('form').attr('action', `/task-scheduler/${taskId}/slots`);
+      modal.find('.slot-start-input').val('');
+      modal.find('#slotModalAvailability').text('');
+      modal.modal('show');
+    });
+
+    function checkSlotAvailability($input, endpoint, messageEl) {
+      const value = $input.val();
+      if (!value || !endpoint) return;
+      messageEl.removeClass('text-success text-danger');
+      $.get(endpoint, { start_at: value })
+        .done(res => {
+          if (res.success) {
+            messageEl.text(res.message).addClass('text-success');
+          } else {
+            messageEl.text(res.message).addClass('text-danger');
+          }
+        })
+        .fail(xhr => {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Validation failed.") }}';
+          messageEl.text(msg).addClass('text-danger');
+        });
+    }
+
+    $('#slotForm .slot-start-input').on('change', function() {
+      const actionUrl = $('#slotForm').attr('action') || '';
+      const endpoint = actionUrl.replace(/\/slots$/, '/slots/check');
+      checkSlotAvailability($(this), endpoint, $('#slotModalAvailability'));
+    });
+
+    $('#slotForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      ajaxJson({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        success(res) {
+          if (!res.success) {
+            showToast(res.message, 'danger');
+            return;
+          }
+          showToast(res.message, 'success');
+          setTimeout(() => window.location.reload(), 300);
+        },
+        error(xhr) {
+          const res = xhr.responseJSON || {};
+          const msg = res.message || '{{ _("Unable to add slot.") }}';
+          showToast(msg, 'danger');
+          if (res.suggestions && res.suggestions.length) {
+            $('#slotModalAvailability').html('{{ _("Try:") }} ' + res.suggestions.join(', ')).addClass('text-warning');
+          }
+        }
+      });
+    });
+
+    $('.remove-slot-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      $('#slotRemoveTaskName').text($(this).data('title') || '');
+      const modal = $('#slotRemoveModal');
+      const select = modal.find('#slotRemoveSelect');
+      select.empty().append(`<option value="">{{ _('Choose...') }}</option>`);
+      ajaxJson({
+        url: `/task-scheduler/${taskId}/slots/options`,
+        type: 'GET',
+        success(res) {
+          res.options.forEach(opt => {
+            select.append(`<option value="${opt.id}">${opt.label}</option>`);
+          });
+          modal.find('form').data('task', taskId);
+          modal.modal('show');
+        },
+        error() {
+          showToast('{{ _("Unable to load slots.") }}', 'danger');
+        }
+      });
+    });
+
+    $('#slotRemoveForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const selectVal = $('#slotRemoveSelect').val();
+      if (!selectVal) {
+        showToast('{{ _("Select a slot to remove.") }}', 'warning');
+        return;
+      }
+      ajaxJson({
+        url: `/task-scheduler/slots/${selectVal}/delete`,
+        type: 'POST',
+        data: $(this).serialize(),
+        success(res) {
+          showToast(res.message || '{{ _("Slot removed.") }}', 'success');
+          setTimeout(() => window.location.reload(), 300);
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Unable to remove slot.") }}';
+          showToast(msg, 'danger');
+        }
+      });
+    });
+
+    $('.share-task-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      $('#shareModalTaskName').text($(this).data('title') || '');
+      const modal = $('#shareModal');
+      modal.find('form').attr('action', `/task-scheduler/${taskId}/share`);
+      modal.find('#shareLinkOutput').val('');
+      modal.modal('show');
+    });
+
+    $('#shareForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      ajaxJson({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        success(res) {
+          $('#shareLinkOutput').val(res.link || '');
+          showToast(res.message || '{{ _("Share link created.") }}', 'success');
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Unable to create share link.") }}';
+          showToast(msg, 'danger');
+        }
+      });
+    });
+
+    $('#shareLinkCopy').on('click', function() {
+      const input = document.getElementById('shareLinkOutput');
+      if (!input.value) return;
+      navigator.clipboard.writeText(input.value).then(() => showToast('{{ _("Link copied") }}', 'success'));
+    });
+
+    function populateEmailRecipients(options) {
+      const select = $('#emailRecipientsSelect');
+      select.empty();
+      options.forEach(opt => {
+        const label = opt.email ? `${opt.label} (${opt.email})` : opt.label;
+        select.append(`<option value="${opt.id}">${label}</option>`);
+      });
+    }
+
+    function loadEmailRecipients() {
+      if (emailRecipientsCache) {
+        return Promise.resolve(emailRecipientsCache);
+      }
+      return new Promise((resolve, reject) => {
+        $.get('/task-scheduler/email/recipients')
+          .done(res => {
+            emailRecipientsCache = res.options || [];
+            resolve(emailRecipientsCache);
+          })
+          .fail(() => reject());
+      });
+    }
+
+    function toggleEmailRecipients(disabled) {
+      $('#emailRecipientsSelect').prop('disabled', disabled);
+    }
+
+    $('.email-task-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      $('#emailModalTaskName').text($(this).data('title') || '');
+      const modal = $('#emailModal');
+      modal.find('form').attr('action', `/task-scheduler/${taskId}/email`);
+      $('#emailMessageInput').val('');
+      $('#emailScopeCustom').prop('checked', true);
+      toggleEmailRecipients(false);
+      $('#emailModalAlert').addClass('d-none').text('');
+      loadEmailRecipients()
+        .then(options => {
+          populateEmailRecipients(options);
+          modal.modal('show');
+        })
+        .catch(() => {
+          showToast('{{ _("Unable to load recipients.") }}', 'danger');
+        });
+    });
+
+    $('#emailScopeAll').on('change', function() {
+      if (this.checked) {
+        toggleEmailRecipients(true);
+      }
+    });
+
+    $('#emailScopeCustom').on('change', function() {
+      if (this.checked) {
+        toggleEmailRecipients(false);
+      }
+    });
+
+    $('#emailForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      ajaxJson({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        success(res) {
+          showToast(res.message || '{{ _("Task link emailed successfully.") }}', 'success');
+          $('#emailModal').modal('hide');
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Unable to send email.") }}';
+          $('#emailModalAlert').removeClass('d-none').text(msg);
+          showToast(msg, 'danger');
+        }
+      });
+    });
+
+    $('.delete-task-btn').on('click', function() {
+      const taskId = $(this).data('task');
+      const modal = $('#taskDeleteModal');
+      modal.find('#deleteTaskName').text($(this).data('title'));
+      modal.find('form').attr('action', `/task-scheduler/${taskId}/delete`);
+      modal.modal('show');
+    });
+
+    $('#taskDeleteForm').on('submit', function(ev) {
+      ev.preventDefault();
+      const $form = $(this);
+      ajaxJson({
+        url: $form.attr('action'),
+        type: 'POST',
+        data: $form.serialize(),
+        success(res) {
+          showToast(res.message || '{{ _("Task deleted.") }}', 'success');
+          setTimeout(() => window.location.reload(), 400);
+        },
+        error(xhr) {
+          const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : '{{ _("Unable to delete task.") }}';
+          showToast(msg, 'danger');
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

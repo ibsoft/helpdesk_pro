@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-01 12:46+0200\n"
+"POT-Creation-Date: 2025-11-10 11:49+0200\n"
 "PO-Revision-Date: 2025-10-18 23:43+0300\n"
 "Last-Translator: Ioannis Bouchras <ioannis.bouchras@unixfor.gr>\n"
 "Language: el\n"
@@ -115,94 +115,117 @@ msgstr "Συνολικές συνομιλίες"
 msgid "Password & PIN Studio"
 msgstr "Εργαστήριο Κωδικών & PIN"
 
-#: app/navigation.py:192 templates/manage/assistant_settings.html:65
+#: app/navigation.py:190 templates/task_scheduler/list.html:77
+#: templates/task_scheduler/public_share.html:6
+msgid "Task Scheduler"
+msgstr "Χρονοπρογραμματιστής"
+
+#: app/navigation.py:199 templates/manage/assistant_settings.html:65
 msgid "AI Assistant Widget"
 msgstr "Widget βοηθού AI"
 
-#: app/navigation.py:201
+#: app/navigation.py:208
 #, fuzzy
 msgid "Email to Ticket Worker"
 msgstr "Υπηρεσία Email σε Ticket"
 
-#: app/assistant/routes.py:870 app/assistant/routes.py:889
-#: app/assistant/routes.py:905 app/assistant/routes.py:964
-#: app/assistant/routes.py:1025
+#: app/assistant/routes.py:869 app/assistant/routes.py:888
+#: app/assistant/routes.py:904 app/assistant/routes.py:963
+#: app/assistant/routes.py:1024
 #, fuzzy
 msgid "Session not found."
 msgstr "Ο χρήστης δεν βρέθηκε."
 
-#: app/assistant/routes.py:910
+#: app/assistant/routes.py:909
 msgid "No file provided."
 msgstr "Δεν δόθηκε αρχείο"
 
-#: app/assistant/routes.py:913
+#: app/assistant/routes.py:912
 msgid "Please choose a file."
 msgstr "Παρακαλώ επιλέξτε ένα αρχείο για μεταφόρτωση."
 
-#: app/assistant/routes.py:917 app/knowledge/routes.py:249
+#: app/assistant/routes.py:916
 msgid "Invalid filename."
 msgstr "Μη έγκυρο όνομα αρχείου."
 
-#: app/assistant/routes.py:972
+#: app/assistant/routes.py:971
 msgid "Document not found."
 msgstr "Το έγγραφο δεν βρέθηκε."
 
-#: app/assistant/routes.py:1017
+#: app/assistant/routes.py:1016
 msgid "Assistant is disabled."
 msgstr "Ο βοηθός είναι απενεργοποιημένος."
 
-#: app/assistant/routes.py:1032 app/collab/routes.py:342
-#: templates/collab/chat.html:682
+#: app/assistant/routes.py:1031 app/collab/routes.py:341
+#: templates/collab/chat.html:72
 msgid "Message cannot be empty."
 msgstr "Το μήνυμα δεν μπορεί να είναι κενό."
 
-#: app/assistant/routes.py:1058
+#: app/assistant/routes.py:1057
 msgid "OpenAI API key is not configured."
 msgstr "Το κλειδί API του OpenAI δεν έχει ρυθμιστεί."
 
-#: app/assistant/routes.py:1067 app/assistant/routes.py:1262
+#: app/assistant/routes.py:1066 app/assistant/routes.py:1261
 msgid "OpenWebUI base URL is not configured."
 msgstr "Η διεύθυνση URL του webhook δεν έχει ρυθμιστεί."
 
-#: app/assistant/routes.py:1076
+#: app/assistant/routes.py:1075
 msgid "Webhook URL is not configured."
 msgstr "Η διεύθυνση URL του webhook δεν έχει ρυθμιστεί."
 
-#: app/assistant/routes.py:1079
+#: app/assistant/routes.py:1078
 msgid "Unsupported assistant provider configured."
 msgstr "Έχει ρυθμιστεί μη υποστηριζόμενος πάροχος βοηθού."
 
-#: app/assistant/routes.py:1081
+#: app/assistant/routes.py:1080
 #, python-format
 msgid "Connection error: %(error)s"
 msgstr "Σφάλμα σύνδεσης: %(error)s"
 
-#: app/assistant/routes.py:1088
+#: app/assistant/routes.py:1087
 msgid "Assistant did not return a reply."
 msgstr "Ο βοηθός δεν επέστρεψε απάντηση."
 
+#: app/assistant/routes.py:1128
+#, python-format
+#msgid "OpenAI error: %(status)s %(body)s"
+#msgstr "OpenAI Σφάλμα: %(Κατάσταση)s %(body)s"
 
+#: app/assistant/routes.py:1235
+#, python-format
+#msgid "Remote tool execution failed: %(status)s %(body)s"
+#msgstr "Remote tool execution failed: %(Κατάσταση)s %(body)s"
 
-#: app/assistant/routes.py:1371
+#: app/assistant/routes.py:1278
+#, python-format
+#msgid "OpenWebUI error: %(status)s %(body)s"
+#msgstr "OpenWebUI Σφάλμα: %(Κατάσταση)s %(body)s"
+
+#: app/assistant/routes.py:1366
+#, python-format
+#msgid "Webhook error: %(status)s %(body)s"
+#msgstr "Webhook Σφάλμα: %(Κατάσταση)s %(body)s"
+
+#: app/assistant/routes.py:1370
 #, python-format
 msgid "Invalid webhook response: %(error)s"
 msgstr "Μη έγκυρη απόκριση webhook: %(error)s"
 
-#: app/assistant/routes.py:1375
+#: app/assistant/routes.py:1374
 msgid "Webhook response is missing a 'reply' field."
 msgstr "Η απόκριση του webhook δεν περιέχει το πεδίο «reply»."
 
-#: app/assistant/routes.py:1385
+#: app/assistant/routes.py:1384
 #, python-format
 msgid "Tool `%(tool)s` returned no rows."
 msgstr "Το εργαλείο `%(tool)s` δεν επέστρεψε γραμμές."
 
-#: app/assistant/routes.py:1395
+#: app/assistant/routes.py:1394
 #, fuzzy
 msgid "Untitled article"
 msgstr "Νέο άρθρο"
 
-#: app/assistant/routes.py:1437 app/assistant/routes.py:1443
+#: app/assistant/routes.py:1436 app/assistant/routes.py:1442
 #, python-format
 msgid ""
 "Results from `%(tool)s`:\n"
@@ -211,7 +234,7 @@ msgstr ""
 "Αποτελέσματα από το `%(tool)s`:\n"
 "%(rows)s"
 
-#: app/assistant/routes.py:1438
+#: app/assistant/routes.py:1437
 #, python-format
 msgid ""
 "Tool `%(tool)s` response:\n"
@@ -220,237 +243,241 @@ msgstr ""
 "Απόκριση εργαλείου `%(tool)s`:\n"
 "%(payload)s"
 
-#: app/assistant/routes.py:1441
+#: app/assistant/routes.py:1440
 #, python-format
 msgid "Tool `%(tool)s` returned no data."
 msgstr "Το εργαλείο `%(tool)s` δεν επέστρεψε δεδομένα."
 
-#: app/assistant/routes.py:1445
+#: app/assistant/routes.py:1444
 #, python-format
 msgid "Tool `%(tool)s` completed with no data."
 msgstr "Το εργαλείο `%(tool)s` ολοκληρώθηκε χωρίς δεδομένα."
 
-#: app/assistant/routes.py:1446
+#: app/assistant/routes.py:1445
 #, python-format
 msgid "Tool `%(tool)s` response: %(payload)s"
 msgstr "Απόκριση εργαλείου `%(tool)s`: %(payload)s"
 
+#: app/assistant/routes.py:1464
+#, python-format
+#msgid "MCP invocation failed (%(status)s): %(detail)s"
+#msgstr "MCP invocation failed (%(Κατάσταση)s): %(detail)s"
 
-#: app/assistant/routes.py:1470
+#: app/assistant/routes.py:1469
 #, fuzzy, python-format
 msgid "Invalid response from MCP server: %(error)s"
 msgstr "Μη έγκυρη απόκριση webhook: %(error)s"
 
-#: app/assistant/routes.py:2052
+#: app/assistant/routes.py:2051
 #, fuzzy
 msgid "retention already expired"
 msgstr "Έχουν λήξει"
 
-#: app/assistant/routes.py:2067
+#: app/assistant/routes.py:2066
 #, python-format
 msgid "retention due within %(days)s day(s)"
 msgstr "λήξη διακράτησης σε %(days)s ημέρες"
 
-#: app/assistant/routes.py:2070
+#: app/assistant/routes.py:2069
 #, python-format
 msgid "No storage media matched %(label)s."
 msgstr "Δεν βρέθηκαν μέσα αποθήκευσης που να ταιριάζουν με %(label)s."
 
-#: app/assistant/routes.py:2073
+#: app/assistant/routes.py:2072
 #, python-format
 msgid "Storage media with %(label)s: showing %(count)s item(s)."
 msgstr "Μέσα αποθήκευσης με %(label)s: εμφανίζονται %(count)s στοιχείο(α)."
 
-#: app/assistant/routes.py:2080
+#: app/assistant/routes.py:2079
 #, python-format
 msgid "%(days)s day(s) overdue"
 msgstr "%(days)s ημέρα/ες καθυστέρηση"
 
-#: app/assistant/routes.py:2082
+#: app/assistant/routes.py:2081
 #, python-format
 msgid "%(days)s day(s) remaining"
 msgstr "Απομένουν %(days)s ημέρα/ες"
 
-#: app/assistant/routes.py:2084
+#: app/assistant/routes.py:2083
 #, fuzzy, python-format
 msgid "ends %(date)s"
 msgstr "λήγει %(date)s"
 
-#: app/assistant/routes.py:2090
+#: app/assistant/routes.py:2089
 msgid "limited to first 25 media."
 msgstr "περιορισμένο στα πρώτα 25 μέσα."
 
-#: app/assistant/routes.py:2102
+#: app/assistant/routes.py:2101
 msgid "No storage media are currently marked as off-site."
 msgstr "Κανένα μέσο αποθήκευσης δεν έχει επισημανθεί ως εκτός εγκατάστασης."
 
-#: app/assistant/routes.py:2103
+#: app/assistant/routes.py:2102
 #, python-format
 msgid "Off-site storage media (%(count)s found):"
 msgstr "Μέσα αποθήκευσης εκτός εγκατάστασης (βρέθηκαν %(count)s):"
 
-#: app/assistant/routes.py:2114
+#: app/assistant/routes.py:2113
 msgid "No external disks have been registered yet."
 msgstr "Δεν έχουν ακόμη καταχωρηθεί εξωτερικοί δίσκοι."
 
-#: app/assistant/routes.py:2116
+#: app/assistant/routes.py:2115
 msgid "No tape cartridges have been registered yet."
 msgstr "Δεν έχουν ακόμη καταχωρηθεί κασέτες ταινίας."
 
-#: app/assistant/routes.py:2117
+#: app/assistant/routes.py:2116
 msgid "No storage media have been registered yet."
 msgstr "Δεν έχουν ακόμη καταχωρηθεί μέσα αποθήκευσης."
 
-#: app/assistant/routes.py:2134
+#: app/assistant/routes.py:2133
 #, fuzzy
 msgid "tape cartridges"
 msgstr "Σύνολο άρθρων"
 
-#: app/assistant/routes.py:2135
+#: app/assistant/routes.py:2134
 msgid "external disks"
 msgstr "εξωτερικοί δίσκοι"
 
-#: app/assistant/routes.py:2139
+#: app/assistant/routes.py:2138
 #, python-format
 msgid "Storage media summary (filtered by %(type)s):"
 msgstr "Σύνοψη μέσων αποθήκευσης (φιλτραρισμένα κατά %(type)s):"
 
-#: app/assistant/routes.py:2141
+#: app/assistant/routes.py:2140
 msgid "Storage media summary:"
 msgstr "Σύνοψη μέσων αποθήκευσης:"
 
-#: app/assistant/routes.py:2142
+#: app/assistant/routes.py:2141
 #, fuzzy, python-format
 msgid "Total media: %(count)s"
 msgstr "Σύνολο Αιτημάτων"
 
-#: app/assistant/routes.py:2144
+#: app/assistant/routes.py:2143
 #, python-format
 msgid "- %(label)s: %(count)s"
 msgstr "- %(label)s: %(count)s"
 
-#: app/assistant/routes.py:2147
+#: app/assistant/routes.py:2146
 #, python-format
 msgid "- Location %(loc)s: %(count)s"
 msgstr "- Τοποθεσία %(loc)s: %(count)s"
 
-#: app/assistant/routes.py:2148
+#: app/assistant/routes.py:2147
 #, python-format
 msgid "Retention overdue: %(count)s"
 msgstr "Εκτός περιόδου διακράτησης: %(count)s"
 
-#: app/assistant/routes.py:2149
+#: app/assistant/routes.py:2148
 #, python-format
 msgid "Retention due within 7 days: %(count)s"
 msgstr "Λήξη διακράτησης εντός 7 ημερών: %(count)s"
 
-#: app/assistant/routes.py:2922 app/assistant/routes.py:2947
+#: app/assistant/routes.py:2921 app/assistant/routes.py:2946
 msgid "Unspecified vendor"
 msgstr "Μη καθορισμένος προμηθευτής"
 
-#: app/assistant/routes.py:2923 app/assistant/routes.py:2948
+#: app/assistant/routes.py:2922 app/assistant/routes.py:2947
 msgid "Unspecified currency"
 msgstr "Μη καθορισμένο νόμισμα"
 
-#: app/assistant/routes.py:2938 app/assistant/routes.py:2963
+#: app/assistant/routes.py:2937 app/assistant/routes.py:2962
 #, fuzzy
 msgid "Overall contract value"
 msgstr "Κόστος σύμβασης"
 
-#: app/assistant/routes.py:2967
+#: app/assistant/routes.py:2966
 msgid "Total contract value by vendor and currency"
 msgstr "Συνολική αξία σύμβασης ανά προμηθευτή και νόμισμα"
 
-#: app/assistant/routes.py:2969
+#: app/assistant/routes.py:2968
 msgid "Total contract value breakdown by vendor and currency"
 msgstr "Ανάλυση συνολικής αξίας σύμβασης ανά προμηθευτή και νόμισμα"
 
-#: app/auth/routes.py:29
+#: app/auth/routes.py:41
 #, fuzzy
 msgid "Incorrect credentials."
 msgstr "Ξεχάσατε τον κωδικό;"
 
-#: app/auth/routes.py:31
+#: app/auth/routes.py:43
 #, fuzzy
 msgid "Account is disabled."
 msgstr "Ο βοηθός είναι απενεργοποιημένος."
 
-#: app/auth/routes.py:36
+#: app/auth/routes.py:48
 #, python-format
 msgid "Welcome, %(username)s!"
 msgstr "Καλώς ήρθατε, %(username)s!"
 
-#: app/auth/routes.py:48
+#: app/auth/routes.py:60
 msgid "You have been logged out."
 msgstr "Αποσυνδεθήκατε."
 
-#: app/auth/routes.py:59 app/auth/routes.py:150
+#: app/auth/routes.py:71 app/auth/routes.py:162
 #, fuzzy
 msgid "Password reset is disabled."
 msgstr "Ο βοηθός είναι απενεργοποιημένος."
 
-#: app/auth/routes.py:75
+#: app/auth/routes.py:87
 msgid "Please provide an email address."
 msgstr "Παρακαλώ δώστε μια διεύθυνση email."
 
-#: app/auth/routes.py:95
+#: app/auth/routes.py:107
 #, fuzzy
 msgid "Registration is currently disabled."
 msgstr ""
 "Η αυτόματη εγγραφή είναι απενεργοποιημένη. Επικοινωνήστε με τον "
 "διαχειριστή."
 
-#: app/auth/routes.py:106
+#: app/auth/routes.py:118
 msgid "Username must be at least 3 characters long."
 msgstr "Το όνομα χρήστη πρέπει να έχει τουλάχιστον 3 χαρακτήρες."
 
-#: app/auth/routes.py:108
+#: app/auth/routes.py:120
 msgid "Email is required."
 msgstr "Το email είναι υποχρεωτικό."
 
-#: app/auth/routes.py:110
+#: app/auth/routes.py:122
 msgid "Username is already taken."
 msgstr "Το όνομα χρήστη χρησιμοποιείται ήδη."
 
-#: app/auth/routes.py:112
+#: app/auth/routes.py:124
 msgid "An account with that email already exists."
 msgstr "Υπάρχει ήδη λογαριασμός με αυτό το email."
 
-#: app/auth/routes.py:117 app/auth/routes.py:165 templates/users/list.html:490
+#: app/auth/routes.py:129 app/auth/routes.py:177 templates/users/list.html:490
 #: templates/users/list.html:526
 msgid "Passwords do not match."
 msgstr "Οι κωδικοί δεν ταιριάζουν."
 
-#: app/auth/routes.py:137
+#: app/auth/routes.py:149
 #, fuzzy
 msgid "Account created successfully. You can now sign in."
 msgstr "Το άρθρο δημιουργήθηκε με επιτυχία."
 
-#: app/auth/routes.py:169
+#: app/auth/routes.py:181
 msgid "Your password has been updated. Please sign in."
 msgstr "Ο κωδικός σας ενημερώθηκε. Παρακαλώ συνδεθείτε."
 
-#: app/auth/routes.py:194
+#: app/auth/routes.py:206 app/task_scheduler/routes.py:347
 #, fuzzy
 msgid "Username is required."
 msgstr "Το email είναι υποχρεωτικό."
 
-#: app/auth/routes.py:196
+#: app/auth/routes.py:208
 #, fuzzy
 msgid "Password is required."
 msgstr "Απαιτείται barcode."
 
-#: app/auth/routes.py:217
+#: app/auth/routes.py:229
 #, fuzzy
 msgid "Administrator account created successfully."
 msgstr "Το άρθρο δημιουργήθηκε με επιτυχία."
 
-#: app/auth/routes.py:253
+#: app/auth/routes.py:265
 #, fuzzy
 msgid "Helpdesk Pro password reset"
 msgstr "Helpdesk Pro"
 
-#: app/auth/routes.py:255
+#: app/auth/routes.py:267
 #, python-format
 msgid ""
 "Hello %(username)s,\n"
@@ -572,7 +599,8 @@ msgstr "Περιβάλλον"
 msgid "Current location"
 msgstr "Τοποθεσία"
 
-#: app/backup/routes.py:203 templates/backup/monitor.html:175 templates/backup/monitor.html:445
+#: app/backup/routes.py:203 templates/backup/job_detail.html:176
+#: templates/backup/monitor.html:175 templates/backup/monitor.html:445
 #: templates/backup/tape_detail.html:75 templates/backup/tape_detail.html:195
 #: templates/contracts/contract_list.html:136
 #: templates/contracts/contract_list.html:254
@@ -585,6 +613,10 @@ msgstr "Τοποθεσία"
 #: templates/inventory/software_list.html:457
 #: templates/manage/api_keys.html:147
 #: templates/manage/assistant_settings.html:78
+#: templates/task_scheduler/detail.html:270
+#: templates/task_scheduler/detail.html:333
+#: templates/task_scheduler/list.html:136
+#: templates/task_scheduler/list.html:209
 #: templates/tickets/_view_content.html:221 templates/tickets/edit.html:24
 #: templates/tickets/list.html:201
 msgid "Status"
@@ -675,6 +707,7 @@ msgstr "Τελευταίος έλεγχος απογραφής"
 #: templates/contracts/contract_list.html:110
 #: templates/contracts/contract_list.html:167
 #: templates/inventory/software_list.html:205
+#: templates/task_scheduler/detail.html:287
 msgid "Expired"
 msgstr "Ληγμένο"
 
@@ -732,116 +765,121 @@ msgstr "Διαγράφηκε το μέσο αποθήκευσης «%(barcode)s�
 msgid "Failed to delete storage medium: %(error)s"
 msgstr "Αποτυχία επεξεργασίας γραμματοκιβωτίου: %(error)s"
 
-#: app/collab/routes.py:57 templates/collab/chat.html:335
-#: templates/collab/chat.html:839
+#: app/collab/routes.py:56 templates/collab/chat.html:78
+#: templates/collab/chat.html:162
 msgid "General Chat"
 msgstr "Γενική συνομιλία"
 
-#: app/collab/routes.py:86
+#: app/collab/routes.py:85
 msgid "Direct Chat"
 msgstr "Άμεση συνομιλία"
 
-#: app/collab/routes.py:210
+#: app/collab/routes.py:209
 msgid "Invalid user."
 msgstr "Μη έγκυρος χρήστης."
 
-#: app/collab/routes.py:214 app/collab/routes.py:428
+#: app/collab/routes.py:213 app/collab/routes.py:427
 msgid "User not found."
 msgstr "Ο χρήστης δεν βρέθηκε."
 
-#: app/collab/routes.py:277 templates/contracts/contract_list.html:173
+#: app/collab/routes.py:276 templates/contracts/contract_list.html:173
 #: templates/inventory/hardware_list.html:225
 #: templates/inventory/software_list.html:211
 #: templates/knowledge/detail.html:125
 msgid "Unknown"
 msgstr "Άγνωστο"
 
-#: app/collab/routes.py:291 app/collab/routes.py:328 app/collab/routes.py:384
+#: app/collab/routes.py:290 app/collab/routes.py:327 app/collab/routes.py:383
 msgid "You are not part of this conversation."
 msgstr "Δεν συμμετέχετε σε αυτή τη συζήτηση."
 
-#: app/collab/routes.py:394
+#: app/collab/routes.py:393
 msgid "You are not authorized to do this."
 msgstr "Δεν έχετε δικαίωμα για αυτή την ενέργεια."
 
-#: app/collab/routes.py:398
+#: app/collab/routes.py:397
 msgid "Only the general chat can be purged."
 msgstr "Μόνο η γενική συνομιλία μπορεί να καθαριστεί."
 
-#: app/collab/routes.py:425
+#: app/collab/routes.py:424
 msgid "Cannot favorite yourself."
 msgstr "Δεν μπορείτε να προσθέσετε τον εαυτό σας στα αγαπημένα."
 
-#: app/collab/routes.py:463
+#: app/collab/routes.py:462
 msgid "You do not have access to this file."
 msgstr "Δεν έχετε πρόσβαση σε αυτό το αρχείο."
 
-#: app/collab/routes.py:472 app/collab/routes.py:483
+#: app/collab/routes.py:471 app/collab/routes.py:482
 msgid "You cannot delete this conversation."
 msgstr "Δεν μπορείτε να διαγράψετε αυτή τη συζήτηση."
 
-#: app/knowledge/routes.py:138
+#: app/knowledge/routes.py:139
 msgid "You do not have access to this article."
 msgstr "Δεν έχετε πρόσβαση σε αυτό το άρθρο."
 
-#: app/knowledge/routes.py:151
+#: app/knowledge/routes.py:152
 msgid "You do not have permission to create articles."
 msgstr "Δεν έχετε δικαίωμα να δημιουργήσετε άρθρα."
 
-#: app/knowledge/routes.py:163 app/knowledge/routes.py:203
+#: app/knowledge/routes.py:164 app/knowledge/routes.py:204
 msgid "Title and content are required."
 msgstr "Ο τίτλος και το περιεχόμενο είναι υποχρεωτικά."
 
-#: app/knowledge/routes.py:180
+#: app/knowledge/routes.py:181
 #, fuzzy
 msgid "Article created successfully."
 msgstr "Το άρθρο δημιουργήθηκε με επιτυχία."
 
-#: app/knowledge/routes.py:190
+#: app/knowledge/routes.py:191
 msgid "You do not have permission to edit articles."
 msgstr "Δεν έχετε δικαίωμα να επεξεργαστείτε άρθρα."
 
-#: app/knowledge/routes.py:215
+#: app/knowledge/routes.py:216
 #, fuzzy
 msgid "Article updated successfully."
 msgstr "Το άρθρο ενημερώθηκε με επιτυχία."
 
-#: app/knowledge/routes.py:225
+#: app/knowledge/routes.py:226
 msgid "You do not have permission to delete articles."
 msgstr "Δεν έχετε δικαίωμα να διαγράψετε άρθρα."
 
-#: app/knowledge/routes.py:230
+#: app/knowledge/routes.py:244
 #, fuzzy
 msgid "Article deleted."
 msgstr "Το άρθρο διαγράφηκε."
 
-#: app/knowledge/routes.py:238
+#: app/knowledge/routes.py:252
 msgid "You do not have permission to upload attachments."
 msgstr "Δεν έχετε δικαίωμα να ανεβάσετε συνημμένα."
 
-#: app/knowledge/routes.py:244
+#: app/knowledge/routes.py:258
 msgid "Please select a file to upload."
 msgstr "Παρακαλώ επιλέξτε ένα αρχείο για μεταφόρτωση."
 
-#: app/knowledge/routes.py:275
+#: app/knowledge/routes.py:263 app/knowledge/routes.py:275
+#, fuzzy
+msgid "Attachment"
+msgstr "Συνημμένα"
+
+#: app/knowledge/routes.py:310
 #, fuzzy
 msgid "Attachment uploaded."
 msgstr "Το συνημμένο ανέβηκε."
 
-#: app/knowledge/routes.py:283
+#: app/knowledge/routes.py:318
 msgid "You do not have permission to delete attachments."
 msgstr "Δεν έχετε δικαίωμα να διαγράψετε συνημμένα."
 
-#: app/knowledge/routes.py:293
+#: app/knowledge/routes.py:328
 #, fuzzy
 msgid "Attachment removed."
 msgstr "Το συνημμένο αφαιρέθηκε."
 
-#: app/knowledge/routes.py:303
+#: app/knowledge/routes.py:338
 msgid "You do not have access to this attachment."
 msgstr "Δεν έχετε πρόσβαση σε αυτό το συνημμένο."
 
-#: app/knowledge/routes.py:313
+#: app/knowledge/routes.py:362
 msgid "You do not have permission to view historical versions."
 msgstr "Δεν έχετε δικαίωμα να δείτε παλαιότερες εκδόσεις."
 
@@ -1267,6 +1305,166 @@ msgstr "Επιλέξτε λογαριασμό χρήστη για τη δημι�
 msgid "Email ingestion settings saved."
 msgstr "Οι ρυθμίσεις ανάκτησης email αποθηκεύτηκαν."
 
+#: app/task_scheduler/routes.py:280
+#, fuzzy
+msgid "Title is required."
+msgstr "Το email είναι υποχρεωτικό."
+
+#: app/task_scheduler/routes.py:335
+msgid "Title must be %(limit)s characters or fewer."
+msgstr "Ο τίτλος πρέπει να έχει έως %(limit)s χαρακτήρες."
+
+#: app/task_scheduler/routes.py:297
+#, fuzzy
+msgid "Task updated successfully."
+msgstr "ενημερώθηκε επιτυχώς"
+
+#: app/task_scheduler/routes.py:311
+#, fuzzy
+msgid "Task created successfully."
+msgstr "Ο χρήστης προστέθηκε επιτυχώς"
+
+#: app/task_scheduler/routes.py:341 templates/task_scheduler/detail.html:570
+#: templates/task_scheduler/list.html:615
+#, fuzzy
+msgid "Task deleted."
+msgstr "Το άρθρο διαγράφηκε."
+
+#: app/task_scheduler/routes.py:350
+msgid "Invalid date/time. Use dd/MM/yyyy HH:mm."
+msgstr "Μη έγκυρο Ημερομηνία/Ώρα. Use dd/MM/yyyy HH:mm."
+
+#: app/task_scheduler/routes.py:352
+msgid "This task is closed and no longer accepts bookings."
+msgstr "This Εργασία is Κλειστό and Όχι longer accepts bookings."
+
+#: app/task_scheduler/routes.py:358
+msgid "Selected slot overlaps with an existing booking."
+msgstr "Selected slot overlaps with an existing booking."
+
+#: app/task_scheduler/routes.py:385
+#, fuzzy
+msgid "Unable to schedule slot."
+msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
+
+#: app/task_scheduler/routes.py:410
+#, fuzzy
+msgid "Slot added successfully."
+msgstr "ενημερώθηκε επιτυχώς"
+
+#: app/task_scheduler/routes.py:427 templates/task_scheduler/detail.html:483
+#: templates/task_scheduler/list.html:556
+#, fuzzy
+msgid "Slot removed."
+msgstr "Προεπισκόπηση"
+
+#: app/task_scheduler/routes.py:436
+#, fuzzy
+msgid "Unnamed user"
+msgstr "Νέος Χρήστης"
+
+#: app/task_scheduler/routes.py:443
+#, python-format
+#msgid "Requested slot by %(name)s on %(start)s (duration %(duration)s)."
+#msgstr "Requested slot by %(Όνομα)s on %(start)s (Διάρκεια %(Διάρκεια)s)."
+
+#: app/task_scheduler/routes.py:443 templates/knowledge/detail.html:48
+#: templates/knowledge/list.html:250 templates/knowledge/version.html:22
+msgid "n/a"
+msgstr "—"
+
+#: app/task_scheduler/routes.py:446
+#, python-format
+msgid "User comment: %(comment)s"
+msgstr "Χρήστης comment: %(comment)s"
+
+#: app/task_scheduler/routes.py:469 templates/task_scheduler/detail.html:513
+#, fuzzy
+msgid "Unable to create ticket."
+msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
+
+#: app/task_scheduler/routes.py:471 templates/task_scheduler/detail.html:506
+#, fuzzy
+msgid "Ticket created successfully."
+msgstr "Το άρθρο δημιουργήθηκε με επιτυχία."
+
+#: app/task_scheduler/routes.py:493 app/task_scheduler/routes.py:641
+#, fuzzy
+msgid "Invalid date/time."
+msgstr "Μη έγκυρο όνομα αρχείου."
+
+#: app/task_scheduler/routes.py:499 app/task_scheduler/routes.py:647
+#, fuzzy
+msgid "Slot is already taken."
+msgstr "Το όνομα χρήστη χρησιμοποιείται ήδη."
+
+#: app/task_scheduler/routes.py:503 app/task_scheduler/routes.py:655
+#, fuzzy
+msgid "Slot is available."
+msgstr "Διαθέσιμη"
+
+#: app/task_scheduler/routes.py:539 templates/task_scheduler/detail.html:535
+#: templates/task_scheduler/list.html:584
+msgid "Share link created."
+msgstr "Κοινοποίηση Σύνδεσμος Δημιουργήθηκε."
+
+#: app/task_scheduler/routes.py:569
+msgid "Generate a share link before emailing this task."
+msgstr "Δημιουργήστε σύνδεσμο κοινοποίησης πριν στείλετε email για αυτή την εργασία."
+
+#: app/task_scheduler/routes.py:582
+msgid "Select at least one recipient."
+msgstr "Επιλέξτε τουλάχιστον έναν παραλήπτη."
+
+#: app/task_scheduler/routes.py:584
+msgid "No recipients available for this task."
+msgstr "Δεν υπάρχουν διαθέσιμοι παραλήπτες για αυτή την εργασία."
+
+#: app/task_scheduler/routes.py:592
+msgid "Task update: %(title)s"
+msgstr "Ενημέρωση εργασίας: %(title)s"
+
+#: app/task_scheduler/routes.py:594
+msgid "You are invited to review the task \"%(title)s\"."
+msgstr "Προσκαλείστε να δείτε την εργασία «%(title)s»."
+
+#: app/task_scheduler/routes.py:601
+msgid "Open task link: %(link)s"
+msgstr "Άνοιγμα συνδέσμου εργασίας: %(link)s"
+
+#: app/task_scheduler/routes.py:604
+msgid "Email sending is not configured."
+msgstr "Η αποστολή email δεν έχει ρυθμιστεί."
+
+#: app/task_scheduler/routes.py:555 templates/task_scheduler/detail.html:558
+#, fuzzy
+msgid "Share link revoked."
+msgstr "Το κλειδί API ανακλήθηκε."
+
+#: app/task_scheduler/routes.py:571
+msgid "This link is no longer available."
+msgstr "Ο σύνδεσμος δεν είναι διαθέσιμος."
+
+#: app/task_scheduler/routes.py:622 app/task_scheduler/routes.py:654
+msgid "Link is no longer active."
+msgstr "Ο σύνδεσμος δεν είναι ενεργός."
+
+#: app/task_scheduler/routes.py:624
+msgid "You must sign in to use this link."
+msgstr "Πρέπει να συνδεθείτε για να δείτε τον σύνδεσμο."
+
+#: app/task_scheduler/routes.py:627
+msgid "Could not schedule slot."
+msgstr "Δεν μπόρεσα να Χρονοπρόγραμματισω το slot."
+
+#: app/task_scheduler/routes.py:628
+msgid "Your time slot is confirmed."
+msgstr "Η ώρα που επιλέξατε επιβεβαιώθηκε."
+
+#: app/task_scheduler/routes.py:652
+msgid "This task is closed."
+msgstr "This Εργασία είναι Κλειστή."
+
 #: templates/base.html:11
 msgid "Helpdesk Pro"
 msgstr "Helpdesk Pro"
@@ -1323,7 +1521,10 @@ msgstr "Κόστος σύμβασης"
 
 #: templates/auth/login.html:117 templates/auth/register.html:18
 #: templates/auth/setup_admin.html:49 templates/base.html:622
-#: templates/manage/email_ingest.html:151 templates/users/list.html:113
+#: templates/manage/email_ingest.html:151
+#: templates/task_scheduler/detail.html:153
+#: templates/task_scheduler/detail.html:229
+#: templates/task_scheduler/list.html:249 templates/users/list.html:113
 #: templates/users/list.html:176 templates/users/list.html:253
 msgid "Username"
 msgstr "Όνομα Χρήστη"
@@ -1418,8 +1619,8 @@ msgstr "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χ
 #: templates/backup/job_detail.html:254 templates/backup/monitor.html:361
 #: templates/backup/monitor.html:478 templates/backup/tape_detail.html:414
 #: templates/backup/tape_detail.html:487 templates/backup/tape_detail.html:538
-#: templates/base.html:693 templates/collab/chat.html:903
-#: templates/collab/chat.html:922 templates/contracts/contract_list.html:336
+#: templates/base.html:693 templates/collab/chat.html:622
+#: templates/collab/chat.html:641 templates/contracts/contract_list.html:336
 #: templates/contracts/contract_list.html:458
 #: templates/contracts/contract_list.html:483
 #: templates/inventory/hardware_list.html:436
@@ -1428,13 +1629,67 @@ msgstr "Ο κωδικός πρέπει να έχει τουλάχιστον 8 χ
 #: templates/inventory/software_list.html:399
 #: templates/inventory/software_list.html:555
 #: templates/inventory/software_list.html:580
-#: templates/knowledge/detail.html:33 templates/knowledge/edit.html:42
-#: templates/manage/api_keys.html:271 templates/networks/hosts.html:231
-#: templates/networks/hosts.html:255 templates/networks/maps.html:218
-#: templates/networks/maps.html:272 templates/networks/maps.html:296
-#: templates/tickets/list.html:334 templates/users/list.html:323
+#: templates/knowledge/detail.html:33 templates/knowledge/detail.html:202
+#: templates/knowledge/edit.html:42 templates/manage/api_keys.html:271
+#: templates/networks/hosts.html:231 templates/networks/hosts.html:255
+#: templates/networks/maps.html:218 templates/networks/maps.html:272
+#: templates/networks/maps.html:296 templates/task_scheduler/detail.html:351
+#: templates/task_scheduler/detail.html:414
+#: templates/task_scheduler/list.html:227
+#: templates/task_scheduler/list.html:264
+#: templates/task_scheduler/list.html:289
+#: templates/task_scheduler/list.html:355 templates/tickets/list.html:334
+#: templates/users/list.html:323
 msgid "Cancel"
 msgstr "Ακύρωση"
+
+#: templates/task_scheduler/list.html:142
+msgid "Email Task"
+msgstr "Αποστολή εργασίας"
+
+#: templates/task_scheduler/list.html:146
+msgid "Audience"
+msgstr "Κοινό"
+
+#: templates/task_scheduler/list.html:149
+msgid "Choose recipients"
+msgstr "Επιλογή παραληπτών"
+
+#: templates/task_scheduler/list.html:152
+msgid "All active users"
+msgstr "Όλοι οι ενεργοί χρήστες"
+
+#: templates/task_scheduler/list.html:156
+msgid "Recipients"
+msgstr "Παραλήπτες"
+
+#: templates/task_scheduler/list.html:158
+msgid "Hold Ctrl/Cmd to select multiple recipients."
+msgstr "Κρατήστε Ctrl/Cmd για να επιλέξετε πολλούς παραλήπτες."
+
+#: templates/task_scheduler/list.html:161
+msgid "Optional message"
+msgstr "Προαιρετικό μήνυμα"
+
+#: templates/task_scheduler/list.html:162
+msgid "Add a short note (optional)"
+msgstr "Προσθέστε μια σύντομη σημείωση (προαιρετικά)"
+
+#: templates/task_scheduler/list.html:167
+msgid "Send Email"
+msgstr "Αποστολή Email"
+
+#: templates/task_scheduler/list.html:510
+msgid "Unable to load recipients."
+msgstr "Αδυναμία φόρτωσης παραληπτών."
+
+#: templates/task_scheduler/list.html:534
+msgid "Task link emailed successfully."
+msgstr "Ο σύνδεσμος της εργασίας εστάλη με email."
+
+#: templates/task_scheduler/list.html:538
+msgid "Unable to send email."
+msgstr "Αδυναμία αποστολής email."
 
 #: templates/base.html:695 templates/base.html:919
 #, fuzzy
@@ -1447,7 +1702,10 @@ msgid "About Helpdesk Pro"
 msgstr "Σχετικά με το Helpdesk Pro"
 
 #: templates/base.html:709 templates/base.html:719
-#: templates/knowledge/detail.html:25 templates/tickets/_view_content.html:21
+#: templates/knowledge/detail.html:25 templates/knowledge/detail.html:195
+#: templates/task_scheduler/detail.html:393
+#: templates/task_scheduler/list.html:333
+#: templates/tickets/_view_content.html:21
 #, fuzzy
 msgid "Close"
 msgstr "Κλείσιμο"
@@ -1455,11 +1713,11 @@ msgstr "Κλείσιμο"
 #: templates/base.html:712 templates/inventory/software_list.html:160
 #: templates/inventory/software_list.html:279
 #: templates/inventory/software_list.html:431
-#: templates/knowledge/detail.html:195 templates/knowledge/version.html:18
+#: templates/knowledge/detail.html:221 templates/knowledge/version.html:18
 msgid "Version"
 msgstr "Έκδοση"
 
-#: templates/base.html:714 templates/knowledge/detail.html:197
+#: templates/base.html:714 templates/knowledge/detail.html:223
 msgid "Author"
 msgstr "Συντάκτης"
 
@@ -1623,7 +1881,9 @@ msgstr "Ετικέτες"
 #: templates/inventory/hardware_list.html:195
 #: templates/inventory/software_list.html:181
 #: templates/manage/api_keys.html:148 templates/networks/hosts.html:132
-#: templates/networks/maps.html:129 templates/tickets/list.html:206
+#: templates/networks/maps.html:129 templates/task_scheduler/detail.html:160
+#: templates/task_scheduler/detail.html:271
+#: templates/task_scheduler/list.html:139 templates/tickets/list.html:206
 #: templates/users/list.html:119
 msgid "Actions"
 msgstr "Ενέργειες"
@@ -1631,6 +1891,7 @@ msgstr "Ενέργειες"
 #: templates/address_book/address_book.html:135
 #: templates/address_book/address_book.html:426
 #: templates/contracts/contract_list.html:198
+#: templates/task_scheduler/detail.html:385
 msgid "Link"
 msgstr "Σύνδεσμος"
 
@@ -1683,7 +1944,8 @@ msgstr "Ετικέτες (χωρισμένες με κόμμα)"
 #: templates/contracts/contract_list.html:338
 #: templates/inventory/hardware_list.html:438
 #: templates/inventory/software_list.html:401 templates/knowledge/edit.html:45
-#: templates/networks/maps.html:220 templates/tickets/edit.html:49
+#: templates/networks/maps.html:220 templates/task_scheduler/list.html:229
+#: templates/task_scheduler/list.html:420 templates/tickets/edit.html:49
 #: templates/users/list.html:227
 msgid "Save"
 msgstr "Αποθήκευση"
@@ -1696,7 +1958,7 @@ msgstr "Επεξεργασία Αιτήματος"
 #: templates/address_book/address_book.html:360
 #: templates/address_book/address_book.html:390
 #: templates/backup/job_detail.html:255 templates/backup/monitor.html:362
-#: templates/backup/tape_detail.html:415 templates/collab/chat.html:923
+#: templates/backup/tape_detail.html:415 templates/collab/chat.html:642
 #: templates/contracts/contract_list.html:455
 #: templates/contracts/contract_list.html:485
 #: templates/inventory/hardware_list.html:606
@@ -1705,9 +1967,11 @@ msgstr "Επεξεργασία Αιτήματος"
 #: templates/inventory/software_list.html:582
 #: templates/knowledge/detail.html:60 templates/manage/api_keys.html:233
 #: templates/networks/hosts.html:257 templates/networks/maps.html:298
-#: templates/tickets/_row.html:53 templates/tickets/list.html:269
-#: templates/tickets/list.html:335 templates/tickets/list.html:433
-#: templates/users/list.html:324
+#: templates/task_scheduler/detail.html:88
+#: templates/task_scheduler/detail.html:415
+#: templates/task_scheduler/list.html:356 templates/tickets/_row.html:53
+#: templates/tickets/list.html:269 templates/tickets/list.html:335
+#: templates/tickets/list.html:433 templates/users/list.html:324
 msgid "Delete"
 msgstr "Διαγραφή"
 
@@ -1715,6 +1979,7 @@ msgstr "Διαγραφή"
 #: templates/backup/job_detail.html:155 templates/backup/tape_detail.html:231
 #: templates/contracts/contract_list.html:460 templates/manage/access.html:149
 #: templates/manage/access.html:211 templates/manage/api_keys.html:274
+#: templates/task_scheduler/detail.html:352
 msgid "Save Changes"
 msgstr "Αποθήκευση αλλαγών"
 
@@ -1727,6 +1992,7 @@ msgstr "Διαγραφή συζήτησης"
 #: templates/contracts/contract_list.html:480
 #: templates/inventory/hardware_list.html:632
 #: templates/inventory/software_list.html:577 templates/networks/maps.html:293
+#: templates/task_scheduler/list.html:352
 #, fuzzy
 msgid "Are you sure you want to delete"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε"
@@ -1735,8 +2001,8 @@ msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετ�
 #: templates/contracts/contract_list.html:513
 #: templates/inventory/hardware_list.html:669
 #: templates/inventory/software_list.html:609 templates/networks/hosts.html:285
-#: templates/networks/maps.html:345 templates/tickets/list.html:365
-#: templates/users/list.html:356
+#: templates/networks/maps.html:345 templates/task_scheduler/list.html:391
+#: templates/tickets/list.html:365 templates/users/list.html:356
 msgid "Excel"
 msgstr "Excel"
 
@@ -1744,8 +2010,8 @@ msgstr "Excel"
 #: templates/contracts/contract_list.html:514
 #: templates/inventory/hardware_list.html:670
 #: templates/inventory/software_list.html:610 templates/networks/hosts.html:286
-#: templates/networks/maps.html:346 templates/tickets/list.html:366
-#: templates/users/list.html:365
+#: templates/networks/maps.html:346 templates/task_scheduler/list.html:392
+#: templates/tickets/list.html:366 templates/users/list.html:365
 msgid "Print"
 msgstr "Εκτύπωση"
 
@@ -2216,7 +2482,7 @@ msgstr "Δημιουργία hosts"
 msgid "Download PDF"
 msgstr "Λήψη"
 
-#: templates/backup/lto_barcode.html:85 templates/collab/chat.html:878
+#: templates/backup/lto_barcode.html:85 templates/collab/chat.html:597
 #, fuzzy
 msgid "Preview"
 msgstr "Προεπισκόπηση"
@@ -2226,8 +2492,8 @@ msgid ""
 "Click a label to toggle selection before exporting. Selected labels only "
 "will be included in the PDF."
 msgstr ""
-"Κάντε κλικ σε μία ετικέτα για εναλλαγή επιλογής πριν την εξαγωγή. Μόνο οι "
-"επιλεγμένες ετικέτες θα συμπεριληφθούν στο PDF."
+"Κάντε κλικ σε μία ετικέτα για εναλλαγή επιλογής πριν την εξαγωγή. Μόνο οι"
+" επιλεγμένες ετικέτες θα συμπεριληφθούν στο PDF."
 
 #: templates/backup/lto_barcode.html:103
 msgid "Wi-Fi Access Point QR Generator"
@@ -2277,8 +2543,8 @@ msgid ""
 "Leave empty for open networks. Generated passwords are 16 characters with"
 " mixed complexity."
 msgstr ""
-"Αφήστε κενό για ανοικτά δίκτυα. Οι παραγόμενοι κωδικοί έχουν 16 χαρακτήρες "
-"με μικτή πολυπλοκότητα."
+"Αφήστε κενό για ανοικτά δίκτυα. Οι παραγόμενοι κωδικοί έχουν 16 "
+"χαρακτήρες με μικτή πολυπλοκότητα."
 
 #: templates/backup/lto_barcode.html:142
 msgid "Reset form"
@@ -2370,7 +2636,7 @@ msgstr "Κωδικός"
 msgid "This network has no password."
 msgstr "Επιλέξτε νέο κωδικό"
 
-#: templates/backup/lto_barcode.html:525
+#: templates/backup/lto_barcode.html:525 templates/task_scheduler/list.html:290
 #, fuzzy
 msgid "Remove"
 msgstr "Προεπισκόπηση"
@@ -2444,14 +2710,14 @@ msgstr "Δεν έχει οριστεί διακράτηση"
 
 #: templates/backup/monitor.html:157
 msgid "Tip"
-msgstr ""
+msgstr "Tip"
 
 #: templates/backup/monitor.html:158
 msgid ""
 "Use the “Register Storage Medium” button to add new tapes or disks. "
 "Lifecycle policies help you group media by backup frequency across the "
 "inventory."
-msgstr ""
+msgstr "Use the “Register Storage Μεσαία” button to Προσθήκη Νέο tapes or disks. Lifecycle policies Βοήθεια you group media by backup frequency across the inventory."
 
 #: templates/backup/monitor.html:165
 #, fuzzy
@@ -2566,7 +2832,7 @@ msgstr "Μεσαία"
 
 #: templates/backup/monitor.html:412 templates/backup/tape_detail.html:170
 msgid "Lifecycle Policy"
-msgstr ""
+msgstr "Lifecycle Policy"
 
 #: templates/backup/monitor.html:425 templates/backup/tape_detail.html:164
 #: templates/inventory/hardware_list.html:167
@@ -2799,106 +3065,101 @@ msgstr "Υπογραφή / Ταυτ."
 msgid "Add Custody Entry"
 msgstr "Προσθήκη Σχολίου"
 
-#: templates/collab/chat.html:263
-msgid "Total Conversations"
-msgstr "Συνολικές συνομιλίες"
-
-#: templates/collab/chat.html:270
-msgid "Direct Messages"
-msgstr "Άμεσα μηνύματα"
-
-#: templates/collab/chat.html:276
-msgid "Team Channels"
-msgstr "Κανάλια ομάδας"
-
-#: templates/collab/chat.html:282
-#, fuzzy
-msgid "Unread"
-msgstr "Μη αναγνωσμένα"
-
-#: templates/collab/chat.html:288
-msgid "Messages Today"
-msgstr "Μηνύματα σήμερα"
-
-#: templates/collab/chat.html:294
-msgid "Favorites"
-msgstr "Αγαπημένα"
-
-#: templates/collab/chat.html:305
-#, fuzzy
-msgid "Conversations"
-msgstr "Συζητήσεις"
-
-#: templates/collab/chat.html:336 templates/collab/chat.html:658
-msgid "Everyone in the organization"
-msgstr "Όλοι στον οργανισμό"
-
-#: templates/collab/chat.html:340 templates/collab/chat.html:896
-msgid "Purge General Chat"
-msgstr "Καθαρισμός γενικής συνομιλίας"
-
-#: templates/collab/chat.html:350
-msgid "Select or start a conversation to view messages."
-msgstr "Επιλέξτε ή ξεκινήστε μια συζήτηση για να δείτε μηνύματα."
-
-#: templates/collab/chat.html:365 templates/partials/assistant_widget.html:376
-#: templates/partials/assistant_widget.html:954
-#: templates/partials/assistant_widget.html:961
-msgid "Type your message..."
-msgstr "Πληκτρολογήστε το μήνυμά σας..."
-
-#: templates/collab/chat.html:378
-#, fuzzy
-msgid "People"
-msgstr "Άτομα"
-
-#: templates/collab/chat.html:421
+#: templates/collab/chat.html:69
 msgid "is typing"
 msgstr "γράφει"
 
-#: templates/collab/chat.html:422
+#: templates/collab/chat.html:70
 msgid "are typing"
 msgstr "γράφουν"
 
-#: templates/collab/chat.html:423
+#: templates/collab/chat.html:71
 msgid "Someone is typing"
 msgstr "Κάποιος γράφει"
 
-#: templates/collab/chat.html:425
-msgid "General chat cleared."
-msgstr "Η γενική συνομιλία καθαρίστηκε."
-
-#: templates/collab/chat.html:426
-msgid "Unable to purge general chat."
-msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
-
-#: templates/collab/chat.html:547
-#, fuzzy
-msgid "'Someone is typing'"
-msgstr "Κάποιος γράφει"
-
-#: templates/collab/chat.html:658
-msgid "Direct conversation"
-msgstr "Άμεση συζήτηση"
-
-#: templates/collab/chat.html:704
+#: templates/collab/chat.html:73
 #, fuzzy
 msgid "Send failed"
 msgstr "Η αποστολή απέτυχε"
 
-#: templates/collab/chat.html:757
+#: templates/collab/chat.html:74
 msgid "Unable to open conversation"
 msgstr "Αδυναμία ανοίγματος συζήτησης"
 
-#: templates/collab/chat.html:843 templates/collab/chat.html:847
+#: templates/collab/chat.html:75
+msgid "General chat cleared."
+msgstr "Η γενική συνομιλία καθαρίστηκε."
+
+#: templates/collab/chat.html:76
+msgid "Unable to purge general chat."
+msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
+
+#: templates/collab/chat.html:77
 msgid "Unable to delete conversation"
 msgstr "Αδυναμία διαγραφής συζήτησης"
 
-#: templates/collab/chat.html:884 templates/partials/assistant_widget.html:594
+#: templates/collab/chat.html:79 templates/collab/chat.html:163
+msgid "Everyone in the organization"
+msgstr "Όλοι στον οργανισμό"
+
+#: templates/collab/chat.html:80
+msgid "Direct conversation"
+msgstr "Άμεση συζήτηση"
+
+#: templates/collab/chat.html:90
+msgid "Total Conversations"
+msgstr "Συνολικές συνομιλίες"
+
+#: templates/collab/chat.html:97
+msgid "Direct Messages"
+msgstr "Άμεσα μηνύματα"
+
+#: templates/collab/chat.html:103
+msgid "Team Channels"
+msgstr "Κανάλια ομάδας"
+
+#: templates/collab/chat.html:109
+#, fuzzy
+msgid "Unread"
+msgstr "Μη αναγνωσμένα"
+
+#: templates/collab/chat.html:115
+msgid "Messages Today"
+msgstr "Μηνύματα σήμερα"
+
+#: templates/collab/chat.html:121
+msgid "Favorites"
+msgstr "Αγαπημένα"
+
+#: templates/collab/chat.html:132
+#, fuzzy
+msgid "Conversations"
+msgstr "Συζητήσεις"
+
+#: templates/collab/chat.html:167 templates/collab/chat.html:615
+msgid "Purge General Chat"
+msgstr "Καθαρισμός γενικής συνομιλίας"
+
+#: templates/collab/chat.html:177
+msgid "Select or start a conversation to view messages."
+msgstr "Επιλέξτε ή ξεκινήστε μια συζήτηση για να δείτε μηνύματα."
+
+#: templates/collab/chat.html:190 templates/partials/assistant_widget.html:376
+#: templates/partials/assistant_widget.html:964
+#: templates/partials/assistant_widget.html:971
+msgid "Type your message..."
+msgstr "Πληκτρολογήστε το μήνυμά σας..."
+
+#: templates/collab/chat.html:203
+#, fuzzy
+msgid "People"
+msgstr "Άτομα"
+
+#: templates/collab/chat.html:603 templates/partials/assistant_widget.html:600
 msgid "Download"
 msgstr "Λήψη"
 
-#: templates/collab/chat.html:900
+#: templates/collab/chat.html:619
 msgid ""
 "This will permanently delete all messages in the General chat for "
 "everyone. This action cannot be undone."
@@ -2906,15 +3167,15 @@ msgstr ""
 "Αυτό θα διαγράψει οριστικά όλα τα μηνύματα στη Γενική συνομιλία για "
 "όλους. Η ενέργεια δεν μπορεί να αναιρεθεί."
 
-#: templates/collab/chat.html:904
+#: templates/collab/chat.html:623
 msgid "Purge"
 msgstr "Καθαρισμός"
 
-#: templates/collab/chat.html:915
+#: templates/collab/chat.html:634
 msgid "Delete Conversation"
 msgstr "Διαγραφή συζήτησης"
 
-#: templates/collab/chat.html:919
+#: templates/collab/chat.html:638
 #, fuzzy
 msgid ""
 "Are you sure you want to delete this conversation? This action cannot be "
@@ -2935,7 +3196,8 @@ msgstr "Σύνολο Αιτημάτων"
 #: templates/manage/configuration.html:165
 #: templates/manage/configuration.html:179
 #: templates/manage/configuration.html:200
-#: templates/manage/email_ingest.html:120 templates/users/list.html:80
+#: templates/manage/email_ingest.html:120
+#: templates/task_scheduler/detail.html:283 templates/users/list.html:80
 #: templates/users/list.html:117 templates/users/list.html:143
 msgid "Active"
 msgstr "Ενεργός"
@@ -3194,7 +3456,11 @@ msgstr "Τεχνικός"
 msgid "Open"
 msgstr "Ανοιχτό"
 
-#: templates/dashboard/index.html:177 templates/tickets/_row.html:24
+#: templates/dashboard/index.html:177 templates/task_scheduler/detail.html:74
+#: templates/task_scheduler/detail.html:336
+#: templates/task_scheduler/list.html:79 templates/task_scheduler/list.html:153
+#: templates/task_scheduler/list.html:212
+#: templates/task_scheduler/public_share.html:60 templates/tickets/_row.html:24
 #: templates/tickets/list.html:181 templates/tickets/list.html:205
 #: templates/tickets/list.html:234
 msgid "Closed"
@@ -3419,7 +3685,7 @@ msgstr "Επεξεργασία στοιχείου υλικού"
 
 #: templates/inventory/hardware_list.html:611
 #: templates/inventory/software_list.html:557 templates/networks/hosts.html:233
-#: templates/networks/maps.html:274
+#: templates/networks/maps.html:274 templates/task_scheduler/list.html:431
 #, fuzzy
 msgid "Update"
 msgstr "Ενημέρωση"
@@ -3575,17 +3841,13 @@ msgstr ""
 "Η ενέργεια δεν μπορεί να αναιρεθεί. Όλο το περιεχόμενο, τα συνημμένα και "
 "το ιστορικό εκδόσεων θα διαγραφούν οριστικά."
 
-#: templates/knowledge/detail.html:48 templates/knowledge/list.html:250
-#: templates/knowledge/version.html:22
-msgid "n/a"
-msgstr "—"
-
 #: templates/knowledge/detail.html:53
 msgid "Back"
 msgstr "Πίσω"
 
 #: templates/knowledge/detail.html:57 templates/manage/api_keys.html:199
-#: templates/tickets/_row.html:49 templates/tickets/list.html:265
+#: templates/task_scheduler/detail.html:82 templates/tickets/_row.html:49
+#: templates/tickets/list.html:265
 msgid "Edit"
 msgstr "Επεξεργασία"
 
@@ -3593,7 +3855,7 @@ msgstr "Επεξεργασία"
 msgid "Summary"
 msgstr "Περίληψη"
 
-#: templates/knowledge/detail.html:104 templates/knowledge/detail.html:168
+#: templates/knowledge/detail.html:104 templates/knowledge/detail.html:170
 #, fuzzy
 msgid "Upload Attachment"
 msgstr "Μεταφόρτωση συνημμένου"
@@ -3616,32 +3878,40 @@ msgstr "Μέγεθος"
 msgid "Uploaded"
 msgstr "Μεταφορτώθηκε"
 
-#: templates/knowledge/detail.html:136
-#, fuzzy
-msgid "Remove this attachment?"
-msgstr "Αφαίρεση αυτού του συνημμένου;"
-
-#: templates/knowledge/detail.html:158 templates/knowledge/detail.html:178
+#: templates/knowledge/detail.html:160 templates/knowledge/detail.html:180
 #: templates/tickets/_view_content.html:287
-#: templates/tickets/_view_content.html:408
+#: templates/tickets/_view_content.html:464
 msgid "Upload"
 msgstr "Μεταφόρτωση"
 
-#: templates/knowledge/detail.html:189
+#: templates/knowledge/detail.html:194 templates/knowledge/detail.html:205
+#, fuzzy
+msgid "Delete Attachment"
+msgstr "Συνημμένα"
+
+#: templates/knowledge/detail.html:198
+#, fuzzy
+msgid "Are you sure you want to delete this attachment?"
+msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε αυτό το αίτημα;"
+
+#: templates/knowledge/detail.html:215
 msgid "Version History"
 msgstr "Ιστορικό εκδόσεων"
 
-#: templates/knowledge/detail.html:196 templates/knowledge/version.html:21
-#: templates/manage/api_keys.html:145 templates/tickets/list.html:204
-#: templates/users/list.html:118
+#: templates/knowledge/detail.html:222 templates/knowledge/version.html:21
+#: templates/manage/api_keys.html:145 templates/task_scheduler/detail.html:122
+#: templates/tickets/list.html:204 templates/users/list.html:118
 msgid "Created"
 msgstr "Δημιουργία"
 
-#: templates/knowledge/detail.html:198 templates/knowledge/edit.html:15
+#: templates/knowledge/detail.html:224 templates/knowledge/edit.html:15
+#: templates/task_scheduler/detail.html:329
+#: templates/task_scheduler/list.html:133
+#: templates/task_scheduler/list.html:205
 msgid "Title"
 msgstr "Τίτλος"
 
-#: templates/knowledge/detail.html:212 templates/knowledge/list.html:260
+#: templates/knowledge/detail.html:238 templates/knowledge/list.html:260
 #: templates/tickets/_row.html:45 templates/tickets/list.html:261
 msgid "View"
 msgstr "Προβολή"
@@ -3862,6 +4132,7 @@ msgid "Clients"
 msgstr "Σχόλια"
 
 #: templates/manage/api_keys.html:80 templates/manage/api_keys.html:185
+#: templates/task_scheduler/detail.html:285
 #, fuzzy
 msgid "Revoked"
 msgstr "Δεσμευμένο"
@@ -3989,7 +4260,9 @@ msgstr ""
 
 #: templates/manage/api_keys.html:253 templates/networks/hosts.html:131
 #: templates/networks/maps.html:127 templates/networks/maps.html:208
-#: templates/networks/maps.html:262 templates/tickets/create.html:6
+#: templates/networks/maps.html:262 templates/task_scheduler/detail.html:98
+#: templates/task_scheduler/detail.html:345
+#: templates/task_scheduler/list.html:134 templates/tickets/create.html:6
 #: templates/tickets/edit.html:14 templates/tickets/list.html:199
 #: templates/tickets/list.html:294
 msgid "Description"
@@ -4073,8 +4346,8 @@ msgid ""
 "Uses OpenAI function-calling with the embedded MCP tool catalogue. "
 "Requires the API key below."
 msgstr ""
-"Χρησιμοποιεί function-calling OpenAI με ενσωματωμένο κατάλογο εργαλείων MCP. "
-"Απαιτείται το παρακάτω API key."
+"Χρησιμοποιεί function-calling OpenAI με ενσωματωμένο κατάλογο εργαλείων "
+"MCP. Απαιτείται το παρακάτω API key."
 
 #: templates/manage/assistant_settings.html:185
 #, fuzzy
@@ -4138,29 +4411,29 @@ msgstr ""
 
 #: templates/manage/assistant_settings.html:249
 msgid "Embedded MCP Server"
-msgstr ""
+msgstr "Embedded MCP Server"
 
 #: templates/manage/assistant_settings.html:252
 msgid "Running"
-msgstr ""
+msgstr "Running"
 
 #: templates/manage/assistant_settings.html:257
 msgid ""
 "The MCP server runs inside Helpdesk Pro and exposes read-only tools over "
 "HTTP."
-msgstr ""
+msgstr "The MCP server runs inside Helpdesk Pro and exposes read-only tools over HTTP."
 
 #: templates/manage/assistant_settings.html:258
 msgid "Share these coordinates with external AI agents or MCP-compatible clients."
-msgstr ""
+msgstr "Κοινοποίηση these coordinates with external AI agents or MCP-compatible clients."
 
 #: templates/manage/assistant_settings.html:262
 msgid "Enable embedded MCP server"
-msgstr ""
+msgstr "Enable embedded MCP server"
 
 #: templates/manage/assistant_settings.html:263
 msgid "No OpenAI API key is required for the MCP provider."
-msgstr ""
+msgstr "Όχι OpenAI API key is Απαιτείται for the MCP provider."
 
 #: templates/manage/assistant_settings.html:271
 #, fuzzy
@@ -4174,26 +4447,26 @@ msgstr "Θύρα"
 
 #: templates/manage/assistant_settings.html:279
 msgid "Allowed origins"
-msgstr ""
+msgstr "Allowed origins"
 
 #: templates/manage/assistant_settings.html:287
 msgid "No CORS restrictions configured (local access only)."
-msgstr ""
+msgstr "Όχι CORS restrictions configured (local access only)."
 
 #: templates/manage/assistant_settings.html:291
 msgid "Log level"
-msgstr ""
+msgstr "Log level"
 
 #: templates/manage/assistant_settings.html:294
 #, python-format
 msgid "Adjust using the %(var)s environment variable."
-msgstr ""
+msgstr "Adjust using the %(var)s environment variable."
 
 #: templates/manage/assistant_settings.html:300
 msgid ""
 "Default tools are available under `/mcp/tools` and `/mcp/invoke` on the "
 "above base URL."
-msgstr ""
+msgstr "Default tools are Διαθέσιμο under `/mcp/tools` and `/mcp/invoke` on the above base URL."
 
 #: templates/manage/assistant_settings.html:310
 msgid "Role visibility"
@@ -4256,7 +4529,7 @@ msgstr "Αποθήκευση ρυθμίσεων"
 
 #: templates/manage/configuration.html:42
 msgid "Manage environment-backed application settings."
-msgstr ""
+msgstr "Manage environment-backed application Ρυθμίσεις."
 
 #: templates/manage/configuration.html:53
 #, fuzzy
@@ -4266,19 +4539,19 @@ msgstr "Περιβάλλον"
 #: templates/manage/configuration.html:56
 #, python-format
 msgid "Last edited at %(timestamp)s"
-msgstr ""
+msgstr "Last edited at %(timestamp)s"
 
 #: templates/manage/configuration.html:62
 msgid "Detected"
-msgstr ""
+msgstr "Detected"
 
 #: templates/manage/configuration.html:66
 msgid "Missing - will be created on save"
-msgstr ""
+msgstr "Missing - will be Δημιουργήθηκε on Αποθήκευση"
 
 #: templates/manage/configuration.html:74
 msgid "Fields configured"
-msgstr ""
+msgstr "Fields configured"
 
 #: templates/manage/configuration.html:82
 #, fuzzy
@@ -4303,13 +4576,13 @@ msgstr "—"
 #: templates/manage/configuration.html:126
 #, python-format
 msgid "Configured here: %(count)s item(s)"
-msgstr ""
+msgstr "Configured here: %(count)s Στοιχείο(s)"
 
 #: templates/manage/configuration.html:143
 #: templates/manage/configuration.html:165
 #: templates/manage/configuration.html:200
 msgid "Following default"
-msgstr ""
+msgstr "Following default"
 
 #: templates/manage/configuration.html:145
 #: templates/manage/configuration.html:163
@@ -4326,15 +4599,15 @@ msgstr "Ημ/νία λήξης"
 
 #: templates/manage/configuration.html:171
 msgid "One value per line or JSON array"
-msgstr ""
+msgstr "One value per line or JSON array"
 
 #: templates/manage/configuration.html:213
 msgid "Save Configuration"
-msgstr ""
+msgstr "Αποθήκευση Παραμετροποίηση"
 
 #: templates/manage/configuration.html:216
 msgid "Reload from Disk"
-msgstr ""
+msgstr "Reload from Disk"
 
 #: templates/manage/email_ingest.html:55
 msgid "Automatically convert incoming emails into Helpdesk tickets."
@@ -4349,7 +4622,7 @@ msgid "Service Disabled"
 msgstr "Υπηρεσία ανενεργή"
 
 #: templates/manage/email_ingest.html:70 templates/manage/email_ingest.html:124
-#: templates/networks/tools.html:176
+#: templates/networks/tools.html:178
 msgid "Protocol"
 msgstr "Πρωτόκολλο"
 
@@ -4467,8 +4740,7 @@ msgid "allow any prefix but require the suffix `2024`."
 msgstr "επιτρέπει οποιοδήποτε πρόθεμα αλλά απαιτεί το επίθημα `2024`."
 
 #: templates/manage/email_ingest.html:208
-msgid ""
-"match any subject that starts with `PROD-`."
+msgid "match any subject that starts with `PROD-`."
 msgstr "ταιριάζει οποιοδήποτε θέμα που ξεκινά με `PROD-`."
 
 #: templates/manage/email_ingest.html:209
@@ -4600,7 +4872,9 @@ msgstr "Διαγραφή host"
 msgid "Are you sure you want to delete host"
 msgstr "Είστε σίγουροι ότι θέλετε να διαγράψετε host"
 
-#: templates/networks/hosts.html:350 templates/networks/hosts.html:379 templates/networks/hosts.html:392 templates/networks/maps.html:435 templates/networks/maps.html:457 templates/networks/maps.html:472
+#: templates/networks/hosts.html:350 templates/networks/hosts.html:379
+#: templates/networks/hosts.html:392 templates/networks/maps.html:435
+#: templates/networks/maps.html:457 templates/networks/maps.html:472
 msgid "You have read-only access to Network Maps."
 msgstr "Έχετε πρόσβαση μόνο για ανάγνωση στους Χάρτες Δικτύου."
 
@@ -4616,10 +4890,6 @@ msgstr "Συνολική χωρητικότητα hosts"
 #, fuzzy
 msgid "Add Network"
 msgstr "Προσθήκη δικτύου"
-
-#: templates/networks/maps.html:121
-msgid "Network"
-msgstr "Δίκτυο"
 
 #: templates/networks/maps.html:122
 msgid "Broadcast"
@@ -4724,7 +4994,7 @@ msgstr "Ping / Διαθεσιμότητα"
 msgid "Test ICMP responses and basic TCP reachability to critical hosts."
 msgstr "Ελέγξτε ICMP αποκρίσεις και βασική TCP διαθεσιμότητα σε κρίσιμους hosts."
 
-#: templates/networks/tools.html:67 templates/networks/tools.html:161
+#: templates/networks/tools.html:67 templates/networks/tools.html:162
 msgid "Port Scanner"
 msgstr "Σαρωτής θυρών"
 
@@ -4778,38 +5048,64 @@ msgstr "Έλεγχος ICMP ping"
 msgid "Quick reachability test (simulated)"
 msgstr "Γρήγορος έλεγχος διαθεσιμότητας (προσομοιωμένος)"
 
-#: templates/networks/tools.html:145 templates/networks/tools.html:168
+#: templates/networks/tools.html:146 templates/networks/tools.html:170
 msgid "Target Host / IP"
 msgstr "Στόχος Host / IP"
 
-#: templates/networks/tools.html:150
+#: templates/networks/tools.html:151
 #, fuzzy
 msgid "Ping"
 msgstr "Ping"
 
-#: templates/networks/tools.html:155
-msgid "Use the form to run a simulated ping test."
+#: templates/networks/tools.html:156
+#, fuzzy
+msgid "Use the form to run a ping test."
 msgstr "Χρησιμοποιήστε τη φόρμα για να εκτελέσετε προσομοιωμένο ping."
 
-#: templates/networks/tools.html:162
+#: templates/networks/tools.html:163
 msgid "Check TCP/UDP port state (simulated)"
 msgstr "Έλεγχος κατάστασης θυρών TCP/UDP (προσομοιωμένος)"
 
-#: templates/networks/tools.html:172
+#: templates/networks/tools.html:174
 msgid "Ports (e.g. 22,80,443)"
 msgstr "Θύρες (π.χ. 22,80,443)"
 
-#: templates/networks/tools.html:184
+#: templates/networks/tools.html:186
 msgid "Scan Ports"
 msgstr "Σάρωση θυρών"
 
-#: templates/networks/tools.html:189
-msgid "Use the form to run a simulated port scan."
+#: templates/networks/tools.html:191
+#, fuzzy
+msgid "Use the form to run a port scan."
 msgstr "Χρησιμοποιήστε τη φόρμα για να εκτελέσετε προσομοιωμένη σάρωση θυρών."
 
-#: templates/networks/tools.html:278
+#: templates/networks/tools.html:284
 msgid "Invalid network format. Use something like 192.168.1.0/24"
 msgstr "Μη έγκυρη μορφή δικτύου. Χρησιμοποιήστε π.χ. 192.168.1.0/24"
+
+#: templates/networks/tools.html:293
+#, fuzzy
+msgid "Running ping..."
+msgstr "Σκέφτομαι..."
+
+#: templates/networks/tools.html:307 templates/networks/tools.html:313
+#, fuzzy
+msgid "Ping failed"
+msgstr "Η αποστολή απέτυχε"
+
+#: templates/networks/tools.html:322
+msgid "Running port scan..."
+msgstr "Running port scan..."
+
+#: templates/networks/tools.html:336 templates/networks/tools.html:347
+#, fuzzy
+msgid "Port scan failed"
+msgstr "Σαρωτής θυρών"
+
+#: templates/networks/tools.html:338
+#, fuzzy
+msgid "Results for"
+msgstr "Επαναφορά φόρμας"
 
 #: templates/partials/assistant_widget.html:349
 #, fuzzy
@@ -4863,73 +5159,524 @@ msgstr "Η αναγνώριση ομιλίας δεν υποστηρίζεται
 msgid "Stop listening"
 msgstr "Διακοπή ακρόασης"
 
-#: templates/partials/assistant_widget.html:483
-#: templates/partials/assistant_widget.html:497
+#: templates/partials/assistant_widget.html:484
+#: templates/partials/assistant_widget.html:498
 msgid "Clipboard copy failed. Try again manually."
 msgstr "Αποτυχία αντιγραφής στο πρόχειρο. Δοκιμάστε χειροκίνητα."
 
-#: templates/partials/assistant_widget.html:579
+#: templates/partials/assistant_widget.html:585
 #, fuzzy
 msgid "Document"
 msgstr "Δεν υπάρχουν σχόλια"
 
-#: templates/partials/assistant_widget.html:604
+#: templates/partials/assistant_widget.html:610
 #, fuzzy
 msgid "Remove document"
 msgstr "Αφαίρεση αυτού του συνημμένου;"
 
-#: templates/partials/assistant_widget.html:634
 #: templates/partials/assistant_widget.html:640
+#: templates/partials/assistant_widget.html:646
 msgid "Unable to start session."
 msgstr "Αδυναμία έναρξης συνεδρίας."
 
-#: templates/partials/assistant_widget.html:656
-#: templates/partials/assistant_widget.html:657
+#: templates/partials/assistant_widget.html:662
+#: templates/partials/assistant_widget.html:663
 msgid "Exit full screen"
 msgstr "Έξοδος από πλήρη οθόνη"
 
-#: templates/partials/assistant_widget.html:660
-#: templates/partials/assistant_widget.html:661
+#: templates/partials/assistant_widget.html:666
+#: templates/partials/assistant_widget.html:667
 msgid "Enter full screen"
 msgstr "Είσοδος σε πλήρη οθόνη"
 
-#: templates/partials/assistant_widget.html:714
-#: templates/partials/assistant_widget.html:799
+#: templates/partials/assistant_widget.html:720
+#: templates/partials/assistant_widget.html:805
 msgid "Session not ready yet."
 msgstr "Η συνεδρία δεν είναι ακόμη έτοιμη."
 
-#: templates/partials/assistant_widget.html:722
+#: templates/partials/assistant_widget.html:728
 msgid "Thinking..."
 msgstr "Σκέφτομαι..."
 
-#: templates/partials/assistant_widget.html:733
+#: templates/partials/assistant_widget.html:739
 msgid "Assistant error"
 msgstr "Σφάλμα βοηθού"
 
-#: templates/partials/assistant_widget.html:748
+#: templates/partials/assistant_widget.html:754
 msgid "Connection error"
 msgstr "Σφάλμα σύνδεσης"
 
-#: templates/partials/assistant_widget.html:813
-#: templates/partials/assistant_widget.html:827
+#: templates/partials/assistant_widget.html:823
+#: templates/partials/assistant_widget.html:837
 #, fuzzy
 msgid "Upload failed."
 msgstr "Η μεταφόρτωση απέτυχε"
 
-#: templates/partials/assistant_widget.html:857
-#: templates/partials/assistant_widget.html:864
+#: templates/partials/assistant_widget.html:867
+#: templates/partials/assistant_widget.html:874
 #, fuzzy
 msgid "Unable to remove document."
 msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
 
-#: templates/partials/assistant_widget.html:948
-#: templates/partials/assistant_widget.html:989
+#: templates/partials/assistant_widget.html:958
+#: templates/partials/assistant_widget.html:999
 msgid "Unable to start voice capture."
 msgstr "Αδυναμία έναρξης σύλληψης φωνής."
 
-#: templates/partials/assistant_widget.html:953
+#: templates/partials/assistant_widget.html:963
 msgid "Microphone permission denied."
 msgstr "Άρνηση άδειας μικροφώνου."
+
+#: templates/task_scheduler/detail.html:66
+#, fuzzy
+msgid "Back to Task Scheduler"
+msgstr "Επιστροφή στο άρθρο"
+
+#: templates/task_scheduler/detail.html:72
+#: templates/task_scheduler/detail.html:335
+#: templates/task_scheduler/list.html:78 templates/task_scheduler/list.html:151
+#: templates/task_scheduler/list.html:211
+#: templates/task_scheduler/public_share.html:58
+#, fuzzy
+msgid "Shared"
+msgstr "Πίνακας ελέγχου"
+
+#: templates/task_scheduler/detail.html:85
+#, fuzzy
+msgid "Share"
+msgstr "Αποθήκευση"
+
+#: templates/task_scheduler/detail.html:103
+#, fuzzy
+msgid "No description provided."
+msgstr "Δεν δόθηκε αρχείο"
+
+#: templates/task_scheduler/detail.html:114
+#: templates/task_scheduler/detail.html:340
+#: templates/task_scheduler/list.html:216
+#, fuzzy
+msgid "Estimated Duration"
+msgstr "Ιστότοπος / Τοποθεσία"
+
+#: templates/task_scheduler/detail.html:118
+#, fuzzy
+msgid "Last Updated"
+msgstr "Τελευταία χρήση"
+
+#: templates/task_scheduler/detail.html:126
+msgid "Bookings"
+msgstr "Bookings"
+
+#: templates/task_scheduler/detail.html:138
+#, fuzzy
+msgid "Scheduled Slots"
+msgstr "Ράφι/Θέση"
+
+#: templates/task_scheduler/detail.html:139
+#: templates/task_scheduler/list.html:322
+msgid "Timezone: Europe/Athens"
+msgstr "Timezone: Europe/Athens"
+
+#: templates/task_scheduler/detail.html:143
+#: templates/task_scheduler/detail.html:246
+#: templates/task_scheduler/list.html:265
+#, fuzzy
+msgid "Add Slot"
+msgstr "Προσθήκη Σχολίου"
+
+#: templates/task_scheduler/detail.html:154
+#, fuzzy
+msgid "Start"
+msgstr "Κατάσταση"
+
+#: templates/task_scheduler/detail.html:155
+#: templates/task_scheduler/list.html:135
+#, fuzzy
+msgid "Duration"
+msgstr "Ενέργειες"
+
+#: templates/task_scheduler/detail.html:156
+#: templates/task_scheduler/detail.html:238
+#: templates/task_scheduler/list.html:259
+#, fuzzy
+msgid "Comment"
+msgstr "Σχόλια"
+
+#: templates/task_scheduler/detail.html:157
+#, fuzzy
+msgid "Source"
+msgstr "Λειτουργικό σύστημα"
+
+#: templates/task_scheduler/detail.html:158
+#: templates/tickets/_view_content.html:13 templates/tickets/view_page.html:3
+msgid "Ticket"
+msgstr "Αίτημα"
+
+#: templates/task_scheduler/detail.html:176 templates/users/list.html:131
+#: templates/users/list.html:273
+msgid "Admin"
+msgstr "Διαχειριστής"
+
+#: templates/task_scheduler/detail.html:178
+msgid "Shared (login)"
+msgstr "Κοινοποιημένο (Σύνδεση)"
+
+#: templates/task_scheduler/detail.html:180
+msgid "Shared (public)"
+msgstr "Κοινοποιημένο (Δημόσιο)"
+
+#: templates/task_scheduler/detail.html:196
+#, fuzzy
+msgid "View ticket"
+msgstr "Νέο Αίτημα"
+
+#: templates/task_scheduler/detail.html:200
+#, fuzzy
+msgid "Create ticket"
+msgstr "Δημιουργία Αιτήματος"
+
+#: templates/task_scheduler/detail.html:220
+msgid "No scheduled slots to display."
+msgstr "Όχι scheduled slots to display."
+
+#: templates/task_scheduler/detail.html:233
+#: templates/task_scheduler/list.html:253
+msgid "Start (Europe/Athens)"
+msgstr "Start (Europe/Athens)"
+
+#: templates/task_scheduler/detail.html:235
+msgid "Format dd/MM/yyyy HH:mm"
+msgstr "Format dd/MM/yyyy HH:mm"
+
+#: templates/task_scheduler/detail.html:257
+#, fuzzy
+msgid "Share Links"
+msgstr "Αποστολή συνδέσμου επαναφοράς"
+
+#: templates/task_scheduler/detail.html:259
+#, fuzzy
+msgid "Generate"
+msgstr "Δημιουργία hosts"
+
+#: templates/task_scheduler/detail.html:268
+#: templates/task_scheduler/detail.html:370
+#: templates/task_scheduler/list.html:309
+#, fuzzy
+msgid "Visibility"
+msgstr "Ορατότητα ρόλων"
+
+#: templates/task_scheduler/detail.html:269
+#, fuzzy
+msgid "Expires"
+msgstr "Ληγμένο"
+
+#: templates/task_scheduler/detail.html:279
+#: templates/task_scheduler/public_share.html:65
+#, fuzzy
+msgid "Public"
+msgstr "Δημοσιευμένο"
+
+#: templates/task_scheduler/detail.html:279
+#, fuzzy
+msgid "Restricted"
+msgstr "Αποσυρμένο"
+
+#: templates/task_scheduler/detail.html:280
+#, fuzzy
+msgid "No expiry"
+msgstr "Ληγμένο"
+
+#: templates/task_scheduler/detail.html:310
+msgid "No share links yet. Generate one to collect bookings."
+msgstr "Όχι Κοινοποίηση links yet. Generate one to collect bookings."
+
+#: templates/task_scheduler/detail.html:323
+#: templates/task_scheduler/list.html:423
+#, fuzzy
+msgid "Edit Task"
+msgstr "Επεξεργασία Αιτήματος"
+
+#: templates/task_scheduler/detail.html:342
+msgid "Example: 2-3 hours"
+msgstr "Example: 2-3 Ώρες"
+
+#: templates/task_scheduler/detail.html:365
+#, fuzzy
+msgid "Generate Share Link"
+msgstr "Δημιουργία hosts"
+
+#: templates/task_scheduler/detail.html:373
+msgid "Public (no login)"
+msgstr "Δημόσιο (Όχι Σύνδεση)"
+
+#: templates/task_scheduler/detail.html:377
+#, fuzzy
+msgid "Authenticated users only"
+msgstr "Έλεγχος ταυτότητας"
+
+#: templates/task_scheduler/detail.html:381
+#: templates/task_scheduler/list.html:320
+#, fuzzy
+msgid "Expires at (optional)"
+msgstr "Email (προαιρετικό)"
+
+#: templates/task_scheduler/detail.html:394
+#, fuzzy
+msgid "Create Link"
+msgstr "Δημιουργία Αιτήματος"
+
+#: templates/task_scheduler/detail.html:407
+#: templates/task_scheduler/list.html:348
+#, fuzzy
+msgid "Delete Task"
+msgstr "Διαγραφή host"
+
+#: templates/task_scheduler/detail.html:411
+msgid "This action removes the task, slots, and share history. Continue?"
+msgstr "This action removes the Εργασία, slots, and Κοινοποίηση history. Continue?"
+
+#: templates/task_scheduler/detail.html:445
+#, fuzzy
+msgid "Request failed."
+msgstr "Η διαγραφή απέτυχε"
+
+#: templates/task_scheduler/detail.html:448
+#: templates/task_scheduler/list.html:516
+#: templates/task_scheduler/public_share.html:170
+#: templates/task_scheduler/public_share.html:196
+msgid "Try:"
+msgstr "Try:"
+
+#: templates/task_scheduler/detail.html:465
+#: templates/task_scheduler/public_share.html:163
+msgid "Checking availability..."
+msgstr "Checking availability..."
+
+#: templates/task_scheduler/detail.html:472
+#: templates/task_scheduler/public_share.html:168
+#, fuzzy
+msgid "Slot unavailable."
+msgstr "Διαθέσιμη"
+
+#: templates/task_scheduler/detail.html:478
+#, fuzzy
+msgid "Slot added."
+msgstr "Μεταφορτώθηκε"
+
+#: templates/task_scheduler/detail.html:492
+msgid "Missing security token. Please refresh the page."
+msgstr "Missing security token. Please Ανανέωση the Σελίδα."
+
+#: templates/task_scheduler/detail.html:523
+#, fuzzy
+msgid "Task updated."
+msgstr "ενημερώθηκε σε"
+
+#: templates/task_scheduler/detail.html:539
+#, fuzzy
+msgid "Unable to create link."
+msgstr "Αποτυχία προσθήκης χρήστη"
+
+#: templates/task_scheduler/detail.html:547
+#: templates/task_scheduler/detail.html:553
+#, fuzzy
+msgid "Link copied."
+msgstr "Κλειστό"
+
+#: templates/task_scheduler/detail.html:574
+#: templates/task_scheduler/list.html:619
+#, fuzzy
+msgid "Unable to delete task."
+msgstr "Αποτυχία προσθήκης χρήστη"
+
+#: templates/task_scheduler/list.html:81
+msgid "Coordinate maintenance and IT chores without overlapping slots."
+msgstr "Coordinate maintenance and IT chores without overlapping slots."
+
+#: templates/task_scheduler/list.html:86 templates/task_scheduler/list.html:199
+#: templates/task_scheduler/list.html:414
+#, fuzzy
+msgid "New Task"
+msgstr "Μάσκα δικτύου"
+
+#: templates/task_scheduler/list.html:99
+#, fuzzy
+msgid "Total Tasks"
+msgstr "Σύνολο Αιτημάτων"
+
+#: templates/task_scheduler/list.html:109
+msgid "Booked Slots"
+msgstr "Booked Slots"
+
+#: templates/task_scheduler/list.html:119
+#, fuzzy
+msgid "Active Share Links"
+msgstr "Ενεργές άδειες"
+
+#: templates/task_scheduler/list.html:137
+#, fuzzy
+msgid "Slots"
+msgstr "Θέσεις"
+
+#: templates/task_scheduler/list.html:218
+msgid "Use free range e.g. 2-3 or 1.5-2."
+msgstr "Use free range e.g. 2-3 or 1.5-2."
+
+#: templates/task_scheduler/list.html:221
+#, fuzzy
+msgid "Description (rich text allowed)"
+msgstr "Email (προαιρετικό)"
+
+#: templates/task_scheduler/list.html:222
+msgid "Supports Markdown/HTML formatting"
+msgstr "Supports Markdown/HTML formatting"
+
+#: templates/task_scheduler/list.html:244
+#, fuzzy
+msgid "Add User Slot"
+msgstr "Προσθήκη αριθμητικής κατάληξης"
+
+#: templates/task_scheduler/list.html:255
+msgid "Format dd/MM/yyyy HH:mm. Conflicts checked automatically."
+msgstr "Format dd/MM/yyyy HH:mm. Conflicts checked automatically."
+
+#: templates/task_scheduler/list.html:279
+#, fuzzy
+msgid "Remove Slot"
+msgstr "Προεπισκόπηση"
+
+#: templates/task_scheduler/list.html:283
+msgid "Select booking"
+msgstr "Επιλογή booking"
+
+#: templates/task_scheduler/list.html:285
+#: templates/task_scheduler/list.html:527
+msgid "Choose..."
+msgstr "Choose..."
+
+#: templates/task_scheduler/list.html:304
+#, fuzzy
+msgid "Share Task"
+msgstr "Πεδίο χρήσης"
+
+#: templates/task_scheduler/list.html:312
+msgid "Public link (no login)"
+msgstr "Δημόσιο Σύνδεσμος (Όχι Σύνδεση)"
+
+#: templates/task_scheduler/list.html:316
+#, fuzzy
+msgid "Only authenticated users"
+msgstr "Αποθήκευση ρυθμίσεων"
+
+#: templates/task_scheduler/list.html:325
+#, fuzzy
+msgid "Generated link"
+msgstr "Δημιουργία hosts"
+
+#: templates/task_scheduler/list.html:334
+#, fuzzy
+msgid "Generate Link"
+msgstr "Δημιουργία hosts"
+
+#: templates/task_scheduler/list.html:444
+#: templates/task_scheduler/list.html:451
+msgid "Could not save task."
+msgstr "Could not Αποθήκευση Εργασία."
+
+#: templates/task_scheduler/list.html:485
+#, fuzzy
+msgid "Validation failed."
+msgstr "Μη έγκυρο όνομα αρχείου."
+
+#: templates/task_scheduler/list.html:513
+#, fuzzy
+msgid "Unable to add slot."
+msgstr "Αδυναμία έναρξης συνεδρίας."
+
+#: templates/task_scheduler/list.html:539
+#, fuzzy
+msgid "Unable to load slots."
+msgstr "Αποτυχία φόρτωσης στοιχείου λογισμικού."
+
+#: templates/task_scheduler/list.html:548
+msgid "Select a slot to remove."
+msgstr "Επιλογή a slot to Αφαίρεση."
+
+#: templates/task_scheduler/list.html:560
+#, fuzzy
+msgid "Unable to remove slot."
+msgstr "Αδυναμία καθαρισμού της γενικής συνομιλίας."
+
+#: templates/task_scheduler/list.html:587
+#, fuzzy
+msgid "Unable to create share link."
+msgstr "Αποτυχία προσθήκης χρήστη"
+
+#: templates/task_scheduler/list.html:596
+#, fuzzy
+msgid "Link copied"
+msgstr "Κλειστό"
+
+#: templates/task_scheduler/public_share.html:53
+#, fuzzy
+msgid "Estimated duration"
+msgstr "Ιστότοπος / Τοποθεσία"
+
+#: templates/task_scheduler/public_share.html:67
+#, fuzzy
+msgid "Login required"
+msgstr "Απαιτείται barcode."
+
+#: templates/task_scheduler/public_share.html:76
+#, fuzzy
+msgid "No description supplied."
+msgstr "Περιγραφή"
+
+#: templates/task_scheduler/public_share.html:86
+msgid "This task is closed. Submissions are no longer accepted."
+msgstr "This Εργασία is Κλειστό. Submissions are Όχι longer accepted."
+
+#: templates/task_scheduler/public_share.html:93
+#, fuzzy
+msgid "Your name"
+msgstr "Όνομα Χρήστη"
+
+#: templates/task_scheduler/public_share.html:97
+msgid "Preferred start (Europe/Athens)"
+msgstr "Preferred start (Europe/Athens)"
+
+#: templates/task_scheduler/public_share.html:101
+#, fuzzy
+msgid "Comment (optional)"
+msgstr "Email (προαιρετικό)"
+
+#: templates/task_scheduler/public_share.html:102
+#, fuzzy
+msgid "Short note"
+msgstr "Τηλέφωνο υποστήριξης"
+
+#: templates/task_scheduler/public_share.html:109
+#, fuzzy
+msgid "Reserve slot"
+msgstr "Δεσμευμένο"
+
+#: templates/task_scheduler/public_share.html:117
+msgid "Upcoming slots"
+msgstr "Upcoming slots"
+
+#: templates/task_scheduler/public_share.html:129
+#, fuzzy
+msgid "No bookings yet."
+msgstr "Δεν υπάρχουν ακόμη σχόλια."
+
+#: templates/task_scheduler/public_share.html:188
+msgid "Slot confirmed."
+msgstr "Slot confirmed."
+
+#: templates/task_scheduler/public_share.html:194
+#, fuzzy
+msgid "Submission failed."
+msgstr "Η μεταφόρτωση απέτυχε"
 
 #: templates/tickets/_row.html:8 templates/tickets/list.html:218
 #: templates/tickets/list.html:299
@@ -4961,10 +5708,6 @@ msgstr "Δεν υπάρχουν συνημμένα"
 #: templates/tickets/_row.html:43 templates/tickets/list.html:259
 msgid "attachment(s) exist"
 msgstr "υπάρχουν συνημμένα"
-
-#: templates/tickets/_view_content.html:13 templates/tickets/view_page.html:3
-msgid "Ticket"
-msgstr "Αίτημα"
 
 #: templates/tickets/_view_content.html:18
 #, fuzzy
@@ -5014,7 +5757,7 @@ msgid "Add comment..."
 msgstr "Προσθήκη σχολίου..."
 
 #: templates/tickets/_view_content.html:263
-#: templates/tickets/_view_content.html:376
+#: templates/tickets/_view_content.html:432
 msgid "Add Comment"
 msgstr "Προσθήκη Σχολίου"
 
@@ -5026,21 +5769,21 @@ msgstr "Δεν υπάρχουν ακόμη συνημμένα."
 msgid "No activity recorded."
 msgstr "Δεν υπάρχουν καταγεγραμμένες ενέργειες."
 
-#: templates/tickets/_view_content.html:361
+#: templates/tickets/_view_content.html:416
 #, fuzzy
 msgid "Adding..."
 msgstr "Γίνεται προσθήκη..."
 
-#: templates/tickets/_view_content.html:373
+#: templates/tickets/_view_content.html:428
 msgid "Update failed"
 msgstr "Η ενημέρωση απέτυχε"
 
-#: templates/tickets/_view_content.html:387
+#: templates/tickets/_view_content.html:442
 #, fuzzy
 msgid "Uploading..."
 msgstr "Γίνεται μεταφόρτωση..."
 
-#: templates/tickets/_view_content.html:405
+#: templates/tickets/_view_content.html:460
 msgid "Upload failed"
 msgstr "Η μεταφόρτωση απέτυχε"
 
@@ -5123,8 +5866,8 @@ msgid ""
 " with a single click."
 msgstr ""
 "Δημιουργήστε υπερ-ισχυρούς κωδικούς, εύκολες στη μνήμη φράσεις πρόσβασης "
-"και ασφαλή PIN σε δευτερόλεπτα. Επιλέξτε στυλ, ρυθμίστε την πολυπλοκότητα "
-"και αντιγράψτε το αποτέλεσμα με ένα κλικ."
+"και ασφαλή PIN σε δευτερόλεπτα. Επιλέξτε στυλ, ρυθμίστε την πολυπλοκότητα"
+" και αντιγράψτε το αποτέλεσμα με ένα κλικ."
 
 #: templates/tools/password_generator.html:20
 msgid "Entropy rich"
@@ -5252,8 +5995,8 @@ msgid ""
 "Keep track of generated credentials. Nothing is stored server-side — "
 "clearing or leaving the page removes the list."
 msgstr ""
-"Παρακολουθήστε τα παραγόμενα διαπιστευτήρια. Τίποτα δεν αποθηκεύεται στον "
-"server — ο καθαρισμός ή η έξοδος από τη σελίδα διαγράφει τη λίστα."
+"Παρακολουθήστε τα παραγόμενα διαπιστευτήρια. Τίποτα δεν αποθηκεύεται στον"
+" server — ο καθαρισμός ή η έξοδος από τη σελίδα διαγράφει τη λίστα."
 
 #: templates/tools/password_generator.html:158
 #, fuzzy
@@ -5351,10 +6094,6 @@ msgstr "Όνομα"
 msgid "Role"
 msgstr "Ρόλος"
 
-#: templates/users/list.html:131 templates/users/list.html:273
-msgid "Admin"
-msgstr "Διαχειριστής"
-
 #: templates/users/list.html:133 templates/users/list.html:272
 msgid "Manager"
 msgstr "Προϊστάμενος"
@@ -5369,19 +6108,19 @@ msgstr "Επεξεργασία Χρήστη"
 
 #: templates/users/list.html:196 templates/users/list.html:280
 msgid "Managers can receive immediate updates when their team changes tickets."
-msgstr ""
+msgstr "Managers can receive immediate updates when their team changes tickets."
 
 #: templates/users/list.html:200 templates/users/list.html:284
 msgid "Email me when my team updates tickets"
-msgstr ""
+msgstr "Ηλεκτρονικό ταχυδρομείο me when my team updates tickets"
 
 #: templates/users/list.html:205 templates/users/list.html:289
 msgid "Send a Microsoft Teams alert"
-msgstr ""
+msgstr "Αποστολή a Microsoft Teams alert"
 
 #: templates/users/list.html:210 templates/users/list.html:294
 msgid "Used when Teams notifications are enabled."
-msgstr ""
+msgstr "Used when Teams notifications are Ενεργοποιημένο."
 
 #: templates/users/list.html:214
 msgid "Password (leave blank to keep unchanged)"
@@ -5552,3 +6291,9 @@ msgstr "ενημερώθηκε επιτυχώς"
 #~ "Στέλνει ολόκληρη τη συνομιλία στο OpenAI"
 #~ " και επιστρέφει την απάντησή του. "
 #~ "Απαιτείται API key παρακάτω."
+
+#~ msgid "'Someone is typing'"
+#~ msgstr "Κάποιος γράφει"
+
+#~ msgid "Remove this attachment?"
+#~ msgstr "Αφαίρεση αυτού του συνημμένου;"

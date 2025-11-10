@@ -18,3 +18,9 @@ from .backup import (
     TapeCustodyEvent,
     BackupAuditLog,
 )
+from .task_scheduler import (
+    TaskSchedulerTask,
+    TaskSchedulerSlot,
+    TaskSchedulerShareToken,
+    TaskSchedulerAuditLog,
+)

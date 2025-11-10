@@ -185,6 +185,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin", "manager", "technician"],
                 "endpoint": "tools.password_generator",
             },
+            {
+                "key": "task_scheduler",
+                "label": _("Task Scheduler"),
+                "icon": "fa fa-calendar-check text-primary",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "task_scheduler.list_tasks",
+            },
         ],
     },
     {
