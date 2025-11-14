@@ -87,3 +87,13 @@ class Config:
     MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {
         '1', 'true', 'yes'}
     APP_VERSION = os.getenv('APP_VERSION', '3.0.0')
+    FLEET_INGEST_ENABLED = os.getenv('FLEET_INGEST_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
+    FLEET_INGEST_HOST = os.getenv('FLEET_INGEST_HOST', '0.0.0.0')
+    FLEET_INGEST_PORT = int(os.getenv('FLEET_INGEST_PORT', 8449))
+    FLEET_UPLOAD_FOLDER = os.path.join(os.getcwd(), 'instance', 'fleet_uploads')
+    FLEET_AGENT_INSTALLER_PATH = os.getenv(
+        'FLEET_AGENT_INSTALLER_PATH',
+        os.path.join(os.getcwd(), 'instance', 'Telemetry_Agent.msi'),
+    )
+    FLEET_AGENT_INSTALLER_MAX_BYTES = int(os.getenv('FLEET_AGENT_INSTALLER_MAX_BYTES', 100 * 1024 * 1024))
+    FLEET_AGENT_LINK_DEFAULT_TTL_DAYS = int(os.getenv('FLEET_AGENT_LINK_DEFAULT_TTL_DAYS', 7))

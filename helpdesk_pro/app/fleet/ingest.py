@@ -9,8 +9,10 @@ from __future__ import annotations
 import base64
 import json
 import os
+import hashlib
 from datetime import datetime, timedelta, timezone
 from threading import Thread
+from copy import deepcopy
 
 from flask import Flask, jsonify, request
 from werkzeug.serving import make_server
@@ -20,15 +22,30 @@ from app import db
 
 
 REQUIRED_TOP_LEVEL = {"ts", "machine", "category", "subtype", "level", "payload"}
+def _merge_dict(base: dict | None, incoming: dict | None) -> dict:
+    result = deepcopy(base) if isinstance(base, dict) else {}
+    if isinstance(incoming, dict):
+        for key, value in incoming.items():
+            result[key] = value
+    return result
+
+
 HOST_SNAPSHOT_DEFAULTS = {
     "cpuPct": None,
     "ram": {"usedMB": None, "totalMB": None},
     "disk": {"maxUsedPct": None, "volumes": []},
     "network": {"adapterCount": None, "primaryIP": None},
-    "antivirus": {"enabled": None, "upToDate": None, "products": []},
-    "firewall": {"anyProfileEnabled": None},
-    "updates": {"pending": None},
-    "events": {"errors24h": None},
+    "antivirus": {"enabled": None, "upToDate": None, "products": [], "error": None},
+    "firewall": {
+        "domain": None,
+        "privateProfile": None,
+        "publicProfile": None,
+        "anyProfileEnabled": None,
+        "error": None,
+    },
+    "updates": {"pending": None, "lastCheck": None, "error": None},
+    "events": {"errors24h": None, "errors": [], "error": None},
+    "screenshotB64": None,
 }
 
 
@@ -70,6 +87,27 @@ def _decode_screenshot(raw_value: str) -> bytes | None:
         return base64.b64decode(raw_value, validate=True)
     except (ValueError, base64.binascii.Error):
         return None
+
+
+def _doc_key(record: dict) -> str | None:
+    key = record.get("doc_key") or record.get("docKey")
+    if key:
+        return str(key)
+    try:
+        material = json.dumps(
+            [
+                record.get("machine"),
+                record.get("category"),
+                record.get("subtype"),
+                record.get("level"),
+                record.get("payload"),
+            ],
+            sort_keys=True,
+            default=str,
+        )
+    except (TypeError, ValueError):
+        material = f"{record.get('machine')}|{record.get('category')}|{record.get('subtype')}|{record.get('level')}"
+    return hashlib.sha256(material.encode("utf-8")).hexdigest()
 
 
 def _find_api_key(token: str):
@@ -209,7 +247,6 @@ def create_fleet_ingest_app(main_app) -> Flask:
                 if not valid:
                     errors.append(f"Line {idx}: {message}")
                     continue
-
                 ts_value = _iso_utc(record["ts"])
                 if not ts_value:
                     errors.append(f"Line {idx}: Invalid timestamp format.")
@@ -237,15 +274,28 @@ def create_fleet_ingest_app(main_app) -> Flask:
                     host.os_family = payload.get("osFamily") or host.os_family
                     host.os_version = payload.get("osVersion") or host.os_version
 
-                    message_entry = FleetMessage(
-                        host=host,
-                        ts=ts_utc,
-                        category=record["category"],
-                        subtype=record.get("subtype"),
-                        level=record.get("level"),
-                        payload=payload,
-                    )
-                    db.session.add(message_entry)
+                    doc_key = _doc_key(record)
+                    message_entry = None
+                    if doc_key:
+                        message_entry = FleetMessage.query.filter_by(doc_key=doc_key).first()
+                    if message_entry:
+                        message_entry.host = host
+                        message_entry.ts = ts_utc
+                        message_entry.category = record["category"]
+                        message_entry.subtype = record.get("subtype")
+                        message_entry.level = record.get("level")
+                        message_entry.payload = payload
+                    else:
+                        message_entry = FleetMessage(
+                            host=host,
+                            ts=ts_utc,
+                            category=record["category"],
+                            subtype=record.get("subtype"),
+                            level=record.get("level"),
+                            payload=payload,
+                            doc_key=doc_key,
+                        )
+                        db.session.add(message_entry)
 
                     latest_state = host.latest_state
                     if is_host_snapshot:
@@ -333,10 +383,13 @@ def create_fleet_ingest_app(main_app) -> Flask:
             for cmd in pending:
                 cmd.status = "dispatched"
                 cmd.delivered_at = now
+                script_b64 = base64.b64encode((cmd.command or "").encode("utf-8")).decode("ascii")
                 payload.append(
                     {
                         "id": cmd.id,
                         "command": cmd.command,
+                        "language": "powershell",
+                        "script_b64": script_b64,
                     }
                 )
             db.session.commit()
@@ -448,44 +501,58 @@ def start_fleet_ingest_server(main_app):
     main_app.extensions["fleet_ingest_server"] = server
 def _normalize_host_snapshot(payload: dict) -> dict:
     """Ensure host snapshot payload contains expected keys even if agent omits them."""
-    normalized = {}
-    normalized["cpuPct"] = payload.get("cpuPct", HOST_SNAPSHOT_DEFAULTS["cpuPct"])
-    ram = payload.get("ram") or {}
-    normalized["ram"] = {
-        "usedMB": ram.get("usedMB", HOST_SNAPSHOT_DEFAULTS["ram"]["usedMB"]),
-        "totalMB": ram.get("totalMB", HOST_SNAPSHOT_DEFAULTS["ram"]["totalMB"]),
-    }
-    disk = payload.get("disk") or {}
-    normalized["disk"] = {
-        "maxUsedPct": disk.get("maxUsedPct", HOST_SNAPSHOT_DEFAULTS["disk"]["maxUsedPct"]),
-        "volumes": disk.get("volumes", HOST_SNAPSHOT_DEFAULTS["disk"]["volumes"]),
-    }
-    network = payload.get("network") or {}
-    normalized["network"] = {
-        "adapterCount": network.get("adapterCount", HOST_SNAPSHOT_DEFAULTS["network"]["adapterCount"]),
-        "primaryIP": network.get("primaryIP", HOST_SNAPSHOT_DEFAULTS["network"]["primaryIP"]),
-    }
-    antivirus = payload.get("antivirus") or {}
-    normalized["antivirus"] = {
-        "enabled": antivirus.get("enabled", HOST_SNAPSHOT_DEFAULTS["antivirus"]["enabled"]),
-        "upToDate": antivirus.get("upToDate", HOST_SNAPSHOT_DEFAULTS["antivirus"]["upToDate"]),
-        "products": antivirus.get("products", HOST_SNAPSHOT_DEFAULTS["antivirus"]["products"]),
-    }
-    firewall = payload.get("firewall") or {}
-    normalized["firewall"] = {
-        "anyProfileEnabled": firewall.get("anyProfileEnabled", HOST_SNAPSHOT_DEFAULTS["firewall"]["anyProfileEnabled"]),
-    }
-    updates = payload.get("updates") or {}
-    normalized["updates"] = {
-        "pending": updates.get("pending", HOST_SNAPSHOT_DEFAULTS["updates"]["pending"]),
-        "lastCheck": updates.get("lastCheck"),
-    }
-    events = payload.get("events") or {}
-    normalized["events"] = {
-        "errors24h": events.get("errors24h", HOST_SNAPSHOT_DEFAULTS["events"]["errors24h"]),
-    }
-    # Preserve any additional fields (e.g., screenshotB64) by merging originals last.
+    payload = payload or {}
+    normalized = deepcopy(HOST_SNAPSHOT_DEFAULTS)
+
     for key, value in payload.items():
-        if key not in normalized:
-            normalized[key] = value
+        if isinstance(normalized.get(key), dict) and isinstance(value, dict):
+            normalized[key] = _merge_dict(normalized.get(key), value)
+        else:
+            normalized[key] = deepcopy(value) if isinstance(value, (dict, list)) else value
+
+    performance = normalized.get("performance")
+    if isinstance(performance, dict):
+        cpu_pct = performance.get("cpuPct")
+        if cpu_pct is not None:
+            normalized["cpuPct"] = cpu_pct
+        ram_section = performance.get("ram")
+        if isinstance(ram_section, dict):
+            normalized["ram"] = _merge_dict(normalized.get("ram"), ram_section)
+
+    storage = normalized.get("storage")
+    if isinstance(storage, dict):
+        disk_section = storage.get("disk")
+        if isinstance(disk_section, dict):
+            normalized["disk"] = _merge_dict(normalized.get("disk"), disk_section)
+
+    security = normalized.get("security")
+    if isinstance(security, dict):
+        firewall = security.get("firewall")
+        if isinstance(firewall, dict):
+            normalized["firewall"] = _merge_dict(normalized.get("firewall"), firewall)
+            normalized["firewallDomain"] = firewall.get("domain")
+            normalized["firewallPrivate"] = firewall.get("privateProfile")
+            normalized["firewallPublic"] = firewall.get("publicProfile")
+        antivirus = security.get("antivirus")
+        if isinstance(antivirus, dict):
+            normalized["antivirus"] = _merge_dict(normalized.get("antivirus"), antivirus)
+
+    events = normalized.get("events")
+    if isinstance(events, dict):
+        normalized["events"] = _merge_dict(HOST_SNAPSHOT_DEFAULTS.get("events"), events)
+
+    updates = normalized.get("updates")
+    if isinstance(updates, dict):
+        normalized["updates"] = _merge_dict(HOST_SNAPSHOT_DEFAULTS.get("updates"), updates)
+
+    network = normalized.get("network")
+    if isinstance(network, dict):
+        normalized["network"] = _merge_dict(HOST_SNAPSHOT_DEFAULTS.get("network"), network)
+
+    firewall_section = normalized.get("firewall")
+    if isinstance(firewall_section, dict) and firewall_section.get("anyProfileEnabled") is None:
+        firewall_section["anyProfileEnabled"] = any(
+            firewall_section.get(flag) for flag in ("domain", "privateProfile", "publicProfile")
+        )
+
     return normalized

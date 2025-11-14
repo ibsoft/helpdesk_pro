@@ -1,5 +1,94 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .fleet-settings-hero {
+    border-radius: 1.25rem;
+    background: linear-gradient(120deg, rgba(59,130,246,0.12), rgba(37,99,235,0.06));
+    border: 1px solid rgba(99,102,241,0.25);
+  }
+  html[data-bs-theme="dark"] body .fleet-settings-hero {
+    background: linear-gradient(120deg, rgba(15,23,42,0.85), rgba(30,64,175,0.4));
+    border-color: rgba(148,163,184,0.35);
+  }
+  .fleet-settings-hero .metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.7;
+  }
+  .fleet-settings-hero .metric-value {
+    font-size: 1.1rem;
+    font-weight: 600;
+  }
+  .alert-rule-card {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    padding: 1rem;
+    height: 100%;
+  }
+  .alert-rule-card h5 {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .custom-alert-row textarea {
+    min-height: 64px;
+    font-family: var(--bs-font-monospace);
+    font-size: 0.85rem;
+  }
+  .custom-alert-row.invalid {
+    border-color: #dc3545 !important;
+  }
+</style>
+
+<div class="fleet-settings-hero card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <h1 class="h4 mb-1"><i class="fa fa-gears text-primary me-2"></i>{{ _('Fleet Settings') }}</h1>
+        <p class="text-muted mb-0">{{ _('Manage ingest status, retention, and automation rules for Fleet Radar.') }}</p>
+      </div>
+      <div class="text-end">
+        <span class="badge {{ 'bg-success-subtle text-success-emphasis' if status_summary.ingest_enabled else 'bg-secondary-subtle text-secondary-emphasis' }} px-3 py-2">
+          <i class="fa {{ 'fa-toggle-on' if status_summary.ingest_enabled else 'fa-toggle-off' }} me-1"></i>
+          {{ _('Ingest %(state)s', state=_('Enabled') if status_summary.ingest_enabled else _('Disabled')) }}
+        </span>
+      </div>
+    </div>
+    <div class="row g-3 mt-2">
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-label">{{ _('Endpoint') }}</div>
+        <div class="metric-value"><i class="fa fa-link me-1"></i>{{ status_summary.ingest_endpoint }}/ingest</div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-label">{{ _('Hosts onboarded') }}</div>
+        <div class="metric-value"><i class="fa fa-laptop me-1"></i>{{ status_summary.host_count }}</div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-label">{{ _('Alert rules') }}</div>
+        <div class="metric-value"><i class="fa fa-bell me-1"></i>{{ status_summary.rule_count }}</div>
+      </div>
+      <div class="col-sm-6 col-lg-3">
+        <div class="metric-label">{{ _('API keys') }}</div>
+        <div class="metric-value"><i class="fa fa-key me-1"></i>{{ status_summary.api_keys }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% if pending_api_key %}
+  <div class="alert alert-warning d-flex align-items-start justify-content-between gap-3 shadow-sm" id="pendingKeyAlert">
+    <div>
+      <h5 class="alert-heading mb-1"><i class="fa fa-key me-2"></i>{{ _('Copy your new API key now') }}</h5>
+      <p class="mb-2 text-muted">{{ _('This value is shown only once. Keep it in a secure secret manager.') }}</p>
+      <code class="d-block fs-6 bg-white text-dark px-2 py-1 rounded">{{ pending_api_key }}</code>
+    </div>
+    <div class="text-end">
+      <button class="btn btn-dark" id="copyPendingKeyBtn" data-api-key="{{ pending_api_key }}" data-csrf="{{ csrf_token() }}">
+        <i class="fa fa-copy me-1"></i>{{ _('Copy & Hide') }}
+      </button>
+    </div>
+  </div>
+{% endif %}
 <div class="row g-3">
   <div class="col-lg-7">
     <div class="card shadow-sm h-100">
@@ -7,7 +96,7 @@
         <h2 class="h5 mb-0"><i class="fa fa-sliders me-2 text-primary"></i>{{ _('Module Preferences') }}</h2>
       </div>
       <div class="card-body">
-        <form method="post">
+        <form method="post" id="fleetSettingsForm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <div class="row g-3">
             <div class="col-md-4">
@@ -33,9 +122,76 @@
               </div>
             </div>
             <div class="col-12">
-              <label class="form-label">{{ _('Default Alert Rules (JSON)') }}</label>
-              <textarea class="form-control font-monospace" rows="6" name="alert_rules_json">{{ settings.default_alert_rules | tojson(indent=2) }}</textarea>
-              <small class="text-muted">{{ _('Customize CPU/Disk/AV/Updates/Events thresholds per rule key.') }}</small>
+              <label class="form-label">{{ _('Alert Automation') }}</label>
+              <p class="text-muted small mb-2">{{ _('Tune thresholds per signal or define custom JSON rules for advanced agents. Changes are stored as JSON behind the scenes.') }}</p>
+              <input type="hidden" name="alert_rules_json" id="alertRulesJson">
+              <div class="row g-3">
+                <div class="col-md-6 col-xl-4">
+                  <div class="alert-rule-card">
+                    <h5 class="mb-2">{{ _('CPU Threshold') }}</h5>
+                    <p class="text-muted small">{{ _('Trigger when CPU meets or exceeds this percentage.') }}</p>
+                    <div class="input-group">
+                      <input type="number" class="form-control alert-rule-input" data-rule="cpu" data-field="threshold" min="1" max="100" value="90">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                  <div class="alert-rule-card">
+                    <h5 class="mb-2">{{ _('Disk Threshold') }}</h5>
+                    <p class="text-muted small">{{ _('Alert when the most used volume exceeds this percentage.') }}</p>
+                    <div class="input-group">
+                      <input type="number" class="form-control alert-rule-input" data-rule="disk" data-field="threshold" min="1" max="100" value="85">
+                      <span class="input-group-text">%</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                  <div class="alert-rule-card">
+                    <h5 class="mb-2">{{ _('Pending Updates') }}</h5>
+                    <p class="text-muted small">{{ _('Raise an alert when pending updates exceed this count.') }}</p>
+                    <div class="input-group">
+                      <input type="number" class="form-control alert-rule-input" data-rule="updates" data-field="pending" min="0" value="0">
+                      <span class="input-group-text">{{ _('items') }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                  <div class="alert-rule-card">
+                    <h5 class="mb-2">{{ _('Event Errors') }}</h5>
+                    <p class="text-muted small">{{ _('Counts errors reported in the last 24h snapshot.') }}</p>
+                    <div class="input-group">
+                      <input type="number" class="form-control alert-rule-input" data-rule="events" data-field="errors24h" min="0" value="0">
+                      <span class="input-group-text">{{ _('errors') }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-6 col-xl-4">
+                  <div class="alert-rule-card">
+                    <h5 class="mb-2">{{ _('Antivirus Requirements') }}</h5>
+                    <p class="text-muted small">{{ _('Choose whether enabled and up-to-date states are mandatory before alerting.') }}</p>
+                    <div class="form-check form-switch mb-2">
+                      <input class="form-check-input alert-rule-input" type="checkbox" data-rule="antivirus" data-field="requireEnabled" id="requireAvEnabled" checked>
+                      <label class="form-check-label" for="requireAvEnabled">{{ _('Require antivirus enabled') }}</label>
+                    </div>
+                    <div class="form-check form-switch">
+                      <input class="form-check-input alert-rule-input" type="checkbox" data-rule="antivirus" data-field="requireUpToDate" id="requireAvUpToDate" checked>
+                      <label class="form-check-label" for="requireAvUpToDate">{{ _('Require signatures up to date') }}</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card shadow-sm border-0 mt-3">
+                <div class="card-header bg-body-tertiary d-flex justify-content-between align-items-center">
+                  <strong>{{ _('Custom Alert Rules') }}</strong>
+                  <button type="button" class="btn btn-sm btn-outline-primary" id="addCustomRuleBtn">
+                    <i class="fa fa-plus"></i> {{ _('Add Rule') }}
+                  </button>
+                </div>
+                <div class="card-body" id="customAlertRows">
+                  <p class="text-muted small mb-0" id="customAlertEmpty">{{ _('No custom alerts defined yet.') }}</p>
+                </div>
+              </div>
             </div>
           </div>
           <div class="mt-3 text-end">
@@ -107,4 +263,407 @@
     </div>
   </div>
 </div>
+<div class="row g-3 mt-3">
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h2 class="h5 mb-0"><i class="fa fa-cloud-arrow-down text-primary me-2"></i>{{ _('Telemetry Agent Installer') }}</h2>
+        <small class="text-muted">{{ _('Upload the latest Telemetry_Agent.msi and share download links with clients.') }}</small>
+      </div>
+      <div class="card-body">
+        {% if agent_installer_info %}
+          <div class="alert alert-success d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div>
+              <strong>{{ agent_installer_info.filename }}</strong>
+              <div class="small text-muted">
+                {{ _('Size') }}: {{ (agent_installer_info.size / (1024*1024)) | round(2) }} MB •
+                {{ _('Updated') }}: {{ agent_installer_info.modified.strftime('%d %b %Y %H:%M') }}
+              </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+              <span class="badge bg-success-subtle text-success-emphasis">{{ _('Ready to share') }}</span>
+              <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteInstallerModal">
+                <i class="fa fa-trash-can"></i>
+              </button>
+            </div>
+          </div>
+        {% else %}
+          <div class="alert alert-warning mb-3">
+            <i class="fa fa-triangle-exclamation me-2"></i>{{ _('No Telemetry_Agent.msi has been uploaded yet.') }}
+          </div>
+        {% endif %}
+        <form method="post" action="{{ url_for('fleet.upload_agent_installer') }}" enctype="multipart/form-data" class="mb-4">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-8">
+              <label class="form-label">{{ _('Upload Telemetry_Agent.msi') }}</label>
+              <input type="file" class="form-control" name="agent_installer" accept=".msi" required>
+            </div>
+            <div class="col-md-4 text-md-end">
+              <button class="btn btn-primary w-100">
+                <i class="fa fa-upload me-1"></i>{{ _('Replace Installer') }}
+              </button>
+            </div>
+          </div>
+        </form>
+        <div class="border rounded p-3">
+          <form method="post" action="{{ url_for('fleet.create_agent_download_link') }}" class="row g-3 align-items-end">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Expires in (days)') }}</label>
+              <input type="number" class="form-control" name="expires_in_days" min="1" value="{{ agent_link_default_ttl }}">
+            </div>
+            <div class="col-md-6 text-md-end">
+              <button class="btn btn-outline-primary w-100">
+                <i class="fa fa-link me-1"></i>{{ _('Generate Download Link') }}
+              </button>
+            </div>
+          </form>
+          <hr>
+          {% if agent_download_links %}
+            <div class="table-responsive">
+              <table class="table table-sm align-middle mb-0">
+                <thead>
+                  <tr>
+                    <th>{{ _('Created') }}</th>
+                    <th>{{ _('Expires') }}</th>
+                    <th>{{ _('Link') }}</th>
+                    <th class="text-end">{{ _('Actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for link in agent_download_links %}
+                    {% set link_url = url_for('fleet.download_agent_installer', token=link.token, _external=True) %}
+                    <tr>
+                      <td>{{ link.created_at.strftime('%d %b %Y %H:%M') if link.created_at else '—' }}</td>
+                      <td>
+                        {% if link.revoked_at %}
+                          <span class="badge bg-danger-subtle text-danger-emphasis">{{ _('Revoked') }}</span>
+                        {% elif link.expires_at %}
+                          {{ link.expires_at.strftime('%d %b %Y %H:%M') }}
+                        {% else %}
+                          {{ _('No expiry') }}
+                        {% endif %}
+                      </td>
+                      <td><span class="text-muted small">{{ _('Hidden (use copy)') }}</span></td>
+                      <td class="text-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary copy-link-btn" data-download-url="{{ link_url }}" title="{{ _('Copy link') }}">
+                          <i class="fa fa-copy"></i>
+                        </button>
+                        {% if not link.revoked_at and not link.is_expired %}
+                          <form method="post" action="{{ url_for('fleet.revoke_agent_download_link', link_id=link.id) }}" class="d-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button class="btn btn-sm btn-outline-danger" title="{{ _('Revoke') }}">
+                              <i class="fa fa-ban"></i>
+                            </button>
+                          </form>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-muted mb-0">{{ _('No download links created yet.') }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row g-3 mt-3">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <h2 class="h6 mb-1"><i class="fa fa-broom text-danger me-2"></i>{{ _('Cleanup Offline Hosts') }}</h2>
+          <p class="text-muted small mb-0">{{ _('Remove hosts that have been offline longer than the online window along with their retained telemetry and screenshots.') }}</p>
+        </div>
+        <button class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cleanupOfflineModal">
+          <i class="fa fa-trash-can me-1"></i>{{ _('Clean Offline Hosts') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() if super() is defined }}
+{% if pending_api_key %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const copyBtn = document.getElementById('copyPendingKeyBtn');
+    if (!copyBtn) { return; }
+    copyBtn.addEventListener('click', function() {
+      const keyValue = copyBtn.getAttribute('data-api-key');
+      if (!navigator.clipboard) {
+        alert('{{ _("Clipboard API not available. Copy the value manually.") }}');
+        return;
+      }
+      navigator.clipboard.writeText(keyValue).then(() => {
+        copyBtn.classList.remove('btn-dark');
+        copyBtn.classList.add('btn-success');
+        copyBtn.innerHTML = '<i class="fa fa-check me-1"></i>{{ _("Copied") }}';
+        fetch('{{ url_for("fleet.acknowledge_fleet_api_key") }}', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': copyBtn.getAttribute('data-csrf')
+          },
+          body: '{}'
+        }).finally(() => {
+          const alertBox = document.getElementById('pendingKeyAlert');
+          if (alertBox) {
+            alertBox.classList.add('fade');
+            setTimeout(() => alertBox.remove(), 400);
+          }
+        });
+      }).catch(() => {
+        alert('{{ _("Copy failed. Please copy it manually.") }}');
+      });
+    });
+  });
+</script>
+{% endif %}
+<div class="modal fade" id="cleanupOfflineModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Offline Hosts') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>{{ _('This will permanently remove every host that has been offline longer than the online window and delete their stored telemetry, alerts, screenshots, and transfers.') }}</p>
+        <p class="text-danger fw-semibold mb-0">{{ _('This action cannot be undone.') }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <form method="post" action="{{ url_for('fleet.cleanup_offline_hosts') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">
+            <i class="fa fa-trash-can me-1"></i>{{ _('Delete Offline Hosts') }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="deleteInstallerModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete Installer File') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p>{{ _('This removes the uploaded Telemetry_Agent.msi from the server and invalidates all download links.') }}</p>
+        <p class="text-danger fw-semibold mb-0">{{ _('Clients using existing links will no longer be able to download the agent.') }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <form method="post" action="{{ url_for('fleet.delete_agent_installer') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-danger">
+            <i class="fa fa-trash-can me-1"></i>{{ _('Delete Installer') }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const initialRules = {{ (settings.default_alert_rules or {}) | tojson }};
+    const standardRules = ['cpu', 'disk', 'updates', 'events', 'antivirus'];
+    const hiddenField = document.getElementById('alertRulesJson');
+    const customContainer = document.getElementById('customAlertRows');
+    const customEmpty = document.getElementById('customAlertEmpty');
+    const addCustomBtn = document.getElementById('addCustomRuleBtn');
+    const form = document.getElementById('fleetSettingsForm');
+
+    const getRuleValue = (rule, field, fallback = null) => {
+      if (initialRules && initialRules[rule] && initialRules[rule][field] !== undefined) {
+        return initialRules[rule][field];
+      }
+      return fallback;
+    };
+
+    const cpuInput = document.querySelector('[data-rule="cpu"][data-field="threshold"]');
+    const diskInput = document.querySelector('[data-rule="disk"][data-field="threshold"]');
+    const updatesInput = document.querySelector('[data-rule="updates"][data-field="pending"]');
+    const eventsInput = document.querySelector('[data-rule="events"][data-field="errors24h"]');
+    const avEnabledInput = document.querySelector('[data-rule="antivirus"][data-field="requireEnabled"]');
+    const avUpdatedInput = document.querySelector('[data-rule="antivirus"][data-field="requireUpToDate"]');
+
+    if (cpuInput) cpuInput.value = getRuleValue('cpu', 'threshold', 90) ?? 90;
+    if (diskInput) diskInput.value = getRuleValue('disk', 'threshold', 85) ?? 85;
+    if (updatesInput) updatesInput.value = getRuleValue('updates', 'pending', 0) ?? 0;
+    if (eventsInput) eventsInput.value = getRuleValue('events', 'errors24h', 0) ?? 0;
+    if (avEnabledInput) avEnabledInput.checked = getRuleValue('antivirus', 'requireEnabled', true) ?? true;
+    if (avUpdatedInput) avUpdatedInput.checked = getRuleValue('antivirus', 'requireUpToDate', true) ?? true;
+
+    function toggleCustomEmpty() {
+      if (!customEmpty) return;
+      const hasRows = customContainer && customContainer.querySelectorAll('.custom-alert-row').length > 0;
+      customEmpty.classList.toggle('d-none', hasRows);
+    }
+
+    function addCustomRow(key = '', valueObj = {}) {
+      if (!customContainer) {
+        return;
+      }
+      const row = document.createElement('div');
+      row.className = 'custom-alert-row border rounded p-3 mb-2';
+      const jsonValue = JSON.stringify(valueObj || {}, null, 2);
+      row.innerHTML = `
+        <div class="row g-3 align-items-start">
+          <div class="col-md-4">
+            <label class="form-label">{{ _('Rule key') }}</label>
+            <input type="text" class="form-control custom-rule-key" value="${key || ''}">
+          </div>
+          <div class="col-md-7">
+            <label class="form-label">{{ _('JSON payload') }}</label>
+            <textarea class="form-control custom-rule-json">${jsonValue}</textarea>
+          </div>
+          <div class="col-md-1 text-end">
+            <button type="button" class="btn btn-link text-danger custom-rule-remove" aria-label="{{ _('Remove') }}">
+              <i class="fa fa-trash"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      customContainer.appendChild(row);
+      row.querySelector('.custom-rule-remove').addEventListener('click', () => {
+        row.remove();
+        toggleCustomEmpty();
+        syncAlertRules(false);
+      });
+      row.querySelectorAll('input, textarea').forEach(el => el.addEventListener('input', () => syncAlertRules(false)));
+      toggleCustomEmpty();
+    }
+
+    if (addCustomBtn) {
+      addCustomBtn.addEventListener('click', () => {
+        addCustomRow('', {});
+        syncAlertRules(false);
+      });
+    }
+
+    if (initialRules) {
+      Object.entries(initialRules).forEach(([key, value]) => {
+        if (!standardRules.includes(key)) {
+          addCustomRow(key, value);
+        }
+      });
+    }
+    toggleCustomEmpty();
+
+    function syncAlertRules(showErrors = true) {
+      const rules = {};
+      const numFrom = (input, fallback = null) => {
+        if (!input) return fallback;
+        const val = parseFloat(input.value);
+        return Number.isFinite(val) ? val : fallback;
+      };
+      const cpuVal = numFrom(cpuInput, null);
+      if (cpuVal !== null) {
+        rules.cpu = { threshold: cpuVal };
+      }
+      const diskVal = numFrom(diskInput, null);
+      if (diskVal !== null) {
+        rules.disk = { threshold: diskVal };
+      }
+      const updVal = numFrom(updatesInput, 0);
+      rules.updates = { pending: updVal };
+      const evtVal = numFrom(eventsInput, 0);
+      rules.events = { errors24h: evtVal };
+      rules.antivirus = {
+        requireEnabled: avEnabledInput ? avEnabledInput.checked : true,
+        requireUpToDate: avUpdatedInput ? avUpdatedInput.checked : true,
+      };
+
+      let hasError = false;
+      if (customContainer) {
+        customContainer.querySelectorAll('.custom-alert-row').forEach(row => {
+          row.classList.remove('invalid');
+          const keyInput = row.querySelector('.custom-rule-key');
+          const jsonInput = row.querySelector('.custom-rule-json');
+          keyInput?.classList.remove('is-invalid');
+          jsonInput?.classList.remove('is-invalid');
+          const ruleKey = keyInput ? keyInput.value.trim() : '';
+          const rawJson = jsonInput ? jsonInput.value.trim() : '';
+          if (!ruleKey) {
+            hasError = true;
+            row.classList.add('invalid');
+            keyInput?.classList.add('is-invalid');
+            return;
+          }
+          let parsed = {};
+          if (rawJson) {
+            try {
+              parsed = JSON.parse(rawJson);
+            } catch (err) {
+              hasError = true;
+              row.classList.add('invalid');
+              jsonInput?.classList.add('is-invalid');
+              return;
+            }
+          }
+          rules[ruleKey] = parsed;
+        });
+      }
+
+      if (hasError) {
+        if (showErrors) {
+          alert('{{ _("Fix highlighted custom alert rows before saving.") }}');
+        }
+        return false;
+      }
+
+      if (hiddenField) {
+        hiddenField.value = JSON.stringify(rules);
+      }
+      return true;
+    }
+
+    document.querySelectorAll('.alert-rule-input').forEach(input => {
+      input.addEventListener('input', () => syncAlertRules(false));
+    });
+
+    syncAlertRules(false);
+
+    if (form) {
+      form.addEventListener('submit', function(event) {
+        if (!syncAlertRules(true)) {
+          event.preventDefault();
+        }
+      });
+    }
+  });
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.copy-link-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.getAttribute('data-download-url');
+        if (!navigator.clipboard) {
+          alert('{{ _("Clipboard API not available. Copy the link manually.") }}');
+          return;
+        }
+        navigator.clipboard.writeText(url).then(() => {
+          btn.classList.remove('btn-outline-secondary');
+          btn.classList.add('btn-success');
+          btn.innerHTML = '<i class="fa fa-check"></i>';
+          setTimeout(() => {
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+            btn.innerHTML = '<i class="fa fa-copy"></i>';
+          }, 1500);
+        });
+      });
+    });
+  });
+</script>
 {% endblock %}

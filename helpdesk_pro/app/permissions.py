@@ -17,6 +17,7 @@ MODULE_ACCESS_DEFINITIONS = {
     "networks": {"label": "Network Maps & Tools"},
     "backup": {"label": "Backup Monitor"},
     "task_scheduler": {"label": "Task Scheduler"},
+    "fleet_monitoring": {"label": "Fleet Monitoring"},
 }
 
 MODULE_ACCESS_LEVELS = ("read", "write")

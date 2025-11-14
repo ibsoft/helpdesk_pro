@@ -46,6 +46,113 @@
     right: 0.5rem;
     pointer-events: none;
   }
+  .alerts-tile {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    transition: box-shadow 0.2s ease;
+  }
+  .alerts-tile:hover {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  }
+  .alerts-tile.alert-clickable {
+    cursor: pointer;
+  }
+  .metadata-tile {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    padding: 0.85rem 1rem;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    height: 100%;
+  }
+  .metadata-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59,130,246,0.12);
+    color: var(--bs-primary);
+    flex-shrink: 0;
+  }
+  .category-dropdown .dropdown-menu {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .message-filter-panel {
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: linear-gradient(120deg, rgba(248,250,252,0.9), rgba(226,232,240,0.8));
+  }
+  html[data-bs-theme="dark"] body .message-filter-panel {
+    background: linear-gradient(120deg, rgba(15,23,42,0.85), rgba(30,41,59,0.75));
+    border-color: rgba(148,163,184,0.35);
+  }
+  .machine-pill {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    background: var(--bs-body-bg);
+  }
+  .category-chip-row .chip-pill {
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.45);
+    background: rgba(148,163,184,0.15);
+    padding: 0.35rem 1rem;
+    font-weight: 600;
+    color: var(--bs-gray-700);
+    transition: background 0.2s ease, color 0.2s ease;
+    text-decoration: none;
+  }
+  html[data-bs-theme="dark"] body .category-chip-row .chip-pill {
+    background: rgba(15,23,42,0.65);
+    border-color: rgba(148,163,184,0.4);
+    color: #f1f5f9;
+  }
+  .category-chip-row .chip-pill:hover {
+    text-decoration: none;
+    border-color: var(--bs-primary);
+  }
+  .category-chip-row .chip-pill.active {
+    background: var(--bs-primary);
+    color: #fff;
+    border-color: var(--bs-primary);
+  }
+  .category-chip-row .chip-pill .badge {
+    border-radius: 999px;
+    font-size: 0.65rem;
+  }
+  .payload-modal .payload-body {
+    color: var(--bs-body-color);
+    background: rgba(148,163,184,0.12);
+    border: 1px solid rgba(15,23,42,0.08);
+  }
+  html[data-bs-theme="dark"] body .payload-modal .payload-body {
+    background: rgba(15,23,42,0.75);
+    color: #f8fafc !important;
+    border-color: rgba(148,163,184,0.3);
+  }
+  #messagePanelContainer.loading-state {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+  .filter-row .filter-field {
+    flex: 1 1 180px;
+    min-width: 160px;
+  }
+  .filter-row .filter-actions {
+    flex: 0 0 180px;
+  }
 </style>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap host-header">
   <div>
@@ -63,26 +170,28 @@
     <a class="btn btn-outline-secondary" href="{{ url_for('fleet.dashboard') }}">
       <i class="fa fa-arrow-left"></i> {{ _('Back to Dashboard') }}
     </a>
-    <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#hostMetaModal">
-      <i class="fa fa-pen"></i> {{ _('Edit Metadata') }}
-    </button>
-    <a class="btn btn-primary" href="#remoteActionsCard">
-      <i class="fa fa-rocket"></i> {{ _('Remote Actions') }}
-    </a>
   </div>
 </div>
 
 <div class="row g-3 mb-4 host-top-cards">
-  <div class="col-lg-8">
+  <div class="{{ 'col-lg-12' if not settings.show_dashboard_screenshots else 'col-lg-8' }}">
     <div class="card shadow-sm h-100">
       <div class="card-body">
         <h2 class="h5">{{ _('System Health') }}</h2>
-        {% if host.latest_state %}
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <small class="text-muted">{{ _('Latest telemetry captured at %(time)s', time=format_ts(host.latest_state.updated_at)) }}</small>
-            <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#snapshotModal">
-              <i class="fa fa-list"></i> {{ _('View raw payload') }}
-            </button>
+        {% if snapshot_available %}
+          <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+            <small class="text-muted">
+              {% if snapshot_timestamp %}
+                {{ _('Latest telemetry captured at %(time)s', time=format_ts(snapshot_timestamp)) }}
+              {% else %}
+                {{ _('Awaiting telemetry...') }}
+              {% endif %}
+            </small>
+            {% if host.latest_state %}
+              <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#snapshotModal">
+                <i class="fa fa-list"></i> {{ _('View raw payload') }}
+              </button>
+            {% endif %}
           </div>
           <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
             <div class="col">
@@ -139,35 +248,72 @@
                   <span class="text-uppercase small fw-semibold opacity-75">{{ _('Pending updates') }}</span>
                   <i class="fa fa-rotate fa-2x opacity-75"></i>
                 </div>
-                <div class="host-health-value fw-semibold mb-0">{{ health_cards.updates.pending or 0 }}</div>
-                {% if health_cards.updates.lastCheck %}
-                  <small class="opacity-75">{{ _('Last check: %(time)s', time=health_cards.updates.lastCheck) }}</small>
+                {% set pending_updates = health_cards.updates.pending %}
+                <div class="host-health-value fw-semibold mb-0">
+                  {% if pending_updates is not none %}
+                    {{ pending_updates }}
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+                {% if health_cards.updates_last_check_dt %}
+                  <small class="opacity-75">{{ _('Last check: %(time)s', time=format_ts(health_cards.updates_last_check_dt)) }}</small>
                 {% endif %}
               </div>
             </div>
             <div class="col">
+              {% set av = health_cards.antivirus %}
               <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#00b09b,#96c93d);">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="text-uppercase small fw-semibold opacity-75">{{ _('Antivirus') }}</span>
                   <i class="fa fa-shield fa-2x opacity-75"></i>
                 </div>
-                <div class="h4 mb-0">
-                  {% if health_cards.antivirus.enabled %}
-                    <span class="badge bg-success-subtle text-success-emphasis">{{ _('Enabled') }}</span>
-                  {% else %}
-                    <span class="badge bg-danger-subtle text-danger-emphasis">{{ _('Disabled') }}</span>
-                  {% endif %}
-                </div>
-                <small class="opacity-75">{{ _('Up to date') if health_cards.antivirus.upToDate else _('Outdated signatures') }}</small>
+                {% if av.enabled is not none %}
+                  <div class="h4 mb-2">
+                    <span class="badge {{ 'bg-success-subtle text-success-emphasis' if av.enabled else 'bg-danger-subtle text-danger-emphasis' }}">
+                      {{ _('Enabled') if av.enabled else _('Disabled') }}
+                    </span>
+                  </div>
+                {% endif %}
+                {% if av.upToDate is not none %}
+                  <small class="opacity-75">
+                    {% if av.upToDate %}
+                      {{ _('Signatures up to date') }}
+                    {% else %}
+                      {{ _('Signatures outdated') }}
+                    {% endif %}
+                  </small>
+                {% endif %}
               </div>
             </div>
             <div class="col">
-              <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#ee0979,#ff6a00);">
+              {% set fw = health_cards.firewall %}
+              <div class="p-4 rounded-4 text-white shadow-sm h-100 position-relative" style="background: linear-gradient(135deg,#0f2027,#2c5364);">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="text-uppercase small fw-semibold opacity-75">{{ _('Errors (24h)') }}</span>
-                  <i class="fa fa-triangle-exclamation fa-2x opacity-75"></i>
+                  <span class="text-uppercase small fw-semibold opacity-75">{{ _('Firewall') }}</span>
+                  <i class="fa fa-shield-halved fa-2x opacity-75"></i>
                 </div>
-                <div class="host-health-value fw-semibold mb-0">{{ health_cards.events.errors24h or 0 }}</div>
+                {% if fw.anyProfileEnabled is not none %}
+                  <div class="h4 mb-2">
+                    <span class="badge {{ 'bg-success-subtle text-success-emphasis' if fw.anyProfileEnabled else 'bg-danger-subtle text-danger-emphasis' }}">
+                      {{ _('Enabled') if fw.anyProfileEnabled else _('Disabled') }}
+                    </span>
+                  </div>
+                {% endif %}
+                <div class="d-flex flex-wrap gap-2">
+                  {% set fw_profiles = [
+                    (_('Domain'), fw.domain),
+                    (_('Private'), fw.privateProfile),
+                    (_('Public'), fw.publicProfile)
+                  ] %}
+                  {% for label, state in fw_profiles %}
+                    {% if state is not none %}
+                      <span class="badge {{ 'bg-success-subtle text-success-emphasis' if state else 'bg-secondary-subtle text-secondary-emphasis' }}">
+                        {{ label }}
+                      </span>
+                    {% endif %}
+                  {% endfor %}
+                </div>
               </div>
             </div>
           </div>
@@ -177,45 +323,76 @@
       </div>
     </div>
   </div>
-  <div class="col-lg-4 latest-screenshot-card">
-    <div class="card shadow-sm h-100">
-      <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
-          <h2 class="h5 mb-0">{{ _('Latest Screenshot') }}</h2>
+  {% if settings.show_dashboard_screenshots %}
+    <div class="col-lg-4 latest-screenshot-card">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">{{ _('Latest Screenshot') }}</h2>
+            {% if screenshot_data %}
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#screenshotFullscreenModal">
+                <i class="fa fa-expand"></i>
+              </button>
+            {% endif %}
+          </div>
           {% if screenshot_data %}
-            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#screenshotFullscreenModal">
-              <i class="fa fa-expand"></i>
-            </button>
+            <div class="screenshot-wrapper mt-2">
+              <button type="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#screenshotFullscreenModal">
+                <img src="{{ screenshot_data }}" alt="{{ _('Host screenshot') }}">
+              </button>
+            </div>
+            {% if snapshot_timestamp %}
+              <small class="text-muted">{{ _('Updated at %(time)s', time=format_ts(snapshot_timestamp)) }}</small>
+            {% endif %}
+          {% else %}
+            <p class="text-muted mb-0">{{ _('Agent has not uploaded a screenshot yet.') }}</p>
           {% endif %}
         </div>
-        {% if screenshot_data %}
-          <div class="screenshot-wrapper mt-2">
-            <button type="button"
-                    data-bs-toggle="modal"
-                    data-bs-target="#screenshotFullscreenModal">
-              <img src="{{ screenshot_data }}" alt="{{ _('Host screenshot') }}">
-            </button>
-          </div>
-          <small class="text-muted">{{ _('Updated at %(time)s', time=host.latest_state.updated_at) }}</small>
-        {% else %}
-          <p class="text-muted mb-0">{{ _('Agent has not uploaded a screenshot yet.') }}</p>
-        {% endif %}
       </div>
     </div>
-  </div>
+  {% endif %}
 </div>
 
 {% if active_alerts %}
   <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <h2 class="h5 mb-3">{{ _('Active Alerts') }}</h2>
+      <h2 class="h5 mb-3 d-flex align-items-center gap-2">
+        <i class="fa fa-bell text-warning"></i>{{ _('Active Alerts') }}
+      </h2>
       <div class="row g-3">
         {% for alert in active_alerts %}
+          {% set severity = (alert.severity or 'warning') | lower %}
+          {% if 'danger' in severity or 'critical' in severity %}
+            {% set badge_class = 'bg-danger-subtle text-danger-emphasis' %}
+            {% set icon_class = 'fa-triangle-exclamation text-danger' %}
+          {% elif 'info' in severity %}
+            {% set badge_class = 'bg-info-subtle text-info-emphasis' %}
+            {% set icon_class = 'fa-circle-info text-info' %}
+          {% else %}
+            {% set badge_class = 'bg-warning-subtle text-warning-emphasis' %}
+            {% set icon_class = 'fa-circle-exclamation text-warning' %}
+          {% endif %}
+          {% set alert_link = none %}
+          {% set alert_modal = none %}
+          {% if alert.rule_key == 'events' and event_errors %}
+            {% set alert_modal = 'eventErrorsModal' %}
+          {% endif %}
           <div class="col-md-6 col-lg-4">
-            <div class="p-3 border rounded h-100">
-              <span class="badge bg-danger-subtle text-danger-emphasis text-uppercase small">{{ alert.rule_key }}</span>
-              <p class="mt-2 mb-1">{{ alert.message }}</p>
-              <small class="text-muted">{{ _('Triggered at %(time)s', time=alert.triggered_at) }}</small>
+            <div class="alerts-tile p-3 h-100 d-flex flex-column gap-2 {% if alert_link or alert_modal %}alert-clickable{% endif %}"
+                 {% if alert_modal %}role="button" tabindex="0" data-bs-toggle="modal" data-bs-target="#{{ alert_modal }}"{% elif alert_link %}role="link" tabindex="0" onclick="window.location='{{ alert_link }}'"{% endif %}>
+              <div class="d-flex align-items-center gap-2">
+                <span class="metadata-icon bg-white">
+                  <i class="fa {{ icon_class }}"></i>
+                </span>
+                <div>
+                  <span class="badge {{ badge_class }} text-uppercase">{{ alert.rule_key }}</span>
+                  <div class="small text-muted">{{ _('Severity: %(severity)s', severity=alert.severity or 'warning') }}</div>
+                </div>
+              </div>
+              <p class="mb-1 fw-semibold">{{ alert.message }}</p>
+              <small class="text-muted">{{ _('Triggered at %(time)s', time=format_ts(alert.triggered_at)) }}</small>
             </div>
           </div>
         {% endfor %}
@@ -226,9 +403,12 @@
 
 <div class="card shadow-sm mb-4" id="remoteActionsCard">
   <div class="card-body">
-    <h2 class="h5 d-flex align-items-center gap-2 mb-3">
-      <i class="fa fa-terminal text-primary"></i>{{ _('Remote Actions') }}
-    </h2>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <h2 class="h5 d-flex align-items-center gap-2 mb-0">
+        <i class="fa fa-terminal text-primary"></i>{{ _('Remote Actions') }}
+      </h2>
+      <small class="text-muted">{{ _('Use these tools to interact with the host directly.') }}</small>
+    </div>
     <div class="row g-3">
       <div class="col-md-4">
         <div class="border rounded p-3 h-100">
@@ -236,7 +416,9 @@
           {% if primary_ip %}
             <div class="d-flex flex-column gap-2 mt-2">
               <a class="btn btn-outline-primary btn-sm" href="ssh://{{ primary_ip }}">{{ _('Open SSH') }}</a>
-              <a class="btn btn-outline-info btn-sm" href="rdp://full%20address=s:{{ primary_ip }}">{{ _('Open RDP') }}</a>
+              <a class="btn btn-outline-info btn-sm" href="{{ url_for('fleet.download_rdp_file', host_id=host.id) }}">
+                <i class="fa fa-file-arrow-down me-1"></i>{{ _('Download RDP Profile') }}
+              </a>
               <a class="btn btn-outline-secondary btn-sm" href="vnc://{{ primary_ip }}">{{ _('Open VNC') }}</a>
             </div>
           {% else %}
@@ -246,21 +428,33 @@
       </div>
       <div class="col-md-4">
         <div class="border rounded p-3 h-100">
-          <h3 class="h6">{{ _('Send Command') }}</h3>
+          <h3 class="h6 d-flex justify-content-between align-items-center">
+            <span>{{ _('Send PowerShell Script') }}</span>
+            <span class="badge bg-info-subtle text-info-emphasis text-uppercase">{{ _('PS1') }}</span>
+          </h3>
           <form method="post" action="{{ url_for('fleet.create_remote_command', host_id=host.id) }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <textarea class="form-control mb-2" name="command" rows="3" placeholder="sudo systemctl restart service"></textarea>
-            <button class="btn btn-primary btn-sm w-100">{{ _('Queue Command') }}</button>
+            <textarea class="form-control font-monospace mb-2" name="command" rows="6" placeholder="param($serviceName)\r\nRestart-Service -Name $serviceName -Force\r\nWrite-Host &quot;Restarted $serviceName&quot;"></textarea>
+            <small class="text-muted d-block mb-2">{{ _('Paste the PowerShell script you want the agent to execute. It runs with the agent\'s privileges on Windows/Linux (pwsh). Avoid commands that require interactive prompts.') }}</small>
+            <button class="btn btn-primary btn-sm w-100">{{ _('Queue Script') }}</button>
           </form>
           {% if remote_commands %}
             <hr>
             <ul class="list-unstyled small mb-0">
               {% for cmd in remote_commands %}
-                <li class="mb-1">
-                  <span class="badge bg-dark-subtle text-uppercase">{{ cmd.status }}</span>
-                  <code>{{ cmd.command }}</code>
-                  {% if cmd.response %}
-                    <div class="text-muted">{{ cmd.response }}</div>
+                <li class="mb-2 d-flex justify-content-between gap-2">
+                  <div>
+                    <span class="badge bg-dark-subtle text-uppercase">{{ cmd.status }}</span>
+                    <code>{{ cmd.command }}</code>
+                    {% if cmd.response %}
+                      <div class="text-muted">{{ cmd.response }}</div>
+                    {% endif %}
+                  </div>
+                  {% if cmd.status in ['pending', 'assigned'] %}
+                    <form method="post" action="{{ url_for('fleet.cancel_remote_command', host_id=host.id, command_id=cmd.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-danger">{{ _('Cancel') }}</button>
+                    </form>
                   {% endif %}
                 </li>
               {% endfor %}
@@ -287,6 +481,12 @@
                     <span class="badge bg-success-subtle text-success-emphasis">{{ _('Downloaded') }}</span>
                   {% else %}
                     <span class="badge bg-warning-subtle text-warning-emphasis">{{ _('Pending pickup') }}</span>
+                    <form method="post"
+                          action="{{ url_for('fleet.cancel_file_transfer', host_id=host.id, transfer_id=transfer.id) }}"
+                          class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2">{{ _('Cancel') }}</button>
+                    </form>
                   {% endif %}
                 </li>
               {% endfor %}
@@ -298,229 +498,123 @@
   </div>
 </div>
 
-<div class="card shadow-sm mb-4">
+<div class="card shadow-sm mb-4" id="messageFeed">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
       <h2 class="h5 mb-0">{{ _('Host Metadata') }}</h2>
       <span class="text-muted small">{{ _('Use the Edit Metadata button above to update details.') }}</span>
     </div>
-    <div class="row g-3 small">
+    <div class="row g-3 metadata-grid">
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Display Name') }}</p>
-        <p class="mb-0">{{ host.display_name or host.agent_id }}</p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-display"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Display Name') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.display_name or host.agent_id }}</p>
+          </div>
+        </div>
       </div>
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Location') }}</p>
-        <p class="mb-0">{{ host.location or _('Not specified') }}</p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-location-dot"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Location') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.location or _('Not specified') }}</p>
+          </div>
+        </div>
       </div>
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Operating System') }}</p>
-        <p class="mb-0">
-          {% if host.os_family %}
-            {{ host.os_family }}{% if host.os_version %} <span class="text-muted">({{ host.os_version }})</span>{% endif %}
-          {% else %}
-            {{ _('Not specified') }}
-          {% endif %}
-        </p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-microchip"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Operating System') }}</p>
+            <p class="mb-0 fw-semibold">
+              {% if host.os_family %}
+                {{ host.os_family }}{% if host.os_version %} <span class="text-muted">({{ host.os_version }})</span>{% endif %}
+              {% else %}
+                {{ _('Not specified') }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
       </div>
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Coordinates') }}</p>
-        <p class="mb-0">
-          {% if host.latitude or host.longitude %}
-            {{ host.latitude or '—' }}, {{ host.longitude or '—' }}
-          {% else %}
-            {{ _('Not set') }}
-          {% endif %}
-        </p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-map-pin"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Coordinates') }}</p>
+            <p class="mb-0 fw-semibold">
+              {% if host.latitude or host.longitude %}
+                {{ host.latitude or '—' }}, {{ host.longitude or '—' }}
+              {% else %}
+                {{ _('Not set') }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
       </div>
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Contact') }}</p>
-        <p class="mb-0">{{ host.contact or _('Not assigned') }}</p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-user"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Contact') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.contact or _('Not assigned') }}</p>
+          </div>
+        </div>
       </div>
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Tags') }}</p>
-        <p class="mb-0">{{ host.tags or _('None') }}</p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-tags"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Tags') }}</p>
+            {% if host.tags %}
+              {% set tags = host.tags.split(',') %}
+              <div class="d-flex flex-wrap gap-2">
+                {% for tag in tags %}
+                  {% if tag.strip() %}
+                    <span class="badge bg-primary-subtle text-primary-emphasis">#{{ tag.strip() }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="mb-0">{{ _('None') }}</p>
+            {% endif %}
+          </div>
+        </div>
       </div>
       <div class="col-md-4">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Map Pin Icon') }}</p>
-        <p class="mb-0">{{ host.map_pin_icon or _('Default') }}</p>
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-location-arrow"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Map Pin Icon') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.map_pin_icon or _('Default') }}</p>
+          </div>
+        </div>
       </div>
       <div class="col-12">
-        <p class="text-muted text-uppercase fw-semibold mb-1">{{ _('Notes') }}</p>
-        {% if host.notes %}
-          <div class="bg-light rounded p-2">{{ host.notes }}</div>
-        {% else %}
-          <p class="mb-0">{{ _('No notes captured yet.') }}</p>
-        {% endif %}
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-note-sticky"></i></span>
+          <div class="w-100">
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Notes') }}</p>
+            {% if host.notes %}
+              <div class="bg-light rounded p-2 mb-0">{{ host.notes }}</div>
+            {% else %}
+              <p class="mb-0">{{ _('No notes captured yet.') }}</p>
+            {% endif %}
+            <div class="mt-3 text-end">
+              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#hostMetaModal">
+                <i class="fa fa-pen"></i> {{ _('Edit Metadata') }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </div>
 
-<div class="card shadow-sm mb-4">
-  <div class="card-body">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-      <div class="d-flex align-items-center gap-3">
-        <div class="rounded-circle bg-primary-subtle text-primary d-flex align-items-center justify-content-center" style="width:48px;height:48px;">
-          <i class="fa fa-clock-rotate-left fa-lg"></i>
-        </div>
-        <div>
-          <h2 class="h5 mb-1">{{ _('Recent Telemetry') }}</h2>
-          <small class="text-muted">
-            {% if last_ingest_ts %}
-              {{ _('Last ingest: %(time)s', time=format_ts(last_ingest_ts)) }}
-            {% else %}
-              {{ _('No telemetry received yet.') }}
-            {% endif %}
-          </small>
-        </div>
-      </div>
-      <div class="d-flex gap-2">
-        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('fleet.host_detail', host_id=host.id, export='json', **filters) }}">
-          <i class="fa fa-download"></i> {{ _('Export JSON') }}
-        </a>
-      </div>
-    </div>
-
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-      <span class="text-muted small text-uppercase fw-semibold">{{ _('Categories') }}</span>
-      <a class="badge rounded-pill {{ 'bg-primary text-white' if not filters.category else 'bg-light text-muted border' }}"
-         href="{{ url_for('fleet.host_detail', host_id=host.id, start=filters.start, end=filters.end, subtype=filters.subtype, level=filters.level, q=filters.q, per_page=filters.per_page) }}">
-        {{ _('All') }}
-      </a>
-      {% for item in category_counts %}
-        <a class="badge rounded-pill d-flex align-items-center gap-2 {{ 'bg-primary text-white' if filters.category and filters.category == item.raw else 'bg-light text-muted border' }}"
-           href="{{ url_for('fleet.host_detail', host_id=host.id, start=filters.start, end=filters.end, category=item.raw, subtype=filters.subtype, level=filters.level, q=filters.q, per_page=filters.per_page) }}">
-          <span>{{ item.name }}</span>
-          <span class="badge bg-dark-subtle text-dark">{{ item.count }}</span>
-        </a>
-      {% endfor %}
-    </div>
-
-    <form method="get" class="row g-2 align-items-end mb-3">
-      <div class="col-md-3">
-        <label class="form-label text-muted small text-uppercase">{{ _('Machine') }}</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fa fa-desktop"></i></span>
-          <input type="text" class="form-control" value="{{ host.display_name or host.agent_id }}" readonly>
-        </div>
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <label class="form-label">{{ _('Start') }}</label>
-        <input type="datetime-local" name="start" value="{{ filters.start }}" class="form-control">
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <label class="form-label">{{ _('End') }}</label>
-        <input type="datetime-local" name="end" value="{{ filters.end }}" class="form-control">
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <label class="form-label">{{ _('Subtype') }}</label>
-        <input type="text" name="subtype" value="{{ filters.subtype }}" class="form-control" placeholder="snapshot">
-      </div>
-      <div class="col-sm-6 col-md-3">
-        <label class="form-label">{{ _('Level') }}</label>
-        <input type="text" name="level" value="{{ filters.level }}" class="form-control" placeholder="error/info/warn">
-      </div>
-      <div class="col-sm-6 col-md-2">
-        <label class="form-label">{{ _('Per page') }}</label>
-        <input type="number" min="5" max="200" name="per_page" value="{{ filters.per_page or 25 }}" class="form-control">
-      </div>
-      <div class="col-md-4">
-        <label class="form-label">{{ _('Search payload') }}</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="fa fa-search"></i></span>
-          <input type="text" name="q" value="{{ filters.q }}" class="form-control" placeholder="{{ _('log, cpu, service...') }}">
-        </div>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label text-muted small text-uppercase d-block">{{ _('Category filter') }}</label>
-        <input type="text" name="category" value="{{ filters.category }}" class="form-control" placeholder="{{ _('event, host...') }}">
-      </div>
-      <div class="col-md-2 ms-auto text-md-end">
-        <button class="btn btn-primary w-100 mb-2"><i class="fa fa-filter me-1"></i>{{ _('Filter') }}</button>
-        <a class="btn btn-outline-secondary w-100" href="{{ url_for('fleet.host_detail', host_id=host.id) }}">{{ _('Clear') }}</a>
-      </div>
-    </form>
-
-    {% if messages %}
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light text-uppercase small">
-            <tr>
-              <th class="text-muted">#</th>
-              <th>{{ _('Time') }}</th>
-              <th>{{ _('Machine') }}</th>
-              <th>{{ _('Category') }}</th>
-              <th>{{ _('Subtype') }}</th>
-              <th>{{ _('Level') }}</th>
-              <th>{{ _('Payload') }}</th>
-            </tr>
-          </thead>
-          <tbody class="small">
-            {% for message in messages %}
-              <tr>
-                <td class="text-muted">{{ message.id }}</td>
-                <td>{{ format_ts(message.ts) }}</td>
-                <td><span class="fw-semibold">{{ host.display_name or host.agent_id }}</span></td>
-                <td>
-                  <span class="badge bg-light text-primary border">{{ message.category or _('Uncategorized') }}</span>
-                </td>
-                <td>{{ message.subtype or _('—') }}</td>
-                <td>
-                  {% set lvl = (message.level or 'info') | lower %}
-                  {% if 'crit' in lvl or 'error' in lvl %}
-                    {% set badge_class = 'bg-danger-subtle text-danger-emphasis' %}
-                  {% elif 'warn' in lvl %}
-                    {% set badge_class = 'bg-warning-subtle text-warning-emphasis' %}
-                  {% else %}
-                    {% set badge_class = 'bg-secondary-subtle text-secondary-emphasis' %}
-                  {% endif %}
-                  <span class="badge text-uppercase {{ badge_class }}">{{ message.level or _('info') }}</span>
-                </td>
-                <td style="min-width:240px;">
-                  <code class="text-danger small">{{ message.payload | tojson | truncate(120, True, '…') }}</code>
-                  <button class="btn btn-link btn-sm text-decoration-none message-payload-btn" data-message-id="{{ message.id }}">
-                    <i class="fa fa-eye"></i> {{ _('Open') }}
-                  </button>
-                </td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <nav class="mt-3">
-          <ul class="pagination pagination-sm mb-0">
-            {% if pagination.has_prev %}
-              <li class="page-item">
-                <a class="page-link" href="{{ url_for('fleet.host_detail', host_id=host.id, page=pagination.prev_num, **filters) }}">&laquo;</a>
-              </li>
-            {% endif %}
-            <li class="page-item disabled">
-              <span class="page-link">{{ _('Page %(page)s of %(pages)s', page=pagination.page, pages=pagination.pages) }}</span>
-            </li>
-            {% if pagination.has_next %}
-              <li class="page-item">
-                <a class="page-link" href="{{ url_for('fleet.host_detail', host_id=host.id, page=pagination.next_num, **filters) }}">&raquo;</a>
-              </li>
-            {% endif %}
-          </ul>
-        </nav>
-        <p class="text-muted small mt-2 mb-0">
-          {% if pagination.total %}
-            {% set start_idx = ((pagination.page - 1) * pagination.per_page) + 1 %}
-            {% set end_idx = pagination.page * pagination.per_page %}
-            {% if end_idx > pagination.total %}
-              {% set end_idx = pagination.total %}
-            {% endif %}
-            {{ _('Showing %(start)s-%(end)s of %(total)s messages', start=start_idx, end=end_idx, total=pagination.total) }}
-          {% else %}
-            {{ _('No messages to display.') }}
-          {% endif %}
-        </p>
-      </div>
-    {% else %}
-      <p class="text-muted mb-0">{{ _('No messages stored for this host yet.') }}</p>
-    {% endif %}
-  </div>
+<div id="messagePanelContainer">
+  {% include "fleet/_messages_panel.html" %}
 </div>
 
 <div class="modal fade" id="hostMetaModal" tabindex="-1" aria-hidden="true">
@@ -589,7 +683,7 @@
   </div>
 </div>
 
-{% if screenshot_data %}
+{% if screenshot_data and settings.show_dashboard_screenshots %}
   <div class="modal fade" id="screenshotFullscreenModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen" style="margin-top: var(--navbar-height);">
       <div class="modal-content bg-dark text-white">
@@ -606,7 +700,7 @@
 {% endif %}
 
 {% if host.latest_state %}
-  <div class="modal fade" id="snapshotModal" tabindex="-1" aria-hidden="true">
+  <div class="modal fade payload-modal" id="snapshotModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header modal-header-gradient text-white">
@@ -614,14 +708,49 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
-          <pre class="small bg-light rounded p-3">{{ host.latest_state.snapshot | tojson(indent=2) }}</pre>
+          <pre class="payload-body small rounded p-3">{{ host.latest_state.snapshot | tojson(indent=2) }}</pre>
         </div>
       </div>
     </div>
   </div>
 {% endif %}
 
-<div class="modal fade" id="messagePayloadModal" tabindex="-1" aria-hidden="true">
+{% if event_errors %}
+  <div class="modal fade payload-modal" id="eventErrorsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-bug me-2"></i>{{ _('Event Log Errors (24h)') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="list-group">
+            {% for evt in event_errors %}
+              <div class="list-group-item mb-2 rounded border">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <strong>{{ evt.source or _('Unknown source') }}</strong>
+                  <small class="text-muted">{{ evt.time or '' }}</small>
+                </div>
+                <div class="text-muted small mb-2">
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis me-1">{{ evt.log or 'Log' }}</span>
+                  #{{ evt.index }}
+                </div>
+                <pre class="payload-body small rounded p-3 mb-0">{{ evt.message }}</pre>
+              </div>
+            {% endfor %}
+          </div>
+          {% if health_cards.events and health_cards.events.error %}
+            <div class="alert alert-warning mt-3 mb-0">
+              <i class="fa fa-circle-info me-2"></i>{{ health_cards.events.error }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="modal fade payload-modal" id="messagePayloadModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content">
       <div class="modal-header modal-header-gradient text-white">
@@ -629,7 +758,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">
-        <pre class="small bg-light rounded p-3" id="messagePayloadBody"></pre>
+        <pre class="payload-body small rounded p-3" id="messagePayloadBody"></pre>
       </div>
     </div>
   </div>
@@ -639,22 +768,117 @@
 {{ super() if super() is defined }}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const map = {{ message_payload_map | tojson }};
     const modalEl = document.getElementById('messagePayloadModal');
     const payloadBody = document.getElementById('messagePayloadBody');
-    document.querySelectorAll('.message-payload-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-message-id');
-        const data = map[id];
-        if (data) {
-          payloadBody.textContent = JSON.stringify(data, null, 2);
-        } else {
-          payloadBody.textContent = '{{ _("Payload unavailable.") }}';
-        }
-        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-        modal.show();
+    const messagePanelContainer = document.getElementById('messagePanelContainer');
+    const watchedKeys = ['category', 'subtype', 'level', 'q', 'per_page', 'page'];
+
+    const showPayload = (payloadMap, id) => {
+      const data = payloadMap[id];
+      payloadBody.textContent = data ? JSON.stringify(data, null, 2) : '{{ _("Payload unavailable.") }}';
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    };
+
+    const parsePayloadMap = () => {
+      const dataEl = document.getElementById('messagePayloadData');
+      if (!dataEl) {
+        return {};
+      }
+      try {
+        return JSON.parse(dataEl.textContent || '{}');
+      } catch (err) {
+        console.warn('Failed to parse payload map', err);
+        return {};
+      }
+    };
+
+    const autoScrollToFeed = (behavior = 'smooth') => {
+      const messageFeed = document.getElementById('messageFeed');
+      if (messageFeed) {
+        messageFeed.scrollIntoView({behavior, block: 'start'});
+      }
+    };
+
+    const shouldAutoScroll = () => {
+      const params = new URLSearchParams(window.location.search || '');
+      return watchedKeys.some(key => params.get(key)) || window.location.hash === '#messageFeed';
+    };
+
+    const bindPayloadHandlers = () => {
+      const payloadMap = parsePayloadMap();
+      if (!messagePanelContainer) return;
+      const rows = messagePanelContainer.querySelectorAll('.message-row');
+      rows.forEach(row => {
+        row.addEventListener('dblclick', () => showPayload(payloadMap, row.getAttribute('data-message-id')));
       });
-    });
+      messagePanelContainer.querySelectorAll('.message-payload-btn').forEach(btn => {
+        btn.addEventListener('click', () => showPayload(payloadMap, btn.getAttribute('data-message-id')));
+      });
+    };
+
+    const updateHistory = (urlObj) => {
+      const tidy = new URL(urlObj);
+      tidy.searchParams.delete('partial');
+      const qs = tidy.searchParams.toString();
+      const next = tidy.pathname + (qs ? `?${qs}` : '');
+      window.history.replaceState({}, '', next);
+    };
+
+    const fetchMessages = (target, opts = {}) => {
+      if (!messagePanelContainer) return;
+      const url = new URL(target, window.location.origin);
+      if (!opts.keepPage) {
+        url.searchParams.delete('page');
+      }
+      url.searchParams.set('partial', 'messages');
+      messagePanelContainer.classList.add('loading-state');
+      fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(resp => {
+          if (!resp.ok) throw new Error('Failed to load messages');
+          return resp.text();
+        })
+        .then(html => {
+          messagePanelContainer.innerHTML = html;
+          bindPayloadHandlers();
+          bindFilterInteractions();
+          updateHistory(url);
+          autoScrollToFeed('smooth');
+        })
+        .catch(err => console.error(err))
+        .finally(() => {
+          messagePanelContainer.classList.remove('loading-state');
+        });
+    };
+
+    const bindFilterInteractions = () => {
+      if (!messagePanelContainer) return;
+      const filterForm = messagePanelContainer.querySelector('.message-filter-form');
+      if (filterForm) {
+        filterForm.addEventListener('submit', (evt) => {
+          evt.preventDefault();
+          const formData = new FormData(filterForm);
+          const url = new URL(filterForm.action, window.location.origin);
+          url.search = new URLSearchParams(formData).toString();
+          fetchMessages(url.toString(), {keepPage: false});
+        });
+      }
+      messagePanelContainer.querySelectorAll('.message-filter-link').forEach(link => {
+        link.addEventListener('click', (evt) => {
+          if (evt.metaKey || evt.ctrlKey || evt.shiftKey || evt.button === 1) {
+            return;
+          }
+          evt.preventDefault();
+          const keepPage = link.dataset.keepPage === 'true';
+          fetchMessages(link.href, {keepPage});
+        });
+      });
+    };
+
+    bindPayloadHandlers();
+    bindFilterInteractions();
+    if (shouldAutoScroll()) {
+      requestAnimationFrame(() => autoScrollToFeed('auto'));
+    }
   });
 </script>
 {% endblock %}

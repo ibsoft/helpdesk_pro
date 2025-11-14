@@ -327,6 +327,31 @@ Each module corresponds to a Flask blueprint or service housed under `app/`.
 
 - **Operational reminders** – Task Scheduler is part of the main Flask app; no extra services needed. Ensure SMTP credentials are valid if you plan to use the email action. Share links follow the task status—closing a task renders public booking forms read-only.
 
+### 6.20 Fleet Monitoring (`app/fleet`)
+
+- **Mission** – Provide a first-class experience for endpoint telemetry, marrying device snapshots, map geography, health summaries, screenshots, alerts, and remote tooling into the Helpdesk Pro shell. The ingestion service will eventually listen on port `8449` (`/ingest`) with API-key authentication and NDJSON payloads.
+- **Milestone 1 deliverables**:
+  - Data layer: `FleetHost`, `FleetMessage`, `FleetLatestState`, `FleetScreenshot`, `FleetApiKey`, and `FleetModuleSettings`.
+  - Blueprint scaffolding (`fleet_bp`) with `/fleet`, `/fleet/hosts/<id>`, and `/fleet/settings` routes.
+  - Navigation + RBAC using the existing module permission framework (`module_key = "fleet_monitoring"`).
+  - Stylish dashboard, host detail, and settings templates that match the rest of the UI.
+  - Handbook documentation to orient developers/operators before ingestion comes online.
+- **Dashboard** (`templates/fleet/dashboard.html`):
+  - Hero card summarizing module purpose plus quick access to settings for write-capable users.
+  - Split layout with an OpenStreetMap placeholder (configurable zoom/icon pulled from `FleetModuleSettings`) and quick stats.
+  - Responsive host tiles highlighting OS, mock CPU/RAM/Disk micro-graphs, location badges, and state tags. Clicking a tile opens the host detail page.
+- **Host detail** (`templates/fleet/host_detail.html`):
+  - System health block rendering the latest snapshot JSON (UTC stored data; UI renders via Babel in Europe/Athens).
+  - Screenshot panel showing the freshest agent capture (base64 rendered).
+  - Message feed with timestamp/category/subtype/level/payload columns, full filtering (time range, category, subtype, level, text search), pagination, and JSON export.
+  - Alert panel listing active rule hits (CPU/Disk/AV/Updates/Events) created automatically during ingestion; alerts resolve when telemetry returns to normal.
+  - Remote actions: SSH/RDP/VNC deep links, command queue, and file uploads. Agents poll `/ingest/commands` and `/ingest/files` (headers: `X-API-Key`, `X-Agent-ID`) to receive tasks, acknowledge them (`/ingest/commands/<id>/result`), and download pending uploads (`/ingest/files/<id>/download`). These operations are logged via `FleetRemoteCommand` and `FleetFileTransfer`.
+- **Settings** (`templates/fleet/settings.html`) now allow editing:
+  - API keys (create/disable/revoke/expiry) backed by `FleetApiKey`.
+  - Map defaults (zoom, custom pin icon) and screenshot toggle for the dashboard.
+  - Retention windows for messages/screenshots and default alert rule thresholds.
+- **Operations** – Tables auto-create during startup (similar to Task Scheduler). All timestamps are stored in UTC, while the UI honors Europe/Athens formatting just like the rest of the platform. Future milestones will expand the ingest listener contract (agent ACKs/polling) and notification hooks.
+
 ---
 
 ## 7. Data Model Overview

@@ -88,6 +88,7 @@ class FleetMessage(db.Model):
     subtype = db.Column(db.String(48))
     level = db.Column(db.String(16))
     payload = db.Column(db.JSON, nullable=False)
+    doc_key = db.Column(db.String(128), unique=True, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     host = db.relationship("FleetHost", back_populates="messages")
@@ -205,6 +206,27 @@ class FleetModuleSettings(db.Model):
             }
             db.session.commit()
         return instance
+
+
+class FleetAgentDownloadLink(db.Model):
+    __tablename__ = "fleet_agent_download_link"
+
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(96), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expires_at = db.Column(db.DateTime)
+    revoked_at = db.Column(db.DateTime)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
+
+    created_by_user = db.relationship("User")
+
+    @property
+    def is_expired(self) -> bool:
+        return bool(self.expires_at and self.expires_at < datetime.utcnow())
+
+    @property
+    def is_active(self) -> bool:
+        return not self.revoked_at and not self.is_expired
 
 
 class FleetAlert(db.Model):
