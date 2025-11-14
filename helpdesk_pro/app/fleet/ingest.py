@@ -450,7 +450,7 @@ def create_fleet_ingest_app(main_app) -> Flask:
                 }
                 for file in pending
             ]
-            return jsonify({"files": payload})
+            return jsonify(payload)
 
     @ingest_app.get("/files/<int:file_id>/download")
     def download_file(file_id: int):
@@ -479,6 +479,139 @@ def create_fleet_ingest_app(main_app) -> Flask:
             response = ingest_app.response_class(data, mimetype=transfer.mime_type or "application/octet-stream")
             response.headers["Content-Disposition"] = f"attachment; filename={transfer.filename}"
             return response
+
+    def _auth_agent_request():
+        api_key = request.headers.get("X-API-Key")
+        agent_id = (
+            request.headers.get("X-Agent-ID")
+            or request.args.get("agent")
+            or (request.get_json(silent=True) or {}).get("agentId")
+        )
+        if not api_key or not agent_id:
+            return None, _error("Missing API key or agent identifier.", 401)
+        api_key_entry = _find_api_key(api_key)
+        if not api_key_entry:
+            return None, _error("Invalid or expired API key.", 401)
+        host = _resolve_host(agent_id)
+        if not host:
+            return None, _error("Unknown agent.", 404)
+        return host, None
+
+    @ingest_app.post("/terminal/tasks/next")
+    def agent_tasks_next():
+        with ingest_app.app_context():
+            host, error = _auth_agent_request()
+            if error:
+                return error
+            from app.models import FleetRemoteCommand
+
+            cmd = (
+                FleetRemoteCommand.query.filter_by(host_id=host.id)
+                .filter(FleetRemoteCommand.status.in_(["pending", "dispatched"]))
+                .order_by(FleetRemoteCommand.created_at.asc())
+                .first()
+            )
+            if not cmd:
+                return ("", 204)
+            cmd.status = "assigned"
+            cmd.delivered_at = datetime.utcnow()
+            db.session.commit()
+            script_b64 = base64.b64encode((cmd.command or "").encode("utf-8")).decode("ascii")
+            payload = {
+                "tasks": [
+                    {
+                        "id": cmd.id,
+                        "name": "run_ps_script",
+                        "args": {
+                            "language": "powershell",
+                            "script": cmd.command,
+                            "scriptB64": script_b64,
+                        },
+                    }
+                ]
+            }
+            return jsonify(payload)
+
+    @ingest_app.post("/terminal/tasks/result")
+    def agent_task_result():
+        data = request.get_json(silent=True) or {}
+        task_id = data.get("id") or data.get("taskId")
+        if not task_id:
+            return _error("Missing task id.", 400)
+        with ingest_app.app_context():
+            host, error = _auth_agent_request()
+            if error:
+                return error
+            from app.models import FleetRemoteCommand
+
+            cmd = FleetRemoteCommand.query.get_or_404(task_id)
+            if cmd.host_id != host.id:
+                return _error("Task does not belong to this agent.", 403)
+            status = (data.get("status") or data.get("Status") or "completed").lower()
+            exit_code = data.get("exitCode")
+            stdout = data.get("stdout") or data.get("output")
+            stderr = data.get("stderr") or data.get("error")
+            response_parts = []
+            if exit_code is not None:
+                response_parts.append(f"exit_code={exit_code}")
+            if stdout:
+                response_parts.append(f"stdout:\n{stdout}")
+            if stderr:
+                response_parts.append(f"stderr:\n{stderr}")
+            cmd.status = status
+            cmd.response = "\n\n".join(response_parts) or data.get("response") or cmd.response
+            cmd.executed_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({"success": True})
+
+    @ingest_app.get("/fleet/hosts/<string:agent_id>/uploads")
+    def agent_list_uploads(agent_id: str):
+        with ingest_app.app_context():
+            host, error = _auth_agent_request()
+            if error:
+                return error
+            if host.agent_id.lower() != agent_id.lower():
+                return _error("Agent identifier mismatch.", 403)
+            from app.models import FleetFileTransfer
+
+            pending = (
+                FleetFileTransfer.query.filter_by(host_id=host.id, consumed_at=None)
+                .order_by(FleetFileTransfer.created_at.asc())
+                .all()
+            )
+            payload = [
+                {
+                    "id": transfer.id,
+                    "filename": transfer.filename,
+                    "size": transfer.size_bytes,
+                }
+                for transfer in pending
+            ]
+            return jsonify({"files": payload})
+
+    @ingest_app.get("/fleet/hosts/<string:agent_id>/uploads/<int:file_id>")
+    def agent_download_upload(agent_id: str, file_id: int):
+        with ingest_app.app_context():
+            host, error = _auth_agent_request()
+            if error:
+                return error
+            if host.agent_id.lower() != agent_id.lower():
+                return _error("Agent identifier mismatch.", 403)
+            from app.models import FleetFileTransfer
+
+            transfer = FleetFileTransfer.query.get_or_404(file_id)
+            if transfer.host_id != host.id:
+                return _error("File does not belong to this agent.", 403)
+            if not os.path.exists(transfer.stored_path):
+                return _error("File no longer available.", 404)
+            transfer.consumed_at = datetime.utcnow()
+            db.session.commit()
+            return send_file(
+                transfer.stored_path,
+                as_attachment=True,
+                mimetype=transfer.mime_type or "application/octet-stream",
+                download_name=transfer.filename,
+            )
 
     return ingest_app
 

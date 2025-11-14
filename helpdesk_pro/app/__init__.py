@@ -145,7 +145,7 @@ def create_app():
     from app.backup.routes import backup_bp
     from app.tools.routes import tools_bp
     from app.task_scheduler.routes import task_scheduler_bp
-    from app.fleet.routes import fleet_bp
+    from app.fleet.routes import fleet_bp, fleet_agent_bp
     from app.fleet.ingest import start_fleet_ingest_server
 
     app.register_blueprint(auth_bp)
@@ -165,6 +165,7 @@ def create_app():
     app.register_blueprint(tools_bp)
     app.register_blueprint(task_scheduler_bp)
     app.register_blueprint(fleet_bp)
+    app.register_blueprint(fleet_agent_bp)
 
     with app.app_context():
         from app.models.module_permission import ModulePermission
@@ -190,6 +191,7 @@ def create_app():
             FleetAlert,
             FleetRemoteCommand,
             FleetFileTransfer,
+            FleetAgentDownloadLink,
         )
 
         ModulePermission.__table__.create(bind=db.engine, checkfirst=True)

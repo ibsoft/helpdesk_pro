@@ -11,6 +11,7 @@ import json
 import math
 import secrets
 import tempfile
+import base64
 from collections import Counter
 from copy import deepcopy
 from zoneinfo import ZoneInfo
@@ -48,6 +49,7 @@ from app.permissions import get_module_access, require_module_write
 
 
 fleet_bp = Blueprint("fleet", __name__, url_prefix="/fleet")
+fleet_agent_bp = Blueprint("fleet_agent_api", __name__)
 
 
 def _require_view_permission():
@@ -57,6 +59,47 @@ def _require_view_permission():
     if access not in {"read", "write"}:
         abort(403)
     return access
+
+
+def _agent_json_error(message: str, status: int = 400):
+    return jsonify({"error": message}), status
+
+
+def _find_active_api_key(token: str | None):
+    if not token:
+        return None
+    candidates = FleetApiKey.query.filter_by(active=True).all()
+    for candidate in candidates:
+        if candidate.matches(token):
+            return candidate
+    return None
+
+
+def _authenticate_agent_request(expected_agent_id: str | None = None):
+    token = (
+        request.headers.get("X-API-Key")
+        or request.args.get("api_key")
+        or (request.get_json(silent=True) or {}).get("apiKey")
+    )
+    if not token:
+        return None, _agent_json_error("Missing API key.", 401)
+    data_agent_id = (
+        request.headers.get("X-Agent-ID")
+        or request.args.get("agent")
+        or (request.get_json(silent=True) or {}).get("agentId")
+    )
+    agent_id = data_agent_id or expected_agent_id
+    if not agent_id:
+        return None, _agent_json_error("Missing agent identifier.", 401)
+    if expected_agent_id and agent_id.lower() != expected_agent_id.lower():
+        return None, _agent_json_error("Agent identifier mismatch.", 403)
+    api_key_entry = _find_active_api_key(token)
+    if not api_key_entry:
+        return None, _agent_json_error("Invalid or expired API key.", 401)
+    host = FleetHost.query.filter_by(agent_id=agent_id).first()
+    if not host:
+        return None, _agent_json_error("Unknown agent.", 404)
+    return host, None
 
 
 def _gather_dashboard_metrics(hosts):
@@ -821,6 +864,107 @@ def cleanup_offline_hosts():
     db.session.commit()
     flash(_("Removed %(count)s offline hosts and their telemetry.", count=removed), "success")
     return redirect(url_for("fleet.settings"))
+
+
+@fleet_agent_bp.post("/terminal/tasks/next")
+def agent_tasks_next():
+    host, error = _authenticate_agent_request()
+    if error:
+        return error
+    cmd = (
+        FleetRemoteCommand.query.filter_by(host_id=host.id)
+        .filter(FleetRemoteCommand.status.in_(["pending", "dispatched"]))
+        .order_by(FleetRemoteCommand.created_at.asc())
+        .first()
+    )
+    if not cmd:
+        return ("", 204)
+    cmd.status = "assigned"
+    cmd.delivered_at = datetime.utcnow()
+    db.session.commit()
+    script_b64 = base64.b64encode((cmd.command or "").encode("utf-8")).decode("ascii")
+    task_payload = {
+        "id": cmd.id,
+        "name": "run_ps_script",
+        "args": {
+            "language": "powershell",
+            "script": cmd.command,
+            "scriptB64": script_b64,
+        },
+    }
+    return jsonify({"tasks": [task_payload]})
+
+
+@fleet_agent_bp.post("/terminal/tasks/result")
+def agent_task_result():
+    data = request.get_json(silent=True) or {}
+    task_id = data.get("id") or data.get("taskId")
+    if not task_id:
+        return _agent_json_error("Missing task id.", 400)
+    host, error = _authenticate_agent_request()
+    if error:
+        return error
+    cmd = FleetRemoteCommand.query.get_or_404(task_id)
+    if cmd.host_id != host.id:
+        return _agent_json_error("Task does not belong to this agent.", 403)
+    status = (data.get("status") or data.get("Status") or "completed").lower()
+    response_parts = []
+    exit_code = data.get("exitCode")
+    stdout = data.get("stdout") or data.get("output")
+    stderr = data.get("stderr") or data.get("error")
+    if exit_code is not None:
+        response_parts.append(f"exit_code={exit_code}")
+    if stdout:
+        response_parts.append(f"stdout:\n{stdout}")
+    if stderr:
+        response_parts.append(f"stderr:\n{stderr}")
+    response_text = "\n\n".join(part for part in response_parts if part)
+    cmd.status = status
+    cmd.response = response_text or data.get("response") or cmd.response
+    cmd.executed_at = datetime.utcnow()
+    db.session.commit()
+    return jsonify({"success": True})
+
+
+@fleet_agent_bp.get("/fleet/hosts/<string:agent_id>/uploads")
+def agent_list_uploads(agent_id: str):
+    host, error = _authenticate_agent_request(expected_agent_id=agent_id)
+    if error:
+        return error
+    pending = (
+        FleetFileTransfer.query.filter_by(host_id=host.id, consumed_at=None)
+        .order_by(FleetFileTransfer.created_at.asc())
+        .all()
+    )
+    payload = [
+        {
+            "id": transfer.id,
+            "filename": transfer.filename,
+            "size": transfer.size_bytes,
+        }
+        for transfer in pending
+    ]
+    return jsonify(payload)
+
+
+@fleet_agent_bp.get("/fleet/hosts/<string:agent_id>/uploads/<int:file_id>")
+def agent_download_upload(agent_id: str, file_id: int):
+    host, error = _authenticate_agent_request(expected_agent_id=agent_id)
+    if error:
+        return error
+    transfer = FleetFileTransfer.query.get_or_404(file_id)
+    if transfer.host_id != host.id:
+        return _agent_json_error("File does not belong to this agent.", 403)
+    if not os.path.exists(transfer.stored_path):
+        return _agent_json_error("File no longer available.", 404)
+    transfer.consumed_at = datetime.utcnow()
+    db.session.commit()
+    return send_file(
+        transfer.stored_path,
+        as_attachment=True,
+        mimetype=transfer.mime_type or "application/octet-stream",
+        download_name=transfer.filename,
+    )
 
 
 @fleet_bp.route("/settings/agent-installer", methods=["POST"])
