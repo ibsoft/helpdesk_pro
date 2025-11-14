@@ -1,0 +1,491 @@
+# -*- coding: utf-8 -*-
+"""
+Standalone ingestion service for Fleet Monitoring.
+Runs as a lightweight Flask app on a dedicated port (default 8449) within the same process.
+"""
+
+from __future__ import annotations
+
+import base64
+import json
+import os
+from datetime import datetime, timedelta, timezone
+from threading import Thread
+
+from flask import Flask, jsonify, request
+from werkzeug.serving import make_server
+from sqlalchemy.exc import SQLAlchemyError
+
+from app import db
+
+
+REQUIRED_TOP_LEVEL = {"ts", "machine", "category", "subtype", "level", "payload"}
+HOST_SNAPSHOT_DEFAULTS = {
+    "cpuPct": None,
+    "ram": {"usedMB": None, "totalMB": None},
+    "disk": {"maxUsedPct": None, "volumes": []},
+    "network": {"adapterCount": None, "primaryIP": None},
+    "antivirus": {"enabled": None, "upToDate": None, "products": []},
+    "firewall": {"anyProfileEnabled": None},
+    "updates": {"pending": None},
+    "events": {"errors24h": None},
+}
+
+
+def _iso_utc(value: str) -> datetime | None:
+    if not value:
+        return None
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _error(message: str, status: int = 400):
+    return jsonify({"success": False, "message": message}), status
+
+
+def _validate_record(record: dict) -> tuple[bool, str]:
+    if not isinstance(record, dict):
+        return False, "Each NDJSON line must be a JSON object."
+    missing = REQUIRED_TOP_LEVEL - record.keys()
+    if missing:
+        return False, f"Missing required fields: {', '.join(sorted(missing))}"
+    payload = record.get("payload")
+    if not isinstance(payload, dict):
+        return False, "Payload must be an object."
+    return True, ""
+
+
+def _decode_screenshot(raw_value: str) -> bytes | None:
+    if not raw_value:
+        return None
+    try:
+        return base64.b64decode(raw_value, validate=True)
+    except (ValueError, base64.binascii.Error):
+        return None
+
+
+def _find_api_key(token: str):
+    from app.models import FleetApiKey
+
+    candidates = FleetApiKey.query.filter_by(active=True).all()
+    for candidate in candidates:
+        if candidate.matches(token):
+            return candidate
+    return None
+
+
+def _purge_expired(settings):
+    from app.models import FleetMessage, FleetScreenshot
+
+    now = datetime.utcnow()
+    if settings.retention_days_messages:
+        cutoff = now - timedelta(days=settings.retention_days_messages)
+        FleetMessage.query.filter(FleetMessage.ts < cutoff).delete(synchronize_session=False)
+    if settings.retention_days_screenshots:
+        cutoff = now - timedelta(days=settings.retention_days_screenshots)
+        FleetScreenshot.query.filter(FleetScreenshot.created_at < cutoff).delete(synchronize_session=False)
+
+
+def _ingest_ok(app_ctx) -> bool:
+    return app_ctx.config.get("FLEET_INGEST_ENABLED", True)
+
+
+def _evaluate_alerts(host, snapshot: dict, settings):
+    from app.models import FleetAlert
+
+    rules = settings.default_alert_rules or {}
+
+    def _set_alert(rule_key: str, triggered: bool, message: str, severity: str = "warning"):
+        existing = FleetAlert.query.filter_by(host_id=host.id, rule_key=rule_key, resolved_at=None).first()
+        if triggered:
+            if existing:
+                existing.message = message
+                existing.severity = severity
+                return
+            alert = FleetAlert(
+                host_id=host.id,
+                rule_key=rule_key,
+                severity=severity,
+                message=message,
+                triggered_at=datetime.utcnow(),
+            )
+            db.session.add(alert)
+        else:
+            if existing:
+                existing.resolved_at = datetime.utcnow()
+
+    cpu_rule = rules.get("cpu", {})
+    cpu_threshold = cpu_rule.get("threshold", 90)
+    cpu_pct = snapshot.get("cpuPct")
+    if cpu_pct is not None:
+        _set_alert("cpu", cpu_pct >= cpu_threshold, f"CPU at {cpu_pct:.1f}% (threshold {cpu_threshold}%)", "danger")
+
+    disk_rule = rules.get("disk", {})
+    disk_threshold = disk_rule.get("threshold", 85)
+    disk_pct = snapshot.get("disk", {}).get("maxUsedPct")
+    if disk_pct is not None:
+        _set_alert("disk", disk_pct >= disk_threshold, f"Disk usage {disk_pct:.1f}% (threshold {disk_threshold}%)", "warning")
+
+    av_rule = rules.get("antivirus", {})
+    if snapshot.get("antivirus"):
+        av_enabled = snapshot["antivirus"].get("enabled")
+        av_updated = snapshot["antivirus"].get("upToDate")
+        _set_alert("antivirus", not (av_enabled and av_updated), "Antivirus is disabled or outdated.", "danger")
+
+    updates_rule = rules.get("updates", {})
+    update_threshold = updates_rule.get("pending", 0)
+    pending_updates = snapshot.get("updates", {}).get("pending", 0)
+    _set_alert("updates", pending_updates > update_threshold, f"{pending_updates} updates pending.", "warning")
+
+    event_rule = rules.get("events", {})
+    errors_threshold = event_rule.get("errors24h", 0)
+    errors = snapshot.get("events", {}).get("errors24h", 0)
+    _set_alert("events", errors > errors_threshold, f"{errors} errors in the last 24h.", "warning")
+
+
+def _resolve_host(agent_id: str):
+    from app.models import FleetHost
+
+    return FleetHost.query.filter_by(agent_id=agent_id).first()
+
+
+def create_fleet_ingest_app(main_app) -> Flask:
+    ingest_app = Flask("fleet_ingest")
+    ingest_app.config.update(
+        {
+            "SQLALCHEMY_DATABASE_URI": main_app.config["SQLALCHEMY_DATABASE_URI"],
+            "SQLALCHEMY_TRACK_MODIFICATIONS": main_app.config.get("SQLALCHEMY_TRACK_MODIFICATIONS", False),
+        }
+    )
+    db.init_app(ingest_app)
+
+    @ingest_app.post("/ingest")
+    def fleet_ingest():
+        api_key = request.headers.get("X-API-Key")
+        if not api_key:
+            return _error("Missing API key.", 401)
+        with ingest_app.app_context():
+            api_key_entry = _find_api_key(api_key)
+            if not api_key_entry:
+                return _error("Invalid or expired API key.", 401)
+
+            raw_body = request.get_data(as_text=True)
+            if not raw_body or not raw_body.strip():
+                return _error("Empty payload.", 400)
+
+            lines = [line.strip() for line in raw_body.splitlines() if line.strip()]
+            if not lines:
+                return _error("Payload contained no valid JSON lines.", 400)
+
+            processed = 0
+            errors: list[str] = []
+
+            from app.models import (
+                FleetHost,
+                FleetMessage,
+                FleetLatestState,
+                FleetScreenshot,
+                FleetModuleSettings,
+            )
+
+            settings = FleetModuleSettings.get()
+
+            for idx, line in enumerate(lines, start=1):
+                try:
+                    record = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    errors.append(f"Line {idx}: {exc}")
+                    continue
+
+                valid, message = _validate_record(record)
+                if not valid:
+                    errors.append(f"Line {idx}: {message}")
+                    continue
+
+                ts_value = _iso_utc(record["ts"])
+                if not ts_value:
+                    errors.append(f"Line {idx}: Invalid timestamp format.")
+                    continue
+                ts_utc = ts_value.replace(tzinfo=None)
+
+                agent_id = str(record["machine"]).strip()
+                if not agent_id:
+                    errors.append(f"Line {idx}: Machine identifier is empty.")
+                    continue
+
+                payload = record["payload"]
+                is_host_snapshot = record.get("category") == "host" and record.get("subtype") == "snapshot"
+                screenshot_bytes = _decode_screenshot(payload.get("screenshotB64"))
+                if is_host_snapshot:
+                    payload = _normalize_host_snapshot(payload)
+
+                try:
+                    host = FleetHost.query.filter_by(agent_id=agent_id).first()
+                    if not host:
+                        host = FleetHost(agent_id=agent_id, display_name=agent_id)
+                        db.session.add(host)
+
+                    host.last_seen_at = ts_utc
+                    host.os_family = payload.get("osFamily") or host.os_family
+                    host.os_version = payload.get("osVersion") or host.os_version
+
+                    message_entry = FleetMessage(
+                        host=host,
+                        ts=ts_utc,
+                        category=record["category"],
+                        subtype=record.get("subtype"),
+                        level=record.get("level"),
+                        payload=payload,
+                    )
+                    db.session.add(message_entry)
+
+                    latest_state = host.latest_state
+                    if is_host_snapshot:
+                        if not latest_state:
+                            latest_state = FleetLatestState(host=host, snapshot=payload, updated_at=ts_utc)
+                            db.session.add(latest_state)
+                        else:
+                            latest_state.snapshot = payload
+                            latest_state.updated_at = ts_utc
+
+                        if screenshot_bytes:
+                            if host.id is None:
+                                db.session.flush()
+                            screenshot_entry = latest_state.screenshot
+                            if screenshot_entry:
+                                screenshot_entry.data = screenshot_bytes
+                            else:
+                                screenshot_entry = FleetScreenshot(host=host, data=screenshot_bytes)
+                                db.session.add(screenshot_entry)
+                                db.session.flush()
+                                latest_state.screenshot = screenshot_entry
+
+                    db.session.flush()
+                    _evaluate_alerts(host, payload, settings)
+                    processed += 1
+                except SQLAlchemyError as exc:
+                    ingest_app.logger.exception("Failed to process fleet record.")
+                    db.session.rollback()
+                    errors.append(f"Line {idx}: Database error.")
+                    continue
+
+            if processed:
+                try:
+                    _purge_expired(settings)
+                    db.session.commit()
+                except SQLAlchemyError:
+                    ingest_app.logger.exception("Failed to commit fleet ingestion batch.")
+                    db.session.rollback()
+                    return _error("Database commit failed.", 500)
+
+            status_code = 200 if processed and not errors else 207 if processed else 400
+            return (
+                jsonify({"success": processed > 0, "processed": processed, "errors": errors}),
+                status_code,
+            )
+
+    @ingest_app.get("/health")
+    def fleet_health():
+        if not _ingest_ok(ingest_app):
+            return ("Forbidden", 403)
+        with ingest_app.app_context():
+            from app.models import FleetMessage
+
+            latest = (
+                db.session.query(FleetMessage.ts)
+                .order_by(FleetMessage.ts.desc())
+                .first()
+            )
+            last_ts = latest[0].replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z") if latest and latest[0] else None
+            return jsonify({"lastPostUtc": last_ts})
+
+    @ingest_app.get("/commands")
+    def fleet_commands():
+        api_key = request.headers.get("X-API-Key")
+        agent_id = (request.headers.get("X-Agent-ID") or request.args.get("agent") or "").strip()
+        if not api_key or not agent_id:
+            return _error("Missing API key or agent identifier.", 400)
+        with ingest_app.app_context():
+            api_key_entry = _find_api_key(api_key)
+            if not api_key_entry:
+                return _error("Invalid or expired API key.", 401)
+            host = _resolve_host(agent_id)
+            if not host:
+                return _error("Unknown agent.", 404)
+            from app.models import FleetRemoteCommand
+
+            pending = (
+                FleetRemoteCommand.query.filter_by(host_id=host.id)
+                .filter(FleetRemoteCommand.status == "pending")
+                .order_by(FleetRemoteCommand.created_at.asc())
+                .all()
+            )
+            payload = []
+            now = datetime.utcnow()
+            for cmd in pending:
+                cmd.status = "dispatched"
+                cmd.delivered_at = now
+                payload.append(
+                    {
+                        "id": cmd.id,
+                        "command": cmd.command,
+                    }
+                )
+            db.session.commit()
+            return jsonify({"commands": payload})
+
+    @ingest_app.post("/commands/<int:command_id>/result")
+    def fleet_command_result(command_id: int):
+        api_key = request.headers.get("X-API-Key")
+        agent_id = (request.headers.get("X-Agent-ID") or "").strip()
+        if not api_key or not agent_id:
+            return _error("Missing API key or agent identifier.", 400)
+        data = request.get_json() or {}
+        status = (data.get("status") or "").strip().lower() or "completed"
+        response_text = data.get("response")
+        with ingest_app.app_context():
+            api_key_entry = _find_api_key(api_key)
+            if not api_key_entry:
+                return _error("Invalid or expired API key.", 401)
+            host = _resolve_host(agent_id)
+            if not host:
+                return _error("Unknown agent.", 404)
+            from app.models import FleetRemoteCommand
+
+            cmd = FleetRemoteCommand.query.get_or_404(command_id)
+            if cmd.host_id != host.id:
+                return _error("Command does not belong to this agent.", 403)
+            cmd.status = status
+            cmd.response = response_text
+            cmd.executed_at = datetime.utcnow()
+            db.session.commit()
+            return jsonify({"success": True})
+
+    @ingest_app.get("/files")
+    def fleet_files():
+        api_key = request.headers.get("X-API-Key")
+        agent_id = (request.headers.get("X-Agent-ID") or request.args.get("agent") or "").strip()
+        if not api_key or not agent_id:
+            return _error("Missing API key or agent identifier.", 400)
+        with ingest_app.app_context():
+            api_key_entry = _find_api_key(api_key)
+            if not api_key_entry:
+                return _error("Invalid or expired API key.", 401)
+            host = _resolve_host(agent_id)
+            if not host:
+                return _error("Unknown agent.", 404)
+            from app.models import FleetFileTransfer
+
+            pending = (
+                FleetFileTransfer.query.filter_by(host_id=host.id, consumed_at=None)
+                .order_by(FleetFileTransfer.created_at.asc())
+                .all()
+            )
+            payload = [
+                {
+                    "id": file.id,
+                    "filename": file.filename,
+                    "size": file.size_bytes,
+                }
+                for file in pending
+            ]
+            return jsonify({"files": payload})
+
+    @ingest_app.get("/files/<int:file_id>/download")
+    def download_file(file_id: int):
+        api_key = request.headers.get("X-API-Key")
+        agent_id = (request.headers.get("X-Agent-ID") or "").strip()
+        if not api_key or not agent_id:
+            return _error("Missing API key or agent identifier.", 400)
+        with ingest_app.app_context():
+            api_key_entry = _find_api_key(api_key)
+            if not api_key_entry:
+                return _error("Invalid or expired API key.", 401)
+            host = _resolve_host(agent_id)
+            if not host:
+                return _error("Unknown agent.", 404)
+            from app.models import FleetFileTransfer
+
+            transfer = FleetFileTransfer.query.get_or_404(file_id)
+            if transfer.host_id != host.id:
+                return _error("File does not belong to this agent.", 403)
+            if not os.path.exists(transfer.stored_path):
+                return _error("File no longer available.", 404)
+            transfer.consumed_at = datetime.utcnow()
+            db.session.commit()
+            with open(transfer.stored_path, "rb") as fh:
+                data = fh.read()
+            response = ingest_app.response_class(data, mimetype=transfer.mime_type or "application/octet-stream")
+            response.headers["Content-Disposition"] = f"attachment; filename={transfer.filename}"
+            return response
+
+    return ingest_app
+
+
+def start_fleet_ingest_server(main_app):
+    if not main_app.config.get("FLEET_INGEST_ENABLED", True):
+        return
+    if main_app.debug and os.environ.get("WERKZEUG_RUN_MAIN") != "true":
+        return
+    if "fleet_ingest_server" in main_app.extensions:
+        return
+
+    ingest_app = create_fleet_ingest_app(main_app)
+    host = main_app.config.get("FLEET_INGEST_HOST", "0.0.0.0")
+    port = int(main_app.config.get("FLEET_INGEST_PORT", 8449))
+    server = make_server(host, port, ingest_app)
+    thread = Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    main_app.logger.info("Fleet ingest server listening on %s:%s", host, port)
+    main_app.extensions["fleet_ingest_server"] = server
+def _normalize_host_snapshot(payload: dict) -> dict:
+    """Ensure host snapshot payload contains expected keys even if agent omits them."""
+    normalized = {}
+    normalized["cpuPct"] = payload.get("cpuPct", HOST_SNAPSHOT_DEFAULTS["cpuPct"])
+    ram = payload.get("ram") or {}
+    normalized["ram"] = {
+        "usedMB": ram.get("usedMB", HOST_SNAPSHOT_DEFAULTS["ram"]["usedMB"]),
+        "totalMB": ram.get("totalMB", HOST_SNAPSHOT_DEFAULTS["ram"]["totalMB"]),
+    }
+    disk = payload.get("disk") or {}
+    normalized["disk"] = {
+        "maxUsedPct": disk.get("maxUsedPct", HOST_SNAPSHOT_DEFAULTS["disk"]["maxUsedPct"]),
+        "volumes": disk.get("volumes", HOST_SNAPSHOT_DEFAULTS["disk"]["volumes"]),
+    }
+    network = payload.get("network") or {}
+    normalized["network"] = {
+        "adapterCount": network.get("adapterCount", HOST_SNAPSHOT_DEFAULTS["network"]["adapterCount"]),
+        "primaryIP": network.get("primaryIP", HOST_SNAPSHOT_DEFAULTS["network"]["primaryIP"]),
+    }
+    antivirus = payload.get("antivirus") or {}
+    normalized["antivirus"] = {
+        "enabled": antivirus.get("enabled", HOST_SNAPSHOT_DEFAULTS["antivirus"]["enabled"]),
+        "upToDate": antivirus.get("upToDate", HOST_SNAPSHOT_DEFAULTS["antivirus"]["upToDate"]),
+        "products": antivirus.get("products", HOST_SNAPSHOT_DEFAULTS["antivirus"]["products"]),
+    }
+    firewall = payload.get("firewall") or {}
+    normalized["firewall"] = {
+        "anyProfileEnabled": firewall.get("anyProfileEnabled", HOST_SNAPSHOT_DEFAULTS["firewall"]["anyProfileEnabled"]),
+    }
+    updates = payload.get("updates") or {}
+    normalized["updates"] = {
+        "pending": updates.get("pending", HOST_SNAPSHOT_DEFAULTS["updates"]["pending"]),
+        "lastCheck": updates.get("lastCheck"),
+    }
+    events = payload.get("events") or {}
+    normalized["events"] = {
+        "errors24h": events.get("errors24h", HOST_SNAPSHOT_DEFAULTS["events"]["errors24h"]),
+    }
+    # Preserve any additional fields (e.g., screenshotB64) by merging originals last.
+    for key, value in payload.items():
+        if key not in normalized:
+            normalized[key] = value
+    return normalized

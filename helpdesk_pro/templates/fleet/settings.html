@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h2 class="h5 mb-0"><i class="fa fa-sliders me-2 text-primary"></i>{{ _('Module Preferences') }}</h2>
+      </div>
+      <div class="card-body">
+        <form method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Default Map Zoom') }}</label>
+              <input type="number" class="form-control" name="map_zoom" value="{{ settings.map_zoom }}" min="1" max="19">
+            </div>
+            <div class="col-md-8">
+              <label class="form-label">{{ _('Pin Icon (FontAwesome class)') }}</label>
+              <input type="text" class="form-control" name="map_pin_icon" value="{{ settings.map_pin_icon }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Message Retention (days)') }}</label>
+              <input type="number" class="form-control" name="retention_days_messages" value="{{ settings.retention_days_messages }}" min="1">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Screenshot Retention (days)') }}</label>
+              <input type="number" class="form-control" name="retention_days_screenshots" value="{{ settings.retention_days_screenshots }}" min="1">
+            </div>
+            <div class="col-12">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="show_dashboard_screenshots" id="showScreenshotsSwitch" {% if settings.show_dashboard_screenshots %}checked{% endif %}>
+                <label class="form-check-label" for="showScreenshotsSwitch">{{ _('Show screenshots on dashboard tiles') }}</label>
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Default Alert Rules (JSON)') }}</label>
+              <textarea class="form-control font-monospace" rows="6" name="alert_rules_json">{{ settings.default_alert_rules | tojson(indent=2) }}</textarea>
+              <small class="text-muted">{{ _('Customize CPU/Disk/AV/Updates/Events thresholds per rule key.') }}</small>
+            </div>
+          </div>
+          <div class="mt-3 text-end">
+            <button class="btn btn-primary"><i class="fa fa-save"></i> {{ _('Save Settings') }}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0"><i class="fa fa-key me-2 text-danger"></i>{{ _('Agent API Keys') }}</h2>
+        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="collapse" data-bs-target="#createKeyForm">{{ _('New Key') }}</button>
+      </div>
+      <div class="card-body">
+        <div id="createKeyForm" class="collapse mb-3">
+          <form method="post" action="{{ url_for('fleet.create_fleet_api_key') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="mb-2">
+              <label class="form-label">{{ _('Key Name') }}</label>
+              <input type="text" class="form-control" name="name" required>
+            </div>
+            <div class="mb-2">
+              <label class="form-label">{{ _('Expires At (optional)') }}</label>
+              <input type="datetime-local" class="form-control" name="expires_at">
+            </div>
+            <button class="btn btn-primary w-100"><i class="fa fa-plus"></i> {{ _('Create Key') }}</button>
+          </form>
+        </div>
+        {% if api_keys %}
+          <div class="table-responsive">
+            <table class="table table-sm align-middle">
+              <thead>
+                <tr>
+                  <th>{{ _('Name') }}</th>
+                  <th>{{ _('Status') }}</th>
+                  <th>{{ _('Expires') }}</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for key in api_keys %}
+                  <tr>
+                    <td>{{ key.name }}</td>
+                    <td>
+                      <span class="badge {{ 'bg-success-subtle text-success-emphasis' if key.active else 'bg-secondary-subtle text-secondary-emphasis' }}">{{ _('Active') if key.active else _('Disabled') }}</span>
+                    </td>
+                    <td>{{ key.expires_at or _('No expiry') }}</td>
+                    <td class="text-end">
+                      <form method="post" action="{{ url_for('fleet.toggle_fleet_api_key', key_id=key.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-primary" title="{{ _('Toggle active') }}"><i class="fa fa-power-off"></i></button>
+                      </form>
+                      <form method="post" action="{{ url_for('fleet.delete_fleet_api_key', key_id=key.id) }}" class="d-inline" onsubmit="return confirm('{{ _('Delete this key?') }}');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
+                      </form>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No API keys created yet.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
