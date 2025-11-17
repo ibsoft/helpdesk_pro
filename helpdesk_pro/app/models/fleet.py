@@ -269,9 +269,15 @@ class FleetRemoteCommand(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     delivered_at = db.Column(db.DateTime)
     executed_at = db.Column(db.DateTime)
+    source_job_id = db.Column(
+        db.Integer,
+        db.ForeignKey("fleet_scheduled_job.id", ondelete="SET NULL"),
+        nullable=True,
+    )
 
     host = db.relationship("FleetHost", back_populates="remote_commands")
     issued_by = db.relationship("User")
+    source_job = db.relationship("FleetScheduledJob")
 
 
 class FleetFileTransfer(db.Model):
@@ -289,8 +295,41 @@ class FleetFileTransfer(db.Model):
     stored_path = db.Column(db.String(255), nullable=False)
     mime_type = db.Column(db.String(128))
     size_bytes = db.Column(db.Integer)
+    checksum = db.Column(db.String(128))
+    source_job_id = db.Column(
+        db.Integer,
+        db.ForeignKey("fleet_scheduled_job.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     consumed_at = db.Column(db.DateTime)
 
     host = db.relationship("FleetHost", back_populates="file_transfers")
     uploaded_by = db.relationship("User")
+    source_job = db.relationship("FleetScheduledJob", back_populates="transfers")
+
+
+class FleetScheduledJob(db.Model):
+    __tablename__ = "fleet_scheduled_job"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(160), nullable=False)
+    action_type = db.Column(db.String(32), nullable=False, default="command")
+    status = db.Column(db.String(32), nullable=False, default="scheduled")
+    run_at = db.Column(db.DateTime, nullable=False)
+    recurrence = db.Column(db.String(32), nullable=False, default="once")
+    target_hosts = db.Column(db.JSON, nullable=False, default=list)
+    payload = db.Column(db.JSON, nullable=False, default=dict)
+    created_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+
+    created_by = db.relationship("User")
+    transfers = db.relationship("FleetFileTransfer", back_populates="source_job", cascade="all, delete-orphan")
+
+    def target_count(self) -> int:
+        if isinstance(self.target_hosts, list):
+            return len(self.target_hosts)
+        return 0

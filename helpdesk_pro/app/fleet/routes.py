@@ -12,6 +12,8 @@ import math
 import secrets
 import tempfile
 import base64
+import shutil
+import hashlib
 from collections import Counter
 from copy import deepcopy
 from zoneinfo import ZoneInfo
@@ -33,6 +35,7 @@ from app.models import (
     FleetApiKey,
     FleetScreenshot,
     FleetAgentDownloadLink,
+    FleetScheduledJob,
 )
 from werkzeug.utils import secure_filename
 
@@ -45,6 +48,14 @@ def _format_ts(ts):
     if ts.tzinfo is None:
         ts = ts.replace(tzinfo=timezone.utc)
     return ts.astimezone(ATHENS_TZ).strftime("%d/%m/%Y %H:%M")
+
+
+def _hash_file(path: str) -> str:
+    sha = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            sha.update(chunk)
+    return sha.hexdigest()
 from app.permissions import get_module_access, require_module_write
 
 
@@ -156,6 +167,154 @@ def _build_agent_command_payloads(command: FleetRemoteCommand):
         task_payload["args"] = args
         legacy_payload["args"] = args
     return task_payload, legacy_payload
+
+
+def _parse_datetime_local(value: str | None):
+    if not value:
+        return None
+    text = value.strip()
+    if not text:
+        return None
+    normalized = text.replace("T", " ")
+    try:
+        dt = datetime.strptime(normalized, "%Y-%m-%d %H:%M")
+        return dt.replace(tzinfo=ATHENS_TZ).astimezone(timezone.utc).replace(tzinfo=None)
+    except ValueError:
+        pass
+    try:
+        dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=ATHENS_TZ)
+        return dt.astimezone(timezone.utc).replace(tzinfo=None)
+    except ValueError:
+        return None
+
+
+def _dispatch_due_jobs(host_scope: FleetHost | None = None, action_filter: set[str] | None = None):
+    now = datetime.utcnow()
+    due_jobs = (
+        FleetScheduledJob.query.filter(
+            FleetScheduledJob.status == "scheduled",
+            FleetScheduledJob.run_at <= now,
+        )
+        .order_by(FleetScheduledJob.run_at.asc())
+        .all()
+    )
+    if not due_jobs:
+        return
+    host_cache: dict[int, FleetHost] = {}
+    upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER")
+    os.makedirs(upload_root, exist_ok=True)
+    for job in due_jobs:
+        if action_filter and job.action_type not in action_filter:
+            continue
+        target_ids_raw = job.target_hosts or []
+        target_ids = []
+        for raw in target_ids_raw:
+            try:
+                target_ids.append(int(raw))
+            except (TypeError, ValueError):
+                continue
+        all_targets = target_ids[:]
+        payload = job.payload or {}
+        pending_hosts = payload.get("pending_hosts") if isinstance(payload, dict) else None
+        if pending_hosts:
+            normalized = []
+            for ph in pending_hosts:
+                try:
+                    ph_int = int(ph)
+                except (TypeError, ValueError):
+                    continue
+                if ph_int in all_targets:
+                    normalized.append(ph_int)
+            pending_hosts = normalized
+        if not pending_hosts:
+            pending_hosts = target_ids[:]
+        scoped_target_ids = target_ids[:]
+        if host_scope:
+            if host_scope.id not in pending_hosts:
+                continue
+            scoped_target_ids = [host_scope.id]
+        payload = job.payload or {}
+        script_text = payload.get("script") if job.action_type == "command" else None
+        upload_meta = payload.get("upload") if job.action_type == "upload" else None
+        processed_hosts = set()
+        for host_id in scoped_target_ids:
+            if host_id not in pending_hosts:
+                continue
+            if host_scope and host_id != host_scope.id:
+                continue
+            host = host_cache.get(host_id)
+            if not host:
+                host = FleetHost.query.get(host_id)
+                if not host:
+                    continue
+                host_cache[host_id] = host
+            if job.action_type == "command" and script_text:
+                existing_cmd = (
+                    FleetRemoteCommand.query.filter_by(host_id=host.id, source_job_id=job.id)
+                    .filter(FleetRemoteCommand.status.in_(["pending", "assigned"]))
+                    .first()
+                )
+                if existing_cmd:
+                    processed_hosts.add(host_id)
+                    continue
+                remote_command = FleetRemoteCommand(
+                    host_id=host.id,
+                    issued_by_user_id=job.created_by_user_id,
+                    command=script_text,
+                    status="pending",
+                    source_job_id=job.id,
+                )
+                db.session.add(remote_command)
+            elif job.action_type == "upload" and upload_meta:
+                src_path = upload_meta.get("stored_path")
+                filename = upload_meta.get("filename") or os.path.basename(src_path or "")
+                if not src_path or not os.path.exists(src_path):
+                    continue
+                host_folder = os.path.join(upload_root, str(host.id))
+                os.makedirs(host_folder, exist_ok=True)
+                token = secrets.token_hex(6)
+                dest_name = f"{job.id}_{token}_{filename}"
+                dest_path = os.path.join(host_folder, dest_name)
+                try:
+                    shutil.copy2(src_path, dest_path)
+                except OSError:
+                    continue
+                checksum_value = None
+                try:
+                    checksum_value = _hash_file(dest_path)
+                except OSError:
+                    checksum_value = None
+                transfer = FleetFileTransfer(
+                    host_id=host.id,
+                    uploaded_by_user_id=job.created_by_user_id,
+                    filename=filename,
+                    stored_path=dest_path,
+                    mime_type=None,
+                    size_bytes=os.path.getsize(dest_path),
+                    checksum=checksum_value,
+                    source_job_id=job.id,
+                )
+                db.session.add(transfer)
+            processed_hosts.add(host_id)
+        pending_hosts = [h for h in pending_hosts if h not in processed_hosts]
+        job_payload = (job.payload or {}).copy()
+        job_payload["pending_hosts"] = pending_hosts[:]
+        job.payload = job_payload
+        if not pending_hosts:
+            if job.recurrence == "once":
+                job.status = "completed"
+            elif job.recurrence == "daily":
+                job.run_at = (job.run_at or now) + timedelta(days=1)
+                job.payload["pending_hosts"] = all_targets[:]
+            elif job.recurrence == "weekly":
+                job.run_at = (job.run_at or now) + timedelta(days=7)
+                job.payload["pending_hosts"] = all_targets[:]
+        if job.recurrence in {"daily", "weekly"} and not pending_hosts:
+            job.status = "scheduled"
+        job.updated_at = now
+    db.session.commit()
 
 
 def _authenticate_agent_request(expected_agent_id: str | None = None):
@@ -710,6 +869,268 @@ def settings():
     )
 
 
+@fleet_bp.route("/jobs", methods=["GET", "POST"])
+@login_required
+def job_scheduler():
+    module_access = get_module_access(current_user, "fleet_job_scheduler")
+    if module_access not in {"read", "write"}:
+        abort(403)
+    context = _build_job_scheduler_context()
+    host_lookup = context.get("host_lookup", {})
+    if request.method == "POST":
+        require_module_write("fleet_job_scheduler")
+        name = (request.form.get("job_name") or "").strip()
+        action = (request.form.get("job_action") or "command").strip().lower()
+        recurrence = (request.form.get("job_recurrence") or "once").strip().lower()
+        run_at = _parse_datetime_local(request.form.get("job_run_at"))
+        selected_hosts = []
+        for raw_id in request.form.getlist("job_hosts"):
+            raw_id = (raw_id or "").strip()
+            if not raw_id:
+                continue
+            try:
+                host_id = int(raw_id)
+            except ValueError:
+                continue
+            if host_id in host_lookup:
+                selected_hosts.append(host_id)
+        payload = {}
+        notes = (request.form.get("job_notes") or "").strip()
+        if notes:
+            payload["notes"] = notes
+        errors = []
+        upload_file = None
+        if not name:
+            errors.append(_("Job name is required."))
+        if not selected_hosts:
+            errors.append(_("Select at least one host to target."))
+        if not run_at:
+            errors.append(_("Provide a valid schedule date and time."))
+        if recurrence not in {"once", "daily", "weekly"}:
+            recurrence = "once"
+        if action == "upload":
+            upload_file = request.files.get("job_file")
+            if not upload_file or not upload_file.filename:
+                errors.append(_("Choose a file to upload for scheduled delivery."))
+        else:
+            action = "command"
+            script = (request.form.get("job_command_script") or "").strip()
+            if not script:
+                errors.append(_("Provide a PowerShell script to execute."))
+            else:
+                payload["script"] = script
+        if errors:
+            for err in errors:
+                flash(err, "danger")
+        else:
+            if action == "upload" and upload_file:
+                upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER")
+                os.makedirs(upload_root, exist_ok=True)
+                scheduled_dir = os.path.join(upload_root, "scheduled")
+                os.makedirs(scheduled_dir, exist_ok=True)
+                safe_name = secure_filename(upload_file.filename)
+                token = secrets.token_hex(8)
+                stored_name = f"{token}_{safe_name}"
+                stored_path = os.path.join(scheduled_dir, stored_name)
+                upload_file.save(stored_path)
+                payload["upload"] = {
+                    "filename": safe_name,
+                    "stored_path": stored_path,
+                    "size": os.path.getsize(stored_path),
+                }
+            pending_hosts = [int(h) for h in selected_hosts]
+            payload["pending_hosts"] = pending_hosts
+            job = FleetScheduledJob(
+                name=name,
+                action_type=action,
+                run_at=run_at,
+                recurrence=recurrence,
+                target_hosts=selected_hosts,
+                payload=payload,
+                created_by_user_id=current_user.id,
+            )
+            db.session.add(job)
+            db.session.commit()
+            flash(_("Fleet job '%(name)s' scheduled.", name=name), "success")
+            return redirect(url_for("fleet.job_scheduler"))
+    return render_template(
+        "fleet/job_scheduler.html",
+        module_access=module_access,
+        format_ts=_format_ts,
+        **context,
+    )
+
+
+def _build_job_scheduler_context():
+    hosts = FleetHost.query.order_by(
+        func.lower(func.coalesce(FleetHost.display_name, "")),
+        FleetHost.agent_id.asc(),
+    ).all()
+    host_lookup = {host.id: host for host in hosts}
+    scheduled_query = FleetScheduledJob.query.filter_by(status="scheduled")
+    job_counts = {
+        "total": FleetScheduledJob.query.count(),
+        "scheduled": scheduled_query.count(),
+        "completed": FleetScheduledJob.query.filter_by(status="completed").count(),
+    }
+    next_job = scheduled_query.order_by(FleetScheduledJob.run_at.asc()).first()
+    jobs = (
+        FleetScheduledJob.query.order_by(FleetScheduledJob.run_at.asc())
+        .limit(50)
+        .all()
+    )
+    job_forms = []
+    for job in jobs:
+        if job.run_at:
+            run_at_dt = job.run_at
+            if run_at_dt.tzinfo is None:
+                run_at_dt = run_at_dt.replace(tzinfo=timezone.utc)
+            run_at_local = run_at_dt.astimezone(ATHENS_TZ)
+            run_at_str = run_at_local.strftime("%Y-%m-%dT%H:%M")
+        else:
+            run_at_str = ""
+        raw_pending = []
+        payload = job.payload or {}
+        if isinstance(payload, dict):
+            raw_pending = payload.get("pending_hosts") or []
+        normalized_pending = []
+        for ph in raw_pending:
+            try:
+                normalized_pending.append(int(ph))
+            except (TypeError, ValueError):
+                continue
+        if not normalized_pending and (job.status or "").lower() == "scheduled":
+            normalized_pending = [int(h) for h in job.target_hosts or []]
+        pending_count = len(normalized_pending)
+        delivered_count = max(job.target_count() - pending_count, 0)
+        job_forms.append(
+            {
+                "id": job.id,
+                "name": job.name,
+                "run_at": run_at_str,
+                "recurrence": job.recurrence,
+                "action_type": job.action_type,
+                "script": (job.payload or {}).get("script") if job.action_type == "command" else "",
+                "notes": (job.payload or {}).get("notes"),
+                "pending": pending_count,
+                "delivered": delivered_count,
+                "pending_hosts": normalized_pending,
+            }
+        )
+    return {
+        "hosts": hosts,
+        "host_lookup": host_lookup,
+        "job_counts": job_counts,
+        "next_job": next_job,
+        "jobs": jobs,
+        "job_forms": job_forms,
+    }
+
+
+@fleet_bp.get("/jobs/timeline/partial")
+@login_required
+def job_scheduler_timeline_partial():
+    module_access = get_module_access(current_user, "fleet_job_scheduler")
+    if module_access not in {"read", "write"}:
+        abort(403)
+    context = _build_job_scheduler_context()
+    context["module_access"] = module_access
+    html = render_template("fleet/_job_timeline.html", format_ts=_format_ts, **context)
+    next_job = context.get("next_job")
+    next_run = _format_ts(next_job.run_at) if next_job and next_job.run_at else _format_ts(None)
+    return jsonify(
+        {
+            "html": html,
+            "counts": context.get("job_counts", {}),
+            "next_run": next_run,
+        }
+    )
+
+
+@fleet_bp.post("/jobs/<int:job_id>/cancel")
+@login_required
+def cancel_scheduled_job(job_id: int):
+    require_module_write("fleet_job_scheduler")
+    job = FleetScheduledJob.query.get_or_404(job_id)
+    if job.status == "canceled":
+        flash(_("Job '%(name)s' is already canceled.", name=job.name), "info")
+        return redirect(url_for("fleet.job_scheduler"))
+    job.status = "canceled"
+    job.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash(_("Job '%(name)s' canceled.", name=job.name), "success")
+    return redirect(url_for("fleet.job_scheduler"))
+
+
+@fleet_bp.post("/jobs/<int:job_id>/delete")
+@login_required
+def delete_scheduled_job(job_id: int):
+    require_module_write("fleet_job_scheduler")
+    job = FleetScheduledJob.query.get_or_404(job_id)
+    db.session.delete(job)
+    db.session.commit()
+    flash(_("Job '%(name)s' removed permanently.", name=job.name), "success")
+    return redirect(url_for("fleet.job_scheduler"))
+
+
+@fleet_bp.post("/jobs/<int:job_id>/edit")
+@login_required
+def edit_scheduled_job(job_id: int):
+    require_module_write("fleet_job_scheduler")
+    job = FleetScheduledJob.query.get_or_404(job_id)
+    name = (request.form.get("job_name") or "").strip()
+    run_at = _parse_datetime_local(request.form.get("job_run_at"))
+    recurrence = (request.form.get("job_recurrence") or job.recurrence).strip().lower()
+    notes = (request.form.get("job_notes") or "").strip()
+    action = job.action_type
+    payload = job.payload or {}
+    if job.action_type == "command":
+        script = (request.form.get("job_command_script") or "").strip()
+        if script:
+            payload["script"] = script
+    if name:
+        job.name = name
+    if run_at:
+        job.run_at = run_at
+    if recurrence in {"once", "daily", "weekly"}:
+        job.recurrence = recurrence
+    if notes:
+        payload["notes"] = notes
+    job.payload = payload
+    if job.run_at and job.run_at > datetime.utcnow():
+        job.status = "scheduled"
+    job.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash(_("Job '%(name)s' updated.", name=job.name), "success")
+    return redirect(url_for("fleet.job_scheduler"))
+
+
+@fleet_bp.post("/jobs/<int:job_id>/reschedule")
+@login_required
+def reschedule_scheduled_job(job_id: int):
+    require_module_write("fleet_job_scheduler")
+    job = FleetScheduledJob.query.get_or_404(job_id)
+    new_run = _parse_datetime_local(request.form.get("job_run_at"))
+    if not new_run:
+        flash(_("Provide a valid date and time to reschedule the job."), "danger")
+        return redirect(url_for("fleet.job_scheduler"))
+    job.run_at = new_run
+    job.status = "scheduled"
+    payload = job.payload or {}
+    normalized_targets = []
+    for target in job.target_hosts or []:
+        try:
+            normalized_targets.append(int(target))
+        except (TypeError, ValueError):
+            continue
+    payload["pending_hosts"] = normalized_targets
+    job.payload = payload
+    job.updated_at = datetime.utcnow()
+    db.session.commit()
+    flash(_("Job '%(name)s' rescheduled.", name=job.name), "success")
+    return redirect(url_for("fleet.job_scheduler"))
+
+
 @fleet_bp.route("/hosts/<int:host_id>/commands", methods=["POST"])
 @login_required
 def create_remote_command(host_id: int):
@@ -764,10 +1185,18 @@ def clear_remote_commands(host_id: int):
     require_module_write("fleet_monitoring")
     host = FleetHost.query.get_or_404(host_id)
     FleetRemoteCommand.query.filter_by(host_id=host.id).delete(synchronize_session=False)
+    transfers = FleetFileTransfer.query.filter_by(host_id=host.id).all()
+    for transfer in transfers:
+        if transfer.stored_path and os.path.exists(transfer.stored_path):
+            try:
+                os.remove(transfer.stored_path)
+            except OSError:
+                current_app.logger.warning("Failed to remove transfer file %s", transfer.stored_path)
+        db.session.delete(transfer)
     db.session.commit()
     if _is_ajax_request():
         return _remote_panel_response(host)
-    flash(_("All remote commands cleared."), "success")
+    flash(_("Remote commands and staged uploads cleared."), "success")
     return redirect(url_for("fleet.host_detail", host_id=host.id))
 
 
@@ -998,6 +1427,7 @@ def agent_tasks_next():
     host, error = _authenticate_agent_request()
     if error:
         return error
+    _dispatch_due_jobs(host_scope=host, action_filter={"command"})
     cmd = (
         FleetRemoteCommand.query.filter_by(host_id=host.id)
         .filter(FleetRemoteCommand.status.in_(["pending", "dispatched"]))
@@ -1079,19 +1509,25 @@ def agent_list_uploads(agent_id: str):
     host, error = _authenticate_agent_request(expected_agent_id=agent_id)
     if error:
         return error
+    _dispatch_due_jobs(host_scope=host, action_filter={"upload"})
     pending = (
         FleetFileTransfer.query.filter_by(host_id=host.id, consumed_at=None)
         .order_by(FleetFileTransfer.created_at.asc())
         .all()
     )
-    payload = [
-        {
+    payload = []
+    for transfer in pending:
+        entry = {
             "id": transfer.id,
             "filename": transfer.filename,
             "size": transfer.size_bytes,
+            "checksum": transfer.checksum or "",
         }
-        for transfer in pending
-    ]
+        if transfer.stored_path and os.path.exists(transfer.stored_path):
+            entry["checksum"] = f"sha256:{_hash_file(transfer.stored_path)}"
+        payload.append(entry)
+    if request.args.get("format") == "jsonv2":
+        return jsonify({"uploads": payload})
     return jsonify(payload)
 
 
@@ -1100,6 +1536,7 @@ def agent_download_upload(agent_id: str, file_id: int):
     host, error = _authenticate_agent_request(expected_agent_id=agent_id)
     if error:
         return error
+    _dispatch_due_jobs(host_scope=host, action_filter={"upload"})
     transfer = FleetFileTransfer.query.get_or_404(file_id)
     if transfer.host_id != host.id:
         return _agent_json_error("File does not belong to this agent.", 403)

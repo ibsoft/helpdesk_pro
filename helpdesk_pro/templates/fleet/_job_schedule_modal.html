@@ -1,0 +1,77 @@
+<div class="modal fade" id="scheduleJobModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <form class="modal-content" method="post" action="{{ url_for('fleet.job_scheduler') }}" enctype="multipart/form-data">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-calendar-plus me-2"></i>{{ _('Schedule a job') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {% if module_access != 'write' %}
+          <div class="alert alert-warning mb-0">
+            <i class="fa fa-lock me-2"></i>{{ _('You have read-only access to Fleet Job Scheduler.') }}
+          </div>
+        {% else %}
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">{{ _('Job name') }}</label>
+              <input type="text" class="form-control" name="job_name" placeholder="{{ _('Morning PowerShell push') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Run at (local time)') }}</label>
+              <input type="datetime-local" class="form-control" name="job_run_at">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Recurrence') }}</label>
+              <select class="form-select" name="job_recurrence">
+                <option value="once">{{ _('Once') }}</option>
+                <option value="daily">{{ _('Daily') }}</option>
+                <option value="weekly">{{ _('Weekly') }}</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Targets') }}</label>
+              <select class="form-select" name="job_hosts" multiple size="6">
+                {% for host in hosts %}
+                  <option value="{{ host.id }}">
+                    {{ host.display_name or host.agent_id }} ({{ host.agent_id }})
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">{{ _('Hold Ctrl/Cmd to select multiple machines.') }}</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label d-block">{{ _('Action type') }}</label>
+              <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="job_action" id="jobActionCommandModal" value="command" checked>
+                <label class="btn btn-outline-primary" for="jobActionCommandModal"><i class="fa fa-terminal me-1"></i>{{ _('Run script') }}</label>
+                <input type="radio" class="btn-check" name="job_action" id="jobActionUploadModal" value="upload">
+                <label class="btn btn-outline-primary" for="jobActionUploadModal"><i class="fa fa-file-arrow-up me-1"></i>{{ _('Upload file') }}</label>
+              </div>
+            </div>
+            <div class="col-12" id="commandFieldsModal">
+              <label class="form-label">{{ _('PowerShell script') }}</label>
+              <textarea class="form-control font-monospace" rows="6" name="job_command_script" placeholder="Write-Host &quot;Hello Fleet&quot;"></textarea>
+              <small class="text-muted">{{ _('Script executes with the Fleet agent context at the scheduled time.') }}</small>
+            </div>
+            <div class="col-12 d-none" id="uploadFieldsModal">
+              <label class="form-label">{{ _('Upload file') }}</label>
+              <input type="file" class="form-control" name="job_file">
+              <small class="text-muted">{{ _('File is staged on the server and delivered when the job runs.') }}</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes for operators (optional)') }}</label>
+              <textarea class="form-control" rows="2" name="job_notes"></textarea>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+        <button class="btn btn-primary" {% if module_access != 'write' %}disabled{% endif %}>
+          <i class="fa fa-calendar-plus me-1"></i>{{ _('Schedule job') }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

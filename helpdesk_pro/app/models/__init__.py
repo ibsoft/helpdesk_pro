@@ -35,4 +35,5 @@ from .fleet import (
     FleetRemoteCommand,
     FleetFileTransfer,
     FleetAgentDownloadLink,
+    FleetScheduledJob,
 )

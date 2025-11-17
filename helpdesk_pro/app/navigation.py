@@ -186,6 +186,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "endpoint": "fleet.dashboard",
             },
             {
+                "key": "fleet_job_scheduler",
+                "label": _("Fleet Job Scheduler"),
+                "icon": "fa fa-calendar-days text-warning",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "fleet.job_scheduler",
+            },
+            {
                 "key": "lto_barcode_generator",
                 "label": _("LTO Barcode Generator"),
                 "icon": "fa fa-barcode text-info",
