@@ -166,6 +166,7 @@ def create_app():
     app.register_blueprint(task_scheduler_bp)
     app.register_blueprint(fleet_bp)
     app.register_blueprint(fleet_agent_bp)
+    csrf.exempt(fleet_agent_bp)
 
     with app.app_context():
         from app.models.module_permission import ModulePermission

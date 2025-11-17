@@ -153,6 +153,14 @@
   .filter-row .filter-actions {
     flex: 0 0 180px;
   }
+  #remoteActionsCard.loading-state {
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  #remoteActionsCard .remote-alert-region:empty {
+    display: none;
+  }
 </style>
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap host-header">
   <div>
@@ -401,100 +409,10 @@
   </div>
 {% endif %}
 
-<div class="card shadow-sm mb-4" id="remoteActionsCard">
-  <div class="card-body">
-    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-      <h2 class="h5 d-flex align-items-center gap-2 mb-0">
-        <i class="fa fa-terminal text-primary"></i>{{ _('Remote Actions') }}
-      </h2>
-      <small class="text-muted">{{ _('Use these tools to interact with the host directly.') }}</small>
-    </div>
-    <div class="row g-3">
-      <div class="col-md-4">
-        <div class="border rounded p-3 h-100">
-          <h3 class="h6">{{ _('Quick Links') }}</h3>
-          {% if primary_ip %}
-            <div class="d-flex flex-column gap-2 mt-2">
-              <a class="btn btn-outline-primary btn-sm" href="ssh://{{ primary_ip }}">{{ _('Open SSH') }}</a>
-              <a class="btn btn-outline-info btn-sm" href="{{ url_for('fleet.download_rdp_file', host_id=host.id) }}">
-                <i class="fa fa-file-arrow-down me-1"></i>{{ _('Download RDP Profile') }}
-              </a>
-              <a class="btn btn-outline-secondary btn-sm" href="vnc://{{ primary_ip }}">{{ _('Open VNC') }}</a>
-            </div>
-          {% else %}
-            <p class="text-muted small mb-0">{{ _('No primary IP reported yet.') }}</p>
-          {% endif %}
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="border rounded p-3 h-100">
-          <h3 class="h6 d-flex justify-content-between align-items-center">
-            <span>{{ _('Send PowerShell Script') }}</span>
-            <span class="badge bg-info-subtle text-info-emphasis text-uppercase">{{ _('PS1') }}</span>
-          </h3>
-          <form method="post" action="{{ url_for('fleet.create_remote_command', host_id=host.id) }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <textarea class="form-control font-monospace mb-2" name="command" rows="6" placeholder="param($serviceName)\r\nRestart-Service -Name $serviceName -Force\r\nWrite-Host &quot;Restarted $serviceName&quot;"></textarea>
-            <small class="text-muted d-block mb-2">{{ _('Paste the PowerShell script you want the agent to execute. It runs with the agent\'s privileges on Windows/Linux (pwsh). Avoid commands that require interactive prompts.') }}</small>
-            <button class="btn btn-primary btn-sm w-100">{{ _('Queue Script') }}</button>
-          </form>
-          {% if remote_commands %}
-            <hr>
-            <ul class="list-unstyled small mb-0">
-              {% for cmd in remote_commands %}
-                <li class="mb-2 d-flex justify-content-between gap-2">
-                  <div>
-                    <span class="badge bg-dark-subtle text-uppercase">{{ cmd.status }}</span>
-                    <code>{{ cmd.command }}</code>
-                    {% if cmd.response %}
-                      <div class="text-muted">{{ cmd.response }}</div>
-                    {% endif %}
-                  </div>
-                  {% if cmd.status in ['pending', 'assigned'] %}
-                    <form method="post" action="{{ url_for('fleet.cancel_remote_command', host_id=host.id, command_id=cmd.id) }}">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="btn btn-sm btn-outline-danger">{{ _('Cancel') }}</button>
-                    </form>
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        </div>
-      </div>
-      <div class="col-md-4">
-        <div class="border rounded p-3 h-100">
-          <h3 class="h6">{{ _('Upload File') }}</h3>
-          <form method="post" action="{{ url_for('fleet.upload_remote_file', host_id=host.id) }}" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <input type="file" name="file" class="form-control mb-2">
-            <button class="btn btn-outline-primary btn-sm w-100">{{ _('Upload') }}</button>
-          </form>
-          {% if file_transfers %}
-            <hr>
-            <ul class="list-unstyled small mb-0">
-              {% for transfer in file_transfers %}
-                <li class="mb-1">
-                  <i class="fa fa-file-arrow-up text-primary"></i> {{ transfer.filename }}
-                  <span class="text-muted">({{ (transfer.size_bytes or 0) // 1024 }} KB)</span>
-                  {% if transfer.consumed_at %}
-                    <span class="badge bg-success-subtle text-success-emphasis">{{ _('Downloaded') }}</span>
-                  {% else %}
-                    <span class="badge bg-warning-subtle text-warning-emphasis">{{ _('Pending pickup') }}</span>
-                    <form method="post"
-                          action="{{ url_for('fleet.cancel_file_transfer', host_id=host.id, transfer_id=transfer.id) }}"
-                          class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2">{{ _('Cancel') }}</button>
-                    </form>
-                  {% endif %}
-                </li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-        </div>
-      </div>
-    </div>
+<div class="card shadow-sm mb-4" id="remoteActionsCard" data-panel-url="{{ url_for('fleet.remote_actions_panel', host_id=host.id) }}">
+  <div class="remote-alert-region p-3 pt-3 pb-0"></div>
+  <div data-remote-panel-body>
+    {{ remote_actions_html | safe }}
   </div>
 </div>
 
@@ -683,6 +601,28 @@
   </div>
 </div>
 
+<div class="modal fade payload-modal" id="remoteCommandModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title" id="remoteCommandTitle">{{ _('Command result') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="small text-muted mb-3" id="remoteCommandMeta"></div>
+        <div class="mb-3">
+          <label class="form-label text-uppercase small fw-semibold">{{ _('Script sent to agent') }}</label>
+          <pre class="payload-body small rounded p-3" id="remoteCommandScript"></pre>
+        </div>
+        <div>
+          <label class="form-label text-uppercase small fw-semibold">{{ _('Command output') }}</label>
+          <pre class="payload-body small rounded p-3" id="remoteCommandResponse"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% if screenshot_data and settings.show_dashboard_screenshots %}
   <div class="modal fade" id="screenshotFullscreenModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-fullscreen" style="margin-top: var(--navbar-height);">
@@ -772,6 +712,153 @@
     const payloadBody = document.getElementById('messagePayloadBody');
     const messagePanelContainer = document.getElementById('messagePanelContainer');
     const watchedKeys = ['category', 'subtype', 'level', 'q', 'per_page', 'page'];
+    const remoteActionsCard = document.getElementById('remoteActionsCard');
+    const remotePanelBody = remoteActionsCard ? remoteActionsCard.querySelector('[data-remote-panel-body]') : null;
+    const remotePanelUrl = remoteActionsCard ? remoteActionsCard.dataset.panelUrl : null;
+    const remoteErrorFallback = {{ _('Unable to complete remote action.') | tojson }};
+    const remoteCommandModal = document.getElementById('remoteCommandModal');
+    const remoteCommandTitle = document.getElementById('remoteCommandTitle');
+    const remoteCommandMeta = document.getElementById('remoteCommandMeta');
+    const remoteCommandScript = document.getElementById('remoteCommandScript');
+    const remoteCommandOutput = document.getElementById('remoteCommandResponse');
+    const remoteCommandFallbackTitle = {{ _('Command result') | tojson }};
+    const remoteCommandNoOutput = {{ _('No output was captured.') | tojson }};
+    const remoteCommandNoScript = {{ _('Script unavailable.') | tojson }};
+
+    function parseDataJson(value) {
+      if (!value) return '';
+      try {
+        return JSON.parse(value);
+      } catch (err) {
+        return value;
+      }
+    }
+
+    function showRemoteCommandResponse(button) {
+      if (!remoteCommandModal) return;
+      const title = button.getAttribute('data-command-title') || remoteCommandFallbackTitle;
+      const meta = button.getAttribute('data-command-meta') || '';
+      const scriptPayload = button.getAttribute('data-command-script');
+      const responsePayload = button.getAttribute('data-command-response');
+      const scriptText = parseDataJson(scriptPayload) || remoteCommandNoScript;
+      const responseText = parseDataJson(responsePayload) || remoteCommandNoOutput;
+      remoteCommandTitle.textContent = title;
+      remoteCommandMeta.textContent = meta;
+      remoteCommandScript.textContent = scriptText;
+      remoteCommandOutput.textContent = responseText;
+      bootstrap.Modal.getOrCreateInstance(remoteCommandModal).show();
+    }
+
+    function getRemoteAlertRegion() {
+      if (!remoteActionsCard) return null;
+      return remoteActionsCard.querySelector('.remote-alert-region');
+    }
+
+    function clearRemoteAlert() {
+      const region = getRemoteAlertRegion();
+      if (region) {
+        region.innerHTML = '';
+      }
+    }
+
+    function showRemoteAlert(message, tone = 'danger') {
+      const region = getRemoteAlertRegion();
+      if (!region || !message) return;
+      region.innerHTML = '';
+      const wrapper = document.createElement('div');
+      wrapper.className = `alert alert-${tone} alert-dismissible fade show mb-0`;
+      wrapper.setAttribute('role', 'alert');
+      const copy = document.createElement('span');
+      copy.textContent = message;
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'btn-close';
+      closeBtn.setAttribute('data-bs-dismiss', 'alert');
+      closeBtn.setAttribute('aria-label', '{{ _("Close") }}');
+      wrapper.appendChild(copy);
+      wrapper.appendChild(closeBtn);
+      region.appendChild(wrapper);
+    }
+
+    function setRemoteLoading(isLoading) {
+      if (!remoteActionsCard) return;
+      remoteActionsCard.classList.toggle('loading-state', Boolean(isLoading));
+    }
+
+    function fetchRemotePanel(target, options = {}) {
+      if (!remoteActionsCard) return;
+      setRemoteLoading(true);
+      const requestOptions = Object.assign({}, options);
+      requestOptions.method = (requestOptions.method || 'GET').toUpperCase();
+      requestOptions.headers = Object.assign({'X-Requested-With': 'XMLHttpRequest'}, requestOptions.headers || {});
+      requestOptions.credentials = requestOptions.credentials || 'same-origin';
+      if (requestOptions.method === 'GET' && requestOptions.body) {
+        delete requestOptions.body;
+      }
+      return fetch(target, requestOptions)
+        .then(async (resp) => {
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            throw new Error(data.error || resp.statusText || remoteErrorFallback);
+          }
+          if (data.html && remotePanelBody) {
+            remotePanelBody.innerHTML = data.html;
+            clearRemoteAlert();
+            rebindRemotePanel();
+          } else if (data.message) {
+            showRemoteAlert(data.message, 'info');
+          }
+          return data;
+        })
+        .catch((err) => {
+          showRemoteAlert(err.message || remoteErrorFallback);
+        })
+        .finally(() => setRemoteLoading(false));
+    }
+
+    function submitRemoteAction(form) {
+      if (!form) return;
+      const formData = new FormData(form);
+      fetchRemotePanel(form.action, {method: form.method || 'POST', body: formData});
+    }
+
+    function refreshRemotePanel() {
+      if (!remotePanelUrl) return;
+      fetchRemotePanel(remotePanelUrl);
+    }
+
+    function rebindRemotePanel() {
+      if (!remoteActionsCard || !remotePanelBody) return;
+      remotePanelBody.querySelectorAll('form[data-remote-action]').forEach((form) => {
+        if (form.dataset.remoteBound === '1') return;
+        form.dataset.remoteBound = '1';
+        form.addEventListener('submit', (evt) => {
+          evt.preventDefault();
+          submitRemoteAction(form);
+        });
+      });
+      const refreshBtn = remoteActionsCard.querySelector('[data-remote-refresh]');
+      if (refreshBtn && refreshBtn.dataset.remoteBound !== '1') {
+        refreshBtn.dataset.remoteBound = '1';
+        refreshBtn.addEventListener('click', (evt) => {
+          evt.preventDefault();
+          refreshRemotePanel();
+        });
+      }
+      bindRemoteCommandResponses();
+    }
+
+    function bindRemoteCommandResponses() {
+      if (!remoteActionsCard) return;
+      remoteActionsCard.querySelectorAll('.remote-command-response-btn').forEach((btn) => {
+        if (btn.dataset.remoteBound === '1') return;
+        btn.dataset.remoteBound = '1';
+        btn.addEventListener('click', (evt) => {
+          evt.preventDefault();
+          showRemoteCommandResponse(btn);
+        });
+      });
+    }
 
     const showPayload = (payloadMap, id) => {
       const data = payloadMap[id];
@@ -874,6 +961,7 @@
       });
     };
 
+    rebindRemotePanel();
     bindPayloadHandlers();
     bindFilterInteractions();
     if (shouldAutoScroll()) {

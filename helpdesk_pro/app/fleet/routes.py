@@ -75,6 +75,89 @@ def _find_active_api_key(token: str | None):
     return None
 
 
+def _remote_actions_context(host: FleetHost):
+    remote_commands = (
+        FleetRemoteCommand.query.filter_by(host_id=host.id)
+        .order_by(FleetRemoteCommand.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    file_transfers = (
+        FleetFileTransfer.query.filter_by(host_id=host.id)
+        .order_by(FleetFileTransfer.created_at.desc())
+        .limit(10)
+        .all()
+    )
+    return remote_commands, file_transfers
+
+
+def _render_remote_actions_panel(host: FleetHost):
+    remote_commands, file_transfers = _remote_actions_context(host)
+    return render_template(
+        "fleet/_remote_actions_panel.html",
+        host=host,
+        remote_commands=remote_commands,
+        file_transfers=file_transfers,
+        format_ts=_format_ts,
+    )
+
+
+def _remote_panel_response(host: FleetHost, status: int = 200):
+    html = _render_remote_actions_panel(host)
+    return jsonify({"html": html}), status
+
+
+def _is_ajax_request() -> bool:
+    return request.headers.get("X-Requested-With") == "XMLHttpRequest"
+
+
+def _parse_agent_isoformat(value):
+    if not value:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        dt = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
+def _command_requested_by(command: FleetRemoteCommand) -> str | None:
+    issuer = getattr(command, "issued_by", None)
+    if not issuer:
+        return None
+    return issuer.email or issuer.full_name or issuer.username
+
+
+def _build_agent_command_payloads(command: FleetRemoteCommand):
+    script_text = command.command or ""
+    script_b64 = base64.b64encode(script_text.encode("utf-8")).decode("ascii")
+    requested_by = _command_requested_by(command)
+    args = {"requestedBy": requested_by} if requested_by else {}
+    task_payload = {
+        "id": command.id,
+        "name": "run_ps_script",
+        "script": script_text,
+        "script_b64": script_b64,
+    }
+    legacy_payload = {
+        "id": command.id,
+        "command": script_text,
+        "language": "powershell",
+        "script_b64": script_b64,
+    }
+    if args:
+        task_payload["args"] = args
+        legacy_payload["args"] = args
+    return task_payload, legacy_payload
+
+
 def _authenticate_agent_request(expected_agent_id: str | None = None):
     token = (
         request.headers.get("X-API-Key")
@@ -513,18 +596,6 @@ def host_detail(host_id: int):
             )
         )
 
-    remote_commands = (
-        FleetRemoteCommand.query.filter_by(host_id=host.id)
-        .order_by(FleetRemoteCommand.created_at.desc())
-        .limit(10)
-        .all()
-    )
-    file_transfers = (
-        FleetFileTransfer.query.filter_by(host_id=host.id)
-        .order_by(FleetFileTransfer.created_at.desc())
-        .limit(10)
-        .all()
-    )
     primary_ip = snapshot.get("network", {}).get("primaryIP")
 
     template_context = {
@@ -542,8 +613,6 @@ def host_detail(host_id: int):
         "health_cards": health_cards,
         "screenshot_data": screenshot_data,
         "active_alerts": active_alerts,
-        "remote_commands": remote_commands,
-        "file_transfers": file_transfers,
         "primary_ip": primary_ip,
         "format_ts": _format_ts,
         "message_payload_map": message_payload_map,
@@ -555,12 +624,21 @@ def host_detail(host_id: int):
         "snapshot_timestamp": snapshot_ts,
         "snapshot_available": snapshot_available,
         "event_errors": event_errors,
+        "remote_actions_html": _render_remote_actions_panel(host),
     }
 
     if request.args.get("partial") == "messages":
         return render_template("fleet/_messages_panel.html", **template_context)
 
     return render_template("fleet/host_detail.html", **template_context)
+
+
+@fleet_bp.get("/hosts/<int:host_id>/remote-panel")
+@login_required
+def remote_actions_panel(host_id: int):
+    _require_view_permission()
+    host = FleetHost.query.get_or_404(host_id)
+    return _remote_panel_response(host)
 
 
 @fleet_bp.route("/settings", methods=["GET", "POST"])
@@ -639,6 +717,8 @@ def create_remote_command(host_id: int):
     host = FleetHost.query.get_or_404(host_id)
     command = (request.form.get("command") or "").strip()
     if not command:
+        if _is_ajax_request():
+            return jsonify({"error": _("Command cannot be empty.")}), 400
         flash(_("Command cannot be empty."), "danger")
         return redirect(url_for("fleet.host_detail", host_id=host.id))
     entry = FleetRemoteCommand(
@@ -649,6 +729,8 @@ def create_remote_command(host_id: int):
     )
     db.session.add(entry)
     db.session.commit()
+    if _is_ajax_request():
+        return _remote_panel_response(host)
     flash(_("Command queued successfully."), "success")
     return redirect(url_for("fleet.host_detail", host_id=host.id))
 
@@ -663,12 +745,29 @@ def cancel_remote_command(host_id: int, command_id: int):
         .first_or_404()
     )
     if command.status not in {"pending", "assigned"}:
+        if _is_ajax_request():
+            return jsonify({"error": _("Command cannot be canceled once it is %(state)s.", state=command.status)}), 400
         flash(_("Command cannot be canceled once it is %(state)s.", state=command.status), "warning")
         return redirect(url_for("fleet.host_detail", host_id=host.id))
     command.status = "canceled"
     command.response = _("Command canceled by %(user)s", user=current_user.username or current_user.email)
     db.session.commit()
+    if _is_ajax_request():
+        return _remote_panel_response(host)
     flash(_("Command canceled."), "success")
+    return redirect(url_for("fleet.host_detail", host_id=host.id))
+
+
+@fleet_bp.route("/hosts/<int:host_id>/commands/clear", methods=["POST"])
+@login_required
+def clear_remote_commands(host_id: int):
+    require_module_write("fleet_monitoring")
+    host = FleetHost.query.get_or_404(host_id)
+    FleetRemoteCommand.query.filter_by(host_id=host.id).delete(synchronize_session=False)
+    db.session.commit()
+    if _is_ajax_request():
+        return _remote_panel_response(host)
+    flash(_("All remote commands cleared."), "success")
     return redirect(url_for("fleet.host_detail", host_id=host.id))
 
 
@@ -711,6 +810,8 @@ def upload_remote_file(host_id: int):
     host = FleetHost.query.get_or_404(host_id)
     file = request.files.get("file")
     if not file or not file.filename:
+        if _is_ajax_request():
+            return jsonify({"error": _("Select a file to upload.")}), 400
         flash(_("Select a file to upload."), "danger")
         return redirect(url_for("fleet.host_detail", host_id=host.id))
     filename = secure_filename(file.filename)
@@ -730,6 +831,8 @@ def upload_remote_file(host_id: int):
     )
     db.session.add(transfer)
     db.session.commit()
+    if _is_ajax_request():
+        return _remote_panel_response(host)
     flash(_("File uploaded for agent pickup."), "success")
     return redirect(url_for("fleet.host_detail", host_id=host.id))
 
@@ -744,6 +847,8 @@ def cancel_file_transfer(host_id: int, transfer_id: int):
         .first_or_404()
     )
     if transfer.consumed_at:
+        if _is_ajax_request():
+            return jsonify({"error": _("Transfer already picked up by the agent.")}), 400
         flash(_("Transfer already picked up by the agent."), "warning")
         return redirect(url_for("fleet.host_detail", host_id=host.id))
     if transfer.stored_path and os.path.exists(transfer.stored_path):
@@ -753,7 +858,29 @@ def cancel_file_transfer(host_id: int, transfer_id: int):
             current_app.logger.warning("Failed to remove transfer file %s", transfer.stored_path)
     db.session.delete(transfer)
     db.session.commit()
+    if _is_ajax_request():
+        return _remote_panel_response(host)
     flash(_("Pending transfer canceled."), "success")
+    return redirect(url_for("fleet.host_detail", host_id=host.id))
+
+
+@fleet_bp.route("/hosts/<int:host_id>/uploads/clear", methods=["POST"])
+@login_required
+def clear_file_transfers(host_id: int):
+    require_module_write("fleet_monitoring")
+    host = FleetHost.query.get_or_404(host_id)
+    transfers = FleetFileTransfer.query.filter_by(host_id=host.id).all()
+    for transfer in transfers:
+        if transfer.stored_path and os.path.exists(transfer.stored_path):
+            try:
+                os.remove(transfer.stored_path)
+            except OSError:
+                current_app.logger.warning("Failed to remove transfer file %s", transfer.stored_path)
+        db.session.delete(transfer)
+    db.session.commit()
+    if _is_ajax_request():
+        return _remote_panel_response(host)
+    flash(_("All uploaded files removed."), "success")
     return redirect(url_for("fleet.host_detail", host_id=host.id))
 
 
@@ -882,46 +1009,67 @@ def agent_tasks_next():
     cmd.status = "assigned"
     cmd.delivered_at = datetime.utcnow()
     db.session.commit()
-    script_b64 = base64.b64encode((cmd.command or "").encode("utf-8")).decode("ascii")
-    task_payload = {
-        "id": cmd.id,
-        "name": "run_ps_script",
-        "args": {
-            "language": "powershell",
-            "script": cmd.command,
-            "scriptB64": script_b64,
-        },
+    task_payload, legacy_payload = _build_agent_command_payloads(cmd)
+    response_payload = {
+        "tasks": [task_payload],
+        "commands": [legacy_payload],
+        "task": task_payload,
+        "command": legacy_payload,
     }
-    return jsonify({"tasks": [task_payload]})
+    return jsonify(response_payload)
 
 
 @fleet_agent_bp.post("/terminal/tasks/result")
 def agent_task_result():
-    data = request.get_json(silent=True) or {}
-    task_id = data.get("id") or data.get("taskId")
+    data = request.get_json(silent=True)
+    if data is None:
+        data = request.form.to_dict() if request.form else {}
+    task_id = (
+        data.get("id")
+        or data.get("taskId")
+        or data.get("commandId")
+        or data.get("command_id")
+    )
     if not task_id:
         return _agent_json_error("Missing task id.", 400)
+    try:
+        task_id = int(task_id)
+    except (TypeError, ValueError):
+        return _agent_json_error("Task id must be an integer.", 400)
     host, error = _authenticate_agent_request()
     if error:
         return error
     cmd = FleetRemoteCommand.query.get_or_404(task_id)
     if cmd.host_id != host.id:
         return _agent_json_error("Task does not belong to this agent.", 403)
-    status = (data.get("status") or data.get("Status") or "completed").lower()
-    response_parts = []
+    status_raw = data.get("status") or data.get("Status") or "completed"
+    status = status_raw.lower() if isinstance(status_raw, str) else "completed"
     exit_code = data.get("exitCode")
     stdout = data.get("stdout") or data.get("output")
     stderr = data.get("stderr") or data.get("error")
+    started_at = data.get("startedAt") or data.get("started_at")
+    finished_at = data.get("finishedAt") or data.get("finished_at")
+    started_dt = _parse_agent_isoformat(started_at)
+    finished_dt = _parse_agent_isoformat(finished_at)
+    response_parts = []
     if exit_code is not None:
         response_parts.append(f"exit_code={exit_code}")
+    if started_at:
+        response_parts.append(f"started_at={started_at}")
+    if finished_at:
+        response_parts.append(f"finished_at={finished_at}")
     if stdout:
         response_parts.append(f"stdout:\n{stdout}")
     if stderr:
         response_parts.append(f"stderr:\n{stderr}")
-    response_text = "\n\n".join(part for part in response_parts if part)
     cmd.status = status
-    cmd.response = response_text or data.get("response") or cmd.response
-    cmd.executed_at = datetime.utcnow()
+    cmd.response = "\n\n".join(response_parts) or data.get("response") or cmd.response
+    if started_dt:
+        cmd.delivered_at = started_dt
+    if finished_dt:
+        cmd.executed_at = finished_dt
+    else:
+        cmd.executed_at = datetime.utcnow()
     db.session.commit()
     return jsonify({"success": True})
 
