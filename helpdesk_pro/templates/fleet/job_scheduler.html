@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .scheduler-hero {
+    border-radius: 1rem;
+    background: linear-gradient(120deg, rgba(248,250,252,0.95), rgba(226,232,240,0.85));
+    border: 1px solid rgba(148,163,184,0.25);
+  }
+  html[data-bs-theme="dark"] body .scheduler-hero {
+    background: linear-gradient(120deg, rgba(15,23,42,0.85), rgba(30,41,59,0.75));
+  }
+  .hero-pill {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148,163,184,0.25);
+    background: var(--bs-body-bg);
+    padding: 0.65rem 1.1rem;
+    min-width: 180px;
+  }
+  .stat-pill {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148,163,184,0.25);
+    padding: 1rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 10px 25px -25px rgba(15,23,42,0.65);
+  }
+  .host-chip {
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.35);
+    padding: 0.15rem 0.85rem;
+    font-size: 0.8rem;
+  }
+  .job-card {
+    border: 1px solid rgba(148,163,184,0.2);
+    border-radius: 1rem;
+    box-shadow: 0 12px 28px -28px rgba(15,23,42,0.7);
+  }
+  .job-card pre {
+    max-height: 190px;
+    overflow: auto;
+  }
+  .job-status-badge {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+</style>
+
+<div class="scheduler-hero p-4 mb-4 card border-0 shadow-sm">
+  <div class="row g-3 align-items-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+          <i class="fa fa-calendar-check"></i>
+        </div>
+        <div>
+          <h1 class="h4 mb-1">{{ _('Fleet Job Scheduler') }}</h1>
+          <p class="text-muted mb-0">{{ _('Plan PowerShell scripts or staged uploads across selected machines with the same look and feel as Fleet Radar.') }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+        <div class="hero-pill">
+          <small class="text-muted text-uppercase d-block">{{ _('Next run') }}</small>
+          <span>{{ next_job and format_ts(next_job.run_at) or _('—') }}</span>
+        </div>
+        <div class="hero-pill">
+          <small class="text-muted text-uppercase d-block">{{ _('Active jobs') }}</small>
+          <span>{{ job_counts.scheduled }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-pill h-100">
+      <div>
+        <p class="text-muted text-uppercase small mb-1">{{ _('Scheduled jobs') }}</p>
+        <span class="display-6 fw-bold text-primary">{{ job_counts.scheduled }}</span>
+        <span class="text-muted">{{ _('active') }}</span>
+      </div>
+      <i class="fa fa-play text-primary"></i>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-pill h-100">
+      <div>
+        <p class="text-muted text-uppercase small mb-1">{{ _('Completed jobs') }}</p>
+        <span class="display-6 fw-bold text-success">{{ job_counts.completed }}</span>
+        <span class="text-muted">{{ _('historical') }}</span>
+      </div>
+      <i class="fa fa-check text-success"></i>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-pill h-100">
+      <div>
+        <p class="text-muted text-uppercase small mb-1">{{ _('Total saved') }}</p>
+        <span class="display-6 fw-bold text-info">{{ job_counts.total }}</span>
+        <span class="text-muted">{{ _('jobs defined') }}</span>
+      </div>
+      <i class="fa fa-layer-group text-info"></i>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-12 col-xl-5">
+    <div class="card shadow-sm h-100">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h2 class="h5 mb-1">{{ _('Schedule a job') }}</h2>
+            <p class="text-muted small mb-0">{{ _('Send a script or staged upload at a future time.') }}</p>
+          </div>
+          <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ module_access|title }} {{ _('access') }}</span>
+        </div>
+        {% if module_access != 'write' %}
+          <div class="alert alert-warning mb-0">
+            <i class="fa fa-lock me-2"></i>{{ _('You have read-only access to Fleet Job Scheduler.') }}
+          </div>
+        {% else %}
+          <form method="post" action="{{ url_for('fleet.job_scheduler') }}" enctype="multipart/form-data" class="row g-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="col-12">
+              <label class="form-label">{{ _('Job name') }}</label>
+              <input type="text" class="form-control" name="job_name" value="{{ request.form.get('job_name', '') }}" placeholder="{{ _('Morning PowerShell push') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Run at (local time)') }}</label>
+              <input type="datetime-local" class="form-control" name="job_run_at" value="{{ request.form.get('job_run_at', '') }}">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">{{ _('Recurrence') }}</label>
+              <select class="form-select" name="job_recurrence">
+                {% set recurrence_value = request.form.get('job_recurrence', 'once') %}
+                <option value="once" {% if recurrence_value == 'once' %}selected{% endif %}>{{ _('Once') }}</option>
+                <option value="daily" {% if recurrence_value == 'daily' %}selected{% endif %}>{{ _('Daily') }}</option>
+                <option value="weekly" {% if recurrence_value == 'weekly' %}selected{% endif %}>{{ _('Weekly') }}</option>
+              </select>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Targets') }}</label>
+              <select class="form-select" name="job_hosts" multiple size="6">
+                {% set selected_hosts = request.form.getlist('job_hosts') %}
+                {% for host in hosts %}
+                  {% set option_value = host.id|string %}
+                  <option value="{{ host.id }}" {% if option_value in selected_hosts %}selected{% endif %}>
+                    {{ host.display_name or host.agent_id }} ({{ host.agent_id }})
+                  </option>
+                {% endfor %}
+              </select>
+              <small class="text-muted">{{ _('Hold Ctrl/Cmd to select multiple machines.') }}</small>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label d-block">{{ _('Action type') }}</label>
+              {% set action_value = request.form.get('job_action', 'command') %}
+              <div class="btn-group" role="group">
+                <input type="radio" class="btn-check" name="job_action" id="jobActionCommand" value="command" {% if action_value != 'upload' %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="jobActionCommand"><i class="fa fa-terminal me-1"></i>{{ _('Run script') }}</label>
+                <input type="radio" class="btn-check" name="job_action" id="jobActionUpload" value="upload" {% if action_value == 'upload' %}checked{% endif %}>
+                <label class="btn btn-outline-primary" for="jobActionUpload"><i class="fa fa-file-arrow-up me-1"></i>{{ _('Upload file') }}</label>
+              </div>
+            </div>
+            <div class="col-12" id="commandFields">
+              <label class="form-label">{{ _('PowerShell script') }}</label>
+              <textarea class="form-control font-monospace" rows="6" name="job_command_script" placeholder="Write-Host &quot;Hello Fleet&quot;">{{ request.form.get('job_command_script', '') }}</textarea>
+              <small class="text-muted">{{ _('Script executes with the Fleet agent context at the scheduled time.') }}</small>
+            </div>
+            <div class="col-12 d-none" id="uploadFields">
+              <label class="form-label">{{ _('Upload file') }}</label>
+              <input type="file" class="form-control" name="job_file">
+              <small class="text-muted">{{ _('File is staged on the server and delivered when the job runs.') }}</small>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Notes for operators (optional)') }}</label>
+              <textarea class="form-control" rows="2" name="job_notes">{{ request.form.get('job_notes', '') }}</textarea>
+            </div>
+            <div class="col-12">
+              <button class="btn btn-primary w-100"><i class="fa fa-calendar-plus me-1"></i>{{ _('Schedule job') }}</button>
+            </div>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-7">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="h5 mb-0">{{ _('Job timeline') }}</h2>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('fleet.job_scheduler') }}">
+            <i class="fa fa-rotate"></i> {{ _('Refresh') }}
+          </a>
+        </div>
+        {% if jobs %}
+          {% for job in jobs %}
+            {% set status = (job.status or 'scheduled').lower() %}
+            {% if 'cancel' in status %}
+              {% set badge_class = 'bg-secondary-subtle text-secondary-emphasis' %}
+            {% elif 'complete' in status %}
+              {% set badge_class = 'bg-success-subtle text-success-emphasis' %}
+            {% else %}
+              {% set badge_class = 'bg-warning-subtle text-warning-emphasis' %}
+            {% endif %}
+            <div class="job-card p-3 mb-3">
+              <div class="d-flex justify-content-between align-items-start gap-3">
+                <div>
+                  <h3 class="h6 mb-1">{{ job.name }}</h3>
+                  <p class="text-muted small mb-1">
+                    <i class="fa fa-clock me-1 text-primary"></i>{{ _('Runs %(time)s', time=format_ts(job.run_at)) }}
+                    · {{ _('Repeats: %(recurrence)s', recurrence=job.recurrence|title) }}
+                  </p>
+                  <p class="text-muted small mb-1">
+                    <i class="fa fa-bullseye me-1 text-info"></i>{{ job.target_count() }} {{ _('hosts targeted') }}
+                  </p>
+                </div>
+                <span class="badge {{ badge_class }} job-status-badge">{{ job.status or _('scheduled') }}</span>
+              </div>
+              <div class="d-flex flex-wrap gap-2 mb-2">
+                {% for host_id in job.target_hosts or [] %}
+                  {% set host_obj = host_lookup.get(host_id) %}
+                  {% if host_obj %}
+                    <span class="host-chip bg-body">{{ host_obj.display_name or host_obj.agent_id }}</span>
+                  {% else %}
+                    <span class="host-chip bg-body text-muted">{{ _('Host #%(id)s', id=host_id) }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+              {% if job.payload and job.action_type == 'command' %}
+                <label class="form-label text-uppercase small text-muted mb-1">{{ _('Script preview') }}</label>
+                <pre class="payload-body small rounded p-3">{{ job.payload.get('script', _('No script supplied.')) }}</pre>
+              {% elif job.payload and job.action_type == 'upload' %}
+                {% set upload_meta = job.payload.get('upload') or {} %}
+                <div class="alert alert-info mb-2">
+                  <i class="fa fa-file-arrow-up me-2"></i>
+                  {{ upload_meta.get('filename') or _('Staged file') }}
+                  {% if upload_meta.get('size') %}
+                    · {{ (upload_meta.get('size') // 1024) }} KB
+                  {% endif %}
+                </div>
+              {% endif %}
+              {% set note_text = job.payload.get('notes') if job.payload else None %}
+              {% if note_text %}
+                <p class="small mb-2"><i class="fa fa-sticky-note text-warning me-1"></i>{{ note_text }}</p>
+              {% endif %}
+              <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <small class="text-muted">{{ _('Created %(time)s by %(user)s', time=format_ts(job.created_at), user=job.created_by.display_name if job.created_by else _('System')) }}</small>
+                <div class="d-flex gap-2">
+                  {% if module_access == 'write' %}
+                    <button type="button"
+                            class="btn btn-sm btn-outline-primary"
+                            data-bs-toggle="modal"
+                            data-bs-target="#editJobModal{{ job.id }}">
+                      <i class="fa fa-pen me-1"></i>{{ _('Edit') }}
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-success"
+                            data-bs-toggle="modal"
+                            data-bs-target="#rescheduleJobModal{{ job.id }}">
+                      <i class="fa fa-rotate me-1"></i>{{ _('Reschedule') }}
+                    </button>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-danger"
+                            data-bs-toggle="modal"
+                            data-bs-target="#deleteJobModal{{ job.id }}">
+                      <i class="fa fa-trash me-1"></i>{{ _('Delete') }}
+                    </button>
+                    {% if status == 'scheduled' %}
+                      <form method="post" action="{{ url_for('fleet.cancel_scheduled_job', job_id=job.id) }}">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button class="btn btn-sm btn-outline-secondary"><i class="fa fa-ban me-1"></i>{{ _('Cancel') }}</button>
+                      </form>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          {% if module_access == 'write' %}
+            <div class="modal fade" id="editJobModal{{ job.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <form class="modal-content" method="post" action="{{ url_for('fleet.edit_scheduled_job', job_id=job.id) }}">
+                  <div class="modal-header modal-header-gradient text-white">
+                    <h5 class="modal-title"><i class="fa fa-pen me-2"></i>{{ _('Edit job') }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="row g-3">
+                      <div class="col-12">
+                        <label class="form-label">{{ _('Job name') }}</label>
+                        <input type="text" class="form-control" name="job_name" value="{{ job.name }}">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">{{ _('Run at (local time)') }}</label>
+                        <input type="datetime-local" class="form-control" name="job_run_at" value="{{ job_forms[loop.index0].run_at }}">
+                      </div>
+                      <div class="col-md-6">
+                        <label class="form-label">{{ _('Recurrence') }}</label>
+                        <select class="form-select" name="job_recurrence">
+                          {% set current_recurrence = job_forms[loop.index0].recurrence %}
+                          <option value="once" {% if current_recurrence == 'once' %}selected{% endif %}>{{ _('Once') }}</option>
+                          <option value="daily" {% if current_recurrence == 'daily' %}selected{% endif %}>{{ _('Daily') }}</option>
+                          <option value="weekly" {% if current_recurrence == 'weekly' %}selected{% endif %}>{{ _('Weekly') }}</option>
+                        </select>
+                      </div>
+                      {% if job.action_type == 'command' %}
+                        <div class="col-12">
+                          <label class="form-label">{{ _('PowerShell script') }}</label>
+                          <textarea class="form-control font-monospace" rows="6" name="job_command_script">{{ job_forms[loop.index0].script }}</textarea>
+                        </div>
+                      {% else %}
+                        <div class="col-12">
+                          <div class="alert alert-info mb-0">
+                            <i class="fa fa-file-arrow-up me-2"></i>{{ _('Upload jobs cannot change files after creation.') }}
+                          </div>
+                        </div>
+                      {% endif %}
+                      <div class="col-12">
+                        <label class="form-label">{{ _('Notes') }}</label>
+                        <textarea class="form-control" rows="2" name="job_notes">{{ job_forms[loop.index0].notes or '' }}</textarea>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+                    <button class="btn btn-primary"><i class="fa fa-save me-1"></i>{{ _('Save changes') }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="modal fade" id="deleteJobModal{{ job.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog">
+                <form class="modal-content" method="post" action="{{ url_for('fleet.delete_scheduled_job', job_id=job.id) }}">
+                  <div class="modal-header modal-header-gradient text-white">
+                    <h5 class="modal-title"><i class="fa fa-trash me-2"></i>{{ _('Delete job') }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <p class="mb-0">{{ _('Are you sure you want to delete "%(name)s"? This cannot be undone.', name=job.name) }}</p>
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button class="btn btn-danger"><i class="fa fa-trash me-1"></i>{{ _('Delete job') }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+            <div class="modal fade" id="rescheduleJobModal{{ job.id }}" tabindex="-1" aria-hidden="true">
+              <div class="modal-dialog">
+                <form class="modal-content" method="post" action="{{ url_for('fleet.reschedule_scheduled_job', job_id=job.id) }}">
+                  <div class="modal-header modal-header-gradient text-white">
+                    <h5 class="modal-title"><i class="fa fa-rotate me-2"></i>{{ _('Reschedule job') }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                  </div>
+                  <div class="modal-body">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <label class="form-label">{{ _('New run time') }}</label>
+                    <input type="datetime-local" class="form-control" name="job_run_at" value="{{ job_forms[loop.index0].run_at }}">
+                  </div>
+                  <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+                    <button class="btn btn-success"><i class="fa fa-rotate me-1"></i>{{ _('Reschedule') }}</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          {% endif %}
+          {% endfor %}
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No jobs defined yet. Use the form to schedule your first Fleet automation.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ super() if super() is defined }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const actionInputs = document.querySelectorAll('input[name="job_action"]');
+    const commandFields = document.getElementById('commandFields');
+    const uploadFields = document.getElementById('uploadFields');
+    const toggleActionFields = () => {
+      if (!commandFields || !uploadFields) return;
+      const checked = document.querySelector('input[name="job_action"]:checked');
+      const value = checked ? checked.value : 'command';
+      if (value === 'upload') {
+        commandFields.classList.add('d-none');
+        uploadFields.classList.remove('d-none');
+      } else {
+        uploadFields.classList.add('d-none');
+        commandFields.classList.remove('d-none');
+      }
+    };
+    actionInputs.forEach((input) => {
+      input.addEventListener('change', toggleActionFields);
+    });
+    toggleActionFields();
+  });
+</script>
+{% endblock %}
