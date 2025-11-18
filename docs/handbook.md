@@ -352,6 +352,45 @@ Each module corresponds to a Flask blueprint or service housed under `app/`.
   - Retention windows for messages/screenshots and default alert rule thresholds.
 - **Operations** – Tables auto-create during startup (similar to Task Scheduler). All timestamps are stored in UTC, while the UI honors Europe/Athens formatting just like the rest of the platform. Future milestones will expand the ingest listener contract (agent ACKs/polling) and notification hooks.
 
+### 6.21 Fleet Job Scheduler (`app/fleet/routes.py`, `templates/fleet/job_scheduler*.html`)
+
+- **Purpose** – Coordinate scripted remote actions or staged file drops across multiple endpoints, reusing the Fleet agent transport (`/terminal/tasks/*`, `/fleet/hosts/<agent>/uploads`). Operators can prepare PowerShell scripts or upload binaries, choose one or more hosts, and let the scheduler deliver payloads at a future date/time with optional recurrence.
+- **Access & Navigation** – The sidebar shows “Fleet Job Scheduler” under the Fleet section for users granted `fleet_job_scheduler` permissions (read-only vs. write). RBAC uses the same `get_module_access()` helper as other modules.
+- **Data model**:
+  - `FleetScheduledJob` stores the definition (name, action type `command|upload`, `run_at`, recurrence `once|daily|weekly`, target host IDs, JSON payload, status, creator).
+  - `FleetRemoteCommand` and `FleetFileTransfer` carry the per-host work items spawned from each job, referencing the job via `source_job_id`.
+  - Payload JSON keeps auxiliary metadata: `script`, `notes`, `upload.filename/stored_path/size/checksum`, and `pending_hosts` (list of host IDs still awaiting delivery).
+- **UI layout (`job_scheduler.html`)**:
+  - Hero/timeline cards summarise next run, scheduled/completed totals, and inject live host chips per job (green = delivered, amber = still pending). Counters refresh automatically every 15 seconds via AJAX hitting `/fleet/jobs/timeline/partial`.
+  - A modal (`_job_schedule_modal.html`) captures name, local-time schedule, recurrence, host multi-select, action type (script vs. upload), optional notes, and file chooser. Uploads are copied to `instance/fleet_uploads/scheduled/` with a random prefix via `secure_filename`.
+  - Per-job modals (`_job_modals.html`) allow editing (time, recurrence, script, notes), rescheduling, canceling, or deleting. Delete/cancel operations include CSRF-protected POST routes (`/fleet/jobs/<id>/delete`, `/cancel`, `/reschedule`, `/edit`).
+- **Workflow**:
+  1. User submits the modal; POST `/fleet/jobs` validates required fields, normalizes host IDs against `host_lookup`, stores the job, and seeds `pending_hosts`.
+  2. `_dispatch_due_jobs()` (invoked on GET `/fleet/jobs` and via ingest loops) scans for `scheduled` jobs with `run_at <= now`, creates `FleetRemoteCommand` records or `FleetFileTransfer` records per host, updates `pending_hosts`, and bumps job status to `running/completed` once all targets finish.
+  3. Agents poll `POST /terminal/tasks/next` with headers `X-API-Key` and `X-Agent-ID`. When the scheduler has something pending, the response contains both legacy `commands` and the new `tasks` payload (e.g. `{"name":"run_ps_script","script":"...","args":{"requestedBy":...}}`). Upload jobs surface in `/fleet/hosts/<agent>/uploads` for the agent to download.
+  4. Agents must acknowledge via `POST /terminal/tasks/result`:
+     ```json
+     {
+       "id": 123,
+       "agentId": "PC01",
+       "status": "completed",
+       "exitCode": 0,
+       "stdout": "Captured output…",
+       "stderr": "",
+       "startedAt": "2025-11-17T12:00:00Z",
+       "finishedAt": "2025-11-17T12:00:05Z"
+     }
+     ```
+     When a command result lands, `FleetRemoteCommand.status` is updated, the job payload removes that host from `pending_hosts`, and the UI chips flip to green without reloading.
+- **Agent contract notes**:
+  - PowerShell tasks require `name = "run_ps_script"` plus either `script` (plain text) or `script_b64`. Use `args.requestedBy` to show the originator.
+  - File uploads only show up for download when the JSON response contains IDs > 0; ensure `uploadId`, `filename`, and `sizeBytes` are set. Agents should delete the local staging record once HTTP 200 is returned.
+- **Operational guidance**:
+  - The scheduler respects `MAX_CONTENT_LENGTH` (16 MB by default) from Flask config for uploads. Override in `Config.MAX_CONTENT_LENGTH` if you expect larger packages.
+  - Rescheduling a job resets `pending_hosts` so all targets re-queue; the badge immediately returns to amber and AJAX updates propagate within ~15 seconds.
+  - Use the “Clear commands” UI on a host detail page to purge historical `FleetRemoteCommand`/`FleetFileTransfer` entries if agents are being reimaged.
+  - Logs: scheduler actions emit to `logs/helpdesk.log` (`Fleet job 'X' scheduled`, `Dispatching job <id> for host <agent>`), making it easy to trace delivery attempts during incident reviews.
+
 ---
 
 ## 7. Data Model Overview

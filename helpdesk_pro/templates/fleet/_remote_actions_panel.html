@@ -1,4 +1,5 @@
 <div class="card-body">
+  <div data-remote-meta data-has-pending="{{ '1' if pending_actions else '0' }}"></div>
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <h2 class="h5 d-flex align-items-center gap-2 mb-0">
       <i class="fa fa-terminal text-primary"></i>{{ _('Remote Actions') }}
@@ -43,7 +44,8 @@
         </h3>
         <form method="post"
               action="{{ url_for('fleet.create_remote_command', host_id=host.id) }}"
-              data-remote-action="true">
+              data-remote-action="true"
+              data-remote-reset="true">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <textarea class="form-control font-monospace mb-2" name="command" rows="6" placeholder="param($serviceName)\r\nRestart-Service -Name $serviceName -Force\r\nWrite-Host &quot;Restarted $serviceName&quot;"></textarea>
           <small class="text-muted d-block mb-2">{{ _('Paste the PowerShell script you want the agent to execute. It runs with the agent\'s privileges on Windows/Linux (pwsh). Avoid commands that require interactive prompts.') }}</small>
@@ -113,7 +115,8 @@
         <form method="post"
               action="{{ url_for('fleet.upload_remote_file', host_id=host.id) }}"
               enctype="multipart/form-data"
-              data-remote-action="true">
+              data-remote-action="true"
+              data-remote-reset="true">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="file" name="file" class="form-control mb-2">
           <button class="btn btn-outline-primary btn-sm w-100">{{ _('Upload') }}</button>

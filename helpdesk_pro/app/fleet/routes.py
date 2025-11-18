@@ -99,17 +99,23 @@ def _remote_actions_context(host: FleetHost):
         .limit(10)
         .all()
     )
-    return remote_commands, file_transfers
+    pending_commands = any(
+        (cmd.status or "").lower() in {"pending", "assigned"}
+        for cmd in remote_commands
+    )
+    pending_transfers = any(not transfer.consumed_at for transfer in file_transfers)
+    return remote_commands, file_transfers, (pending_commands or pending_transfers)
 
 
 def _render_remote_actions_panel(host: FleetHost):
-    remote_commands, file_transfers = _remote_actions_context(host)
+    remote_commands, file_transfers, pending_actions = _remote_actions_context(host)
     return render_template(
         "fleet/_remote_actions_panel.html",
         host=host,
         remote_commands=remote_commands,
         file_transfers=file_transfers,
         format_ts=_format_ts,
+        pending_actions=pending_actions,
     )
 
 

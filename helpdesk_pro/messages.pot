@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2025-11-10 11:49+0200\n"
+"POT-Creation-Date: 2025-11-18 07:57+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -50,77 +50,89 @@ msgstr ""
 msgid "API Docs"
 msgstr ""
 
-#: app/navigation.py:80 templates/manage/email_ingest.html:54
+#: app/navigation.py:80
+msgid "Fleet Radar"
+msgstr ""
+
+#: app/navigation.py:87 templates/manage/email_ingest.html:54
 msgid "Email to Ticket"
 msgstr ""
 
-#: app/navigation.py:87 templates/manage/configuration.html:41
+#: app/navigation.py:94 templates/manage/configuration.html:41
 msgid "Configuration"
 msgstr ""
 
-#: app/navigation.py:96 templates/tickets/list.html:188
+#: app/navigation.py:103 templates/tickets/list.html:188
 msgid "Tickets"
 msgstr ""
 
-#: app/navigation.py:104 templates/knowledge/list.html:177
+#: app/navigation.py:111 templates/knowledge/list.html:177
 msgid "Knowledge Base"
 msgstr ""
 
-#: app/navigation.py:112
+#: app/navigation.py:119
 msgid "Collaboration"
 msgstr ""
 
-#: app/navigation.py:120
+#: app/navigation.py:127
 msgid "IT Works"
 msgstr ""
 
-#: app/navigation.py:127
+#: app/navigation.py:134
 msgid "Software"
 msgstr ""
 
-#: app/navigation.py:134
+#: app/navigation.py:141
 msgid "Hardware"
 msgstr ""
 
-#: app/navigation.py:141
+#: app/navigation.py:148
 msgid "Contracts"
 msgstr ""
 
-#: app/navigation.py:148 templates/address_book/address_book.html:88
+#: app/navigation.py:155 templates/address_book/address_book.html:88
 msgid "Address Book"
 msgstr ""
 
-#: app/navigation.py:155 templates/networks/maps.html:102
+#: app/navigation.py:162 templates/networks/maps.html:102
 msgid "Network Maps"
 msgstr ""
 
-#: app/navigation.py:162
+#: app/navigation.py:169
 msgid "Network Tools"
 msgstr ""
 
-#: app/navigation.py:169 templates/backup/job_detail.html:34
+#: app/navigation.py:176 templates/backup/job_detail.html:34
 #: templates/backup/tape_detail.html:34
 msgid "Backup Monitor"
 msgstr ""
 
-#: app/navigation.py:176
+#: app/navigation.py:183
+msgid "Network Fleet Radar"
+msgstr ""
+
+#: app/navigation.py:190 templates/fleet/job_scheduler.html:68
+msgid "Fleet Job Scheduler"
+msgstr ""
+
+#: app/navigation.py:197
 msgid "LTO Barcode Generator"
 msgstr ""
 
-#: app/navigation.py:183 templates/tools/password_generator.html:15
+#: app/navigation.py:204 templates/tools/password_generator.html:15
 msgid "Password & PIN Studio"
 msgstr ""
 
-#: app/navigation.py:190 templates/task_scheduler/list.html:77
+#: app/navigation.py:211 templates/task_scheduler/list.html:95
 #: templates/task_scheduler/public_share.html:6
 msgid "Task Scheduler"
 msgstr ""
 
-#: app/navigation.py:199 templates/manage/assistant_settings.html:65
+#: app/navigation.py:220 templates/manage/assistant_settings.html:65
 msgid "AI Assistant Widget"
 msgstr ""
 
-#: app/navigation.py:208
+#: app/navigation.py:229
 msgid "Email to Ticket Worker"
 msgstr ""
 
@@ -436,7 +448,7 @@ msgstr ""
 msgid "Your password has been updated. Please sign in."
 msgstr ""
 
-#: app/auth/routes.py:206 app/task_scheduler/routes.py:347
+#: app/auth/routes.py:206 app/task_scheduler/routes.py:408
 msgid "Username is required."
 msgstr ""
 
@@ -493,11 +505,13 @@ msgstr ""
 msgid "Off-Site"
 msgstr ""
 
-#: app/backup/routes.py:67
+#: app/backup/routes.py:67 templates/fleet/_job_modals.html:24
+#: templates/fleet/_job_schedule_modal.html:28
 msgid "Daily"
 msgstr ""
 
-#: app/backup/routes.py:68
+#: app/backup/routes.py:68 templates/fleet/_job_modals.html:25
+#: templates/fleet/_job_schedule_modal.html:29
 msgid "Weekly"
 msgstr ""
 
@@ -521,7 +535,8 @@ msgstr ""
 
 #: app/backup/routes.py:167 app/backup/routes.py:173 app/backup/routes.py:189
 #: app/backup/routes.py:229 app/backup/routes.py:239 app/backup/routes.py:242
-#: app/backup/routes.py:252
+#: app/backup/routes.py:252 templates/fleet/_messages_panel.html:110
+#: templates/fleet/job_scheduler.html:77
 msgid "—"
 msgstr ""
 
@@ -538,6 +553,7 @@ msgstr ""
 
 #: app/backup/routes.py:183 app/backup/routes.py:233
 #: templates/backup/monitor.html:241 templates/backup/tape_detail.html:102
+#: templates/fleet/host_detail.html:468
 msgid "Not set"
 msgstr ""
 
@@ -562,7 +578,8 @@ msgstr ""
 #: templates/contracts/contract_list.html:136
 #: templates/contracts/contract_list.html:254
 #: templates/contracts/contract_list.html:372
-#: templates/inventory/hardware_list.html:177
+#: templates/fleet/dashboard.html:238 templates/fleet/dashboard.html:287
+#: templates/fleet/settings.html:231 templates/inventory/hardware_list.html:177
 #: templates/inventory/hardware_list.html:347
 #: templates/inventory/hardware_list.html:516
 #: templates/inventory/software_list.html:169
@@ -572,8 +589,8 @@ msgstr ""
 #: templates/manage/assistant_settings.html:78
 #: templates/task_scheduler/detail.html:270
 #: templates/task_scheduler/detail.html:333
-#: templates/task_scheduler/list.html:136
-#: templates/task_scheduler/list.html:209
+#: templates/task_scheduler/list.html:154
+#: templates/task_scheduler/list.html:230
 #: templates/tickets/_view_content.html:221 templates/tickets/edit.html:24
 #: templates/tickets/list.html:201
 msgid "Status"
@@ -596,6 +613,8 @@ msgstr ""
 #: templates/contracts/contract_list.html:152
 #: templates/contracts/contract_list.html:330
 #: templates/contracts/contract_list.html:448
+#: templates/fleet/_job_modals.html:41 templates/fleet/host_detail.html:516
+#: templates/fleet/host_detail.html:591
 #: templates/inventory/hardware_list.html:194
 #: templates/inventory/hardware_list.html:430
 #: templates/inventory/hardware_list.html:599
@@ -730,7 +749,8 @@ msgstr ""
 msgid "User not found."
 msgstr ""
 
-#: app/collab/routes.py:276 templates/contracts/contract_list.html:173
+#: app/collab/routes.py:276 app/fleet/routes.py:419
+#: templates/contracts/contract_list.html:173
 #: templates/inventory/hardware_list.html:225
 #: templates/inventory/software_list.html:211
 #: templates/knowledge/detail.html:125
@@ -759,6 +779,273 @@ msgstr ""
 
 #: app/collab/routes.py:471 app/collab/routes.py:482
 msgid "You cannot delete this conversation."
+msgstr ""
+
+#: app/fleet/routes.py:420
+msgid "No location set"
+msgstr ""
+
+#: app/fleet/routes.py:625 app/fleet/routes.py:643
+#: templates/fleet/_messages_panel.html:108
+msgid "Uncategorized"
+msgstr ""
+
+#: app/fleet/routes.py:647 templates/fleet/dashboard.html:280
+#: templates/manage/assistant_settings.html:271
+msgid "Host"
+msgstr ""
+
+#: app/fleet/routes.py:648
+msgid "Devices"
+msgstr ""
+
+#: app/fleet/routes.py:649 templates/networks/hosts.html:77
+#: templates/networks/maps.html:121
+msgid "Network"
+msgstr ""
+
+#: app/fleet/routes.py:650
+msgid "Events"
+msgstr ""
+
+#: app/fleet/routes.py:651 templates/backup/lto_barcode.html:119
+msgid "Security"
+msgstr ""
+
+#: app/fleet/routes.py:652
+msgid "Updates"
+msgstr ""
+
+#: app/fleet/routes.py:753
+#, python-format
+msgid "%(count)s error events reported in the last 24h."
+msgstr ""
+
+#: app/fleet/routes.py:812
+msgid "Invalid map zoom."
+msgstr ""
+
+#: app/fleet/routes.py:819
+msgid "Retention values must be integers."
+msgstr ""
+
+#: app/fleet/routes.py:826
+#, python-format
+msgid "Alert rules must be valid JSON: %(msg)s"
+msgstr ""
+
+#: app/fleet/routes.py:829
+msgid "Fleet settings updated."
+msgstr ""
+
+#: app/fleet/routes.py:904
+msgid "Job name is required."
+msgstr ""
+
+#: app/fleet/routes.py:906
+msgid "Select at least one host to target."
+msgstr ""
+
+#: app/fleet/routes.py:908
+msgid "Provide a valid schedule date and time."
+msgstr ""
+
+#: app/fleet/routes.py:914
+msgid "Choose a file to upload for scheduled delivery."
+msgstr ""
+
+#: app/fleet/routes.py:919
+msgid "Provide a PowerShell script to execute."
+msgstr ""
+
+#: app/fleet/routes.py:954
+#, python-format
+msgid "Fleet job '%(name)s' scheduled."
+msgstr ""
+
+#: app/fleet/routes.py:1056
+#, python-format
+msgid "Job '%(name)s' is already canceled."
+msgstr ""
+
+#: app/fleet/routes.py:1061
+#, python-format
+msgid "Job '%(name)s' canceled."
+msgstr ""
+
+#: app/fleet/routes.py:1072
+#, python-format
+msgid "Job '%(name)s' removed permanently."
+msgstr ""
+
+#: app/fleet/routes.py:1104
+#, python-format
+msgid "Job '%(name)s' updated."
+msgstr ""
+
+#: app/fleet/routes.py:1115
+msgid "Provide a valid date and time to reschedule the job."
+msgstr ""
+
+#: app/fleet/routes.py:1130
+#, python-format
+msgid "Job '%(name)s' rescheduled."
+msgstr ""
+
+#: app/fleet/routes.py:1142 app/fleet/routes.py:1143
+msgid "Command cannot be empty."
+msgstr ""
+
+#: app/fleet/routes.py:1155
+msgid "Command queued successfully."
+msgstr ""
+
+#: app/fleet/routes.py:1170 app/fleet/routes.py:1171
+#, python-format
+msgid "Command cannot be canceled once it is %(state)s."
+msgstr ""
+
+#: app/fleet/routes.py:1174
+#, python-format
+msgid "Command canceled by %(user)s"
+msgstr ""
+
+#: app/fleet/routes.py:1178
+msgid "Command canceled."
+msgstr ""
+
+#: app/fleet/routes.py:1199
+msgid "Remote commands and staged uploads cleared."
+msgstr ""
+
+#: app/fleet/routes.py:1213
+msgid "No primary IP reported for this host yet."
+msgstr ""
+
+#: app/fleet/routes.py:1243 app/fleet/routes.py:1244
+msgid "Select a file to upload."
+msgstr ""
+
+#: app/fleet/routes.py:1265
+msgid "File uploaded for agent pickup."
+msgstr ""
+
+#: app/fleet/routes.py:1280 app/fleet/routes.py:1281
+msgid "Transfer already picked up by the agent."
+msgstr ""
+
+#: app/fleet/routes.py:1292
+msgid "Pending transfer canceled."
+msgstr ""
+
+#: app/fleet/routes.py:1312
+msgid "All uploaded files removed."
+msgstr ""
+
+#: app/fleet/routes.py:1336
+msgid "Invalid latitude."
+msgstr ""
+
+#: app/fleet/routes.py:1341
+msgid "Invalid longitude."
+msgstr ""
+
+#: app/fleet/routes.py:1345
+msgid "Host details updated."
+msgstr ""
+
+#: app/fleet/routes.py:1355
+msgid "Key name is required."
+msgstr ""
+
+#: app/fleet/routes.py:1365
+msgid "Invalid expiry timestamp."
+msgstr ""
+
+#: app/fleet/routes.py:1370
+msgid "API key created. Copy it from the banner above."
+msgstr ""
+
+#: app/fleet/routes.py:1381
+msgid "API key status updated."
+msgstr ""
+
+#: app/fleet/routes.py:1392
+msgid "API key deleted."
+msgstr ""
+
+#: app/fleet/routes.py:1414
+msgid "No offline hosts were eligible for cleanup."
+msgstr ""
+
+#: app/fleet/routes.py:1421
+#, python-format
+msgid "Removed %(count)s offline hosts and their telemetry."
+msgstr ""
+
+#: app/fleet/routes.py:1561
+msgid "Select a Telemetry_Agent.msi file to upload."
+msgstr ""
+
+#: app/fleet/routes.py:1565
+msgid "Installer must be a .msi file."
+msgstr ""
+
+#: app/fleet/routes.py:1569
+msgid "Installer path is not configured."
+msgstr ""
+
+#: app/fleet/routes.py:1579
+#, python-format
+msgid "Installer exceeds maximum allowed size (%(size)s MB)."
+msgstr ""
+
+#: app/fleet/routes.py:1585
+msgid "Installer file is not a valid Windows executable."
+msgstr ""
+
+#: app/fleet/routes.py:1592
+msgid "Agent installer updated successfully."
+msgstr ""
+
+#: app/fleet/routes.py:1602
+msgid "Upload the Telemetry_Agent.msi before generating links."
+msgstr ""
+
+#: app/fleet/routes.py:1609
+msgid "Expiration must be a number of days."
+msgstr ""
+
+#: app/fleet/routes.py:1612
+msgid "Expiration must be at least one day."
+msgstr ""
+
+#: app/fleet/routes.py:1623
+msgid "Installer link generated."
+msgstr ""
+
+#: app/fleet/routes.py:1633
+msgid "Link already revoked."
+msgstr ""
+
+#: app/fleet/routes.py:1637
+msgid "Link revoked."
+msgstr ""
+
+#: app/fleet/routes.py:1666
+msgid "Installer deleted."
+msgstr ""
+
+#: app/fleet/routes.py:1669
+msgid "Failed to delete installer file."
+msgstr ""
+
+#: app/fleet/routes.py:1672
+msgid "No installer file found."
+msgstr ""
+
+#: app/fleet/routes.py:1675
+msgid "All download links have been removed."
 msgstr ""
 
 #: app/knowledge/routes.py:139
@@ -1057,12 +1344,17 @@ msgstr ""
 msgid "Access Log"
 msgstr ""
 
-#: app/manage/routes.py:400 templates/manage/assistant_settings.html:82
+#: app/manage/routes.py:400 templates/fleet/host_detail.html:282
+#: templates/fleet/host_detail.html:307 templates/fleet/settings.html:54
+#: templates/manage/assistant_settings.html:82
 #: templates/manage/email_ingest.html:147
 msgid "Enabled"
 msgstr ""
 
-#: app/manage/routes.py:400 templates/manage/assistant_settings.html:82
+#: app/manage/routes.py:400 templates/fleet/host_detail.html:282
+#: templates/fleet/host_detail.html:307 templates/fleet/settings.html:54
+#: templates/fleet/settings.html:241
+#: templates/manage/assistant_settings.html:82
 #: templates/manage/assistant_settings.html:252
 msgid "Disabled"
 msgstr ""
@@ -1209,118 +1501,162 @@ msgstr ""
 msgid "Email ingestion settings saved."
 msgstr ""
 
-#: app/task_scheduler/routes.py:280
+#: app/task_scheduler/routes.py:335
 msgid "Title is required."
 msgstr ""
 
-#: app/task_scheduler/routes.py:297
-msgid "Task updated successfully."
-msgstr ""
-
-#: app/task_scheduler/routes.py:311
-msgid "Task created successfully."
-msgstr ""
-
-#: app/task_scheduler/routes.py:341 templates/task_scheduler/detail.html:570
-#: templates/task_scheduler/list.html:615
-msgid "Task deleted."
-msgstr ""
-
-#: app/task_scheduler/routes.py:350
-msgid "Invalid date/time. Use dd/MM/yyyy HH:mm."
-msgstr ""
-
-#: app/task_scheduler/routes.py:352
-msgid "This task is closed and no longer accepts bookings."
+#: app/task_scheduler/routes.py:339
+#, python-format
+msgid "Title must be %(limit)s characters or fewer."
 msgstr ""
 
 #: app/task_scheduler/routes.py:358
+msgid "Task updated successfully."
+msgstr ""
+
+#: app/task_scheduler/routes.py:372
+msgid "Task created successfully."
+msgstr ""
+
+#: app/task_scheduler/routes.py:402 templates/task_scheduler/detail.html:570
+#: templates/task_scheduler/list.html:758
+msgid "Task deleted."
+msgstr ""
+
+#: app/task_scheduler/routes.py:411
+msgid "Invalid date/time. Use dd/MM/yyyy HH:mm."
+msgstr ""
+
+#: app/task_scheduler/routes.py:413
+msgid "This task is closed and no longer accepts bookings."
+msgstr ""
+
+#: app/task_scheduler/routes.py:419
 msgid "Selected slot overlaps with an existing booking."
 msgstr ""
 
-#: app/task_scheduler/routes.py:385
+#: app/task_scheduler/routes.py:449
 msgid "Unable to schedule slot."
 msgstr ""
 
-#: app/task_scheduler/routes.py:410
+#: app/task_scheduler/routes.py:474
 msgid "Slot added successfully."
 msgstr ""
 
-#: app/task_scheduler/routes.py:427 templates/task_scheduler/detail.html:483
-#: templates/task_scheduler/list.html:556
+#: app/task_scheduler/routes.py:491 templates/task_scheduler/detail.html:483
+#: templates/task_scheduler/list.html:622
 msgid "Slot removed."
 msgstr ""
 
-#: app/task_scheduler/routes.py:436
+#: app/task_scheduler/routes.py:500
 msgid "Unnamed user"
 msgstr ""
 
-#: app/task_scheduler/routes.py:443
+#: app/task_scheduler/routes.py:507
 #, python-format
 msgid "Requested slot by %(name)s on %(start)s (duration %(duration)s)."
 msgstr ""
 
-#: app/task_scheduler/routes.py:443 templates/knowledge/detail.html:48
+#: app/task_scheduler/routes.py:507 templates/knowledge/detail.html:48
 #: templates/knowledge/list.html:250 templates/knowledge/version.html:22
 msgid "n/a"
 msgstr ""
 
-#: app/task_scheduler/routes.py:446
+#: app/task_scheduler/routes.py:510
 #, python-format
 msgid "User comment: %(comment)s"
 msgstr ""
 
-#: app/task_scheduler/routes.py:469 templates/task_scheduler/detail.html:513
+#: app/task_scheduler/routes.py:515
+msgid "Managers must belong to a department before creating tickets."
+msgstr ""
+
+#: app/task_scheduler/routes.py:537 templates/task_scheduler/detail.html:513
 msgid "Unable to create ticket."
 msgstr ""
 
-#: app/task_scheduler/routes.py:471 templates/task_scheduler/detail.html:506
+#: app/task_scheduler/routes.py:539 templates/task_scheduler/detail.html:506
 msgid "Ticket created successfully."
 msgstr ""
 
-#: app/task_scheduler/routes.py:493 app/task_scheduler/routes.py:641
+#: app/task_scheduler/routes.py:567 app/task_scheduler/routes.py:735
 msgid "Invalid date/time."
 msgstr ""
 
-#: app/task_scheduler/routes.py:499 app/task_scheduler/routes.py:647
+#: app/task_scheduler/routes.py:573 app/task_scheduler/routes.py:741
 msgid "Slot is already taken."
 msgstr ""
 
-#: app/task_scheduler/routes.py:503 app/task_scheduler/routes.py:655
+#: app/task_scheduler/routes.py:577 app/task_scheduler/routes.py:749
 msgid "Slot is available."
 msgstr ""
 
-#: app/task_scheduler/routes.py:539 templates/task_scheduler/detail.html:535
-#: templates/task_scheduler/list.html:584
+#: app/task_scheduler/routes.py:613 templates/task_scheduler/detail.html:535
+#: templates/task_scheduler/list.html:650
 msgid "Share link created."
 msgstr ""
 
-#: app/task_scheduler/routes.py:555 templates/task_scheduler/detail.html:558
+#: app/task_scheduler/routes.py:629 templates/task_scheduler/detail.html:558
 msgid "Share link revoked."
 msgstr ""
 
-#: app/task_scheduler/routes.py:571
+#: app/task_scheduler/routes.py:665
 msgid "This link is no longer available."
 msgstr ""
 
-#: app/task_scheduler/routes.py:622 app/task_scheduler/routes.py:654
+#: app/task_scheduler/routes.py:716 app/task_scheduler/routes.py:748
 msgid "Link is no longer active."
 msgstr ""
 
-#: app/task_scheduler/routes.py:624
+#: app/task_scheduler/routes.py:718
 msgid "You must sign in to use this link."
 msgstr ""
 
-#: app/task_scheduler/routes.py:627
+#: app/task_scheduler/routes.py:721
 msgid "Could not schedule slot."
 msgstr ""
 
-#: app/task_scheduler/routes.py:628
+#: app/task_scheduler/routes.py:722
 msgid "Your time slot is confirmed."
 msgstr ""
 
-#: app/task_scheduler/routes.py:652
+#: app/task_scheduler/routes.py:746
 msgid "This task is closed."
+msgstr ""
+
+#: app/task_scheduler/routes.py:762
+msgid "Generate a share link before emailing this task."
+msgstr ""
+
+#: app/task_scheduler/routes.py:777
+msgid "Select at least one recipient."
+msgstr ""
+
+#: app/task_scheduler/routes.py:780
+msgid "No recipients available for this task."
+msgstr ""
+
+#: app/task_scheduler/routes.py:783
+#, python-format
+msgid "Task update: %(title)s"
+msgstr ""
+
+#: app/task_scheduler/routes.py:785
+#, python-format
+msgid "You are invited to review the task \"%(title)s\"."
+msgstr ""
+
+#: app/task_scheduler/routes.py:793
+#, python-format
+msgid "Open task link: %(link)s"
+msgstr ""
+
+#: app/task_scheduler/routes.py:800
+msgid "Email sending is not configured."
+msgstr ""
+
+#: app/task_scheduler/routes.py:818 templates/task_scheduler/list.html:731
+msgid "Task link emailed successfully."
 msgstr ""
 
 #: templates/base.html:11
@@ -1380,7 +1716,7 @@ msgstr ""
 #: templates/manage/email_ingest.html:151
 #: templates/task_scheduler/detail.html:153
 #: templates/task_scheduler/detail.html:229
-#: templates/task_scheduler/list.html:249 templates/users/list.html:113
+#: templates/task_scheduler/list.html:270 templates/users/list.html:113
 #: templates/users/list.html:176 templates/users/list.html:253
 msgid "Username"
 msgstr ""
@@ -1467,7 +1803,12 @@ msgstr ""
 #: templates/collab/chat.html:641 templates/contracts/contract_list.html:336
 #: templates/contracts/contract_list.html:458
 #: templates/contracts/contract_list.html:483
-#: templates/inventory/hardware_list.html:436
+#: templates/fleet/_job_modals.html:65 templates/fleet/_job_modals.html:84
+#: templates/fleet/_job_timeline.html:90
+#: templates/fleet/_remote_actions_panel.html:77
+#: templates/fleet/_remote_actions_panel.html:140
+#: templates/fleet/host_detail.html:597 templates/fleet/settings.html:442
+#: templates/fleet/settings.html:465 templates/inventory/hardware_list.html:436
 #: templates/inventory/hardware_list.html:609
 #: templates/inventory/hardware_list.html:635
 #: templates/inventory/software_list.html:399
@@ -1479,15 +1820,17 @@ msgstr ""
 #: templates/networks/maps.html:218 templates/networks/maps.html:272
 #: templates/networks/maps.html:296 templates/task_scheduler/detail.html:351
 #: templates/task_scheduler/detail.html:414
-#: templates/task_scheduler/list.html:227
-#: templates/task_scheduler/list.html:264
-#: templates/task_scheduler/list.html:289
-#: templates/task_scheduler/list.html:355 templates/tickets/list.html:334
+#: templates/task_scheduler/list.html:248
+#: templates/task_scheduler/list.html:285
+#: templates/task_scheduler/list.html:310
+#: templates/task_scheduler/list.html:396
+#: templates/task_scheduler/list.html:420 templates/tickets/list.html:334
 #: templates/users/list.html:323
 msgid "Cancel"
 msgstr ""
 
 #: templates/base.html:695 templates/base.html:919
+#: templates/fleet/_job_modals.html:48 templates/fleet/host_detail.html:598
 msgid "Save changes"
 msgstr ""
 
@@ -1496,9 +1839,11 @@ msgid "About Helpdesk Pro"
 msgstr ""
 
 #: templates/base.html:709 templates/base.html:719
-#: templates/knowledge/detail.html:25 templates/knowledge/detail.html:195
-#: templates/task_scheduler/detail.html:393
-#: templates/task_scheduler/list.html:333
+#: templates/fleet/_job_modals.html:47
+#: templates/fleet/_job_schedule_modal.html:70
+#: templates/fleet/host_detail.html:777 templates/knowledge/detail.html:25
+#: templates/knowledge/detail.html:195 templates/task_scheduler/detail.html:393
+#: templates/task_scheduler/list.html:354
 #: templates/tickets/_view_content.html:21
 msgid "Close"
 msgstr ""
@@ -1564,7 +1909,7 @@ msgstr ""
 #: templates/address_book/address_book.html:288
 #: templates/contracts/contract_list.html:134
 #: templates/contracts/contract_list.html:241
-#: templates/contracts/contract_list.html:359
+#: templates/contracts/contract_list.html:359 templates/fleet/settings.html:230
 #: templates/inventory/software_list.html:158
 #: templates/inventory/software_list.html:271
 #: templates/inventory/software_list.html:423
@@ -1577,6 +1922,7 @@ msgstr ""
 #: templates/address_book/address_book.html:98
 #: templates/address_book/address_book.html:198
 #: templates/address_book/address_book.html:292
+#: templates/fleet/_messages_panel.html:94
 #: templates/inventory/hardware_list.html:168
 #: templates/inventory/hardware_list.html:301
 #: templates/inventory/hardware_list.html:470
@@ -1649,25 +1995,26 @@ msgstr ""
 #: templates/address_book/address_book.html:111
 #: templates/address_book/address_book.html:255
 #: templates/address_book/address_book.html:349
-#: templates/knowledge/list.html:164
+#: templates/fleet/host_detail.html:487 templates/knowledge/list.html:164
 msgid "Tags"
 msgstr ""
 
 #: templates/address_book/address_book.html:113
 #: templates/backup/monitor.html:181 templates/contracts/contract_list.html:153
+#: templates/fleet/_messages_panel.html:98 templates/fleet/settings.html:331
 #: templates/inventory/hardware_list.html:195
 #: templates/inventory/software_list.html:181
 #: templates/manage/api_keys.html:148 templates/networks/hosts.html:132
 #: templates/networks/maps.html:129 templates/task_scheduler/detail.html:160
 #: templates/task_scheduler/detail.html:271
-#: templates/task_scheduler/list.html:139 templates/tickets/list.html:206
+#: templates/task_scheduler/list.html:157 templates/tickets/list.html:206
 #: templates/users/list.html:119
 msgid "Actions"
 msgstr ""
 
 #: templates/address_book/address_book.html:135
 #: templates/address_book/address_book.html:426
-#: templates/contracts/contract_list.html:198
+#: templates/contracts/contract_list.html:198 templates/fleet/settings.html:330
 #: templates/task_scheduler/detail.html:385
 msgid "Link"
 msgstr ""
@@ -1720,8 +2067,8 @@ msgstr ""
 #: templates/contracts/contract_list.html:338
 #: templates/inventory/hardware_list.html:438
 #: templates/inventory/software_list.html:401 templates/knowledge/edit.html:45
-#: templates/networks/maps.html:220 templates/task_scheduler/list.html:229
-#: templates/task_scheduler/list.html:420 templates/tickets/edit.html:49
+#: templates/networks/maps.html:220 templates/task_scheduler/list.html:250
+#: templates/task_scheduler/list.html:486 templates/tickets/edit.html:49
 #: templates/users/list.html:227
 msgid "Save"
 msgstr ""
@@ -1736,6 +2083,7 @@ msgstr ""
 #: templates/backup/tape_detail.html:415 templates/collab/chat.html:642
 #: templates/contracts/contract_list.html:455
 #: templates/contracts/contract_list.html:485
+#: templates/fleet/_job_timeline.html:85
 #: templates/inventory/hardware_list.html:606
 #: templates/inventory/hardware_list.html:637
 #: templates/inventory/software_list.html:552
@@ -1744,7 +2092,7 @@ msgstr ""
 #: templates/networks/hosts.html:257 templates/networks/maps.html:298
 #: templates/task_scheduler/detail.html:88
 #: templates/task_scheduler/detail.html:415
-#: templates/task_scheduler/list.html:356 templates/tickets/_row.html:53
+#: templates/task_scheduler/list.html:421 templates/tickets/_row.html:53
 #: templates/tickets/list.html:269 templates/tickets/list.html:335
 #: templates/tickets/list.html:433 templates/users/list.html:324
 msgid "Delete"
@@ -1766,7 +2114,7 @@ msgstr ""
 #: templates/contracts/contract_list.html:480
 #: templates/inventory/hardware_list.html:632
 #: templates/inventory/software_list.html:577 templates/networks/maps.html:293
-#: templates/task_scheduler/list.html:352
+#: templates/task_scheduler/list.html:417
 msgid "Are you sure you want to delete"
 msgstr ""
 
@@ -1774,7 +2122,7 @@ msgstr ""
 #: templates/contracts/contract_list.html:513
 #: templates/inventory/hardware_list.html:669
 #: templates/inventory/software_list.html:609 templates/networks/hosts.html:285
-#: templates/networks/maps.html:345 templates/task_scheduler/list.html:391
+#: templates/networks/maps.html:345 templates/task_scheduler/list.html:457
 #: templates/tickets/list.html:365 templates/users/list.html:356
 msgid "Excel"
 msgstr ""
@@ -1783,7 +2131,7 @@ msgstr ""
 #: templates/contracts/contract_list.html:514
 #: templates/inventory/hardware_list.html:670
 #: templates/inventory/software_list.html:610 templates/networks/hosts.html:286
-#: templates/networks/maps.html:346 templates/task_scheduler/list.html:392
+#: templates/networks/maps.html:346 templates/task_scheduler/list.html:458
 #: templates/tickets/list.html:366 templates/users/list.html:365
 msgid "Print"
 msgstr ""
@@ -2176,7 +2524,7 @@ msgstr ""
 msgid "Tri-optic vibrant palette"
 msgstr ""
 
-#: templates/backup/lto_barcode.html:76
+#: templates/backup/lto_barcode.html:76 templates/fleet/_messages_panel.html:80
 msgid "Clear"
 msgstr ""
 
@@ -2222,10 +2570,6 @@ msgstr ""
 
 #: templates/backup/lto_barcode.html:115
 msgid "SSID (Network name)"
-msgstr ""
-
-#: templates/backup/lto_barcode.html:119
-msgid "Security"
 msgstr ""
 
 #: templates/backup/lto_barcode.html:123 templates/backup/lto_barcode.html:497
@@ -2322,7 +2666,8 @@ msgstr ""
 msgid "This network has no password."
 msgstr ""
 
-#: templates/backup/lto_barcode.html:525 templates/task_scheduler/list.html:290
+#: templates/backup/lto_barcode.html:525 templates/fleet/settings.html:531
+#: templates/task_scheduler/list.html:311
 msgid "Remove"
 msgstr ""
 
@@ -2420,7 +2765,7 @@ msgid "Type"
 msgstr ""
 
 #: templates/backup/monitor.html:176 templates/backup/monitor.html:296
-#: templates/backup/tape_detail.html:257
+#: templates/backup/tape_detail.html:257 templates/fleet/host_detail.html:439
 #: templates/inventory/hardware_list.html:179
 #: templates/inventory/hardware_list.html:365
 #: templates/inventory/hardware_list.html:534
@@ -2435,8 +2780,8 @@ msgstr ""
 msgid "Last Inventory"
 msgstr ""
 
-#: templates/backup/monitor.html:180 templates/knowledge/detail.html:47
-#: templates/knowledge/list.html:250
+#: templates/backup/monitor.html:180 templates/fleet/settings.html:280
+#: templates/knowledge/detail.html:47 templates/knowledge/list.html:250
 msgid "Updated"
 msgstr ""
 
@@ -2820,7 +3165,7 @@ msgid "Total Contracts"
 msgstr ""
 
 #: templates/contracts/contract_list.html:92
-#: templates/contracts/contract_list.html:163
+#: templates/contracts/contract_list.html:163 templates/fleet/settings.html:241
 #: templates/inventory/software_list.html:201 templates/manage/api_keys.html:74
 #: templates/manage/api_keys.html:187 templates/manage/configuration.html:143
 #: templates/manage/configuration.html:165
@@ -3071,19 +3416,1212 @@ msgstr ""
 msgid "Technician"
 msgstr ""
 
-#: templates/dashboard/index.html:175 templates/tickets/_row.html:20
-#: templates/tickets/list.html:169 templates/tickets/list.html:230
+#: templates/dashboard/index.html:175 templates/fleet/_messages_panel.html:127
+#: templates/tickets/_row.html:20 templates/tickets/list.html:169
+#: templates/tickets/list.html:230
 msgid "Open"
 msgstr ""
 
 #: templates/dashboard/index.html:177 templates/task_scheduler/detail.html:74
 #: templates/task_scheduler/detail.html:336
-#: templates/task_scheduler/list.html:79 templates/task_scheduler/list.html:153
-#: templates/task_scheduler/list.html:212
-#: templates/task_scheduler/public_share.html:60 templates/tickets/_row.html:24
+#: templates/task_scheduler/list.html:97 templates/task_scheduler/list.html:171
+#: templates/task_scheduler/list.html:233
+#: templates/task_scheduler/public_share.html:70 templates/tickets/_row.html:24
 #: templates/tickets/list.html:181 templates/tickets/list.html:205
 #: templates/tickets/list.html:234
 msgid "Closed"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:5
+msgid "Edit job"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:12
+#: templates/fleet/_job_schedule_modal.html:17
+msgid "Job name"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:16
+#: templates/fleet/_job_schedule_modal.html:21
+msgid "Run at (local time)"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:20
+#: templates/fleet/_job_schedule_modal.html:25
+msgid "Recurrence"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:23
+#: templates/fleet/_job_schedule_modal.html:27
+msgid "Once"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:30
+#: templates/fleet/_job_schedule_modal.html:53
+msgid "PowerShell script"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:36
+msgid "Upload jobs cannot change files after creation."
+msgstr ""
+
+#: templates/fleet/_job_modals.html:57 templates/fleet/_job_modals.html:66
+msgid "Delete job"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:62
+#, python-format
+msgid "Are you sure you want to delete \"%(name)s\"? This cannot be undone."
+msgstr ""
+
+#: templates/fleet/_job_modals.html:75
+msgid "Reschedule job"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:80
+msgid "New run time"
+msgstr ""
+
+#: templates/fleet/_job_modals.html:85 templates/fleet/_job_timeline.html:79
+msgid "Reschedule"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:5
+msgid "Schedule a job"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:11
+msgid "You have read-only access to Fleet Job Scheduler."
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:18
+msgid "Morning PowerShell push"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:33
+msgid "Targets"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:41
+msgid "Hold Ctrl/Cmd to select multiple machines."
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:44
+msgid "Action type"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:47
+msgid "Run script"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:49
+#: templates/fleet/_job_schedule_modal.html:58
+msgid "Upload file"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:55
+msgid "Script executes with the Fleet agent context at the scheduled time."
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:60
+msgid "File is staged on the server and delivered when the job runs."
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:63
+msgid "Notes for operators (optional)"
+msgstr ""
+
+#: templates/fleet/_job_schedule_modal.html:72
+#: templates/fleet/job_scheduler.html:125
+msgid "Schedule job"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:18
+#, python-format
+msgid "Runs %(time)s"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:19
+#, python-format
+msgid "Repeats: %(recurrence)s"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:22
+msgid "hosts targeted"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:26
+msgid "scheduled"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:27
+#, python-format
+msgid "Delivered %(d)s / %(t)s"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:38
+#, python-format
+msgid "Host #%(id)s"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:45
+msgid "target(s) still pending delivery."
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:49
+msgid "Script preview"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:50
+msgid "No script supplied."
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:55
+msgid "Staged file"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:66
+#, python-format
+msgid "Created %(time)s by %(user)s"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:66
+msgid "System"
+msgstr ""
+
+#: templates/fleet/_job_timeline.html:73 templates/knowledge/detail.html:57
+#: templates/manage/api_keys.html:199 templates/task_scheduler/detail.html:82
+#: templates/tickets/_row.html:49 templates/tickets/list.html:265
+msgid "Edit"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:9
+msgid "Recent Telemetry"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:12 templates/fleet/dashboard.html:157
+#, python-format
+msgid "Last ingest: %(time)s"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:14
+msgid "No telemetry received yet."
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:21
+msgid "Export JSON"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:31
+#: templates/fleet/_messages_panel.html:93
+msgid "Machine"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:36
+msgid "Use the controls below to narrow the message feed."
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:42
+msgid "All categories"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:56
+msgid "Category contains"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:60
+msgid "Subtype contains"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:64
+#: templates/fleet/_messages_panel.html:96
+msgid "Level"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:68
+msgid "Per page"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:72
+msgid "Search payload text"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:75
+msgid "log, cpu, service..."
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:79
+msgid "Filter"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:92
+msgid "Time"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:95
+msgid "Subtype"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:97
+msgid "Payload"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:120
+msgid "info"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:142
+#, python-format
+msgid "Page %(page)s of %(pages)s"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:158
+#, python-format
+msgid "Showing %(start)s-%(end)s of %(total)s messages"
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:160
+msgid "No messages to display."
+msgstr ""
+
+#: templates/fleet/_messages_panel.html:165
+msgid "No messages stored for this host yet."
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:4
+msgid "Remote Actions"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:7
+#: templates/fleet/job_scheduler.html:128 templates/manage/api_keys.html:59
+#: templates/tools/password_generator.html:145
+msgid "Refresh"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:13
+msgid "Quick Links"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:17
+msgid "Open SSH"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:19
+msgid "Download RDP Profile"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:21
+msgid "Open VNC"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:24
+msgid "No primary IP reported yet."
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:31
+msgid "Send PowerShell Script"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:33
+msgid "PS1"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:39
+#: templates/fleet/_remote_actions_panel.html:109
+msgid "Clear All"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:49
+msgid ""
+"Paste the PowerShell script you want the agent to execute. It runs with "
+"the agent's privileges on Windows/Linux (pwsh). Avoid commands that "
+"require interactive prompts."
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:50
+msgid "Queue Script"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:57
+msgid "Not completed yet"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:59
+#, python-format
+msgid "Command #%(id)s result"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:60
+#, python-format
+msgid "Status: %(status)s • Updated %(time)s"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:66
+#, python-format
+msgid "Queued %(time)s"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:86
+msgid "View result"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:89
+msgid "Awaiting agent response..."
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:96
+msgid "No commands queued yet."
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:103
+msgid "Upload File"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:119
+#: templates/knowledge/detail.html:160 templates/knowledge/detail.html:180
+#: templates/tickets/_view_content.html:287
+#: templates/tickets/_view_content.html:464
+msgid "Upload"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:129
+#, python-format
+msgid "Uploaded %(time)s"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:132
+msgid "Downloaded"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:134
+msgid "Pending pickup"
+msgstr ""
+
+#: templates/fleet/_remote_actions_panel.html:147
+msgid "No files awaiting pickup."
+msgstr ""
+
+#: templates/fleet/dashboard.html:150
+msgid "Fleet Overview"
+msgstr ""
+
+#: templates/fleet/dashboard.html:153
+msgid ""
+"Streaming health telemetry for up to thousands of Windows, Linux, and "
+"macOS endpoints with map overlays, alerts, and bulk remote actions."
+msgstr ""
+
+#: templates/fleet/dashboard.html:155
+msgid "Last ingest:"
+msgstr ""
+
+#: templates/fleet/dashboard.html:155 templates/fleet/dashboard.html:159
+msgid "Waiting for the first agent heartbeat..."
+msgstr ""
+
+#: templates/fleet/dashboard.html:170
+msgid "Total Hosts"
+msgstr ""
+
+#: templates/fleet/dashboard.html:177 templates/fleet/dashboard.html:241
+msgid "Online (10m)"
+msgstr ""
+
+#: templates/fleet/dashboard.html:184 templates/fleet/dashboard.html:242
+#: templates/fleet/dashboard.html:481 templates/fleet/host_detail.html:172
+msgid "Offline"
+msgstr ""
+
+#: templates/fleet/dashboard.html:191 templates/fleet/host_detail.html:370
+msgid "Active Alerts"
+msgstr ""
+
+#: templates/fleet/dashboard.html:202
+msgid "Map View"
+msgstr ""
+
+#: templates/fleet/dashboard.html:204
+msgid "Pins update as agents report their GPS or site coordinates."
+msgstr ""
+
+#: templates/fleet/dashboard.html:205
+msgid "Toggle fullscreen map"
+msgstr ""
+
+#: templates/fleet/dashboard.html:218
+msgid "Quick Filters"
+msgstr ""
+
+#: templates/fleet/dashboard.html:221
+msgid "Health posture"
+msgstr ""
+
+#: templates/fleet/dashboard.html:223
+msgid "All"
+msgstr ""
+
+#: templates/fleet/dashboard.html:224
+msgid "Healthy"
+msgstr ""
+
+#: templates/fleet/dashboard.html:225
+msgid "Attention"
+msgstr ""
+
+#: templates/fleet/dashboard.html:226 templates/tickets/_row.html:14
+#: templates/tickets/list.html:224 templates/tickets/list.html:302
+msgid "Critical"
+msgstr ""
+
+#: templates/fleet/dashboard.html:229
+msgid "Operating system"
+msgstr ""
+
+#: templates/fleet/dashboard.html:231
+msgid "All OS types"
+msgstr ""
+
+#: templates/fleet/dashboard.html:232
+msgid "Windows"
+msgstr ""
+
+#: templates/fleet/dashboard.html:233
+msgid "Linux"
+msgstr ""
+
+#: templates/fleet/dashboard.html:234
+msgid "macOS"
+msgstr ""
+
+#: templates/fleet/dashboard.html:235
+msgid "Other / Unknown"
+msgstr ""
+
+#: templates/fleet/dashboard.html:240
+msgid "All statuses"
+msgstr ""
+
+#: templates/fleet/dashboard.html:245
+msgid "Sort by"
+msgstr ""
+
+#: templates/fleet/dashboard.html:247
+msgid "Name (A-Z)"
+msgstr ""
+
+#: templates/fleet/dashboard.html:248
+msgid "CPU (high → low)"
+msgstr ""
+
+#: templates/fleet/dashboard.html:249
+msgid "Disk (high → low)"
+msgstr ""
+
+#: templates/fleet/dashboard.html:250
+msgid "Errors (24h)"
+msgstr ""
+
+#: templates/fleet/dashboard.html:251
+msgid "Last seen (newest)"
+msgstr ""
+
+#: templates/fleet/dashboard.html:254 templates/knowledge/list.html:211
+msgid "Search"
+msgstr ""
+
+#: templates/fleet/dashboard.html:257
+msgid "Host name, agent, location..."
+msgstr ""
+
+#: templates/fleet/dashboard.html:259
+msgid ""
+"Filtering happens locally for up to 1,000 hosts without reloading the "
+"page."
+msgstr ""
+
+#: templates/fleet/dashboard.html:269
+msgid "Host Inventory"
+msgstr ""
+
+#: templates/fleet/dashboard.html:270
+msgid ""
+"Optimized list view for up to 1,000 connected agents. Filters and search "
+"update instantly."
+msgstr ""
+
+#: templates/fleet/dashboard.html:273 templates/knowledge/list.html:231
+msgid "Showing"
+msgstr ""
+
+#: templates/fleet/dashboard.html:273
+msgid "hosts"
+msgstr ""
+
+#: templates/fleet/dashboard.html:281
+msgid "OS"
+msgstr ""
+
+#: templates/fleet/dashboard.html:282
+#, python-format
+msgid "CPU %%"
+msgstr ""
+
+#: templates/fleet/dashboard.html:283
+#, python-format
+msgid "RAM %%"
+msgstr ""
+
+#: templates/fleet/dashboard.html:284
+#, python-format
+msgid "Disk %%"
+msgstr ""
+
+#: templates/fleet/dashboard.html:285
+msgid "Errors 24h"
+msgstr ""
+
+#: templates/fleet/dashboard.html:286
+msgid "Last seen"
+msgstr ""
+
+#: templates/fleet/dashboard.html:292 templates/fleet/dashboard.html:492
+msgid "Load more hosts"
+msgstr ""
+
+#: templates/fleet/dashboard.html:307
+msgid "Double-click the popup to open host details."
+msgstr ""
+
+#: templates/fleet/dashboard.html:480 templates/fleet/host_detail.html:170
+msgid "Online"
+msgstr ""
+
+#: templates/fleet/host_detail.html:175
+msgid "Unknown OS"
+msgstr ""
+
+#: templates/fleet/host_detail.html:175
+msgid "Version pending"
+msgstr ""
+
+#: templates/fleet/host_detail.html:179
+msgid "Back to Dashboard"
+msgstr ""
+
+#: templates/fleet/host_detail.html:188
+msgid "System Health"
+msgstr ""
+
+#: templates/fleet/host_detail.html:193
+#, python-format
+msgid "Latest telemetry captured at %(time)s"
+msgstr ""
+
+#: templates/fleet/host_detail.html:195
+msgid "Awaiting telemetry..."
+msgstr ""
+
+#: templates/fleet/host_detail.html:200
+msgid "View raw payload"
+msgstr ""
+
+#: templates/fleet/host_detail.html:208
+msgid "CPU Load"
+msgstr ""
+
+#: templates/fleet/host_detail.html:223
+msgid "RAM Usage"
+msgstr ""
+
+#: templates/fleet/host_detail.html:241
+msgid "Disk Max"
+msgstr ""
+
+#: templates/fleet/host_detail.html:256
+msgid "Pending updates"
+msgstr ""
+
+#: templates/fleet/host_detail.html:268
+#, python-format
+msgid "Last check: %(time)s"
+msgstr ""
+
+#: templates/fleet/host_detail.html:276
+msgid "Antivirus"
+msgstr ""
+
+#: templates/fleet/host_detail.html:289
+msgid "Signatures up to date"
+msgstr ""
+
+#: templates/fleet/host_detail.html:291
+msgid "Signatures outdated"
+msgstr ""
+
+#: templates/fleet/host_detail.html:301
+msgid "Firewall"
+msgstr ""
+
+#: templates/fleet/host_detail.html:313
+msgid "Domain"
+msgstr ""
+
+#: templates/fleet/host_detail.html:314
+msgid "Private"
+msgstr ""
+
+#: templates/fleet/host_detail.html:315
+#: templates/task_scheduler/detail.html:279
+#: templates/task_scheduler/public_share.html:75
+msgid "Public"
+msgstr ""
+
+#: templates/fleet/host_detail.html:329
+msgid "No telemetry has been ingested yet for this host."
+msgstr ""
+
+#: templates/fleet/host_detail.html:339 templates/fleet/host_detail.html:631
+msgid "Latest Screenshot"
+msgstr ""
+
+#: templates/fleet/host_detail.html:351 templates/fleet/host_detail.html:635
+msgid "Host screenshot"
+msgstr ""
+
+#: templates/fleet/host_detail.html:355
+#, python-format
+msgid "Updated at %(time)s"
+msgstr ""
+
+#: templates/fleet/host_detail.html:358
+msgid "Agent has not uploaded a screenshot yet."
+msgstr ""
+
+#: templates/fleet/host_detail.html:399
+#, python-format
+msgid "Severity: %(severity)s"
+msgstr ""
+
+#: templates/fleet/host_detail.html:403
+#, python-format
+msgid "Triggered at %(time)s"
+msgstr ""
+
+#: templates/fleet/host_detail.html:422
+msgid "Host Metadata"
+msgstr ""
+
+#: templates/fleet/host_detail.html:423
+msgid "Use the Edit Metadata button above to update details."
+msgstr ""
+
+#: templates/fleet/host_detail.html:430 templates/fleet/host_detail.html:549
+msgid "Display Name"
+msgstr ""
+
+#: templates/fleet/host_detail.html:440 templates/fleet/host_detail.html:453
+msgid "Not specified"
+msgstr ""
+
+#: templates/fleet/host_detail.html:448 templates/fleet/host_detail.html:565
+#: templates/inventory/hardware_list.html:176
+#: templates/inventory/hardware_list.html:343
+#: templates/inventory/hardware_list.html:512
+msgid "Operating System"
+msgstr ""
+
+#: templates/fleet/host_detail.html:463
+msgid "Coordinates"
+msgstr ""
+
+#: templates/fleet/host_detail.html:478 templates/fleet/host_detail.html:579
+msgid "Contact"
+msgstr ""
+
+#: templates/fleet/host_detail.html:479
+msgid "Not assigned"
+msgstr ""
+
+#: templates/fleet/host_detail.html:498 templates/manage/api_keys.html:172
+#: templates/manage/api_keys.html:259 templates/manage/email_ingest.html:103
+#: templates/manage/email_ingest.html:237
+msgid "None"
+msgstr ""
+
+#: templates/fleet/host_detail.html:507
+msgid "Map Pin Icon"
+msgstr ""
+
+#: templates/fleet/host_detail.html:508 templates/manage/configuration.html:145
+#: templates/manage/configuration.html:163
+#: templates/manage/configuration.html:177
+#: templates/manage/configuration.html:198
+msgid "Default"
+msgstr ""
+
+#: templates/fleet/host_detail.html:520
+msgid "No notes captured yet."
+msgstr ""
+
+#: templates/fleet/host_detail.html:524
+msgid "Edit Metadata"
+msgstr ""
+
+#: templates/fleet/host_detail.html:542
+msgid "Edit Host Metadata"
+msgstr ""
+
+#: templates/fleet/host_detail.html:553
+msgid "Location / Address"
+msgstr ""
+
+#: templates/fleet/host_detail.html:557
+msgid "Latitude"
+msgstr ""
+
+#: templates/fleet/host_detail.html:561
+msgid "Longitude"
+msgstr ""
+
+#: templates/fleet/host_detail.html:568
+msgid "Auto-detected / Not set"
+msgstr ""
+
+#: templates/fleet/host_detail.html:575
+msgid "OS Version"
+msgstr ""
+
+#: templates/fleet/host_detail.html:583 templates/knowledge/edit.html:31
+msgid "Tags (comma separated)"
+msgstr ""
+
+#: templates/fleet/host_detail.html:587
+msgid "Map Pin Icon (FontAwesome)"
+msgstr ""
+
+#: templates/fleet/host_detail.html:608 templates/fleet/host_detail.html:724
+msgid "Command result"
+msgstr ""
+
+#: templates/fleet/host_detail.html:614
+msgid "Script sent to agent"
+msgstr ""
+
+#: templates/fleet/host_detail.html:618
+msgid "Command output"
+msgstr ""
+
+#: templates/fleet/host_detail.html:647
+msgid "Latest Payload"
+msgstr ""
+
+#: templates/fleet/host_detail.html:663
+msgid "Event Log Errors (24h)"
+msgstr ""
+
+#: templates/fleet/host_detail.html:671
+msgid "Unknown source"
+msgstr ""
+
+#: templates/fleet/host_detail.html:697
+msgid "Message Payload"
+msgstr ""
+
+#: templates/fleet/host_detail.html:718
+msgid "Unable to complete remote action."
+msgstr ""
+
+#: templates/fleet/host_detail.html:725
+msgid "No output was captured."
+msgstr ""
+
+#: templates/fleet/host_detail.html:726
+msgid "Script unavailable."
+msgstr ""
+
+#: templates/fleet/host_detail.html:865
+msgid "Payload unavailable."
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:69
+msgid ""
+"Plan PowerShell scripts or staged uploads across selected machines with "
+"the same look and feel as Fleet Radar."
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:76
+msgid "Next run"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:80
+msgid "Active jobs"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:92
+msgid "Scheduled jobs"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:94
+msgid "active"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:102
+msgid "Completed jobs"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:104
+msgid "historical"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:112
+msgid "Total saved"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:114
+msgid "jobs defined"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:122
+msgid "Job timeline"
+msgstr ""
+
+#: templates/fleet/job_scheduler.html:137
+msgid ""
+"No jobs defined yet. Use the button to schedule your first Fleet "
+"automation."
+msgstr ""
+
+#: templates/fleet/settings.html:48
+msgid "Fleet Settings"
+msgstr ""
+
+#: templates/fleet/settings.html:49
+msgid "Manage ingest status, retention, and automation rules for Fleet Radar."
+msgstr ""
+
+#: templates/fleet/settings.html:54
+#, python-format
+msgid "Ingest %(state)s"
+msgstr ""
+
+#: templates/fleet/settings.html:60
+msgid "Endpoint"
+msgstr ""
+
+#: templates/fleet/settings.html:64
+msgid "Hosts onboarded"
+msgstr ""
+
+#: templates/fleet/settings.html:68
+msgid "Alert rules"
+msgstr ""
+
+#: templates/fleet/settings.html:72
+msgid "API keys"
+msgstr ""
+
+#: templates/fleet/settings.html:81
+msgid "Copy your new API key now"
+msgstr ""
+
+#: templates/fleet/settings.html:82
+msgid "This value is shown only once. Keep it in a secure secret manager."
+msgstr ""
+
+#: templates/fleet/settings.html:87
+msgid "Copy & Hide"
+msgstr ""
+
+#: templates/fleet/settings.html:96
+msgid "Module Preferences"
+msgstr ""
+
+#: templates/fleet/settings.html:103
+msgid "Default Map Zoom"
+msgstr ""
+
+#: templates/fleet/settings.html:107
+msgid "Pin Icon (FontAwesome class)"
+msgstr ""
+
+#: templates/fleet/settings.html:111
+msgid "Message Retention (days)"
+msgstr ""
+
+#: templates/fleet/settings.html:115
+msgid "Screenshot Retention (days)"
+msgstr ""
+
+#: templates/fleet/settings.html:121
+msgid "Show screenshots on dashboard tiles"
+msgstr ""
+
+#: templates/fleet/settings.html:125
+msgid "Alert Automation"
+msgstr ""
+
+#: templates/fleet/settings.html:126
+msgid ""
+"Tune thresholds per signal or define custom JSON rules for advanced "
+"agents. Changes are stored as JSON behind the scenes."
+msgstr ""
+
+#: templates/fleet/settings.html:131
+msgid "CPU Threshold"
+msgstr ""
+
+#: templates/fleet/settings.html:132
+msgid "Trigger when CPU meets or exceeds this percentage."
+msgstr ""
+
+#: templates/fleet/settings.html:141
+msgid "Disk Threshold"
+msgstr ""
+
+#: templates/fleet/settings.html:142
+msgid "Alert when the most used volume exceeds this percentage."
+msgstr ""
+
+#: templates/fleet/settings.html:151
+msgid "Pending Updates"
+msgstr ""
+
+#: templates/fleet/settings.html:152
+msgid "Raise an alert when pending updates exceed this count."
+msgstr ""
+
+#: templates/fleet/settings.html:155
+msgid "items"
+msgstr ""
+
+#: templates/fleet/settings.html:161
+msgid "Event Errors"
+msgstr ""
+
+#: templates/fleet/settings.html:162
+msgid "Counts errors reported in the last 24h snapshot."
+msgstr ""
+
+#: templates/fleet/settings.html:165
+msgid "errors"
+msgstr ""
+
+#: templates/fleet/settings.html:171
+msgid "Antivirus Requirements"
+msgstr ""
+
+#: templates/fleet/settings.html:172
+msgid ""
+"Choose whether enabled and up-to-date states are mandatory before "
+"alerting."
+msgstr ""
+
+#: templates/fleet/settings.html:175
+msgid "Require antivirus enabled"
+msgstr ""
+
+#: templates/fleet/settings.html:179
+msgid "Require signatures up to date"
+msgstr ""
+
+#: templates/fleet/settings.html:186
+msgid "Custom Alert Rules"
+msgstr ""
+
+#: templates/fleet/settings.html:188
+msgid "Add Rule"
+msgstr ""
+
+#: templates/fleet/settings.html:192
+msgid "No custom alerts defined yet."
+msgstr ""
+
+#: templates/fleet/settings.html:198
+#: templates/manage/assistant_settings.html:317
+msgid "Save Settings"
+msgstr ""
+
+#: templates/fleet/settings.html:207
+msgid "Agent API Keys"
+msgstr ""
+
+#: templates/fleet/settings.html:208
+msgid "New Key"
+msgstr ""
+
+#: templates/fleet/settings.html:215
+msgid "Key Name"
+msgstr ""
+
+#: templates/fleet/settings.html:219
+msgid "Expires At (optional)"
+msgstr ""
+
+#: templates/fleet/settings.html:222
+msgid "Create Key"
+msgstr ""
+
+#: templates/fleet/settings.html:232 templates/fleet/settings.html:329
+#: templates/task_scheduler/detail.html:269
+msgid "Expires"
+msgstr ""
+
+#: templates/fleet/settings.html:243 templates/fleet/settings.html:345
+#: templates/task_scheduler/detail.html:280
+msgid "No expiry"
+msgstr ""
+
+#: templates/fleet/settings.html:247
+msgid "Toggle active"
+msgstr ""
+
+#: templates/fleet/settings.html:249
+msgid "Delete this key?"
+msgstr ""
+
+#: templates/fleet/settings.html:260
+msgid "No API keys created yet."
+msgstr ""
+
+#: templates/fleet/settings.html:270
+msgid "Telemetry Agent Installer"
+msgstr ""
+
+#: templates/fleet/settings.html:271
+msgid ""
+"Upload the latest Telemetry_Agent.msi and share download links with "
+"clients."
+msgstr ""
+
+#: templates/fleet/settings.html:279 templates/knowledge/detail.html:112
+msgid "Size"
+msgstr ""
+
+#: templates/fleet/settings.html:284
+msgid "Ready to share"
+msgstr ""
+
+#: templates/fleet/settings.html:292
+msgid "No Telemetry_Agent.msi has been uploaded yet."
+msgstr ""
+
+#: templates/fleet/settings.html:299
+msgid "Upload Telemetry_Agent.msi"
+msgstr ""
+
+#: templates/fleet/settings.html:304
+msgid "Replace Installer"
+msgstr ""
+
+#: templates/fleet/settings.html:313
+msgid "Expires in (days)"
+msgstr ""
+
+#: templates/fleet/settings.html:318
+msgid "Generate Download Link"
+msgstr ""
+
+#: templates/fleet/settings.html:328 templates/knowledge/detail.html:222
+#: templates/knowledge/version.html:21 templates/manage/api_keys.html:145
+#: templates/task_scheduler/detail.html:122 templates/tickets/list.html:204
+#: templates/users/list.html:118
+msgid "Created"
+msgstr ""
+
+#: templates/fleet/settings.html:341 templates/manage/api_keys.html:80
+#: templates/manage/api_keys.html:185 templates/task_scheduler/detail.html:285
+msgid "Revoked"
+msgstr ""
+
+#: templates/fleet/settings.html:348
+msgid "Hidden (use copy)"
+msgstr ""
+
+#: templates/fleet/settings.html:350
+msgid "Copy link"
+msgstr ""
+
+#: templates/fleet/settings.html:356 templates/manage/api_keys.html:224
+msgid "Revoke"
+msgstr ""
+
+#: templates/fleet/settings.html:368
+msgid "No download links created yet."
+msgstr ""
+
+#: templates/fleet/settings.html:380
+msgid "Cleanup Offline Hosts"
+msgstr ""
+
+#: templates/fleet/settings.html:381
+msgid ""
+"Remove hosts that have been offline longer than the online window along "
+"with their retained telemetry and screenshots."
+msgstr ""
+
+#: templates/fleet/settings.html:384
+msgid "Clean Offline Hosts"
+msgstr ""
+
+#: templates/fleet/settings.html:402
+msgid "Clipboard API not available. Copy the value manually."
+msgstr ""
+
+#: templates/fleet/settings.html:408
+msgid "Copied"
+msgstr ""
+
+#: templates/fleet/settings.html:424
+msgid "Copy failed. Please copy it manually."
+msgstr ""
+
+#: templates/fleet/settings.html:434 templates/fleet/settings.html:446
+msgid "Delete Offline Hosts"
+msgstr ""
+
+#: templates/fleet/settings.html:438
+msgid ""
+"This will permanently remove every host that has been offline longer than"
+" the online window and delete their stored telemetry, alerts, "
+"screenshots, and transfers."
+msgstr ""
+
+#: templates/fleet/settings.html:439
+msgid "This action cannot be undone."
+msgstr ""
+
+#: templates/fleet/settings.html:457
+msgid "Delete Installer File"
+msgstr ""
+
+#: templates/fleet/settings.html:461
+msgid ""
+"This removes the uploaded Telemetry_Agent.msi from the server and "
+"invalidates all download links."
+msgstr ""
+
+#: templates/fleet/settings.html:462
+msgid "Clients using existing links will no longer be able to download the agent."
+msgstr ""
+
+#: templates/fleet/settings.html:469
+msgid "Delete Installer"
+msgstr ""
+
+#: templates/fleet/settings.html:523
+msgid "Rule key"
+msgstr ""
+
+#: templates/fleet/settings.html:527
+msgid "JSON payload"
+msgstr ""
+
+#: templates/fleet/settings.html:620
+msgid "Fix highlighted custom alert rows before saving."
+msgstr ""
+
+#: templates/fleet/settings.html:652
+msgid "Clipboard API not available. Copy the link manually."
 msgstr ""
 
 #: templates/inventory/hardware_list.html:110
@@ -3159,12 +4697,6 @@ msgstr ""
 #: templates/inventory/hardware_list.html:339
 #: templates/inventory/hardware_list.html:508
 msgid "GPU"
-msgstr ""
-
-#: templates/inventory/hardware_list.html:176
-#: templates/inventory/hardware_list.html:343
-#: templates/inventory/hardware_list.html:512
-msgid "Operating System"
 msgstr ""
 
 #: templates/inventory/hardware_list.html:178
@@ -3298,7 +4830,7 @@ msgstr ""
 
 #: templates/inventory/hardware_list.html:611
 #: templates/inventory/software_list.html:557 templates/networks/hosts.html:233
-#: templates/networks/maps.html:274 templates/task_scheduler/list.html:431
+#: templates/networks/maps.html:274 templates/task_scheduler/list.html:497
 msgid "Update"
 msgstr ""
 
@@ -3447,12 +4979,6 @@ msgstr ""
 msgid "Back"
 msgstr ""
 
-#: templates/knowledge/detail.html:57 templates/manage/api_keys.html:199
-#: templates/task_scheduler/detail.html:82 templates/tickets/_row.html:49
-#: templates/tickets/list.html:265
-msgid "Edit"
-msgstr ""
-
 #: templates/knowledge/detail.html:83 templates/knowledge/edit.html:23
 msgid "Summary"
 msgstr ""
@@ -3470,18 +4996,8 @@ msgstr ""
 msgid "File"
 msgstr ""
 
-#: templates/knowledge/detail.html:112
-msgid "Size"
-msgstr ""
-
 #: templates/knowledge/detail.html:113
 msgid "Uploaded"
-msgstr ""
-
-#: templates/knowledge/detail.html:160 templates/knowledge/detail.html:180
-#: templates/tickets/_view_content.html:287
-#: templates/tickets/_view_content.html:464
-msgid "Upload"
 msgstr ""
 
 #: templates/knowledge/detail.html:194 templates/knowledge/detail.html:205
@@ -3496,16 +5012,10 @@ msgstr ""
 msgid "Version History"
 msgstr ""
 
-#: templates/knowledge/detail.html:222 templates/knowledge/version.html:21
-#: templates/manage/api_keys.html:145 templates/task_scheduler/detail.html:122
-#: templates/tickets/list.html:204 templates/users/list.html:118
-msgid "Created"
-msgstr ""
-
 #: templates/knowledge/detail.html:224 templates/knowledge/edit.html:15
 #: templates/task_scheduler/detail.html:329
-#: templates/task_scheduler/list.html:133
-#: templates/task_scheduler/list.html:205
+#: templates/task_scheduler/list.html:151
+#: templates/task_scheduler/list.html:226
 msgid "Title"
 msgstr ""
 
@@ -3524,10 +5034,6 @@ msgstr ""
 
 #: templates/knowledge/edit.html:27
 msgid "Content"
-msgstr ""
-
-#: templates/knowledge/edit.html:31
-msgid "Tags (comma separated)"
 msgstr ""
 
 #: templates/knowledge/edit.html:37 templates/knowledge/list.html:146
@@ -3568,14 +5074,6 @@ msgstr ""
 
 #: templates/knowledge/list.html:205
 msgid "All Tags"
-msgstr ""
-
-#: templates/knowledge/list.html:211
-msgid "Search"
-msgstr ""
-
-#: templates/knowledge/list.html:231
-msgid "Showing"
 msgstr ""
 
 #: templates/knowledge/list.html:231 templates/knowledge/list.html:233
@@ -3693,18 +5191,8 @@ msgid ""
 "integrations."
 msgstr ""
 
-#: templates/manage/api_keys.html:59
-#: templates/tools/password_generator.html:145
-msgid "Refresh"
-msgstr ""
-
 #: templates/manage/api_keys.html:68
 msgid "Clients"
-msgstr ""
-
-#: templates/manage/api_keys.html:80 templates/manage/api_keys.html:185
-#: templates/task_scheduler/detail.html:285
-msgid "Revoked"
 msgstr ""
 
 #: templates/manage/api_keys.html:86
@@ -3772,12 +5260,6 @@ msgstr ""
 msgid "No API clients yet. Generate one using the form above."
 msgstr ""
 
-#: templates/manage/api_keys.html:172 templates/manage/api_keys.html:259
-#: templates/manage/email_ingest.html:103
-#: templates/manage/email_ingest.html:237
-msgid "None"
-msgstr ""
-
 #: templates/manage/api_keys.html:180 templates/manage/email_ingest.html:91
 #: templates/manage/email_ingest.html:230
 msgid "Never"
@@ -3805,10 +5287,6 @@ msgstr ""
 msgid "Revoke this API key? Integration will lose access immediately."
 msgstr ""
 
-#: templates/manage/api_keys.html:224
-msgid "Revoke"
-msgstr ""
-
 #: templates/manage/api_keys.html:228
 msgid "Delete this API client? This cannot be undone."
 msgstr ""
@@ -3817,7 +5295,7 @@ msgstr ""
 #: templates/networks/maps.html:127 templates/networks/maps.html:208
 #: templates/networks/maps.html:262 templates/task_scheduler/detail.html:98
 #: templates/task_scheduler/detail.html:345
-#: templates/task_scheduler/list.html:134 templates/tickets/create.html:6
+#: templates/task_scheduler/list.html:152 templates/tickets/create.html:6
 #: templates/tickets/edit.html:14 templates/tickets/list.html:199
 #: templates/tickets/list.html:294
 msgid "Description"
@@ -3969,10 +5447,6 @@ msgstr ""
 msgid "No OpenAI API key is required for the MCP provider."
 msgstr ""
 
-#: templates/manage/assistant_settings.html:271
-msgid "Host"
-msgstr ""
-
 #: templates/manage/assistant_settings.html:275
 #: templates/manage/email_ingest.html:140
 msgid "Port"
@@ -4009,10 +5483,6 @@ msgstr ""
 msgid ""
 "Use the Access Control page to limit which roles can open the assistant "
 "widget."
-msgstr ""
-
-#: templates/manage/assistant_settings.html:317
-msgid "Save Settings"
 msgstr ""
 
 #: templates/manage/auth_settings.html:6
@@ -4100,13 +5570,6 @@ msgstr ""
 #: templates/manage/configuration.html:165
 #: templates/manage/configuration.html:200
 msgid "Following default"
-msgstr ""
-
-#: templates/manage/configuration.html:145
-#: templates/manage/configuration.html:163
-#: templates/manage/configuration.html:177
-#: templates/manage/configuration.html:198
-msgid "Default"
 msgstr ""
 
 #: templates/manage/configuration.html:153
@@ -4274,10 +5737,6 @@ msgstr ""
 
 #: templates/manage/email_ingest.html:246
 msgid "Run now"
-msgstr ""
-
-#: templates/networks/hosts.html:77 templates/networks/maps.html:121
-msgid "Network"
 msgstr ""
 
 #: templates/networks/hosts.html:83 templates/networks/maps.html:120
@@ -4703,9 +6162,9 @@ msgstr ""
 
 #: templates/task_scheduler/detail.html:72
 #: templates/task_scheduler/detail.html:335
-#: templates/task_scheduler/list.html:78 templates/task_scheduler/list.html:151
-#: templates/task_scheduler/list.html:211
-#: templates/task_scheduler/public_share.html:58
+#: templates/task_scheduler/list.html:96 templates/task_scheduler/list.html:169
+#: templates/task_scheduler/list.html:232
+#: templates/task_scheduler/public_share.html:68
 msgid "Shared"
 msgstr ""
 
@@ -4719,7 +6178,7 @@ msgstr ""
 
 #: templates/task_scheduler/detail.html:114
 #: templates/task_scheduler/detail.html:340
-#: templates/task_scheduler/list.html:216
+#: templates/task_scheduler/list.html:237
 msgid "Estimated Duration"
 msgstr ""
 
@@ -4736,13 +6195,13 @@ msgid "Scheduled Slots"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:139
-#: templates/task_scheduler/list.html:322
+#: templates/task_scheduler/list.html:343
 msgid "Timezone: Europe/Athens"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:143
 #: templates/task_scheduler/detail.html:246
-#: templates/task_scheduler/list.html:265
+#: templates/task_scheduler/list.html:286
 msgid "Add Slot"
 msgstr ""
 
@@ -4751,13 +6210,13 @@ msgid "Start"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:155
-#: templates/task_scheduler/list.html:135
+#: templates/task_scheduler/list.html:153
 msgid "Duration"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:156
 #: templates/task_scheduler/detail.html:238
-#: templates/task_scheduler/list.html:259
+#: templates/task_scheduler/list.html:280
 msgid "Comment"
 msgstr ""
 
@@ -4796,7 +6255,7 @@ msgid "No scheduled slots to display."
 msgstr ""
 
 #: templates/task_scheduler/detail.html:233
-#: templates/task_scheduler/list.html:253
+#: templates/task_scheduler/list.html:274
 msgid "Start (Europe/Athens)"
 msgstr ""
 
@@ -4814,25 +6273,12 @@ msgstr ""
 
 #: templates/task_scheduler/detail.html:268
 #: templates/task_scheduler/detail.html:370
-#: templates/task_scheduler/list.html:309
+#: templates/task_scheduler/list.html:330
 msgid "Visibility"
-msgstr ""
-
-#: templates/task_scheduler/detail.html:269
-msgid "Expires"
-msgstr ""
-
-#: templates/task_scheduler/detail.html:279
-#: templates/task_scheduler/public_share.html:65
-msgid "Public"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:279
 msgid "Restricted"
-msgstr ""
-
-#: templates/task_scheduler/detail.html:280
-msgid "No expiry"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:310
@@ -4840,7 +6286,7 @@ msgid "No share links yet. Generate one to collect bookings."
 msgstr ""
 
 #: templates/task_scheduler/detail.html:323
-#: templates/task_scheduler/list.html:423
+#: templates/task_scheduler/list.html:489
 msgid "Edit Task"
 msgstr ""
 
@@ -4861,7 +6307,7 @@ msgid "Authenticated users only"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:381
-#: templates/task_scheduler/list.html:320
+#: templates/task_scheduler/list.html:341
 msgid "Expires at (optional)"
 msgstr ""
 
@@ -4870,7 +6316,7 @@ msgid "Create Link"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:407
-#: templates/task_scheduler/list.html:348
+#: templates/task_scheduler/list.html:413
 msgid "Delete Task"
 msgstr ""
 
@@ -4883,19 +6329,19 @@ msgid "Request failed."
 msgstr ""
 
 #: templates/task_scheduler/detail.html:448
-#: templates/task_scheduler/list.html:516
-#: templates/task_scheduler/public_share.html:170
-#: templates/task_scheduler/public_share.html:196
+#: templates/task_scheduler/list.html:582
+#: templates/task_scheduler/public_share.html:180
+#: templates/task_scheduler/public_share.html:206
 msgid "Try:"
 msgstr ""
 
 #: templates/task_scheduler/detail.html:465
-#: templates/task_scheduler/public_share.html:163
+#: templates/task_scheduler/public_share.html:173
 msgid "Checking availability..."
 msgstr ""
 
 #: templates/task_scheduler/detail.html:472
-#: templates/task_scheduler/public_share.html:168
+#: templates/task_scheduler/public_share.html:178
 msgid "Slot unavailable."
 msgstr ""
 
@@ -4921,170 +6367,215 @@ msgid "Link copied."
 msgstr ""
 
 #: templates/task_scheduler/detail.html:574
-#: templates/task_scheduler/list.html:619
+#: templates/task_scheduler/list.html:762
 msgid "Unable to delete task."
 msgstr ""
 
-#: templates/task_scheduler/list.html:81
+#: templates/task_scheduler/list.html:99
 msgid "Coordinate maintenance and IT chores without overlapping slots."
 msgstr ""
 
-#: templates/task_scheduler/list.html:86 templates/task_scheduler/list.html:199
-#: templates/task_scheduler/list.html:414
+#: templates/task_scheduler/list.html:104
+#: templates/task_scheduler/list.html:220
+#: templates/task_scheduler/list.html:480
 msgid "New Task"
 msgstr ""
 
-#: templates/task_scheduler/list.html:99
+#: templates/task_scheduler/list.html:117
 msgid "Total Tasks"
 msgstr ""
 
-#: templates/task_scheduler/list.html:109
+#: templates/task_scheduler/list.html:127
 msgid "Booked Slots"
 msgstr ""
 
-#: templates/task_scheduler/list.html:119
+#: templates/task_scheduler/list.html:137
 msgid "Active Share Links"
 msgstr ""
 
-#: templates/task_scheduler/list.html:137
+#: templates/task_scheduler/list.html:155
 msgid "Slots"
 msgstr ""
 
-#: templates/task_scheduler/list.html:218
+#: templates/task_scheduler/list.html:239
 msgid "Use free range e.g. 2-3 or 1.5-2."
 msgstr ""
 
-#: templates/task_scheduler/list.html:221
+#: templates/task_scheduler/list.html:242
 msgid "Description (rich text allowed)"
 msgstr ""
 
-#: templates/task_scheduler/list.html:222
+#: templates/task_scheduler/list.html:243
 msgid "Supports Markdown/HTML formatting"
 msgstr ""
 
-#: templates/task_scheduler/list.html:244
+#: templates/task_scheduler/list.html:265
 msgid "Add User Slot"
 msgstr ""
 
-#: templates/task_scheduler/list.html:255
+#: templates/task_scheduler/list.html:276
 msgid "Format dd/MM/yyyy HH:mm. Conflicts checked automatically."
 msgstr ""
 
-#: templates/task_scheduler/list.html:279
+#: templates/task_scheduler/list.html:300
 msgid "Remove Slot"
 msgstr ""
 
-#: templates/task_scheduler/list.html:283
+#: templates/task_scheduler/list.html:304
 msgid "Select booking"
 msgstr ""
 
-#: templates/task_scheduler/list.html:285
-#: templates/task_scheduler/list.html:527
+#: templates/task_scheduler/list.html:306
+#: templates/task_scheduler/list.html:593
 msgid "Choose..."
 msgstr ""
 
-#: templates/task_scheduler/list.html:304
+#: templates/task_scheduler/list.html:325
 msgid "Share Task"
 msgstr ""
 
-#: templates/task_scheduler/list.html:312
+#: templates/task_scheduler/list.html:333
 msgid "Public link (no login)"
 msgstr ""
 
-#: templates/task_scheduler/list.html:316
+#: templates/task_scheduler/list.html:337
 msgid "Only authenticated users"
 msgstr ""
 
-#: templates/task_scheduler/list.html:325
+#: templates/task_scheduler/list.html:346
 msgid "Generated link"
 msgstr ""
 
-#: templates/task_scheduler/list.html:334
+#: templates/task_scheduler/list.html:355
 msgid "Generate Link"
 msgstr ""
 
-#: templates/task_scheduler/list.html:444
-#: templates/task_scheduler/list.html:451
+#: templates/task_scheduler/list.html:369
+msgid "Email Task"
+msgstr ""
+
+#: templates/task_scheduler/list.html:374
+msgid "Audience"
+msgstr ""
+
+#: templates/task_scheduler/list.html:377
+msgid "Choose recipients"
+msgstr ""
+
+#: templates/task_scheduler/list.html:381
+msgid "All active users"
+msgstr ""
+
+#: templates/task_scheduler/list.html:385
+msgid "Recipients"
+msgstr ""
+
+#: templates/task_scheduler/list.html:387
+msgid "Hold Ctrl/Cmd to select multiple recipients."
+msgstr ""
+
+#: templates/task_scheduler/list.html:390
+msgid "Optional message"
+msgstr ""
+
+#: templates/task_scheduler/list.html:391
+msgid "Add a short note (optional)"
+msgstr ""
+
+#: templates/task_scheduler/list.html:398
+msgid "Send Email"
+msgstr ""
+
+#: templates/task_scheduler/list.html:510
+#: templates/task_scheduler/list.html:517
 msgid "Could not save task."
 msgstr ""
 
-#: templates/task_scheduler/list.html:485
+#: templates/task_scheduler/list.html:551
 msgid "Validation failed."
 msgstr ""
 
-#: templates/task_scheduler/list.html:513
+#: templates/task_scheduler/list.html:579
 msgid "Unable to add slot."
 msgstr ""
 
-#: templates/task_scheduler/list.html:539
+#: templates/task_scheduler/list.html:605
 msgid "Unable to load slots."
 msgstr ""
 
-#: templates/task_scheduler/list.html:548
+#: templates/task_scheduler/list.html:614
 msgid "Select a slot to remove."
 msgstr ""
 
-#: templates/task_scheduler/list.html:560
+#: templates/task_scheduler/list.html:626
 msgid "Unable to remove slot."
 msgstr ""
 
-#: templates/task_scheduler/list.html:587
+#: templates/task_scheduler/list.html:653
 msgid "Unable to create share link."
 msgstr ""
 
-#: templates/task_scheduler/list.html:596
+#: templates/task_scheduler/list.html:662
 msgid "Link copied"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:53
+#: templates/task_scheduler/list.html:707
+msgid "Unable to load recipients."
+msgstr ""
+
+#: templates/task_scheduler/list.html:735
+msgid "Unable to send email."
+msgstr ""
+
+#: templates/task_scheduler/public_share.html:63
 msgid "Estimated duration"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:67
+#: templates/task_scheduler/public_share.html:77
 msgid "Login required"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:76
+#: templates/task_scheduler/public_share.html:86
 msgid "No description supplied."
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:86
+#: templates/task_scheduler/public_share.html:96
 msgid "This task is closed. Submissions are no longer accepted."
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:93
+#: templates/task_scheduler/public_share.html:103
 msgid "Your name"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:97
+#: templates/task_scheduler/public_share.html:107
 msgid "Preferred start (Europe/Athens)"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:101
+#: templates/task_scheduler/public_share.html:111
 msgid "Comment (optional)"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:102
+#: templates/task_scheduler/public_share.html:112
 msgid "Short note"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:109
+#: templates/task_scheduler/public_share.html:119
 msgid "Reserve slot"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:117
+#: templates/task_scheduler/public_share.html:127
 msgid "Upcoming slots"
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:129
+#: templates/task_scheduler/public_share.html:139
 msgid "No bookings yet."
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:188
+#: templates/task_scheduler/public_share.html:198
 msgid "Slot confirmed."
 msgstr ""
 
-#: templates/task_scheduler/public_share.html:194
+#: templates/task_scheduler/public_share.html:204
 msgid "Submission failed."
 msgstr ""
 
@@ -5096,11 +6587,6 @@ msgstr ""
 #: templates/tickets/_row.html:12 templates/tickets/list.html:222
 #: templates/tickets/list.html:301
 msgid "High"
-msgstr ""
-
-#: templates/tickets/_row.html:14 templates/tickets/list.html:224
-#: templates/tickets/list.html:302
-msgid "Critical"
 msgstr ""
 
 #: templates/tickets/_row.html:38 templates/tickets/list.html:254

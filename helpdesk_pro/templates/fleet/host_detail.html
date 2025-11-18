@@ -724,6 +724,8 @@
     const remoteCommandFallbackTitle = {{ _('Command result') | tojson }};
     const remoteCommandNoOutput = {{ _('No output was captured.') | tojson }};
     const remoteCommandNoScript = {{ _('Script unavailable.') | tojson }};
+    const remoteAutoRefreshInterval = 10000;
+    let remoteAutoRefreshTimer = null;
 
     function parseDataJson(value) {
       if (!value) return '';
@@ -785,6 +787,36 @@
       remoteActionsCard.classList.toggle('loading-state', Boolean(isLoading));
     }
 
+    function getRemoteMeta() {
+      if (!remotePanelBody) return null;
+      return remotePanelBody.querySelector('[data-remote-meta]');
+    }
+
+    function hasPendingRemoteActions() {
+      const meta = getRemoteMeta();
+      return Boolean(meta && meta.dataset.hasPending === '1');
+    }
+
+    function clearRemoteAutoRefresh() {
+      if (remoteAutoRefreshTimer) {
+        clearInterval(remoteAutoRefreshTimer);
+        remoteAutoRefreshTimer = null;
+      }
+    }
+
+    function scheduleRemoteAutoRefresh() {
+      if (!remotePanelUrl) return;
+      if (hasPendingRemoteActions()) {
+        if (!remoteAutoRefreshTimer) {
+          remoteAutoRefreshTimer = setInterval(() => {
+            fetchRemotePanel(remotePanelUrl);
+          }, remoteAutoRefreshInterval);
+        }
+      } else {
+        clearRemoteAutoRefresh();
+      }
+    }
+
     function fetchRemotePanel(target, options = {}) {
       if (!remoteActionsCard) return;
       setRemoteLoading(true);
@@ -804,7 +836,8 @@
           if (data.html && remotePanelBody) {
             remotePanelBody.innerHTML = data.html;
             clearRemoteAlert();
-            rebindRemotePanel();
+            bindRemotePanelEvents();
+            scheduleRemoteAutoRefresh();
           } else if (data.message) {
             showRemoteAlert(data.message, 'info');
           }
@@ -818,8 +851,23 @@
 
     function submitRemoteAction(form) {
       if (!form) return;
+      const submitBtn = form.querySelector('[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
       const formData = new FormData(form);
-      fetchRemotePanel(form.action, {method: form.method || 'POST', body: formData});
+      const shouldReset = form.dataset.remoteReset === 'true';
+      fetchRemotePanel(form.action, {method: form.method || 'POST', body: formData})
+        .then(() => {
+          if (shouldReset && typeof form.reset === 'function') {
+            form.reset();
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+          }
+        });
     }
 
     function refreshRemotePanel() {
@@ -827,37 +875,34 @@
       fetchRemotePanel(remotePanelUrl);
     }
 
-    function rebindRemotePanel() {
+    function bindRemotePanelEvents() {
       if (!remoteActionsCard || !remotePanelBody) return;
-      remotePanelBody.querySelectorAll('form[data-remote-action]').forEach((form) => {
-        if (form.dataset.remoteBound === '1') return;
-        form.dataset.remoteBound = '1';
-        form.addEventListener('submit', (evt) => {
+      if (remotePanelBody.dataset.remoteDelegated !== '1') {
+        remotePanelBody.dataset.remoteDelegated = '1';
+        remotePanelBody.addEventListener('submit', (evt) => {
+          const form = evt.target.closest('form[data-remote-action]');
+          if (!form) return;
           evt.preventDefault();
           submitRemoteAction(form);
         });
-      });
-      const refreshBtn = remoteActionsCard.querySelector('[data-remote-refresh]');
-      if (refreshBtn && refreshBtn.dataset.remoteBound !== '1') {
-        refreshBtn.dataset.remoteBound = '1';
-        refreshBtn.addEventListener('click', (evt) => {
-          evt.preventDefault();
-          refreshRemotePanel();
+      }
+      if (remoteActionsCard.dataset.remoteDelegated !== '1') {
+        remoteActionsCard.dataset.remoteDelegated = '1';
+        remoteActionsCard.addEventListener('click', (evt) => {
+          const refreshBtn = evt.target.closest('[data-remote-refresh]');
+          if (refreshBtn) {
+            evt.preventDefault();
+            refreshRemotePanel();
+            return;
+          }
+          const responseBtn = evt.target.closest('.remote-command-response-btn');
+          if (responseBtn) {
+            evt.preventDefault();
+            showRemoteCommandResponse(responseBtn);
+          }
         });
       }
-      bindRemoteCommandResponses();
-    }
-
-    function bindRemoteCommandResponses() {
-      if (!remoteActionsCard) return;
-      remoteActionsCard.querySelectorAll('.remote-command-response-btn').forEach((btn) => {
-        if (btn.dataset.remoteBound === '1') return;
-        btn.dataset.remoteBound = '1';
-        btn.addEventListener('click', (evt) => {
-          evt.preventDefault();
-          showRemoteCommandResponse(btn);
-        });
-      });
+      scheduleRemoteAutoRefresh();
     }
 
     const showPayload = (payloadMap, id) => {
@@ -961,12 +1006,13 @@
       });
     };
 
-    rebindRemotePanel();
+    bindRemotePanelEvents();
     bindPayloadHandlers();
     bindFilterInteractions();
     if (shouldAutoScroll()) {
       requestAnimationFrame(() => autoScrollToFeed('auto'));
     }
+    window.addEventListener('beforeunload', clearRemoteAutoRefresh);
   });
 </script>
 {% endblock %}
