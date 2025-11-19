@@ -37,7 +37,7 @@ from app.models import (
     FleetAgentDownloadLink,
     FleetScheduledJob,
 )
-from werkzeug.utils import secure_filename
+from app.utils.files import secure_filename
 
 ATHENS_TZ = ZoneInfo("Europe/Athens")
 
@@ -122,6 +122,113 @@ def _render_remote_actions_panel(host: FleetHost):
 def _remote_panel_response(host: FleetHost, status: int = 200):
     html = _render_remote_actions_panel(host)
     return jsonify({"html": html}), status
+
+
+def _build_host_snapshot_context(host: FleetHost):
+    snapshot_data = (
+        host.latest_state.snapshot if host.latest_state and host.latest_state.snapshot else None
+    )
+    snapshot_ts = (
+        host.latest_state.updated_at if host.latest_state and host.latest_state.snapshot else None
+    )
+    if not snapshot_data:
+        latest_snapshot_msg = (
+            FleetMessage.query.filter_by(host_id=host.id, category="host", subtype="snapshot")
+            .order_by(FleetMessage.ts.desc())
+            .first()
+        )
+        if latest_snapshot_msg:
+            snapshot_data = latest_snapshot_msg.payload or {}
+            snapshot_ts = latest_snapshot_msg.ts
+    snapshot_available = snapshot_data is not None
+    snapshot = _merge_snapshot_defaults(snapshot_data)
+    events_block = snapshot.get("events", {}) or {}
+    health_cards = {
+        "cpu": snapshot.get("cpuPct"),
+        "ram": snapshot.get("ram", {}),
+        "disk": snapshot.get("disk", {}),
+        "updates": snapshot.get("updates", {}),
+        "antivirus": snapshot.get("antivirus", {}),
+        "firewall": snapshot.get("firewall", {}),
+        "events": events_block,
+    }
+    firewall_card = health_cards["firewall"] or {}
+    if firewall_card.get("domain") is None and snapshot.get("firewallDomain") is not None:
+        firewall_card["domain"] = snapshot.get("firewallDomain")
+    if firewall_card.get("privateProfile") is None and snapshot.get("firewallPrivate") is not None:
+        firewall_card["privateProfile"] = snapshot.get("firewallPrivate")
+    if firewall_card.get("publicProfile") is None and snapshot.get("firewallPublic") is not None:
+        firewall_card["publicProfile"] = snapshot.get("firewallPublic")
+    if firewall_card.get("anyProfileEnabled") is None:
+        firewall_card["anyProfileEnabled"] = (
+            snapshot.get("firewallDomain")
+            or snapshot.get("firewallPrivate")
+            or snapshot.get("firewallPublic")
+        )
+    health_cards["firewall"] = firewall_card
+    health_cards["firewall_enabled"] = bool(firewall_card.get("anyProfileEnabled"))
+    ram_pct = None
+    ram_info = health_cards.get("ram") or {}
+    try:
+        used = ram_info.get("usedMB")
+        total = ram_info.get("totalMB")
+        if used is not None and total:
+            ram_pct = round((used / total) * 100, 1)
+    except (TypeError, ZeroDivisionError):
+        ram_pct = None
+    health_cards["ram_pct"] = ram_pct
+    updates_block = health_cards.get("updates") or {}
+    updates_last_check = updates_block.get("lastCheck")
+    if isinstance(updates_last_check, str):
+        try:
+            updates_last_check_dt = datetime.fromisoformat(updates_last_check.replace("Z", "+00:00"))
+        except ValueError:
+            updates_last_check_dt = None
+    elif isinstance(updates_last_check, datetime):
+        updates_last_check_dt = updates_last_check
+    else:
+        updates_last_check_dt = None
+    health_cards["updates_last_check_dt"] = updates_last_check_dt
+
+    screenshot_data = (
+        host.latest_state.screenshot.data_base64 if host.latest_state and host.latest_state.screenshot else None
+    )
+    if not screenshot_data and host.id:
+        latest_screenshot = (
+            FleetScreenshot.query.filter_by(host_id=host.id)
+            .order_by(FleetScreenshot.created_at.desc())
+            .first()
+        )
+        if latest_screenshot:
+            screenshot_data = latest_screenshot.data_base64
+    active_alerts = (
+        FleetAlert.query.filter_by(host_id=host.id, resolved_at=None)
+        .order_by(FleetAlert.triggered_at.desc())
+        .all()
+    )
+    event_errors = events_block.get("errors") or []
+    event_errors_count = events_block.get("errors24h") or 0
+    if event_errors_count and not any(alert.rule_key == "events" for alert in active_alerts):
+        active_alerts.append(
+            SimpleNamespace(
+                rule_key="events",
+                severity="warning",
+                message=_("%(count)s error events reported in the last 24h.", count=event_errors_count),
+                triggered_at=snapshot_ts or datetime.utcnow(),
+            )
+        )
+
+    primary_ip = snapshot.get("network", {}).get("primaryIP")
+    return {
+        "snapshot_available": snapshot_available,
+        "snapshot_timestamp": snapshot_ts,
+        "health_cards": health_cards,
+        "screenshot_data": screenshot_data,
+        "active_alerts": active_alerts,
+        "event_errors": event_errors,
+        "event_errors_count": event_errors_count,
+        "primary_ip": primary_ip,
+    }
 
 
 def _is_ajax_request() -> bool:
@@ -679,89 +786,14 @@ def host_detail(host_id: int):
             }
         )
 
-    snapshot_data = host.latest_state.snapshot if host.latest_state and host.latest_state.snapshot else None
-    snapshot_ts = host.latest_state.updated_at if host.latest_state and host.latest_state.snapshot else None
-    if not snapshot_data:
-        latest_snapshot_msg = (
-            FleetMessage.query.filter_by(host_id=host.id, category="host", subtype="snapshot")
-            .order_by(FleetMessage.ts.desc())
-            .first()
-        )
-        if latest_snapshot_msg:
-            snapshot_data = latest_snapshot_msg.payload or {}
-            snapshot_ts = latest_snapshot_msg.ts
-    snapshot_available = snapshot_data is not None
-    snapshot = _merge_snapshot_defaults(snapshot_data)
-    events_block = snapshot.get("events", {}) or {}
-    health_cards = {
-        "cpu": snapshot.get("cpuPct"),
-        "ram": snapshot.get("ram", {}),
-        "disk": snapshot.get("disk", {}),
-        "updates": snapshot.get("updates", {}),
-        "antivirus": snapshot.get("antivirus", {}),
-        "firewall": snapshot.get("firewall", {}),
-        "events": events_block,
-    }
-    firewall_card = health_cards["firewall"] or {}
-    if firewall_card.get("domain") is None and snapshot.get("firewallDomain") is not None:
-        firewall_card["domain"] = snapshot.get("firewallDomain")
-    if firewall_card.get("privateProfile") is None and snapshot.get("firewallPrivate") is not None:
-        firewall_card["privateProfile"] = snapshot.get("firewallPrivate")
-    if firewall_card.get("publicProfile") is None and snapshot.get("firewallPublic") is not None:
-        firewall_card["publicProfile"] = snapshot.get("firewallPublic")
-    if firewall_card.get("anyProfileEnabled") is None:
-        firewall_card["anyProfileEnabled"] = snapshot.get("firewallDomain") or snapshot.get("firewallPrivate") or snapshot.get("firewallPublic")
-    health_cards["firewall"] = firewall_card
-    health_cards["firewall_enabled"] = bool(firewall_card.get("anyProfileEnabled"))
-    ram_pct = None
-    ram_info = health_cards.get("ram") or {}
-    try:
-        used = ram_info.get("usedMB")
-        total = ram_info.get("totalMB")
-        if used is not None and total:
-            ram_pct = round((used / total) * 100, 1)
-    except (TypeError, ZeroDivisionError):
-        ram_pct = None
-    health_cards["ram_pct"] = ram_pct
-    updates_block = health_cards.get("updates") or {}
-    updates_last_check = updates_block.get("lastCheck")
-    if isinstance(updates_last_check, str):
-        try:
-            updates_last_check_dt = datetime.fromisoformat(updates_last_check.replace("Z", "+00:00"))
-        except ValueError:
-            updates_last_check_dt = None
-    elif isinstance(updates_last_check, datetime):
-        updates_last_check_dt = updates_last_check
-    else:
-        updates_last_check_dt = None
-    health_cards["updates_last_check_dt"] = updates_last_check_dt
-
-    screenshot_data = (
-        host.latest_state.screenshot.data_base64 if host.latest_state and host.latest_state.screenshot else None
-    )
-    if not screenshot_data and host.id:
-        latest_screenshot = (
-            FleetScreenshot.query.filter_by(host_id=host.id)
-            .order_by(FleetScreenshot.created_at.desc())
-            .first()
-        )
-        if latest_screenshot:
-            screenshot_data = latest_screenshot.data_base64
-    active_alerts = FleetAlert.query.filter_by(host_id=host.id, resolved_at=None).order_by(FleetAlert.triggered_at.desc()).all()
-    events_block = health_cards.get("events") or {}
-    event_errors = events_block.get("errors") or []
-    event_errors_count = events_block.get("errors24h") or 0
-    if event_errors_count and not any(alert.rule_key == "events" for alert in active_alerts):
-        active_alerts.append(
-            SimpleNamespace(
-                rule_key="events",
-                severity="warning",
-                message=_("%(count)s error events reported in the last 24h.", count=event_errors_count),
-                triggered_at=snapshot_ts or datetime.utcnow(),
-            )
-        )
-
-    primary_ip = snapshot.get("network", {}).get("primaryIP")
+    snapshot_context = _build_host_snapshot_context(host)
+    snapshot_available = snapshot_context["snapshot_available"]
+    snapshot_ts = snapshot_context["snapshot_timestamp"]
+    health_cards = snapshot_context["health_cards"]
+    screenshot_data = snapshot_context["screenshot_data"]
+    active_alerts = snapshot_context["active_alerts"]
+    event_errors = snapshot_context["event_errors"]
+    primary_ip = snapshot_context["primary_ip"]
 
     template_context = {
         "host": host,
@@ -804,6 +836,29 @@ def remote_actions_panel(host_id: int):
     _require_view_permission()
     host = FleetHost.query.get_or_404(host_id)
     return _remote_panel_response(host)
+
+
+@fleet_bp.get("/hosts/<int:host_id>/status-panel")
+@login_required
+def host_status_panel(host_id: int):
+    _require_view_permission()
+    host = FleetHost.query.get_or_404(host_id)
+    settings = FleetModuleSettings.get()
+    online_window = current_app.config.get("FLEET_ONLINE_WINDOW_MINUTES", 10)
+    online_cutoff = datetime.utcnow() - timedelta(minutes=online_window)
+    host_online = bool(host.last_seen_at and host.last_seen_at >= online_cutoff)
+    snapshot_context = _build_host_snapshot_context(host)
+    badge_html = render_template("fleet/_host_status_badge.html", host_online=host_online)
+    health_html = render_template(
+        "fleet/_system_health_body.html",
+        host=host,
+        settings=settings,
+        snapshot_available=snapshot_context["snapshot_available"],
+        snapshot_timestamp=snapshot_context["snapshot_timestamp"],
+        health_cards=snapshot_context["health_cards"],
+        format_ts=_format_ts,
+    )
+    return jsonify({"badge": badge_html, "health": health_html})
 
 
 @fleet_bp.route("/settings", methods=["GET", "POST"])
@@ -934,7 +989,7 @@ def job_scheduler():
                 os.makedirs(upload_root, exist_ok=True)
                 scheduled_dir = os.path.join(upload_root, "scheduled")
                 os.makedirs(scheduled_dir, exist_ok=True)
-                safe_name = secure_filename(upload_file.filename)
+                safe_name = secure_filename(upload_file.filename, allow_unicode=True)
                 token = secrets.token_hex(8)
                 stored_name = f"{token}_{safe_name}"
                 stored_path = os.path.join(scheduled_dir, stored_name)
@@ -1249,7 +1304,7 @@ def upload_remote_file(host_id: int):
             return jsonify({"error": _("Select a file to upload.")}), 400
         flash(_("Select a file to upload."), "danger")
         return redirect(url_for("fleet.host_detail", host_id=host.id))
-    filename = secure_filename(file.filename)
+    filename = secure_filename(file.filename, allow_unicode=True)
     upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER")
     os.makedirs(upload_root, exist_ok=True)
     host_folder = os.path.join(upload_root, str(host.id))
@@ -1566,7 +1621,7 @@ def upload_agent_installer():
     if not file or not file.filename:
         flash(_("Select a Telemetry_Agent.msi file to upload."), "danger")
         return redirect(url_for("fleet.settings"))
-    filename = secure_filename(file.filename)
+    filename = secure_filename(file.filename, allow_unicode=True)
     if not filename.lower().endswith(".msi"):
         flash(_("Installer must be a .msi file."), "danger")
         return redirect(url_for("fleet.settings"))

@@ -330,6 +330,21 @@
       critical: document.getElementById('healthCountCritical'),
     };
     const PAGE_SIZE = 150;
+    const DASHBOARD_TIMEZONE = 'Europe/Athens';
+    const DASHBOARD_LOCALE = document.documentElement.getAttribute('lang') || navigator.language || 'en-US';
+    const DATE_FORMAT_OPTIONS = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: DASHBOARD_TIMEZONE,
+    };
+    const dateTimeFormatter = (typeof Intl !== 'undefined' && Intl.DateTimeFormat)
+      ? new Intl.DateTimeFormat(DASHBOARD_LOCALE, DATE_FORMAT_OPTIONS)
+      : null;
     let filteredHosts = hostData.slice();
     let renderLimit = PAGE_SIZE;
     const hostRowsEl = document.getElementById('hostRows');
@@ -349,10 +364,37 @@
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
-    function formatTimestamp(value) {
+    function parseTimestamp(value) {
       if (!value) return null;
-      const dt = new Date(value);
-      return Number.isNaN(dt.getTime()) ? null : dt.toLocaleString();
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+      if (typeof value === 'number') {
+        const dt = new Date(value);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+      }
+      const text = String(value).trim();
+      if (!text) return null;
+      let normalized = text;
+      const hasTimeZone = /[zZ]|[+-]\d{2}:\d{2}$/.test(normalized);
+      if (!hasTimeZone && /\dT\d/.test(normalized)) {
+        normalized = `${normalized}Z`;
+      }
+      const dt = new Date(normalized);
+      if (!Number.isNaN(dt.getTime())) {
+        return dt;
+      }
+      const fallback = new Date(text);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+
+    function formatTimestamp(value) {
+      const dt = parseTimestamp(value);
+      if (Number.isNaN(dt.getTime())) return null;
+      if (dateTimeFormatter) {
+        return dateTimeFormatter.format(dt);
+      }
+      return dt.toISOString();
     }
 
     function updateLastIngest(value) {

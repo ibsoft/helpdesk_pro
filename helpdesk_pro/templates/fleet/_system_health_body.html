@@ -1,0 +1,143 @@
+<h2 class="h5">{{ _('System Health') }}</h2>
+{% if snapshot_available %}
+  <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+    <small class="text-muted">
+      {% if snapshot_timestamp %}
+        {{ _('Latest telemetry captured at %(time)s', time=format_ts(snapshot_timestamp)) }}
+      {% else %}
+        {{ _('Awaiting telemetry...') }}
+      {% endif %}
+    </small>
+    {% if host.latest_state %}
+      <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#snapshotModal">
+        <i class="fa fa-list"></i> {{ _('View raw payload') }}
+      </button>
+    {% endif %}
+  </div>
+  <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+    <div class="col">
+      <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#ff512f,#dd2476);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('CPU Load') }}</span>
+          <i class="fa fa-microchip fa-2x opacity-75"></i>
+        </div>
+        <div class="host-health-value fw-semibold mb-0">
+          {% if health_cards.cpu is not none %}
+            {{ health_cards.cpu }}<span class="fs-5">%</span>
+          {% else %}
+            —
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#1f4037,#99f2c8);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('RAM Usage') }}</span>
+          <i class="fa fa-memory fa-2x opacity-75"></i>
+        </div>
+        <div class="host-health-value fw-semibold mb-0">
+          {% if health_cards.ram_pct is not none %}
+            {{ health_cards.ram_pct }}<span class="fs-5">%</span>
+          {% else %}
+            —
+          {% endif %}
+        </div>
+        {% if health_cards.ram.usedMB and health_cards.ram.totalMB %}
+          <small class="opacity-75">{{ health_cards.ram.usedMB }} / {{ health_cards.ram.totalMB }} MB</small>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col">
+      <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#f7971e,#ffd200);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('Disk Max') }}</span>
+          <i class="fa fa-hdd fa-2x opacity-75"></i>
+        </div>
+        <div class="host-health-value fw-semibold mb-0">
+          {% if health_cards.disk.maxUsedPct is not none %}
+            {{ health_cards.disk.maxUsedPct }}<span class="fs-5">%</span>
+          {% else %}
+            —
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#36d1dc,#5b86e5);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('Pending updates') }}</span>
+          <i class="fa fa-rotate fa-2x opacity-75"></i>
+        </div>
+        {% set pending_updates = health_cards.updates.pending %}
+        <div class="host-health-value fw-semibold mb-0">
+          {% if pending_updates is not none %}
+            {{ pending_updates }}
+          {% else %}
+            —
+          {% endif %}
+        </div>
+        {% if health_cards.updates_last_check_dt %}
+          <small class="opacity-75">{{ _('Last check: %(time)s', time=format_ts(health_cards.updates_last_check_dt)) }}</small>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col">
+      {% set av = health_cards.antivirus %}
+      <div class="p-4 rounded-4 text-white shadow-sm h-100" style="background: linear-gradient(135deg,#00b09b,#96c93d);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('Antivirus') }}</span>
+          <i class="fa fa-shield fa-2x opacity-75"></i>
+        </div>
+        {% if av.enabled is not none %}
+          <div class="h4 mb-2">
+            <span class="badge {{ 'bg-success-subtle text-success-emphasis' if av.enabled else 'bg-danger-subtle text-danger-emphasis' }}">
+              {{ _('Enabled') if av.enabled else _('Disabled') }}
+            </span>
+          </div>
+        {% endif %}
+        {% if av.upToDate is not none %}
+          <small class="opacity-75">
+            {% if av.upToDate %}
+              {{ _('Signatures up to date') }}
+            {% else %}
+              {{ _('Signatures outdated') }}
+            {% endif %}
+          </small>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col">
+      {% set fw = health_cards.firewall %}
+      <div class="p-4 rounded-4 text-white shadow-sm h-100 position-relative" style="background: linear-gradient(135deg,#0f2027,#2c5364);">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <span class="text-uppercase small fw-semibold opacity-75">{{ _('Firewall') }}</span>
+          <i class="fa fa-shield-halved fa-2x opacity-75"></i>
+        </div>
+        {% if fw.anyProfileEnabled is not none %}
+          <div class="h4 mb-2">
+            <span class="badge {{ 'bg-success-subtle text-success-emphasis' if fw.anyProfileEnabled else 'bg-danger-subtle text-danger-emphasis' }}">
+              {{ _('Enabled') if fw.anyProfileEnabled else _('Disabled') }}
+            </span>
+          </div>
+        {% endif %}
+        <div class="d-flex flex-wrap gap-2">
+          {% set fw_profiles = [
+            (_('Domain'), fw.domain),
+            (_('Private'), fw.privateProfile),
+            (_('Public'), fw.publicProfile)
+          ] %}
+          {% for label, state in fw_profiles %}
+            {% if state is not none %}
+              <span class="badge {{ 'bg-success-subtle text-success-emphasis' if state else 'bg-secondary-subtle text-secondary-emphasis' }}">
+                {{ label }}
+              </span>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted mb-0">{{ _('No telemetry has been ingested yet for this host.') }}</p>
+{% endif %}
