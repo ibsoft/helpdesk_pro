@@ -45,6 +45,7 @@ Helpdesk Pro is a full‑stack IT service management platform built with Flask, 
 - Inventory management:
   - Software: licensing, assignment, lifecycle fields.
   - Hardware: asset tags, configuration, status and ownership.
+- Fleet monitoring with live telemetry, auto-refreshing dashboards, and remote command/file workflows.
 - Network maps: define networks, hosts, generate host lists, and export views.
 - Collaboration area for conversation threads and file sharing.
 - Integrated AI assistant with pluggable providers and builtin tools.
@@ -147,6 +148,19 @@ python wsgi.py                           # production entry (use Gunicorn/Uvicor
 ### Networks
 
 - Define network maps, add hosts, generate host lists, and export visualizations.
+
+### Fleet Monitoring
+
+- Map-centric dashboard with online/offline telemetry pills, health summaries, and screenshot previews.
+- Host detail page refreshes status badges, health cards, and remote action panels via AJAX (send PowerShell scripts, upload files, cancel or view results without reloading).
+- Fleet job scheduler queues remote commands or staged uploads across multiple hosts with recurrence support.
+- Module structure:
+  - `app/fleet/routes.py` – UI views, ingest handlers, remote action endpoints, job scheduler logic.
+  - `app/fleet/ingest.py` – agent payload parsing and snapshot persistence.
+  - `app/models/fleet.py` – ORM models (hosts, messages, screenshots, alerts, jobs, API keys).
+  - `templates/fleet/*.html` – dashboard, host detail, scheduler, shared remote-action partials rendered via AJAX.
+- Optional Nginx rate-limiting/RBAC guidance is available in `docs/nginx-rate-limiting.conf` to protect ingest endpoints.
+- Optional Nginx rate-limiting/RBAC guidance is available in `docs/nginx-rate-limiting.conf` to protect ingest endpoints.
 
 ### Collaboration
 
@@ -294,6 +308,7 @@ Manual checks:
 - Set `SECRET_KEY` and DB credentials via environment.
 - Configure mail for notifications.
 - Serve with a WSGI server behind Nginx; enable HTTPS.
+- Apply rate limiting/TLS hardening on Fleet ingest endpoints (see `docs/nginx-rate-limiting.conf` for a ready-to-use Nginx snippet).
 - Run migrations (`flask db upgrade`) during deploy.
 - Ensure `instance/` is writable for uploads and config.
 
@@ -318,4 +333,3 @@ Licensed under the MIT License. See `LICENSE`.
 ---
 
 If you build additional modules or integrations, please contribute back with pull requests or open issues for feature requests.
-
