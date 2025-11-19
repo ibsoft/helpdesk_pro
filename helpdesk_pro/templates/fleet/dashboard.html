@@ -1,0 +1,622 @@
+{% extends "base.html" %}
+{% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  .fleet-hero {
+    border-radius: 1.25rem;
+    background: radial-gradient(circle at top left, rgba(59,130,246,0.15), rgba(15,23,42,0.05));
+    border: 1px solid rgba(99,102,241,0.2);
+  }
+  .fleet-hero .card-body {
+    padding: 2rem;
+  }
+  .fleet-metrics {
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.94) 0%, rgba(226, 232, 240, 0.9) 45%, rgba(209, 213, 219, 0.85) 100%);
+    color: #0f172a;
+    padding: 1rem 1.5rem;
+  }
+  html[data-bs-theme="dark"] body .fleet-metrics {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.82) 0%, rgba(17, 24, 39, 0.78) 45%, rgba(30, 41, 59, 0.74) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.35);
+    backdrop-filter: blur(10px);
+  }
+  .fleet-metric {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .fleet-metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.08);
+  }
+  html[data-bs-theme="dark"] body .fleet-metric-pill {
+    box-shadow: inset 0 0 0 1px rgba(241, 245, 249, 0.08);
+  }
+  .fleet-metric-label {
+    text-transform: uppercase;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    opacity: 0.75;
+    white-space: nowrap;
+  }
+  html[data-bs-theme="dark"] body .fleet-metric-label {
+    opacity: 0.85;
+  }
+  .fleet-metric-divider {
+    width: 1px;
+    height: 36px;
+    background: rgba(148, 163, 184, 0.36);
+  }
+  @media (max-width: 767px) {
+    .fleet-metrics {
+      padding: 1rem;
+    }
+    .fleet-metric-divider {
+      display: none;
+    }
+  }
+  .fleet-map-card,
+  .fleet-filters-card,
+  .fleet-hosts-card {
+    border-radius: 1rem;
+  }
+  #fleetMap {
+    min-height: 420px;
+    border-radius: 0.85rem;
+  }
+  .fleet-map-card.fullscreen {
+    position: fixed;
+    top: calc(var(--navbar-height) + 0.75rem);
+    left: 1rem;
+    right: 1rem;
+    bottom: 1rem;
+    width: auto;
+    height: auto;
+    z-index: 1055;
+  }
+  .fleet-map-card.fullscreen .card-body {
+    height: calc(100% - 3.5rem);
+  }
+  .fleet-map-card.fullscreen #fleetMap {
+    height: 100%;
+    min-height: 100%;
+  }
+  body.map-fullscreen-active {
+    overflow: hidden;
+  }
+  .map-toolbar {
+    gap: 0.5rem;
+  }
+  .chip-pill {
+    border-radius: 999px;
+    padding: 0.35rem 0.9rem;
+    border: 1px solid var(--bs-border-color);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip-pill.active {
+    background: var(--bs-primary);
+    color: #fff;
+    border-color: var(--bs-primary);
+  }
+  .host-list-header,
+  .host-row {
+    display: grid;
+    grid-template-columns: 80px 160px 120px 90px 90px 90px 120px 140px 100px;
+    gap: 0.75rem;
+    align-items: center;
+  }
+  .host-row {
+    padding: 0.6rem 0.25rem;
+    border-bottom: 1px solid var(--bs-border-color);
+  }
+  .host-row:last-child {
+    border-bottom: none;
+  }
+  .host-row:hover {
+    background: rgba(59,130,246,0.08);
+  }
+  .host-health-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.4rem;
+  }
+  .host-list-container {
+    max-height: 560px;
+    overflow-y: auto;
+  }
+  .load-more-btn {
+    border-style: dashed;
+  }
+</style>
+
+<section class="card fleet-hero border-0 shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+      <div>
+        <h1 class="h3 mb-2 d-flex align-items-center gap-2">
+          <i class="fa fa-gauge-high text-primary"></i>
+          {{ _('Fleet Overview') }}
+        </h1>
+        <p class="text-muted mb-0">
+          {{ _('Streaming health telemetry for up to thousands of Windows, Linux endpoints with map overlays, alerts, and bulk remote actions.') }}
+        </p>
+        <small class="text-muted" id="lastIngestText" data-prefix="{{ _('Last ingest:') }}" data-empty="{{ _('Waiting for the first agent heartbeat...') }}">
+          {% if stats.last_ingest %}
+            {{ _('Last ingest: %(time)s', time=format_ts(stats.last_ingest)) }}
+          {% else %}
+            {{ _('Waiting for the first agent heartbeat...') }}
+          {% endif %}
+        </small>
+      </div>
+    </div>
+    <div class="fleet-metrics mt-3">
+      <div class="d-flex flex-wrap align-items-center gap-4">
+        <div class="fleet-metric">
+          <span class="fleet-metric-pill bg-primary-subtle text-primary-emphasis">
+            <i class="fa fa-server"></i> <span id="statTotalHosts">{{ stats.total_hosts }}</span>
+          </span>
+          <span class="fleet-metric-label">{{ _('Total Hosts') }}</span>
+        </div>
+        <div class="fleet-metric-divider"></div>
+        <div class="fleet-metric">
+          <span class="fleet-metric-pill bg-success-subtle text-success-emphasis">
+            <i class="fa fa-signal"></i> <span id="statOnlineHosts">{{ stats.online_hosts }}</span>
+          </span>
+          <span class="fleet-metric-label">{{ _('Online (10m)') }}</span>
+        </div>
+        <div class="fleet-metric-divider"></div>
+        <div class="fleet-metric">
+          <span class="fleet-metric-pill bg-danger-subtle text-danger-emphasis">
+            <i class="fa fa-power-off"></i> <span id="statOfflineHosts">{{ stats.offline_hosts }}</span>
+          </span>
+          <span class="fleet-metric-label">{{ _('Offline') }}</span>
+        </div>
+        <div class="fleet-metric-divider"></div>
+        <div class="fleet-metric">
+          <span class="fleet-metric-pill bg-warning-subtle text-warning-emphasis">
+            <i class="fa fa-bell"></i> <span id="statActiveAlerts">{{ stats.alerts }}</span>
+          </span>
+          <span class="fleet-metric-label">{{ _('Active Alerts') }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="row g-3 mb-4">
+  <div class="col-xl-8">
+    <div class="card fleet-map-card shadow-sm h-100">
+      <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <h2 class="h5 mb-0"><i class="fa fa-map-location-dot text-primary me-2"></i>{{ _('Map View') }}</h2>
+        <div class="d-flex align-items-center map-toolbar text-muted small">
+          <span>{{ _('Pins update as agents report their GPS or site coordinates.') }}</span>
+          <button class="btn btn-sm btn-outline-secondary" id="mapFullscreenToggle" type="button" title="{{ _('Toggle fullscreen map') }}" aria-label="{{ _('Toggle fullscreen map') }}">
+            <i class="fa fa-expand"></i>
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="fleetMap"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-xl-4">
+    <div class="card fleet-filters-card shadow-sm h-100">
+      <div class="card-header bg-transparent border-0">
+        <h2 class="h5 mb-0"><i class="fa fa-filter text-primary me-2"></i>{{ _('Quick Filters') }}</h2>
+      </div>
+      <div class="card-body">
+        <label class="text-muted small text-uppercase">{{ _('Health posture') }}</label>
+        <div class="d-flex flex-wrap gap-2 mb-3" id="healthChips">
+          <span class="chip-pill active" data-health="all">{{ _('All') }} (<span id="healthCountAll">{{ stats.total_hosts }}</span>)</span>
+          <span class="chip-pill" data-health="good">{{ _('Healthy') }} (<span id="healthCountGood">{{ stats.health_counts.good }}</span>)</span>
+          <span class="chip-pill" data-health="warning">{{ _('Attention') }} (<span id="healthCountWarning">{{ stats.health_counts.warning }}</span>)</span>
+          <span class="chip-pill" data-health="critical">{{ _('Critical') }} (<span id="healthCountCritical">{{ stats.health_counts.critical }}</span>)</span>
+        </div>
+
+        <label class="text-muted small text-uppercase">{{ _('Operating system') }}</label>
+        <select class="form-select mb-3" id="osFilter">
+          <option value="all">{{ _('All OS types') }}</option>
+          <option value="windows" data-label="{{ _('Windows') }}">{{ _('Windows') }} ({{ os_counts.windows }})</option>
+          <option value="linux" data-label="{{ _('Linux') }}">{{ _('Linux') }} ({{ os_counts.linux }})</option>
+          <option value="macos" data-label="{{ _('macOS') }}">{{ _('macOS') }} ({{ os_counts.macos }})</option>
+          <option value="other" data-label="{{ _('Other / Unknown') }}">{{ _('Other / Unknown') }} ({{ os_counts.other }})</option>
+        </select>
+
+        <label class="text-muted small text-uppercase">{{ _('Status') }}</label>
+        <select class="form-select mb-3" id="statusFilter">
+          <option value="all">{{ _('All statuses') }}</option>
+          <option value="online">{{ _('Online (10m)') }}</option>
+          <option value="offline">{{ _('Offline') }}</option>
+        </select>
+
+        <label class="text-muted small text-uppercase">{{ _('Sort by') }}</label>
+        <select class="form-select mb-3" id="sortSelect">
+          <option value="name">{{ _('Name (A-Z)') }}</option>
+          <option value="cpu_desc">{{ _('CPU (high → low)') }}</option>
+          <option value="disk_desc">{{ _('Disk (high → low)') }}</option>
+          <option value="errors_desc">{{ _('Errors (24h)') }}</option>
+          <option value="updated_desc">{{ _('Last seen (newest)') }}</option>
+        </select>
+
+        <label class="text-muted small text-uppercase">{{ _('Search') }}</label>
+        <div class="input-group mb-2">
+          <span class="input-group-text"><i class="fa fa-search"></i></span>
+          <input type="text" class="form-control" id="globalHostSearch" placeholder="{{ _('Host name, agent, location...') }}">
+        </div>
+        <small class="text-muted">{{ _('Filtering happens locally for up to 1,000 hosts without reloading the page.') }}</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card fleet-hosts-card shadow-sm">
+  <div class="card-header bg-transparent border-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <div>
+        <h2 class="h5 mb-0"><i class="fa fa-list-check text-primary me-2"></i>{{ _('Host Inventory') }}</h2>
+        <small class="text-muted">{{ _('Optimized list view for up to 1,000 connected agents. Filters and search update instantly.') }}</small>
+      </div>
+      <div class="text-end">
+        <small class="text-muted">{{ _('Showing') }} <span id="visibleCount">0</span> / <span id="totalCount">{{ stats.total_hosts }}</span> {{ _('hosts') }}</small>
+      </div>
+    </div>
+  </div>
+  <div class="card-body pt-0">
+    <div class="host-list-header text-muted small fw-semibold pb-2 border-bottom">
+      <span>#</span>
+      <span>{{ _('Host') }}</span>
+      <span>{{ _('OS') }}</span>
+      <span>{{ _('CPU %%') }}</span>
+      <span>{{ _('RAM %%') }}</span>
+      <span>{{ _('Disk %%') }}</span>
+      <span>{{ _('Errors 24h') }}</span>
+      <span>{{ _('Last seen') }}</span>
+      <span>{{ _('Status') }}</span>
+    </div>
+    <div class="host-list-container" id="hostRows"></div>
+    <div class="text-center mt-3">
+      <button class="btn btn-outline-primary load-more-btn d-none" id="loadMoreHosts">
+        <i class="fa fa-plus"></i> {{ _('Load more hosts') }}
+      </button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  const DASHBOARD_API_URL = "{{ url_for('fleet.dashboard_data') }}";
+  const DEFAULT_MAP_CENTER = [{{ map_center_lat }}, {{ map_center_lng }}];
+  const DEFAULT_MAP_ZOOM = {{ settings.map_zoom }};
+  const DASHBOARD_REFRESH_MS = 30000;
+  const HOST_DETAIL_TEMPLATE = "{{ url_for('fleet.host_detail', host_id=0) }}";
+  const HOST_POPUP_HINT = {{ _('Double-click the popup to open host details.') | tojson }};
+  let hostData = {{ host_payloads | tojson }};
+  let statsState = {{ stats_json | tojson }};
+  let osCountsState = {{ os_counts_json | tojson }};
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const mapCard = document.querySelector('.fleet-map-card');
+    const hostDetailUrl = (id) => HOST_DETAIL_TEMPLATE.replace(/0(?=\/?$)/, id);
+    const openHostDetail = (id) => {
+      if (!id) return;
+      window.location.href = hostDetailUrl(String(id));
+    };
+    const lastIngestEl = document.getElementById('lastIngestText');
+    const statEls = {
+      total: document.getElementById('statTotalHosts'),
+      online: document.getElementById('statOnlineHosts'),
+      offline: document.getElementById('statOfflineHosts'),
+      alerts: document.getElementById('statActiveAlerts'),
+    };
+    const healthEls = {
+      all: document.getElementById('healthCountAll'),
+      good: document.getElementById('healthCountGood'),
+      warning: document.getElementById('healthCountWarning'),
+      critical: document.getElementById('healthCountCritical'),
+    };
+    const PAGE_SIZE = 150;
+    const DASHBOARD_TIMEZONE = 'Europe/Athens';
+    const DASHBOARD_LOCALE = document.documentElement.getAttribute('lang') || navigator.language || 'en-US';
+    const DATE_FORMAT_OPTIONS = {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+      timeZone: DASHBOARD_TIMEZONE,
+    };
+    const dateTimeFormatter = (typeof Intl !== 'undefined' && Intl.DateTimeFormat)
+      ? new Intl.DateTimeFormat(DASHBOARD_LOCALE, DATE_FORMAT_OPTIONS)
+      : null;
+    let filteredHosts = hostData.slice();
+    let renderLimit = PAGE_SIZE;
+    const hostRowsEl = document.getElementById('hostRows');
+    const visibleCountEl = document.getElementById('visibleCount');
+    const totalCountEl = document.getElementById('totalCount');
+    const loadMoreBtn = document.getElementById('loadMoreHosts');
+    const searchInput = document.getElementById('globalHostSearch');
+    const osFilter = document.getElementById('osFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const sortSelect = document.getElementById('sortSelect');
+    const healthChips = document.querySelectorAll('#healthChips .chip-pill');
+    const osOptions = Array.from(osFilter.querySelectorAll('option[data-label]'));
+    const map = L.map('fleetMap');
+    const markerLayer = L.layerGroup().addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    function parseTimestamp(value) {
+      if (!value) return null;
+      if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+      }
+      if (typeof value === 'number') {
+        const dt = new Date(value);
+        return Number.isNaN(dt.getTime()) ? null : dt;
+      }
+      const text = String(value).trim();
+      if (!text) return null;
+      let normalized = text;
+      const hasTimeZone = /[zZ]|[+-]\d{2}:\d{2}$/.test(normalized);
+      if (!hasTimeZone && /\dT\d/.test(normalized)) {
+        normalized = `${normalized}Z`;
+      }
+      const dt = new Date(normalized);
+      if (!Number.isNaN(dt.getTime())) {
+        return dt;
+      }
+      const fallback = new Date(text);
+      return Number.isNaN(fallback.getTime()) ? null : fallback;
+    }
+
+    function formatTimestamp(value) {
+      const dt = parseTimestamp(value);
+      if (Number.isNaN(dt.getTime())) return null;
+      if (dateTimeFormatter) {
+        return dateTimeFormatter.format(dt);
+      }
+      return dt.toISOString();
+    }
+
+    function updateLastIngest(value) {
+      if (!lastIngestEl) return;
+      const prefix = lastIngestEl.dataset.prefix || '';
+      const empty = lastIngestEl.dataset.empty || '';
+      const formatted = formatTimestamp(value);
+      lastIngestEl.textContent = formatted ? `${prefix} ${formatted}` : empty;
+    }
+
+    function updateStats(stats = {}) {
+      statsState = stats;
+      statEls.total.textContent = stats.total_hosts ?? hostData.length;
+      statEls.online.textContent = stats.online_hosts ?? 0;
+      statEls.offline.textContent = stats.offline_hosts ?? 0;
+      statEls.alerts.textContent = stats.alerts ?? 0;
+      updateHealthCounts(stats.health_counts || {});
+      updateLastIngest(stats.last_ingest);
+    }
+
+    function updateHealthCounts(counts = {}) {
+      healthEls.good.textContent = counts.good ?? 0;
+      healthEls.warning.textContent = counts.warning ?? 0;
+      healthEls.critical.textContent = counts.critical ?? 0;
+      healthEls.all.textContent = statsState.total_hosts ?? hostData.length;
+    }
+
+    function updateOsCounts(counts = {}) {
+      osCountsState = counts;
+      osOptions.forEach(option => {
+        const key = option.value;
+        const label = option.dataset.label || option.textContent;
+        option.textContent = `${label} (${counts[key] ?? 0})`;
+      });
+    }
+
+    function renderMapMarkers() {
+      markerLayer.clearLayers();
+      const coords = [];
+      hostData.forEach(host => {
+        if (host.lat && host.lng) {
+          const pinColor = host.status !== 'online'
+            ? '#dc2626'
+            : (host.health === 'warning' ? '#f97316' : '#2563eb');
+          const icon = L.divIcon({
+            className: 'fleet-pin',
+            html: `<div class="rounded-circle shadow" style="width:18px;height:18px;background:${pinColor};border:2px solid #ffffff;"></div>`
+          });
+          const marker = L.marker([host.lat, host.lng], { icon }).addTo(markerLayer);
+          const cpuValue = Number(host.cpu);
+          const cpuText = Number.isFinite(cpuValue) ? `CPU: ${cpuValue.toFixed(1)}%` : '';
+          const hostUrl = hostDetailUrl(host.id);
+          const cpuMarkup = cpuText ? `<div>${cpuText}</div>` : '';
+          marker.bindPopup(`
+            <div class="fleet-map-popup" data-host-id="${host.id}" ondblclick="window.location.href='${hostUrl}'">
+              <strong>${host.name}</strong>
+              <div>${host.location || ''}</div>
+              ${cpuMarkup}
+              <small class="text-muted">${HOST_POPUP_HINT}</small>
+            </div>
+          `);
+          marker.on('dblclick', () => openHostDetail(host.id));
+          coords.push([host.lat, host.lng]);
+        }
+      });
+      if (coords.length) {
+        const avgLat = coords.reduce((sum, c) => sum + c[0], 0) / coords.length;
+        const avgLng = coords.reduce((sum, c) => sum + c[1], 0) / coords.length;
+        map.setView([avgLat, avgLng], DEFAULT_MAP_ZOOM);
+      } else {
+        map.setView(DEFAULT_MAP_CENTER, DEFAULT_MAP_ZOOM);
+      }
+    }
+
+    function sortHosts() {
+      const mode = sortSelect.value;
+      filteredHosts.sort((a, b) => {
+        switch (mode) {
+          case 'cpu_desc':
+            return (b.cpu || 0) - (a.cpu || 0);
+          case 'disk_desc':
+            return (b.disk || 0) - (a.disk || 0);
+          case 'errors_desc':
+            return (b.errors || 0) - (a.errors || 0);
+          case 'updated_desc':
+            return new Date(b.updated || 0) - new Date(a.updated || 0);
+          default:
+            return (a.name || '').localeCompare(b.name || '');
+        }
+      });
+    }
+
+    function renderHosts() {
+      hostRowsEl.innerHTML = '';
+      totalCountEl.textContent = filteredHosts.length;
+      const visible = filteredHosts.slice(0, renderLimit);
+      visibleCountEl.textContent = visible.length;
+      const fragment = document.createDocumentFragment();
+      visible.forEach(host => {
+        const row = document.createElement('div');
+        row.className = 'host-row small';
+        const healthColor = host.health === 'critical' ? '#dc2626' : host.health === 'warning' ? '#f97316' : '#16a34a';
+        const cpuValue = (host.cpu === null || host.cpu === undefined) ? NaN : Number(host.cpu);
+        const ramValue = (host.ram === null || host.ram === undefined) ? NaN : Number(host.ram);
+        const diskValue = (host.disk === null || host.disk === undefined) ? NaN : Number(host.disk);
+        const cpuText = Number.isFinite(cpuValue) ? `${cpuValue.toFixed(1)}%` : '—';
+        const ramText = Number.isFinite(ramValue) ? `${ramValue.toFixed(1)}%` : '—';
+        const diskText = Number.isFinite(diskValue) ? `${diskValue.toFixed(1)}%` : '—';
+        const lastSeenText = host.updated ? formatTimestamp(host.updated) : '—';
+        row.innerHTML = `
+          <span class="text-muted">${host.id}</span>
+          <div>
+            <div class="fw-semibold">${host.name}</div>
+            <small class="text-muted">${host.agent}</small>
+          </div>
+          <span>${host.os || '—'}</span>
+          <span>${cpuText}</span>
+          <span>${ramText}</span>
+          <span>${diskText}</span>
+          <span>${host.errors || 0}</span>
+          <span>${lastSeenText}</span>
+          <span>
+            <span class="host-health-dot" style="background:${healthColor}"></span>
+            ${host.status === 'online'
+              ? '<span class="badge bg-success-subtle text-success-emphasis">{{ _("Online") }}</span>'
+              : '<span class="badge bg-secondary-subtle text-secondary-emphasis">{{ _("Offline") }}</span>'}
+          </span>
+        `;
+        row.addEventListener('click', () => {
+          window.location.href = `${window.location.origin}/fleet/hosts/${host.id}`;
+        });
+        fragment.appendChild(row);
+      });
+      hostRowsEl.appendChild(fragment);
+      if (visible.length < filteredHosts.length) {
+        loadMoreBtn.classList.remove('d-none');
+        loadMoreBtn.innerHTML = `<i class="fa fa-plus"></i> {{ _('Load more hosts') }} (${filteredHosts.length - visible.length})`;
+      } else {
+        loadMoreBtn.classList.add('d-none');
+      }
+    }
+
+    function applyFilters(resetLimit = true) {
+      const query = (searchInput.value || '').toLowerCase();
+      const osValue = osFilter.value;
+      const statusValue = statusFilter.value;
+      let activeHealth = 'all';
+      const activeChip = document.querySelector('#healthChips .chip-pill.active');
+      if (activeChip) {
+        activeHealth = activeChip.getAttribute('data-health');
+      }
+      filteredHosts = hostData.filter(host => {
+        const textMatch = !query || [host.name, host.agent, host.location, host.primary_ip]
+          .some(val => val && val.toLowerCase().includes(query));
+        const osMatch = osValue === 'all' || (host.os || '').toLowerCase().includes(osValue);
+        const statusMatch = statusValue === 'all' || host.status === statusValue;
+        const healthMatch = activeHealth === 'all' || host.health === activeHealth;
+        return textMatch && osMatch && statusMatch && healthMatch;
+      });
+      sortHosts();
+      if (resetLimit) {
+        renderLimit = PAGE_SIZE;
+      }
+      renderHosts();
+    }
+
+    async function refreshDashboardData() {
+      try {
+        const response = await fetch(DASHBOARD_API_URL, { headers: { 'Accept': 'application/json' } });
+        if (!response.ok) {
+          return;
+        }
+        const payload = await response.json();
+        hostData = Array.isArray(payload.hosts) ? payload.hosts : [];
+        updateStats(payload.stats || {});
+        updateOsCounts(payload.os_counts || {});
+        applyFilters();
+        renderMapMarkers();
+      } catch (error) {
+        console.error('Fleet dashboard refresh failed', error);
+      }
+    }
+
+    const fullscreenBtn = document.getElementById('mapFullscreenToggle');
+    if (fullscreenBtn && mapCard) {
+      fullscreenBtn.addEventListener('click', () => {
+        mapCard.classList.toggle('fullscreen');
+        document.body.classList.toggle('map-fullscreen-active', mapCard.classList.contains('fullscreen'));
+        fullscreenBtn.innerHTML = mapCard.classList.contains('fullscreen')
+          ? '<i class="fa fa-compress"></i>'
+          : '<i class="fa fa-expand"></i>';
+        setTimeout(() => map.invalidateSize(), 250);
+      });
+    }
+
+    searchInput.addEventListener('input', () => applyFilters());
+    osFilter.addEventListener('change', () => applyFilters());
+    statusFilter.addEventListener('change', () => applyFilters());
+    sortSelect.addEventListener('change', () => { sortHosts(); renderHosts(); });
+    healthChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        healthChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        applyFilters();
+      });
+    });
+    loadMoreBtn.addEventListener('click', () => {
+      renderLimit += PAGE_SIZE;
+      renderHosts();
+    });
+
+    updateStats(statsState);
+    updateOsCounts(osCountsState);
+    renderMapMarkers();
+    applyFilters();
+
+    setInterval(refreshDashboardData, DASHBOARD_REFRESH_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) {
+        refreshDashboardData();
+      }
+    });
+  });
+</script>
+{% endblock %}

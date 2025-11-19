@@ -1,0 +1,917 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .host-health-value {
+    font-size: clamp(1.1rem, 1.5vw + 0.35rem, 1.75rem);
+    line-height: 1.15;
+  }
+  .host-header {
+    gap: 1.5rem;
+  }
+  .host-header small {
+    display: block;
+  }
+  .host-header .header-actions {
+    gap: 0.75rem;
+  }
+  .host-top-cards {
+    align-items: stretch;
+  }
+  .latest-screenshot-card .card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .screenshot-wrapper {
+    position: relative;
+    border-radius: 0.85rem;
+    overflow: hidden;
+    flex: 1 1 auto;
+  }
+  .screenshot-wrapper button {
+    padding: 0;
+    border: 0;
+    width: 100%;
+    background: transparent;
+  }
+  .screenshot-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .screenshot-wrapper .screenshot-fullscreen-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    pointer-events: none;
+  }
+  .alerts-tile {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    transition: box-shadow 0.2s ease;
+  }
+  .alerts-tile:hover {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+  }
+  .alerts-tile.alert-clickable {
+    cursor: pointer;
+  }
+  .metadata-tile {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.85rem;
+    padding: 0.85rem 1rem;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    height: 100%;
+  }
+  .metadata-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59,130,246,0.12);
+    color: var(--bs-primary);
+    flex-shrink: 0;
+  }
+  .category-dropdown .dropdown-menu {
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .message-filter-panel {
+    border-radius: 1rem;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: linear-gradient(120deg, rgba(248,250,252,0.9), rgba(226,232,240,0.8));
+  }
+  html[data-bs-theme="dark"] body .message-filter-panel {
+    background: linear-gradient(120deg, rgba(15,23,42,0.85), rgba(30,41,59,0.75));
+    border-color: rgba(148,163,184,0.35);
+  }
+  .machine-pill {
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    background: var(--bs-body-bg);
+  }
+  .category-chip-row .chip-pill {
+    border-radius: 999px;
+    border: 1px solid rgba(148,163,184,0.45);
+    background: rgba(148,163,184,0.15);
+    padding: 0.35rem 1rem;
+    font-weight: 600;
+    color: var(--bs-gray-700);
+    transition: background 0.2s ease, color 0.2s ease;
+    text-decoration: none;
+  }
+  html[data-bs-theme="dark"] body .category-chip-row .chip-pill {
+    background: rgba(15,23,42,0.65);
+    border-color: rgba(148,163,184,0.4);
+    color: #f1f5f9;
+  }
+  .category-chip-row .chip-pill:hover {
+    text-decoration: none;
+    border-color: var(--bs-primary);
+  }
+  .category-chip-row .chip-pill.active {
+    background: var(--bs-primary);
+    color: #fff;
+    border-color: var(--bs-primary);
+  }
+  .category-chip-row .chip-pill .badge {
+    border-radius: 999px;
+    font-size: 0.65rem;
+  }
+  .payload-modal .payload-body {
+    color: var(--bs-body-color);
+    background: rgba(148,163,184,0.12);
+    border: 1px solid rgba(15,23,42,0.08);
+  }
+  html[data-bs-theme="dark"] body .payload-modal .payload-body {
+    background: rgba(15,23,42,0.75);
+    color: #f8fafc !important;
+    border-color: rgba(148,163,184,0.3);
+  }
+  #messagePanelContainer.loading-state {
+    opacity: 0.45;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+  }
+  .filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: flex-end;
+  }
+  .filter-row .filter-field {
+    flex: 1 1 180px;
+    min-width: 160px;
+  }
+  .filter-row .filter-actions {
+    flex: 0 0 180px;
+  }
+  #remoteActionsCard.loading-state {
+    opacity: 0.55;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  #remoteActionsCard .remote-alert-region:empty {
+    display: none;
+  }
+</style>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap host-header">
+  <div>
+    <h1 class="h4 mb-0 d-flex align-items-center gap-2 flex-wrap">
+      <span><i class="fa fa-laptop-code me-2 text-primary"></i>{{ host.display_name or host.agent_id }}</span>
+      <span id="hostStatusBadge" data-status-url="{{ url_for('fleet.host_status_panel', host_id=host.id) }}">
+        {% include "fleet/_host_status_badge.html" %}
+      </span>
+    </h1>
+    <small class="text-muted">{{ host.os_family or _('Unknown OS') }} • {{ host.os_version or _('Version pending') }}</small>
+  </div>
+  <div class="d-flex flex-wrap header-actions">
+    <a class="btn btn-outline-secondary" href="{{ url_for('fleet.dashboard') }}">
+      <i class="fa fa-arrow-left"></i> {{ _('Back to Dashboard') }}
+    </a>
+  </div>
+</div>
+
+<div class="row g-3 mb-4 host-top-cards">
+  <div class="{{ 'col-lg-12' if not settings.show_dashboard_screenshots else 'col-lg-8' }}">
+    <div class="card shadow-sm h-100" id="systemHealthCard">
+      <div class="card-body"
+           data-system-health-body
+           data-status-url="{{ url_for('fleet.host_status_panel', host_id=host.id) }}">
+        {% include "fleet/_system_health_body.html" %}
+      </div>
+    </div>
+  </div>
+  {% if settings.show_dashboard_screenshots %}
+    <div class="col-lg-4 latest-screenshot-card">
+      <div class="card shadow-sm h-100">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h5 mb-0">{{ _('Latest Screenshot') }}</h2>
+            {% if screenshot_data %}
+              <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#screenshotFullscreenModal">
+                <i class="fa fa-expand"></i>
+              </button>
+            {% endif %}
+          </div>
+          {% if screenshot_data %}
+            <div class="screenshot-wrapper mt-2">
+              <button type="button"
+                      data-bs-toggle="modal"
+                      data-bs-target="#screenshotFullscreenModal">
+                <img src="{{ screenshot_data }}" alt="{{ _('Host screenshot') }}">
+              </button>
+            </div>
+            {% if snapshot_timestamp %}
+              <small class="text-muted">{{ _('Updated at %(time)s', time=format_ts(snapshot_timestamp)) }}</small>
+            {% endif %}
+          {% else %}
+            <p class="text-muted mb-0">{{ _('Agent has not uploaded a screenshot yet.') }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  {% endif %}
+</div>
+
+{% if active_alerts %}
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h2 class="h5 mb-3 d-flex align-items-center gap-2">
+        <i class="fa fa-bell text-warning"></i>{{ _('Active Alerts') }}
+      </h2>
+      <div class="row g-3">
+        {% for alert in active_alerts %}
+          {% set severity = (alert.severity or 'warning') | lower %}
+          {% if 'danger' in severity or 'critical' in severity %}
+            {% set badge_class = 'bg-danger-subtle text-danger-emphasis' %}
+            {% set icon_class = 'fa-triangle-exclamation text-danger' %}
+          {% elif 'info' in severity %}
+            {% set badge_class = 'bg-info-subtle text-info-emphasis' %}
+            {% set icon_class = 'fa-circle-info text-info' %}
+          {% else %}
+            {% set badge_class = 'bg-warning-subtle text-warning-emphasis' %}
+            {% set icon_class = 'fa-circle-exclamation text-warning' %}
+          {% endif %}
+          {% set alert_link = none %}
+          {% set alert_modal = none %}
+          {% if alert.rule_key == 'events' and event_errors %}
+            {% set alert_modal = 'eventErrorsModal' %}
+          {% endif %}
+          <div class="col-md-6 col-lg-4">
+            <div class="alerts-tile p-3 h-100 d-flex flex-column gap-2 {% if alert_link or alert_modal %}alert-clickable{% endif %}"
+                 {% if alert_modal %}role="button" tabindex="0" data-bs-toggle="modal" data-bs-target="#{{ alert_modal }}"{% elif alert_link %}role="link" tabindex="0" onclick="window.location='{{ alert_link }}'"{% endif %}>
+              <div class="d-flex align-items-center gap-2">
+                <span class="metadata-icon bg-white">
+                  <i class="fa {{ icon_class }}"></i>
+                </span>
+                <div>
+                  <span class="badge {{ badge_class }} text-uppercase">{{ alert.rule_key }}</span>
+                  <div class="small text-muted">{{ _('Severity: %(severity)s', severity=alert.severity or 'warning') }}</div>
+                </div>
+              </div>
+              <p class="mb-1 fw-semibold">{{ alert.message }}</p>
+              <small class="text-muted">{{ _('Triggered at %(time)s', time=format_ts(alert.triggered_at)) }}</small>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="card shadow-sm mb-4" id="remoteActionsCard" data-panel-url="{{ url_for('fleet.remote_actions_panel', host_id=host.id) }}">
+  <div class="remote-alert-region p-3 pt-3 pb-0"></div>
+  <div data-remote-panel-body>
+    {{ remote_actions_html | safe }}
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4" id="messageFeed">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+      <h2 class="h5 mb-0">{{ _('Host Metadata') }}</h2>
+      <span class="text-muted small">{{ _('Use the Edit Metadata button above to update details.') }}</span>
+    </div>
+    <div class="row g-3 metadata-grid">
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-display"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Display Name') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.display_name or host.agent_id }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-location-dot"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Location') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.location or _('Not specified') }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-microchip"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Operating System') }}</p>
+            <p class="mb-0 fw-semibold">
+              {% if host.os_family %}
+                {{ host.os_family }}{% if host.os_version %} <span class="text-muted">({{ host.os_version }})</span>{% endif %}
+              {% else %}
+                {{ _('Not specified') }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-map-pin"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Coordinates') }}</p>
+            <p class="mb-0 fw-semibold">
+              {% if host.latitude or host.longitude %}
+                {{ host.latitude or '—' }}, {{ host.longitude or '—' }}
+              {% else %}
+                {{ _('Not set') }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-user"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Contact') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.contact or _('Not assigned') }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-tags"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Tags') }}</p>
+            {% if host.tags %}
+              {% set tags = host.tags.split(',') %}
+              <div class="d-flex flex-wrap gap-2">
+                {% for tag in tags %}
+                  {% if tag.strip() %}
+                    <span class="badge bg-primary-subtle text-primary-emphasis">#{{ tag.strip() }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% else %}
+              <p class="mb-0">{{ _('None') }}</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-location-arrow"></i></span>
+          <div>
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Map Pin Icon') }}</p>
+            <p class="mb-0 fw-semibold">{{ host.map_pin_icon or _('Default') }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="col-12">
+        <div class="metadata-tile">
+          <span class="metadata-icon"><i class="fa fa-note-sticky"></i></span>
+          <div class="w-100">
+            <p class="text-muted text-uppercase fw-semibold mb-1 small">{{ _('Notes') }}</p>
+            {% if host.notes %}
+              <div class="bg-light rounded p-2 mb-0">{{ host.notes }}</div>
+            {% else %}
+              <p class="mb-0">{{ _('No notes captured yet.') }}</p>
+            {% endif %}
+            <div class="mt-3 text-end">
+              <button class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#hostMetaModal">
+                <i class="fa fa-pen"></i> {{ _('Edit Metadata') }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="messagePanelContainer">
+  {% include "fleet/_messages_panel.html" %}
+</div>
+
+<div class="modal fade" id="hostMetaModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <form class="modal-content" method="post" action="{{ url_for('fleet.update_host', host_id=host.id) }}">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-pen me-2"></i>{{ _('Edit Host Metadata') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label">{{ _('Display Name') }}</label>
+            <input type="text" name="display_name" class="form-control" value="{{ host.display_name }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ _('Location / Address') }}</label>
+            <input type="text" name="location" class="form-control" value="{{ host.location }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ _('Latitude') }}</label>
+            <input type="text" name="latitude" class="form-control" value="{{ host.latitude }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ _('Longitude') }}</label>
+            <input type="text" name="longitude" class="form-control" value="{{ host.longitude }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ _('Operating System') }}</label>
+            {% set os_values = ['Windows','Linux','macOS','Other'] %}
+            <select name="os_family" class="form-select">
+              <option value="">{{ _('Auto-detected / Not set') }}</option>
+              {% for opt in os_values %}
+                <option value="{{ opt }}" {% if host.os_family == opt %}selected{% endif %}>{{ opt }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">{{ _('OS Version') }}</label>
+            <input type="text" name="os_version" class="form-control" value="{{ host.os_version }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ _('Contact') }}</label>
+            <input type="text" name="contact" class="form-control" value="{{ host.contact }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ _('Tags (comma separated)') }}</label>
+            <input type="text" name="tags" class="form-control" value="{{ host.tags }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ _('Map Pin Icon (FontAwesome)') }}</label>
+            <input type="text" name="host_pin_icon" class="form-control" value="{{ host.map_pin_icon }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label">{{ _('Notes') }}</label>
+            <textarea name="notes" class="form-control" rows="3">{{ host.notes }}</textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <button class="btn btn-primary"><i class="fa fa-save"></i> {{ _('Save changes') }}</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal fade payload-modal" id="remoteCommandModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title" id="remoteCommandTitle">{{ _('Command result') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="small text-muted mb-3" id="remoteCommandMeta"></div>
+        <div class="mb-3">
+          <label class="form-label text-uppercase small fw-semibold">{{ _('Script sent to agent') }}</label>
+          <pre class="payload-body small rounded p-3" id="remoteCommandScript"></pre>
+        </div>
+        <div>
+          <label class="form-label text-uppercase small fw-semibold">{{ _('Command output') }}</label>
+          <pre class="payload-body small rounded p-3" id="remoteCommandResponse"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if screenshot_data and settings.show_dashboard_screenshots %}
+  <div class="modal fade" id="screenshotFullscreenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-fullscreen" style="margin-top: var(--navbar-height);">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header border-0">
+          <h5 class="modal-title"><i class="fa fa-desktop me-2"></i>{{ _('Latest Screenshot') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body p-0 bg-black text-center">
+          <img src="{{ screenshot_data }}" alt="{{ _('Host screenshot') }}" class="img-fluid w-100">
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if host.latest_state %}
+  <div class="modal fade payload-modal" id="snapshotModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-database me-2"></i>{{ _('Latest Payload') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <pre class="payload-body small rounded p-3">{{ host.latest_state.snapshot | tojson(indent=2) }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+{% if event_errors %}
+  <div class="modal fade payload-modal" id="eventErrorsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-bug me-2"></i>{{ _('Event Log Errors (24h)') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="list-group">
+            {% for evt in event_errors %}
+              <div class="list-group-item mb-2 rounded border">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                  <strong>{{ evt.source or _('Unknown source') }}</strong>
+                  <small class="text-muted">{{ evt.time or '' }}</small>
+                </div>
+                <div class="text-muted small mb-2">
+                  <span class="badge bg-secondary-subtle text-secondary-emphasis me-1">{{ evt.log or 'Log' }}</span>
+                  #{{ evt.index }}
+                </div>
+                <pre class="payload-body small rounded p-3 mb-0">{{ evt.message }}</pre>
+              </div>
+            {% endfor %}
+          </div>
+          {% if health_cards.events and health_cards.events.error %}
+            <div class="alert alert-warning mt-3 mb-0">
+              <i class="fa fa-circle-info me-2"></i>{{ health_cards.events.error }}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endif %}
+
+<div class="modal fade payload-modal" id="messagePayloadModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-code me-2"></i>{{ _('Message Payload') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <pre class="payload-body small rounded p-3" id="messagePayloadBody"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block extra_js %}
+{{ super() if super() is defined }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const modalEl = document.getElementById('messagePayloadModal');
+    const payloadBody = document.getElementById('messagePayloadBody');
+    const messagePanelContainer = document.getElementById('messagePanelContainer');
+    const watchedKeys = ['category', 'subtype', 'level', 'q', 'per_page', 'page'];
+    const remoteActionsCard = document.getElementById('remoteActionsCard');
+    const remotePanelBody = remoteActionsCard ? remoteActionsCard.querySelector('[data-remote-panel-body]') : null;
+    const remotePanelUrl = remoteActionsCard ? remoteActionsCard.dataset.panelUrl : null;
+    const remoteErrorFallback = {{ _('Unable to complete remote action.') | tojson }};
+    const remoteCommandModal = document.getElementById('remoteCommandModal');
+    const remoteCommandTitle = document.getElementById('remoteCommandTitle');
+    const remoteCommandMeta = document.getElementById('remoteCommandMeta');
+    const remoteCommandScript = document.getElementById('remoteCommandScript');
+    const remoteCommandOutput = document.getElementById('remoteCommandResponse');
+    const remoteCommandFallbackTitle = {{ _('Command result') | tojson }};
+    const remoteCommandNoOutput = {{ _('No output was captured.') | tojson }};
+    const remoteCommandNoScript = {{ _('Script unavailable.') | tojson }};
+    const remoteAutoRefreshInterval = 10000;
+    let remoteAutoRefreshTimer = null;
+    const hostStatusBadge = document.getElementById('hostStatusBadge');
+    const systemHealthBody = document.querySelector('[data-system-health-body]');
+    const hostStatusUrl = (systemHealthBody && systemHealthBody.dataset.statusUrl) || (hostStatusBadge && hostStatusBadge.dataset.statusUrl) || null;
+    const hostStatusRefreshInterval = 15000;
+    let hostStatusTimer = null;
+
+    function parseDataJson(value) {
+      if (!value) return '';
+      try {
+        return JSON.parse(value);
+      } catch (err) {
+        return value;
+      }
+    }
+
+    function showRemoteCommandResponse(button) {
+      if (!remoteCommandModal) return;
+      const title = button.getAttribute('data-command-title') || remoteCommandFallbackTitle;
+      const meta = button.getAttribute('data-command-meta') || '';
+      const scriptPayload = button.getAttribute('data-command-script');
+      const responsePayload = button.getAttribute('data-command-response');
+      const scriptText = parseDataJson(scriptPayload) || remoteCommandNoScript;
+      const responseText = parseDataJson(responsePayload) || remoteCommandNoOutput;
+      remoteCommandTitle.textContent = title;
+      remoteCommandMeta.textContent = meta;
+      remoteCommandScript.textContent = scriptText;
+      remoteCommandOutput.textContent = responseText;
+      bootstrap.Modal.getOrCreateInstance(remoteCommandModal).show();
+    }
+
+    function getRemoteAlertRegion() {
+      if (!remoteActionsCard) return null;
+      return remoteActionsCard.querySelector('.remote-alert-region');
+    }
+
+    function clearRemoteAlert() {
+      const region = getRemoteAlertRegion();
+      if (region) {
+        region.innerHTML = '';
+      }
+    }
+
+    function showRemoteAlert(message, tone = 'danger') {
+      const region = getRemoteAlertRegion();
+      if (!region || !message) return;
+      region.innerHTML = '';
+      const wrapper = document.createElement('div');
+      wrapper.className = `alert alert-${tone} alert-dismissible fade show mb-0`;
+      wrapper.setAttribute('role', 'alert');
+      const copy = document.createElement('span');
+      copy.textContent = message;
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'btn-close';
+      closeBtn.setAttribute('data-bs-dismiss', 'alert');
+      closeBtn.setAttribute('aria-label', '{{ _("Close") }}');
+      wrapper.appendChild(copy);
+      wrapper.appendChild(closeBtn);
+      region.appendChild(wrapper);
+    }
+
+    function setRemoteLoading(isLoading) {
+      if (!remoteActionsCard) return;
+      remoteActionsCard.classList.toggle('loading-state', Boolean(isLoading));
+    }
+
+    function getRemoteMeta() {
+      if (!remotePanelBody) return null;
+      return remotePanelBody.querySelector('[data-remote-meta]');
+    }
+
+    function hasPendingRemoteActions() {
+      const meta = getRemoteMeta();
+      return Boolean(meta && meta.dataset.hasPending === '1');
+    }
+
+    function clearRemoteAutoRefresh() {
+      if (remoteAutoRefreshTimer) {
+        clearInterval(remoteAutoRefreshTimer);
+        remoteAutoRefreshTimer = null;
+      }
+    }
+
+    function scheduleRemoteAutoRefresh() {
+      if (!remotePanelUrl) return;
+      if (hasPendingRemoteActions()) {
+        if (!remoteAutoRefreshTimer) {
+          remoteAutoRefreshTimer = setInterval(() => {
+            fetchRemotePanel(remotePanelUrl);
+          }, remoteAutoRefreshInterval);
+        }
+      } else {
+        clearRemoteAutoRefresh();
+      }
+    }
+
+    function refreshHostStatus() {
+      if (!hostStatusUrl) return;
+      fetch(hostStatusUrl, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then((resp) => {
+          if (!resp.ok) throw new Error('Failed to refresh status');
+          return resp.json();
+        })
+        .then((data) => {
+          if (data.badge && hostStatusBadge) {
+            hostStatusBadge.innerHTML = data.badge;
+          }
+          if (data.health && systemHealthBody) {
+            systemHealthBody.innerHTML = data.health;
+          }
+        })
+        .catch((err) => console.warn('Host status refresh failed', err));
+    }
+
+    function startHostStatusTimer() {
+      if (!hostStatusUrl || hostStatusTimer) return;
+      refreshHostStatus();
+      hostStatusTimer = setInterval(refreshHostStatus, hostStatusRefreshInterval);
+    }
+
+    function clearHostStatusTimer() {
+      if (hostStatusTimer) {
+        clearInterval(hostStatusTimer);
+        hostStatusTimer = null;
+      }
+    }
+
+    function fetchRemotePanel(target, options = {}) {
+      if (!remoteActionsCard) return;
+      setRemoteLoading(true);
+      const requestOptions = Object.assign({}, options);
+      requestOptions.method = (requestOptions.method || 'GET').toUpperCase();
+      requestOptions.headers = Object.assign({'X-Requested-With': 'XMLHttpRequest'}, requestOptions.headers || {});
+      requestOptions.credentials = requestOptions.credentials || 'same-origin';
+      if (requestOptions.method === 'GET' && requestOptions.body) {
+        delete requestOptions.body;
+      }
+      return fetch(target, requestOptions)
+        .then(async (resp) => {
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            throw new Error(data.error || resp.statusText || remoteErrorFallback);
+          }
+          if (data.html && remotePanelBody) {
+            remotePanelBody.innerHTML = data.html;
+            clearRemoteAlert();
+            bindRemotePanelEvents();
+            scheduleRemoteAutoRefresh();
+          } else if (data.message) {
+            showRemoteAlert(data.message, 'info');
+          }
+          return data;
+        })
+        .catch((err) => {
+          showRemoteAlert(err.message || remoteErrorFallback);
+        })
+        .finally(() => setRemoteLoading(false));
+    }
+
+    function submitRemoteAction(form) {
+      if (!form) return;
+      const submitBtn = form.querySelector('[type="submit"]');
+      if (submitBtn) {
+        submitBtn.disabled = true;
+      }
+      const formData = new FormData(form);
+      const shouldReset = form.dataset.remoteReset === 'true';
+      fetchRemotePanel(form.action, {method: form.method || 'POST', body: formData})
+        .then(() => {
+          if (shouldReset && typeof form.reset === 'function') {
+            form.reset();
+          }
+        })
+        .finally(() => {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+          }
+        });
+    }
+
+    function refreshRemotePanel() {
+      if (!remotePanelUrl) return;
+      fetchRemotePanel(remotePanelUrl);
+    }
+
+    function bindRemotePanelEvents() {
+      if (!remoteActionsCard || !remotePanelBody) return;
+      if (remotePanelBody.dataset.remoteDelegated !== '1') {
+        remotePanelBody.dataset.remoteDelegated = '1';
+        remotePanelBody.addEventListener('submit', (evt) => {
+          const form = evt.target.closest('form[data-remote-action]');
+          if (!form) return;
+          evt.preventDefault();
+          submitRemoteAction(form);
+        });
+      }
+      if (remoteActionsCard.dataset.remoteDelegated !== '1') {
+        remoteActionsCard.dataset.remoteDelegated = '1';
+        remoteActionsCard.addEventListener('click', (evt) => {
+          const refreshBtn = evt.target.closest('[data-remote-refresh]');
+          if (refreshBtn) {
+            evt.preventDefault();
+            refreshRemotePanel();
+            return;
+          }
+          const responseBtn = evt.target.closest('.remote-command-response-btn');
+          if (responseBtn) {
+            evt.preventDefault();
+            showRemoteCommandResponse(responseBtn);
+          }
+        });
+      }
+      scheduleRemoteAutoRefresh();
+    }
+
+    const showPayload = (payloadMap, id) => {
+      const data = payloadMap[id];
+      payloadBody.textContent = data ? JSON.stringify(data, null, 2) : '{{ _("Payload unavailable.") }}';
+      bootstrap.Modal.getOrCreateInstance(modalEl).show();
+    };
+
+    const parsePayloadMap = () => {
+      const dataEl = document.getElementById('messagePayloadData');
+      if (!dataEl) {
+        return {};
+      }
+      try {
+        return JSON.parse(dataEl.textContent || '{}');
+      } catch (err) {
+        console.warn('Failed to parse payload map', err);
+        return {};
+      }
+    };
+
+    const autoScrollToFeed = (behavior = 'smooth') => {
+      const messageFeed = document.getElementById('messageFeed');
+      if (messageFeed) {
+        messageFeed.scrollIntoView({behavior, block: 'start'});
+      }
+    };
+
+    const shouldAutoScroll = () => {
+      const params = new URLSearchParams(window.location.search || '');
+      return watchedKeys.some(key => params.get(key)) || window.location.hash === '#messageFeed';
+    };
+
+    const bindPayloadHandlers = () => {
+      const payloadMap = parsePayloadMap();
+      if (!messagePanelContainer) return;
+      const rows = messagePanelContainer.querySelectorAll('.message-row');
+      rows.forEach(row => {
+        row.addEventListener('dblclick', () => showPayload(payloadMap, row.getAttribute('data-message-id')));
+      });
+      messagePanelContainer.querySelectorAll('.message-payload-btn').forEach(btn => {
+        btn.addEventListener('click', () => showPayload(payloadMap, btn.getAttribute('data-message-id')));
+      });
+    };
+
+    const updateHistory = (urlObj) => {
+      const tidy = new URL(urlObj);
+      tidy.searchParams.delete('partial');
+      const qs = tidy.searchParams.toString();
+      const next = tidy.pathname + (qs ? `?${qs}` : '');
+      window.history.replaceState({}, '', next);
+    };
+
+    const fetchMessages = (target, opts = {}) => {
+      if (!messagePanelContainer) return;
+      const url = new URL(target, window.location.origin);
+      if (!opts.keepPage) {
+        url.searchParams.delete('page');
+      }
+      url.searchParams.set('partial', 'messages');
+      messagePanelContainer.classList.add('loading-state');
+      fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        .then(resp => {
+          if (!resp.ok) throw new Error('Failed to load messages');
+          return resp.text();
+        })
+        .then(html => {
+          messagePanelContainer.innerHTML = html;
+          bindPayloadHandlers();
+          bindFilterInteractions();
+          updateHistory(url);
+          autoScrollToFeed('smooth');
+        })
+        .catch(err => console.error(err))
+        .finally(() => {
+          messagePanelContainer.classList.remove('loading-state');
+        });
+    };
+
+    const bindFilterInteractions = () => {
+      if (!messagePanelContainer) return;
+      const filterForm = messagePanelContainer.querySelector('.message-filter-form');
+      if (filterForm) {
+        filterForm.addEventListener('submit', (evt) => {
+          evt.preventDefault();
+          const formData = new FormData(filterForm);
+          const url = new URL(filterForm.action, window.location.origin);
+          url.search = new URLSearchParams(formData).toString();
+          fetchMessages(url.toString(), {keepPage: false});
+        });
+      }
+      messagePanelContainer.querySelectorAll('.message-filter-link').forEach(link => {
+        link.addEventListener('click', (evt) => {
+          if (evt.metaKey || evt.ctrlKey || evt.shiftKey || evt.button === 1) {
+            return;
+          }
+          evt.preventDefault();
+          const keepPage = link.dataset.keepPage === 'true';
+          fetchMessages(link.href, {keepPage});
+        });
+      });
+    };
+
+    bindRemotePanelEvents();
+    bindPayloadHandlers();
+    bindFilterInteractions();
+    startHostStatusTimer();
+    if (shouldAutoScroll()) {
+      requestAnimationFrame(() => autoScrollToFeed('auto'));
+    }
+    window.addEventListener('beforeunload', () => {
+      clearRemoteAutoRefresh();
+      clearHostStatusTimer();
+    });
+  });
+</script>
+{% endblock %}
+{% endblock %}

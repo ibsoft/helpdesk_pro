@@ -31,5 +31,5 @@ COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 USER appuser
-EXPOSE 5000 8081
+EXPOSE 5000 8081 8449
 ENTRYPOINT ["/entrypoint.sh"]

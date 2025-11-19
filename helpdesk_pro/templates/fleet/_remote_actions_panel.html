@@ -1,0 +1,155 @@
+<div class="card-body">
+  <div data-remote-meta data-has-pending="{{ '1' if pending_actions else '0' }}"></div>
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h2 class="h5 d-flex align-items-center gap-2 mb-0">
+      <i class="fa fa-terminal text-primary"></i>{{ _('Remote Actions') }}
+    </h2>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-remote-refresh>
+      <i class="fa fa-rotate"></i> {{ _('Refresh') }}
+    </button>
+  </div>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="border rounded p-3 h-100">
+        <h3 class="h6">{{ _('Quick Links') }}</h3>
+        {% if host.latest_state and host.latest_state.snapshot and host.latest_state.snapshot.get('network', {}).get('primaryIP') %}
+          {% set primary_ip = host.latest_state.snapshot.get('network', {}).get('primaryIP') %}
+          <div class="d-flex flex-column gap-2 mt-2">
+            <a class="btn btn-outline-primary btn-sm" href="ssh://{{ primary_ip }}">{{ _('Open SSH') }}</a>
+            <a class="btn btn-outline-info btn-sm" href="{{ url_for('fleet.download_rdp_file', host_id=host.id) }}">
+              <i class="fa fa-file-arrow-down me-1"></i>{{ _('Download RDP Profile') }}
+            </a>
+            <a class="btn btn-outline-secondary btn-sm" href="vnc://{{ primary_ip }}">{{ _('Open VNC') }}</a>
+          </div>
+        {% else %}
+          <p class="text-muted small mb-0">{{ _('No primary IP reported yet.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="border rounded p-3 h-100">
+        <h3 class="h6 d-flex justify-content-between align-items-center gap-2">
+          <span>{{ _('Send PowerShell Script') }}</span>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-info-subtle text-info-emphasis text-uppercase">{{ _('PS1') }}</span>
+            {% if remote_commands %}
+              <form method="post"
+                    action="{{ url_for('fleet.clear_remote_commands', host_id=host.id) }}"
+                    data-remote-action="true">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="btn btn-sm btn-outline-danger">{{ _('Clear All') }}</button>
+              </form>
+            {% endif %}
+          </div>
+        </h3>
+        <form method="post"
+              action="{{ url_for('fleet.create_remote_command', host_id=host.id) }}"
+              data-remote-action="true"
+              data-remote-reset="true">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <textarea class="form-control font-monospace mb-2" name="command" rows="6" placeholder="param($serviceName)\r\nRestart-Service -Name $serviceName -Force\r\nWrite-Host &quot;Restarted $serviceName&quot;"></textarea>
+          <small class="text-muted d-block mb-2">{{ _('Paste the PowerShell script you want the agent to execute. It runs with the agent\'s privileges on Windows/Linux (pwsh). Avoid commands that require interactive prompts.') }}</small>
+          <button class="btn btn-primary btn-sm w-100">{{ _('Queue Script') }}</button>
+        </form>
+        <hr>
+        {% if remote_commands %}
+          <ul class="list-unstyled small mb-0">
+            {% for cmd in remote_commands %}
+              {% set status_label = cmd.status or 'pending' %}
+              {% set executed_label = format_ts(cmd.executed_at) if cmd.executed_at else _('Not completed yet') %}
+              {% set created_label = format_ts(cmd.created_at) if cmd.created_at else '' %}
+              {% set title_text = _('Command #%(id)s result', id=cmd.id) %}
+              {% set meta_text = _('Status: %(status)s • Updated %(time)s', status=status_label|title, time=executed_label) %}
+              <li class="mb-2 d-flex justify-content-between gap-3 flex-wrap">
+                <div class="flex-grow-1">
+                  <div class="d-flex align-items-center gap-2 mb-1">
+                    <span class="badge bg-dark-subtle text-uppercase">{{ status_label }}</span>
+                    {% if created_label %}
+                      <small class="text-muted">{{ _('Queued %(time)s', time=created_label) }}</small>
+                    {% endif %}
+                  </div>
+                  <code class="d-block">{{ cmd.command }}</code>
+                </div>
+                <div class="d-flex flex-column gap-2 align-items-end">
+                  {% if cmd.status in ['pending', 'assigned'] %}
+                    <form method="post"
+                          action="{{ url_for('fleet.cancel_remote_command', host_id=host.id, command_id=cmd.id) }}"
+                          data-remote-action="true">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-danger">{{ _('Cancel') }}</button>
+                    </form>
+                  {% elif cmd.response %}
+                    <button type="button"
+                            class="btn btn-link btn-sm text-decoration-none remote-command-response-btn"
+                            data-command-title="{{ title_text }}"
+                            data-command-meta="{{ meta_text }}"
+                            data-command-script='{{ (cmd.command or "") | tojson }}'
+                            data-command-response='{{ (cmd.response or "") | tojson }}'>
+                      <i class="fa fa-eye"></i> {{ _('View result') }}
+                    </button>
+                  {% else %}
+                    <span class="text-muted small">{{ _('Awaiting agent response...') }}</span>
+                  {% endif %}
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No commands queued yet.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="border rounded p-3 h-100">
+        <h3 class="h6 d-flex justify-content-between align-items-center gap-2">
+          <span>{{ _('Upload File') }}</span>
+          {% if file_transfers %}
+            <form method="post"
+                  action="{{ url_for('fleet.clear_file_transfers', host_id=host.id) }}"
+                  data-remote-action="true">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-danger">{{ _('Clear All') }}</button>
+            </form>
+          {% endif %}
+        </h3>
+        <form method="post"
+              action="{{ url_for('fleet.upload_remote_file', host_id=host.id) }}"
+              enctype="multipart/form-data"
+              data-remote-action="true"
+              data-remote-reset="true">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="file" name="file" class="form-control mb-2">
+          <button class="btn btn-outline-primary btn-sm w-100">{{ _('Upload') }}</button>
+        </form>
+        <hr>
+        {% if file_transfers %}
+          <ul class="list-unstyled small mb-0">
+            {% for transfer in file_transfers %}
+              <li class="mb-1">
+                <i class="fa fa-file-arrow-up text-primary"></i> {{ transfer.filename }}
+                <span class="text-muted">({{ (transfer.size_bytes or 0) // 1024 }} KB)</span>
+                {% if transfer.created_at %}
+                  <small class="text-muted d-block">{{ _('Uploaded %(time)s', time=format_ts(transfer.created_at)) }}</small>
+                {% endif %}
+                {% if transfer.consumed_at %}
+                  <span class="badge bg-success-subtle text-success-emphasis">{{ _('Downloaded') }}</span>
+                {% else %}
+                  <span class="badge bg-warning-subtle text-warning-emphasis">{{ _('Pending pickup') }}</span>
+                  <form method="post"
+                        action="{{ url_for('fleet.cancel_file_transfer', host_id=host.id, transfer_id=transfer.id) }}"
+                        class="d-inline"
+                        data-remote-action="true">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2">{{ _('Cancel') }}</button>
+                  </form>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No files awaiting pickup.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

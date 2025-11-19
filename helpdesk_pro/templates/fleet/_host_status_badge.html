@@ -1,0 +1,5 @@
+{% if host_online %}
+  <span class="badge bg-success-subtle text-success-emphasis">{{ _('Online') }}</span>
+{% else %}
+  <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ _('Offline') }}</span>
+{% endif %}

@@ -24,3 +24,16 @@ from .task_scheduler import (
     TaskSchedulerShareToken,
     TaskSchedulerAuditLog,
 )
+from .fleet import (
+    FleetHost,
+    FleetMessage,
+    FleetLatestState,
+    FleetScreenshot,
+    FleetApiKey,
+    FleetModuleSettings,
+    FleetAlert,
+    FleetRemoteCommand,
+    FleetFileTransfer,
+    FleetAgentDownloadLink,
+    FleetScheduledJob,
+)

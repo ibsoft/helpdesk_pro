@@ -1,0 +1,98 @@
+{% for job in jobs %}
+  {% set form_meta = job_forms[loop.index0] %}
+  {% set pending_count = form_meta.pending %}
+  {% set delivered_count = form_meta.delivered %}
+  {% set status = (job.status or 'scheduled').lower() %}
+  {% if 'cancel' in status %}
+    {% set badge_class = 'bg-secondary-subtle text-secondary-emphasis' %}
+  {% elif 'complete' in status %}
+    {% set badge_class = 'bg-success-subtle text-success-emphasis' %}
+  {% else %}
+    {% set badge_class = 'bg-warning-subtle text-warning-emphasis' %}
+  {% endif %}
+  <div class="job-card p-3 mb-3">
+    <div class="d-flex justify-content-between align-items-start gap-3">
+      <div>
+        <h3 class="h6 mb-1">{{ job.name }}</h3>
+        <p class="text-muted small mb-1">
+          <i class="fa fa-clock me-1 text-primary"></i>{{ _('Runs %(time)s', time=format_ts(job.run_at)) }}
+          · {{ _('Repeats: %(recurrence)s', recurrence=job.recurrence|title) }}
+        </p>
+        <p class="text-muted small mb-1">
+          <i class="fa fa-bullseye me-1 text-info"></i>{{ job.target_count() }} {{ _('hosts targeted') }}
+        </p>
+      </div>
+      <div class="text-end">
+        <span class="badge {{ badge_class }} job-status-badge d-block mb-1">{{ job.status or _('scheduled') }}</span>
+        <small class="text-muted">{{ _('Delivered %(d)s / %(t)s', d=delivered_count, t=job.target_count()) }}</small>
+      </div>
+    </div>
+    <div class="d-flex flex-wrap gap-2 mb-2">
+      {% for host_id in job.target_hosts or [] %}
+        {% set host_id_int = host_id|int %}
+        {% set host_obj = host_lookup.get(host_id) or host_lookup.get(host_id_int) %}
+        {% set pending_hosts = form_meta.pending_hosts %}
+        {% set is_pending = host_id_int in pending_hosts %}
+        <span class="host-chip {{ 'host-chip--pending' if is_pending else 'host-chip--delivered' }}">
+          <i class="fa {{ 'fa-hourglass-half' if is_pending else 'fa-check' }}"></i>
+          {{ host_obj.display_name or host_obj.agent_id if host_obj else _('Host #%(id)s', id=host_id) }}
+        </span>
+      {% endfor %}
+    </div>
+    {% if pending_count > 0 %}
+      <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center gap-2">
+        <i class="fa fa-hourglass-half"></i>
+        <span class="small">{{ pending_count }} {{ _('target(s) still pending delivery.') }}</span>
+      </div>
+    {% endif %}
+    {% if job.payload and job.action_type == 'command' %}
+      <label class="form-label text-uppercase small text-muted mb-1">{{ _('Script preview') }}</label>
+      <pre class="payload-body small rounded p-3">{{ job.payload.get('script', _('No script supplied.')) }}</pre>
+    {% elif job.payload and job.action_type == 'upload' %}
+      {% set upload_meta = job.payload.get('upload') or {} %}
+      <div class="alert alert-info mb-2">
+        <i class="fa fa-file-arrow-up me-2"></i>
+        {{ upload_meta.get('filename') or _('Staged file') }}
+        {% if upload_meta.get('size') %}
+          · {{ (upload_meta.get('size') // 1024) }} KB
+        {% endif %}
+      </div>
+    {% endif %}
+    {% set note_text = job.payload.get('notes') if job.payload else None %}
+    {% if note_text %}
+      <p class="small mb-2"><i class="fa fa-sticky-note text-warning me-1"></i>{{ note_text }}</p>
+    {% endif %}
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <small class="text-muted">{{ _('Created %(time)s by %(user)s', time=format_ts(job.created_at), user=job.created_by.display_name if job.created_by else _('System')) }}</small>
+      <div class="d-flex gap-2">
+        {% if module_access == 'write' %}
+          <button type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  data-bs-toggle="modal"
+                  data-bs-target="#editJobModal{{ job.id }}">
+            <i class="fa fa-pen me-1"></i>{{ _('Edit') }}
+          </button>
+          <button type="button"
+                  class="btn btn-sm btn-outline-success"
+                  data-bs-toggle="modal"
+                  data-bs-target="#rescheduleJobModal{{ job.id }}">
+            <i class="fa fa-rotate me-1"></i>{{ _('Reschedule') }}
+          </button>
+          <button type="button"
+                  class="btn btn-sm btn-outline-danger"
+                  data-bs-toggle="modal"
+                  data-bs-target="#deleteJobModal{{ job.id }}">
+            <i class="fa fa-trash me-1"></i>{{ _('Delete') }}
+          </button>
+          {% if status == 'scheduled' %}
+            <form method="post" action="{{ url_for('fleet.cancel_scheduled_job', job_id=job.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-secondary"><i class="fa fa-ban me-1"></i>{{ _('Cancel') }}</button>
+            </form>
+          {% endif %}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% include "fleet/_job_modals.html" %}
+{% endfor %}

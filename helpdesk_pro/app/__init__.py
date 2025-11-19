@@ -145,6 +145,8 @@ def create_app():
     from app.backup.routes import backup_bp
     from app.tools.routes import tools_bp
     from app.task_scheduler.routes import task_scheduler_bp
+    from app.fleet.routes import fleet_bp, fleet_agent_bp
+    from app.fleet.ingest import start_fleet_ingest_server
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -162,6 +164,9 @@ def create_app():
     app.register_blueprint(backup_bp)
     app.register_blueprint(tools_bp)
     app.register_blueprint(task_scheduler_bp)
+    app.register_blueprint(fleet_bp)
+    app.register_blueprint(fleet_agent_bp)
+    csrf.exempt(fleet_agent_bp)
 
     with app.app_context():
         from app.models.module_permission import ModulePermission
@@ -176,6 +181,18 @@ def create_app():
             TaskSchedulerSlot,
             TaskSchedulerShareToken,
             TaskSchedulerAuditLog,
+        )
+        from app.models.fleet import (
+            FleetHost,
+            FleetMessage,
+            FleetLatestState,
+            FleetScreenshot,
+            FleetApiKey,
+            FleetModuleSettings,
+            FleetAlert,
+            FleetRemoteCommand,
+            FleetFileTransfer,
+            FleetAgentDownloadLink,
         )
 
         ModulePermission.__table__.create(bind=db.engine, checkfirst=True)
@@ -195,6 +212,15 @@ def create_app():
         TaskSchedulerSlot.__table__.create(bind=db.engine, checkfirst=True)
         TaskSchedulerShareToken.__table__.create(bind=db.engine, checkfirst=True)
         TaskSchedulerAuditLog.__table__.create(bind=db.engine, checkfirst=True)
+        FleetHost.__table__.create(bind=db.engine, checkfirst=True)
+        FleetMessage.__table__.create(bind=db.engine, checkfirst=True)
+        FleetScreenshot.__table__.create(bind=db.engine, checkfirst=True)
+        FleetLatestState.__table__.create(bind=db.engine, checkfirst=True)
+        FleetApiKey.__table__.create(bind=db.engine, checkfirst=True)
+        FleetModuleSettings.__table__.create(bind=db.engine, checkfirst=True)
+        FleetAlert.__table__.create(bind=db.engine, checkfirst=True)
+        FleetRemoteCommand.__table__.create(bind=db.engine, checkfirst=True)
+        FleetFileTransfer.__table__.create(bind=db.engine, checkfirst=True)
 
     from app.email2ticket import init_app as init_email2ticket
 
@@ -230,6 +256,7 @@ def create_app():
 
     # ───────── Embedded MCP server ───────── #
     init_mcp(app)
+    start_fleet_ingest_server(app)
 
     # ───────── Root route ───────── #
     @app.route("/")

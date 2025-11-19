@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+  .scheduler-hero {
+    border-radius: 1rem;
+    background: linear-gradient(120deg, rgba(248,250,252,0.95), rgba(226,232,240,0.85));
+    border: 1px solid rgba(148,163,184,0.25);
+  }
+  html[data-bs-theme="dark"] body .scheduler-hero {
+    background: linear-gradient(120deg, rgba(15,23,42,0.85), rgba(30,41,59,0.75));
+  }
+  .hero-pill {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148,163,184,0.25);
+    background: var(--bs-body-bg);
+    padding: 0.65rem 1.1rem;
+    min-width: 180px;
+  }
+  .stat-pill {
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148,163,184,0.25);
+    padding: 1rem;
+    background: var(--bs-body-bg);
+    box-shadow: 0 10px 25px -25px rgba(15,23,42,0.65);
+  }
+  .host-chip {
+    border-radius: 12px;
+    border: 1px solid rgba(148,163,184,0.35);
+    padding: 0.15rem 0.85rem;
+    font-size: 0.8rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+  .host-chip--delivered {
+    background: rgba(34,197,94,0.08);
+    border-color: rgba(34,197,94,0.3);
+    color: var(--bs-success);
+  }
+  .host-chip--pending {
+    background: rgba(251,191,36,0.15);
+    border-color: rgba(251,191,36,0.4);
+    color: var(--bs-warning);
+  }
+  .job-card {
+    border: 1px solid rgba(148,163,184,0.2);
+    border-radius: 1rem;
+    box-shadow: 0 12px 28px -28px rgba(15,23,42,0.7);
+  }
+  .job-card pre {
+    max-height: 190px;
+    overflow: auto;
+  }
+  .job-status-badge {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+</style>
+
+<div class="scheduler-hero p-4 mb-4 card border-0 shadow-sm">
+  <div class="row g-3 align-items-center">
+    <div class="col-lg-8">
+      <div class="d-flex align-items-center gap-3">
+        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width:56px;height:56px;">
+          <i class="fa fa-calendar-check"></i>
+        </div>
+        <div>
+          <h1 class="h4 mb-1">{{ _('Fleet Job Scheduler') }}</h1>
+          <p class="text-muted mb-0">{{ _('Plan PowerShell scripts or staged uploads across selected machines.') }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="d-flex flex-wrap gap-2 justify-content-lg-end">
+        <div class="hero-pill">
+          <small class="text-muted text-uppercase d-block">{{ _('Next run') }}</small>
+          <span id="heroNextRunValue">{{ next_job and format_ts(next_job.run_at) or _('—') }}</span>
+        </div>
+        <div class="hero-pill">
+          <small class="text-muted text-uppercase d-block">{{ _('Active jobs') }}</small>
+          <span id="heroActiveJobs">{{ job_counts.scheduled }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="stat-pill h-100">
+      <div>
+        <p class="text-muted text-uppercase small mb-1">{{ _('Scheduled jobs') }}</p>
+        <span class="display-6 fw-bold text-primary" id="statScheduled">{{ job_counts.scheduled }}</span>
+        <small class="text-muted">{{ _('active') }}</small>
+      </div>
+      <i class="fa fa-play text-primary"></i>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-pill h-100">
+      <div>
+        <p class="text-muted text-uppercase small mb-1">{{ _('Completed jobs') }}</p>
+        <span class="display-6 fw-bold text-success" id="statCompleted">{{ job_counts.completed }}</span>
+        <span class="text-muted">{{ _('historical') }}</span>
+      </div>
+      <i class="fa fa-check text-success"></i>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="stat-pill h-100">
+      <div>
+        <p class="text-muted text-uppercase small mb-1">{{ _('Total saved') }}</p>
+        <span class="display-6 fw-bold text-info" id="statTotal">{{ job_counts.total }}</span>
+        <span class="text-muted">{{ _('jobs defined') }}</span>
+      </div>
+      <i class="fa fa-layer-group text-info"></i>
+    </div>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="h5 mb-0">{{ _('Job timeline') }}</h2>
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#scheduleJobModal" {% if module_access != 'write' %}disabled{% endif %}>
+      <i class="fa fa-calendar-plus me-1"></i>{{ _('Schedule job') }}
+    </button>
+    <button class="btn btn-sm btn-outline-secondary" id="jobTimelineRefresh">
+      <i class="fa fa-rotate"></i> {{ _('Refresh') }}
+    </button>
+  </div>
+</div>
+
+<div id="jobTimelineContainer">
+  {% if jobs %}
+    {% include "fleet/_job_timeline.html" %}
+  {% else %}
+    <p class="text-muted mb-0">{{ _('No jobs defined yet. Use the button to schedule your first Fleet automation.') }}</p>
+  {% endif %}
+</div>
+
+{% include "fleet/_job_schedule_modal.html" %}
+{% endblock %}
+
+{% block extra_js %}
+{{ super() if super() is defined }}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const scheduleModal = document.getElementById('scheduleJobModal');
+    const commandFieldsModal = document.getElementById('commandFieldsModal');
+    const uploadFieldsModal = document.getElementById('uploadFieldsModal');
+    if (scheduleModal && commandFieldsModal && uploadFieldsModal) {
+      const toggleActionFields = () => {
+        const checked = scheduleModal.querySelector('input[name="job_action"]:checked');
+        const value = checked ? checked.value : 'command';
+        if (value === 'upload') {
+          commandFieldsModal.classList.add('d-none');
+          uploadFieldsModal.classList.remove('d-none');
+        } else {
+          uploadFieldsModal.classList.add('d-none');
+          commandFieldsModal.classList.remove('d-none');
+        }
+      };
+
+      scheduleModal.querySelectorAll('input[name="job_action"]').forEach((input) => {
+        input.addEventListener('change', toggleActionFields);
+      });
+
+      toggleActionFields();
+    }
+
+    const timelineContainer = document.getElementById('jobTimelineContainer');
+    const refreshBtn = document.getElementById('jobTimelineRefresh');
+    const heroNextRun = document.getElementById('heroNextRunValue');
+    const heroActiveJobs = document.getElementById('heroActiveJobs');
+    const statScheduled = document.getElementById('statScheduled');
+    const statCompleted = document.getElementById('statCompleted');
+    const statTotal = document.getElementById('statTotal');
+    const timelineEndpoint = "{{ url_for('fleet.job_scheduler_timeline_partial') }}";
+
+    const setRefreshButtonState = (isLoading) => {
+      if (!refreshBtn) {
+        return;
+      }
+      refreshBtn.disabled = isLoading;
+      refreshBtn.classList.toggle('opacity-50', isLoading);
+    };
+
+    const updateStatsFromPayload = (payload) => {
+      if (!payload) {
+        return;
+      }
+      const counts = payload.counts || {};
+      if (counts.scheduled !== undefined) {
+        if (heroActiveJobs) heroActiveJobs.textContent = counts.scheduled;
+        if (statScheduled) statScheduled.textContent = counts.scheduled;
+      }
+      if (counts.completed !== undefined && statCompleted) {
+        statCompleted.textContent = counts.completed;
+      }
+      if (counts.total !== undefined && statTotal) {
+        statTotal.textContent = counts.total;
+      }
+      if (payload.next_run !== undefined && heroNextRun) {
+        heroNextRun.textContent = payload.next_run || "—";
+      }
+    };
+
+    const refreshTimeline = () => {
+      if (!timelineContainer || !timelineEndpoint) {
+        return;
+      }
+      setRefreshButtonState(true);
+      fetch(`${timelineEndpoint}?t=${Date.now()}`, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      })
+        .then((resp) => {
+          if (!resp.ok) {
+            throw new Error(`Failed with status ${resp.status}`);
+          }
+          return resp.json();
+        })
+        .then((data) => {
+          if (data.html) {
+            timelineContainer.innerHTML = data.html;
+          }
+          updateStatsFromPayload(data);
+        })
+        .catch((err) => {
+          console.error('Unable to refresh Fleet jobs timeline', err);
+        })
+        .finally(() => setRefreshButtonState(false));
+    };
+
+    if (refreshBtn) {
+      refreshBtn.addEventListener('click', function(event) {
+        event.preventDefault();
+        refreshTimeline();
+      });
+    }
+
+    if (timelineContainer) {
+      setInterval(refreshTimeline, 15000);
+    }
+  });
+</script>
+{% endblock %}

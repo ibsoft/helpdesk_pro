@@ -54,6 +54,10 @@ services:
     volumes:
       - app_instance:/app/instance
       - app_logs:/app/logs
+    ports:
+      - "5000:5000"
+      - "8081:8081"
+      - "8449:8449"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:5000/ || exit 1"]
       interval: 10s

@@ -76,6 +76,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
             },
             {
+                "key": "manage_fleet",
+                "label": _("Fleet Radar"),
+                "icon": "fa fa-laptop-medical text-danger",
+                "endpoint": "fleet.settings",
+                "roles": ["admin"],
+            },
+            {
                 "key": "manage_email_ingest",
                 "label": _("Email to Ticket"),
                 "icon": "fa fa-envelope-open-text text-success",
@@ -88,7 +95,7 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "icon": "fa fa-gears text-info",
                 "endpoint": "manage.configuration",
                 "roles": ["admin"],
-            }
+            },
         ],
     },
     {
@@ -170,6 +177,20 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "icon": "fa fa-database text-primary",
                 "roles": ["admin", "manager", "technician"],
                 "endpoint": "backup.monitor",
+            },
+            {
+                "key": "fleet_monitoring",
+                "label": _("Network Fleet Radar"),
+                "icon": "fa fa-laptop-medical text-danger",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "fleet.dashboard",
+            },
+            {
+                "key": "fleet_job_scheduler",
+                "label": _("Fleet Job Scheduler"),
+                "icon": "fa fa-calendar-days text-warning",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "fleet.job_scheduler",
             },
             {
                 "key": "lto_barcode_generator",
