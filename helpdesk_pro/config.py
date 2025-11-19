@@ -86,7 +86,7 @@ class Config:
     MCP_KEEP_ALIVE_SECONDS = int(os.getenv('MCP_KEEP_ALIVE', 5))
     MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {
         '1', 'true', 'yes'}
-    APP_VERSION = os.getenv('APP_VERSION', '3.0.0')
+    APP_VERSION = os.getenv('APP_VERSION', '3.0.3')
     FLEET_INGEST_ENABLED = os.getenv('FLEET_INGEST_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
     FLEET_INGEST_HOST = os.getenv('FLEET_INGEST_HOST', '0.0.0.0')
     FLEET_INGEST_PORT = int(os.getenv('FLEET_INGEST_PORT', 8449))
