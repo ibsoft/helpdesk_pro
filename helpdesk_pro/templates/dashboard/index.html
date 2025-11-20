@@ -45,6 +45,53 @@
   html[data-bs-theme="dark"] body h3 {
     color: #eaeaea;
   }
+
+  .technician-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .timeline-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+  }
+  .timeline-row .timeline-name {
+    width: 120px;
+    text-transform: lowercase;
+    color: #374151;
+    font-weight: 500;
+  }
+  html[data-bs-theme="dark"] .timeline-row .timeline-name {
+    color: #e5e7eb;
+  }
+  .timeline-row .timeline-bar {
+    flex: 1;
+    background: rgba(148, 163, 184, 0.35);
+    border-radius: 999px;
+    overflow: hidden;
+    height: 10px;
+    position: relative;
+  }
+  .timeline-row .timeline-segment {
+    height: 100%;
+    display: inline-block;
+  }
+  .timeline-segment.open {
+    background: linear-gradient(90deg, rgba(13,110,253,0.9), rgba(59,130,246,0.7));
+  }
+  .timeline-segment.progress {
+    background: linear-gradient(90deg, rgba(251,191,36,0.9), rgba(251,146,60,0.7));
+  }
+  .timeline-row .timeline-count {
+    width: 32px;
+    text-align: right;
+    font-weight: 600;
+  }
+  html[data-bs-theme="dark"] .timeline-row .timeline-bar {
+    background: rgba(255,255,255,0.08);
+  }
 </style>
 
 <h3 class="mb-4"><i class="fa fa-chart-line"></i> {{ _('Dashboard Overview') }}</h3>
@@ -96,98 +143,153 @@
 </div>
 
 <div class="row g-3 mb-3">
-  <div class="col-md-6">
+  <div class="col-lg-4 col-md-6">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-calendar-day"></i> {{ _('Daily Tickets') }}</div>
       <div class="card-body"><canvas id="dailyChart" height="180"></canvas></div>
     </div>
   </div>
-  <div class="col-md-6">
+  <div class="col-lg-4 col-md-6">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-calendar-week"></i> {{ _('Weekly Tickets') }}</div>
       <div class="card-body"><canvas id="weeklyChart" height="180"></canvas></div>
     </div>
   </div>
+  <div class="col-lg-4 col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-calendar"></i> {{ _('Monthly Tickets') }}</div>
+      <div class="card-body"><canvas id="monthlyVolumeChart" height="180"></canvas></div>
+    </div>
+  </div>
 </div>
 
+{% set metrics_col = 'col-lg-4 col-md-6' if knowledge_enabled else 'col-md-6' %}
 <div class="row g-3 mt-2">
-  <div class="col-md-6">
+  <div class="{{ metrics_col }}">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-calendar-alt"></i> {{ _('Monthly Resolution Rate') }} %</div>
       <div class="card-body"><canvas id="monthlyChart" height="180"></canvas></div>
     </div>
   </div>
-  <div class="col-md-6">
+  <div class="{{ metrics_col }}">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-chart-bar"></i> {{ _('Yearly Tickets Closed') }}</div>
       <div class="card-body"><canvas id="yearlyChart" height="180"></canvas></div>
     </div>
   </div>
+  {% if knowledge_enabled %}
+    <div class="{{ metrics_col }}">
+      <div class="card shadow-sm">
+        <div class="card-header"><i class="fa fa-lightbulb"></i> {{ _('Knowledge Base Articles Published') }}</div>
+        <div class="card-body"><canvas id="knowledgeChart" height="180"></canvas></div>
+      </div>
+    </div>
+  {% endif %}
 </div>
 
-{% if inventory_enabled %}
+{% if inventory_enabled and current_user.role != "admin" %}
 <div class="row g-3 mt-3">
-  <div class="col-md-6">
+  <div class="col-12">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-microchip"></i> {{ _('Hardware Assignment') }}</div>
-      <div class="card-body"><canvas id="hardwareChart" height="200"></canvas></div>
-    </div>
-  </div>
-  <div class="col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-code"></i> {{ _('Software Assignment') }}</div>
-      <div class="card-body"><canvas id="softwareChart" height="200"></canvas></div>
+      <div class="card-header"><i class="fa fa-boxes-stacked"></i> {{ _('Asset Allocation') }}</div>
+      <div class="card-body"><canvas id="assetChart" height="200"></canvas></div>
     </div>
   </div>
 </div>
 {% endif %}
-
-{% if knowledge_enabled or networks_enabled %}
-  {% set col_class = 'col-lg-6 col-12' if knowledge_enabled and networks_enabled else 'col-12' %}
+{% if show_admin_metrics %}
+<div class="row g-3 mt-3">
+  <div class="col-lg-4 col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-boxes-stacked"></i> {{ _('Asset Allocation (Admin)') }}</div>
+      <div class="card-body"><canvas id="adminAssetChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-file-invoice-dollar"></i> {{ _('Contracts Cost Summary') }}</div>
+      <div class="card-body"><canvas id="contractCostChart" height="200"></canvas></div>
+    </div>
+  </div>
+  <div class="col-lg-4 col-md-12">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-network-wired"></i> {{ _('Network Utilisation (Top 8)') }}</div>
+      <div class="card-body"><canvas id="adminNetworkChart" height="220"></canvas></div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% if networks_enabled and current_user.role != "admin" %}
   <div class="row g-3 mt-3">
-    {% if knowledge_enabled %}
-      <div class="{{ col_class }}">
-        <div class="card shadow-sm">
-          <div class="card-header"><i class="fa fa-lightbulb"></i> {{ _('Knowledge Base Articles Published') }}</div>
-          <div class="card-body"><canvas id="knowledgeChart" height="220"></canvas></div>
-        </div>
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header"><i class="fa fa-network-wired"></i> {{ _('Network Utilisation (Top 8)') }}</div>
+        <div class="card-body"><canvas id="networkChart" height="220"></canvas></div>
       </div>
-    {% endif %}
-    {% if networks_enabled %}
-      <div class="{{ col_class }}">
-        <div class="card shadow-sm">
-          <div class="card-header"><i class="fa fa-network-wired"></i> {{ _('Network Utilisation (Top 8)') }}</div>
-          <div class="card-body"><canvas id="networkChart" height="220"></canvas></div>
-        </div>
-      </div>
-    {% endif %}
+    </div>
   </div>
 {% endif %}
 
 {% if dept_summary %}
 <hr class="my-4">
-<h5><i class="fa fa-users-cog"></i> {{ _('Department Workload Summary') }}</h5>
-<div class="table-responsive">
-  <table class="table table-striped table-hover align-middle mt-2">
-    <thead class="table-dark">
-      <tr>
-        <th>{{ _('Technician') }}</th>
-        <th>{{ _('Open') }}</th>
-        <th>{{ _('In Progress') }}</th>
-        <th>{{ _('Closed') }}</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in dept_summary %}
-        <tr>
-          <td><i class="fa fa-user text-primary"></i> {{ row.username }}</td>
-          <td><span class="badge bg-success">{{ row.open }}</span></td>
-          <td><span class="badge bg-warning text-dark">{{ row.in_progress }}</span></td>
-          <td><span class="badge bg-secondary">{{ row.closed }}</span></td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="row g-3 align-items-stretch">
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header"><i class="fa fa-stream"></i> {{ _('Technician Load Timeline') }}</div>
+      <div class="card-body">
+        {% if timeline_rows %}
+          {% set base_load = timeline_max_load if timeline_max_load > 0 else 1 %}
+          <div class="technician-timeline">
+            {% for row in timeline_rows %}
+              {% set open_pct = (row.open / base_load * 100) if base_load else 0 %}
+              {% set progress_pct = (row.in_progress / base_load * 100) if base_load else 0 %}
+              <div class="timeline-row">
+                <span class="timeline-name">{{ row.username }}</span>
+                <div class="timeline-bar">
+                  <span class="timeline-segment open" style="width: {{ open_pct }}%"></span>
+                  <span class="timeline-segment progress" style="width: {{ progress_pct }}%"></span>
+                </div>
+                <span class="timeline-count">{{ row.total }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No active workloads to display.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row g-3 mt-3">
+  <div class="col-12">
+    <div class="card shadow-sm">
+      <div class="card-header"><i class="fa fa-users-cog"></i> {{ _('Department Workload Summary') }}</div>
+      <div class="card-body">
+        <div class="table-responsive mb-0">
+          <table class="table table-striped table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th>{{ _('Technician') }}</th>
+                <th>{{ _('Open') }}</th>
+                <th>{{ _('In Progress') }}</th>
+                <th>{{ _('Closed') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in dept_summary %}
+                <tr>
+                  <td><i class="fa fa-user text-primary"></i> {{ row.username }}</td>
+                  <td><span class="badge bg-success">{{ row.open }}</span></td>
+                  <td><span class="badge bg-warning text-dark">{{ row.in_progress }}</span></td>
+                  <td><span class="badge bg-secondary">{{ row.closed }}</span></td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}
 
@@ -208,9 +310,16 @@ const knowledgeLabels = {{ knowledge_labels|tojson }};
 const knowledgeCounts = {{ knowledge_counts|tojson }};
 const hardwareStats = {{ hardware_stats|tojson }};
 const softwareStats = {{ software_stats|tojson }};
+const assetLabels = {{ asset_labels|tojson }};
+const assetAssigned = {{ asset_assigned|tojson }};
+const assetAvailable = {{ asset_available|tojson }};
 const networkLabels = {{ network_labels|tojson }};
 const networkUsed = {{ network_used|tojson }};
 const networkAvailable = {{ network_available|tojson }};
+const contractLabels = {{ contract_labels|tojson }};
+const contractValues = {{ contract_values|tojson }};
+const monthlyVolumeCreated = {{ monthly_created_series|tojson }};
+const monthlyVolumeClosed = {{ monthly_closed_series|tojson }};
 
 function getThemeColors() {
   const dark = document.body.getAttribute('data-bs-theme') === 'dark';
@@ -311,6 +420,9 @@ function renderCharts() {
   const weeklyCtx = document.getElementById('weeklyChart');
   if (weeklyCtx) charts.push(dualLine(weeklyCtx, weeklyLabels, weeklyCreated, weeklyClosed, 'Created', 'Closed'));
 
+  const monthlyVolumeCtx = document.getElementById('monthlyVolumeChart');
+  if (monthlyVolumeCtx) charts.push(dualLine(monthlyVolumeCtx, monthlyLabels, monthlyVolumeCreated, monthlyVolumeClosed, 'Created', 'Closed'));
+
   const monthlyCtx = document.getElementById('monthlyChart');
   if (monthlyCtx) charts.push(barChart(monthlyCtx, monthlyLabels, monthlyRate, 'Resolution Rate %', 'rgba(13,110,253,0.6)'));
 
@@ -333,20 +445,50 @@ function renderCharts() {
     }));
   }
 
-  const hardwareCtx = document.getElementById('hardwareChart');
-  if (hardwareCtx && (hardwareStats.assigned || hardwareStats.available)) {
-    charts.push(doughnutChart(hardwareCtx, ['Assigned', 'Available'], [hardwareStats.assigned, hardwareStats.available]));
+  const assetCtx = document.getElementById('assetChart');
+  if (assetCtx && assetLabels.length) {
+    charts.push(stackedBarChart(assetCtx, assetLabels, assetAssigned, assetAvailable));
   }
 
-  const softwareCtx = document.getElementById('softwareChart');
-  if (softwareCtx && (softwareStats.assigned || softwareStats.available)) {
-    charts.push(doughnutChart(softwareCtx, ['Assigned', 'Available'], [softwareStats.assigned, softwareStats.available]));
+  const adminAssetCtx = document.getElementById('adminAssetChart');
+  if (adminAssetCtx && assetLabels.length) {
+    charts.push(stackedBarChart(adminAssetCtx, assetLabels, assetAssigned, assetAvailable));
   }
 
   const networkCtx = document.getElementById('networkChart');
   if (networkCtx && networkLabels.length) {
     charts.push(stackedBarChart(networkCtx, networkLabels, networkUsed, networkAvailable));
   }
+  const adminNetworkCtx = document.getElementById('adminNetworkChart');
+  if (adminNetworkCtx && networkLabels.length) {
+    charts.push(stackedBarChart(adminNetworkCtx, networkLabels, networkUsed, networkAvailable));
+  }
+
+  const contractCtx = document.getElementById('contractCostChart');
+  if (contractCtx && contractLabels.length) {
+    const c = getThemeColors();
+    charts.push(new Chart(contractCtx, {
+      type: 'bar',
+      data: {
+        labels: contractLabels,
+        datasets: [{
+          label: '{{ _("Total Value") }}',
+          data: contractValues,
+          backgroundColor: 'rgba(99,102,241,0.7)',
+          borderColor: '#6366f1',
+          borderWidth: 1.5
+        }]
+      },
+      options: {
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { ticks: { color: c.text }, grid: { color: c.grid } },
+          y: { beginAtZero: true, ticks: { color: c.text }, grid: { color: c.grid } }
+        }
+      }
+    }));
+  }
+
 }
 
 renderCharts();
