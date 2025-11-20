@@ -211,20 +211,20 @@
       <div class="card-body"><canvas id="contractCostChart" height="200"></canvas></div>
     </div>
   </div>
-  <div class="col-lg-4 col-md-12">
+  <div class="col-lg-4 col-md-6">
     <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-network-wired"></i> {{ _('Network Utilisation (Top 8)') }}</div>
-      <div class="card-body"><canvas id="adminNetworkChart" height="220"></canvas></div>
+      <div class="card-header"><i class="fa fa-chart-bar"></i> {{ _('Annual Contract Spend') }}</div>
+      <div class="card-body"><canvas id="contractYearlyChartAdmin" height="200"></canvas></div>
     </div>
   </div>
 </div>
 {% endif %}
-{% if networks_enabled and current_user.role != "admin" %}
+{% if contract_year_labels and contract_year_labels|length and not show_admin_metrics %}
   <div class="row g-3 mt-3">
-    <div class="col-12">
+    <div class="col-lg-4 col-md-6">
       <div class="card shadow-sm">
-        <div class="card-header"><i class="fa fa-network-wired"></i> {{ _('Network Utilisation (Top 8)') }}</div>
-        <div class="card-body"><canvas id="networkChart" height="220"></canvas></div>
+        <div class="card-header"><i class="fa fa-chart-bar"></i> {{ _('Annual Contract Spend') }}</div>
+        <div class="card-body"><canvas id="contractYearlyChart" height="200"></canvas></div>
       </div>
     </div>
   </div>
@@ -232,35 +232,7 @@
 
 {% if dept_summary %}
 <hr class="my-4">
-<div class="row g-3 align-items-stretch">
-  <div class="col-12">
-    <div class="card shadow-sm h-100">
-      <div class="card-header"><i class="fa fa-stream"></i> {{ _('Technician Load Timeline') }}</div>
-      <div class="card-body">
-        {% if timeline_rows %}
-          {% set base_load = timeline_max_load if timeline_max_load > 0 else 1 %}
-          <div class="technician-timeline">
-            {% for row in timeline_rows %}
-              {% set open_pct = (row.open / base_load * 100) if base_load else 0 %}
-              {% set progress_pct = (row.in_progress / base_load * 100) if base_load else 0 %}
-              <div class="timeline-row">
-                <span class="timeline-name">{{ row.username }}</span>
-                <div class="timeline-bar">
-                  <span class="timeline-segment open" style="width: {{ open_pct }}%"></span>
-                  <span class="timeline-segment progress" style="width: {{ progress_pct }}%"></span>
-                </div>
-                <span class="timeline-count">{{ row.total }}</span>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <p class="text-muted mb-0">{{ _('No active workloads to display.') }}</p>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
-<div class="row g-3 mt-3">
+<div class="row g-3">
   <div class="col-12">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-users-cog"></i> {{ _('Department Workload Summary') }}</div>
@@ -291,6 +263,34 @@
     </div>
   </div>
 </div>
+<div class="row g-3 mt-3">
+  <div class="col-12">
+    <div class="card shadow-sm h-100">
+      <div class="card-header"><i class="fa fa-stream"></i> {{ _('Technician Load Timeline') }}</div>
+      <div class="card-body">
+        {% if timeline_rows %}
+          {% set base_load = timeline_max_load if timeline_max_load > 0 else 1 %}
+          <div class="technician-timeline">
+            {% for row in timeline_rows %}
+              {% set open_pct = (row.open / base_load * 100) if base_load else 0 %}
+              {% set progress_pct = (row.in_progress / base_load * 100) if base_load else 0 %}
+              <div class="timeline-row">
+                <span class="timeline-name">{{ row.username }}</span>
+                <div class="timeline-bar">
+                  <span class="timeline-segment open" style="width: {{ open_pct }}%"></span>
+                  <span class="timeline-segment progress" style="width: {{ progress_pct }}%"></span>
+                </div>
+                <span class="timeline-count">{{ row.total }}</span>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No active workloads to display.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
 {% endif %}
 
 
@@ -313,11 +313,13 @@ const softwareStats = {{ software_stats|tojson }};
 const assetLabels = {{ asset_labels|tojson }};
 const assetAssigned = {{ asset_assigned|tojson }};
 const assetAvailable = {{ asset_available|tojson }};
-const networkLabels = {{ network_labels|tojson }};
-const networkUsed = {{ network_used|tojson }};
-const networkAvailable = {{ network_available|tojson }};
 const contractLabels = {{ contract_labels|tojson }};
 const contractValues = {{ contract_values|tojson }};
+const contractYearLabels = {{ contract_year_labels|tojson }};
+const contractYearHardware = {{ contract_year_hardware|tojson }};
+const contractYearSoftware = {{ contract_year_software|tojson }};
+const contractYearServices = {{ contract_year_services|tojson }};
+const contractYearOther = {{ contract_year_other|tojson }};
 const monthlyVolumeCreated = {{ monthly_created_series|tojson }};
 const monthlyVolumeClosed = {{ monthly_closed_series|tojson }};
 
@@ -408,6 +410,29 @@ function stackedBarChart(ctx, labels, used, available) {
   });
 }
 
+function stackedContractsChart(ctx, labels, hardware, software, services, other) {
+  const c = getThemeColors();
+  return new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: '{{ _("Hardware") }}', data: hardware, backgroundColor: 'rgba(13,110,253,0.8)' },
+        { label: '{{ _("Software") }}', data: software, backgroundColor: 'rgba(59,130,246,0.8)' },
+        { label: '{{ _("Services") }}', data: services, backgroundColor: 'rgba(251,191,36,0.85)' },
+        { label: '{{ _("Other") }}', data: other, backgroundColor: 'rgba(107,114,128,0.7)' },
+      ]
+    },
+    options: {
+      plugins: { legend: { position: 'bottom', labels: { color: c.text } } },
+      scales: {
+        x: { stacked: true, ticks: { color: c.text }, grid: { color: c.grid } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: c.text }, grid: { color: c.grid } }
+      }
+    }
+  });
+}
+
 let charts = [];
 
 function renderCharts() {
@@ -455,15 +480,6 @@ function renderCharts() {
     charts.push(stackedBarChart(adminAssetCtx, assetLabels, assetAssigned, assetAvailable));
   }
 
-  const networkCtx = document.getElementById('networkChart');
-  if (networkCtx && networkLabels.length) {
-    charts.push(stackedBarChart(networkCtx, networkLabels, networkUsed, networkAvailable));
-  }
-  const adminNetworkCtx = document.getElementById('adminNetworkChart');
-  if (adminNetworkCtx && networkLabels.length) {
-    charts.push(stackedBarChart(adminNetworkCtx, networkLabels, networkUsed, networkAvailable));
-  }
-
   const contractCtx = document.getElementById('contractCostChart');
   if (contractCtx && contractLabels.length) {
     const c = getThemeColors();
@@ -487,6 +503,16 @@ function renderCharts() {
         }
       }
     }));
+  }
+
+  const contractYearCtx = document.getElementById('contractYearlyChart');
+  if (contractYearCtx && contractYearLabels.length) {
+    charts.push(stackedContractsChart(contractYearCtx, contractYearLabels, contractYearHardware, contractYearSoftware, contractYearServices, contractYearOther));
+  }
+
+  const contractYearAdminCtx = document.getElementById('contractYearlyChartAdmin');
+  if (contractYearAdminCtx && contractYearLabels.length) {
+    charts.push(stackedContractsChart(contractYearAdminCtx, contractYearLabels, contractYearHardware, contractYearSoftware, contractYearServices, contractYearOther));
   }
 
 }

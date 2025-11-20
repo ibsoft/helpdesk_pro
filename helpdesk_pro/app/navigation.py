@@ -83,6 +83,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
             },
             {
+                "key": "manage_ticket_archives",
+                "label": _("Ticket Archives"),
+                "icon": "fa fa-archive text-secondary",
+                "endpoint": "manage.ticket_archives",
+                "roles": ["admin"],
+            },
+            {
                 "key": "manage_email_ingest",
                 "label": _("Email to Ticket"),
                 "icon": "fa fa-envelope-open-text text-success",

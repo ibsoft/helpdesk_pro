@@ -1,5 +1,5 @@
 from .user import User
-from .ticket import Ticket, TicketComment, Attachment, AuditLog
+from .ticket import Ticket, TicketComment, Attachment, AuditLog, TicketArchive
 from .inventory import SoftwareAsset, HardwareAsset
 from .contracts import Contract
 from .address_book import AddressBookEntry

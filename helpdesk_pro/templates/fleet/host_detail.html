@@ -589,6 +589,10 @@
     const hostStatusUrl = (systemHealthBody && systemHealthBody.dataset.statusUrl) || (hostStatusBadge && hostStatusBadge.dataset.statusUrl) || null;
     const hostStatusRefreshInterval = 15000;
     let hostStatusTimer = null;
+    const messagePurgeForm = document.getElementById('messagePurgeForm');
+    const telemetryAlertRegion = document.getElementById('telemetryAlertRegion');
+    const telemetryPurgeSuccess = {{ _('Telemetry purge completed.') | tojson }};
+    const telemetryPurgeError = {{ _('Unable to purge telemetry messages.') | tojson }};
 
     function parseDataJson(value) {
       if (!value) return '';
@@ -643,6 +647,28 @@
       wrapper.appendChild(copy);
       wrapper.appendChild(closeBtn);
       region.appendChild(wrapper);
+    }
+
+    function clearTelemetryAlert() {
+      if (telemetryAlertRegion) {
+        telemetryAlertRegion.innerHTML = '';
+      }
+    }
+
+    function showTelemetryAlert(message, tone = 'info') {
+      if (!telemetryAlertRegion || !message) return;
+      clearTelemetryAlert();
+      const wrapper = document.createElement('div');
+      wrapper.className = `alert alert-${tone} alert-dismissible fade show mb-0`;
+      wrapper.setAttribute('role', 'alert');
+      wrapper.textContent = message;
+      const closeBtn = document.createElement('button');
+      closeBtn.type = 'button';
+      closeBtn.className = 'btn-close';
+      closeBtn.setAttribute('data-bs-dismiss', 'alert');
+      closeBtn.setAttribute('aria-label', '{{ _("Close") }}');
+      wrapper.appendChild(closeBtn);
+      telemetryAlertRegion.appendChild(wrapper);
     }
 
     function setRemoteLoading(isLoading) {
@@ -899,6 +925,35 @@
         });
       });
     };
+
+    if (messagePurgeForm) {
+      messagePurgeForm.addEventListener('submit', (evt) => {
+        evt.preventDefault();
+        clearTelemetryAlert();
+        const submitBtn = messagePurgeForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.disabled = true;
+        const formData = new FormData(messagePurgeForm);
+        fetch(messagePurgeForm.action, {
+          method: 'POST',
+          headers: {'X-Requested-With': 'XMLHttpRequest'},
+          body: formData,
+        })
+          .then(async (resp) => {
+            const data = await resp.json().catch(() => ({}));
+            if (!resp.ok || data.success === false) {
+              throw new Error(data.message || telemetryPurgeError);
+            }
+            showTelemetryAlert(data.message || telemetryPurgeSuccess, 'success');
+            fetchMessages(window.location.href, {keepPage: false});
+          })
+          .catch((err) => {
+            showTelemetryAlert(err.message || telemetryPurgeError, 'danger');
+          })
+          .finally(() => {
+            if (submitBtn) submitBtn.disabled = false;
+          });
+      });
+    }
 
     bindRemotePanelEvents();
     bindPayloadHandlers();

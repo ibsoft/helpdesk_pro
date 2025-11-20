@@ -228,6 +228,7 @@
               <thead>
                 <tr>
                   <th>{{ _('Name') }}</th>
+                  <th>{{ _('Key') }}</th>
                   <th>{{ _('Status') }}</th>
                   <th>{{ _('Expires') }}</th>
                   <th></th>
@@ -237,6 +238,13 @@
                 {% for key in api_keys %}
                   <tr>
                     <td>{{ key.name }}</td>
+                    <td>
+                      {% if key.masked_hint %}
+                        <code>{{ key.masked_hint }}</code>
+                      {% else %}
+                        <span class="text-muted">—</span>
+                      {% endif %}
+                    </td>
                     <td>
                       <span class="badge {{ 'bg-success-subtle text-success-emphasis' if key.active else 'bg-secondary-subtle text-secondary-emphasis' }}">{{ _('Active') if key.active else _('Disabled') }}</span>
                     </td>
@@ -268,7 +276,8 @@
     <div class="card shadow-sm h-100">
       <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h2 class="h5 mb-0"><i class="fa fa-cloud-arrow-down text-primary me-2"></i>{{ _('Telemetry Agent Installer') }}</h2>
-        <small class="text-muted">{{ _('Upload the latest Telemetry_Agent.msi and share download links with clients.') }}</small>
+        <small class="text-muted d-block">{{ _('Upload the latest Telemetry_Agent.msi and share download links with clients.') }}</small>
+        <small class="text-muted">{{ _('Download the official agent from') }} <a href="https://github.com/ibsoft/WinTelemetryAgent.git" target="_blank" rel="noopener">WinTelemetryAgent</a>.</small>
       </div>
       <div class="card-body">
         {% if agent_installer_info %}

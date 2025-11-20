@@ -19,6 +19,7 @@ MODULE_ACCESS_DEFINITIONS = {
     "task_scheduler": {"label": "Task Scheduler"},
     "fleet_monitoring": {"label": "Fleet Monitoring"},
     "fleet_job_scheduler": {"label": "Fleet Job Scheduler"},
+    "ticket_archives": {"label": "Ticket Archives"},
 }
 
 MODULE_ACCESS_LEVELS = ("read", "write")

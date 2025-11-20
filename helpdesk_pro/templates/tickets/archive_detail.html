@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <div>
+    <h4 class="mb-0"><i class="fa fa-box-archive me-2"></i>{{ _('Archived Ticket #%(id)s', id=archive.ticket_id) }}</h4>
+    <small class="text-muted">{{ _('Archived at %(time)s', time=archive.archived_at.strftime('%Y-%m-%d %H:%M') if archive.archived_at else _('Unknown')) }}</small>
+  </div>
+  <a class="btn btn-outline-secondary" href="{{ url_for('tickets.list_ticket_archives') }}"><i class="fa fa-arrow-left me-1"></i>{{ _('Back') }}</a>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">{{ _('Subject') }}</dt>
+      <dd class="col-sm-9">{{ archive.subject }}</dd>
+      <dt class="col-sm-3">{{ _('Description') }}</dt>
+      <dd class="col-sm-9"><pre class="bg-light p-3 rounded">{{ archive.description }}</pre></dd>
+      <dt class="col-sm-3">{{ _('Priority') }}</dt>
+      <dd class="col-sm-3">{{ archive.priority or _('—') }}</dd>
+      <dt class="col-sm-3">{{ _('Status') }}</dt>
+      <dd class="col-sm-3">{{ archive.status or _('—') }}</dd>
+      <dt class="col-sm-3">{{ _('Department') }}</dt>
+      <dd class="col-sm-3">{{ archive.department or _('—') }}</dd>
+      <dt class="col-sm-3">{{ _('Created At') }}</dt>
+      <dd class="col-sm-3">{{ archive.created_at.strftime('%Y-%m-%d %H:%M') if archive.created_at else '—' }}</dd>
+      <dt class="col-sm-3">{{ _('Closed At') }}</dt>
+      <dd class="col-sm-3">{{ archive.closed_at.strftime('%Y-%m-%d %H:%M') if archive.closed_at else '—' }}</dd>
+    </dl>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h2 class="h6 mb-0"><i class="fa fa-comments me-1"></i>{{ _('Comments') }}</h2>
+      </div>
+      <div class="card-body">
+        {% if archive.comments %}
+          <div class="list-group list-group-flush">
+            {% for comment in archive.comments %}
+              <div class="list-group-item">
+                <div class="d-flex justify-content-between align-items-center">
+                  <strong>{{ comment.user or _('Anonymous') }}</strong>
+                  <small class="text-muted">{{ comment.created_at or '' }}</small>
+                </div>
+                <p class="mb-0 small">{{ comment.comment }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No comments stored for this ticket.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header bg-white">
+        <h2 class="h6 mb-0"><i class="fa fa-paperclip me-1"></i>{{ _('Attachments') }}</h2>
+      </div>
+      <div class="card-body">
+        {% if archive.attachments %}
+          <ul class="list-unstyled mb-0">
+            {% for attachment in archive.attachments %}
+              <li class="mb-2">
+                <i class="fa fa-file text-primary me-1"></i>{{ attachment.filename }}
+                <div class="small text-muted">{{ attachment.filepath }}</div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-muted mb-0">{{ _('No attachments were stored for this ticket.') }}</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mt-3">
+  <div class="card-header bg-white">
+    <h2 class="h6 mb-0"><i class="fa fa-clock-rotate-left me-1"></i>{{ _('Audit Trail') }}</h2>
+  </div>
+  <div class="card-body">
+    {% if archive.logs %}
+      <ul class="list-unstyled mb-0">
+        {% for log in archive.logs %}
+          <li class="mb-2">
+            <strong>{{ log.timestamp or '' }}</strong> — {{ log.username or _('System') }} → {{ log.action }}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="text-muted mb-0">{{ _('No audit trail entries were captured.') }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

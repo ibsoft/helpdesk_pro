@@ -1,142 +1,59 @@
-2025-11-18 08:18:54,012 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-18 08:18:54,013 [INFO] app: MCP server thread exited.
-2025-11-18 08:18:56,257 [INFO] app: Helpdesk Pro started
-2025-11-18 08:18:56,273 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 08:18:58,201 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 08:18:58,249 [INFO] uvicorn.error: Started server process [3437227]
-2025-11-18 08:18:58,249 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-18 08:18:58,250 [INFO] uvicorn.error: Application startup complete.
-2025-11-18 08:18:58,250 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-18 08:20:46,810 [INFO] helpdesk_pro.mcp: tool=list_tables elapsed_ms=137
-2025-11-18 08:20:48,812 [WARNING] helpdesk_pro.mcp: ToolExecutionError: Invalid arguments: 1 validation error for TableFetchArgs
-columns
-  Value error, Invalid column identifier: * [type=value_error, input_value=['*'], input_type=list]
-    For further information visit https://errors.pydantic.dev/2.8/v/value_error
-2025-11-18 08:20:50,170 [INFO] helpdesk_pro.mcp: tool=table_fetch elapsed_ms=323
-2025-11-18 08:21:20,844 [INFO] uvicorn.error: Shutting down
-2025-11-18 08:21:20,945 [INFO] uvicorn.error: Finished server process [3437227]
-2025-11-18 08:21:20,948 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-18 08:21:20,949 [INFO] app: MCP server thread exited.
-2025-11-18 08:21:23,345 [INFO] app: Helpdesk Pro started
-2025-11-18 08:21:23,360 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 08:21:23,609 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 08:21:23,668 [INFO] uvicorn.error: Started server process [3438893]
-2025-11-18 08:21:23,668 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-18 08:21:23,669 [INFO] uvicorn.error: Application startup complete.
-2025-11-18 08:21:23,671 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-18 08:22:05,804 [INFO] helpdesk_pro.mcp: tool=list_tables elapsed_ms=96
-2025-11-18 08:22:07,808 [INFO] helpdesk_pro.mcp: tool=table_fetch elapsed_ms=403
-2025-11-18 08:22:22,621 [WARNING] helpdesk_pro.mcp: ToolExecutionError: Invalid filter column: status
-2025-11-18 08:22:23,827 [INFO] helpdesk_pro.mcp: tool=describe_table elapsed_ms=73
-2025-11-18 08:22:26,163 [INFO] helpdesk_pro.mcp: tool=table_fetch elapsed_ms=549
-2025-11-18 08:23:53,978 [WARNING] helpdesk_pro.mcp: ToolExecutionError: Invalid filter column: status
-2025-11-18 08:23:55,094 [INFO] helpdesk_pro.mcp: tool=describe_table elapsed_ms=81
-2025-11-18 08:23:57,169 [INFO] helpdesk_pro.mcp: tool=table_fetch elapsed_ms=343
-2025-11-18 08:33:34,841 [INFO] uvicorn.error: Shutting down
-2025-11-18 08:33:34,942 [INFO] uvicorn.error: Finished server process [3438893]
-2025-11-18 08:33:34,944 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-18 08:33:34,945 [INFO] app: MCP server thread exited.
-2025-11-18 08:33:36,983 [INFO] app: Helpdesk Pro started
-2025-11-18 08:33:36,994 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 08:33:39,060 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 08:33:39,104 [INFO] uvicorn.error: Started server process [3446908]
-2025-11-18 08:33:39,104 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-18 08:33:39,104 [INFO] uvicorn.error: Application startup complete.
-2025-11-18 08:33:39,105 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-18 13:03:37,800 [INFO] helpdesk_pro.mcp: tool=table_fetch elapsed_ms=336
-2025-11-18 13:05:26,112 [WARNING] helpdesk_pro.mcp: ToolExecutionError: Unknown order column: created_at
-2025-11-18 13:05:28,739 [INFO] helpdesk_pro.mcp: tool=describe_table elapsed_ms=118
-2025-11-18 13:05:30,652 [INFO] helpdesk_pro.mcp: tool=table_fetch elapsed_ms=285
-2025-11-18 14:03:30,562 [INFO] uvicorn.error: Shutting down
-2025-11-18 14:03:30,662 [INFO] uvicorn.error: Finished server process [3446908]
-2025-11-18 14:03:30,665 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-18 14:03:30,665 [INFO] app: MCP server thread exited.
-2025-11-18 14:03:33,132 [INFO] app: Helpdesk Pro started
-2025-11-18 14:03:33,145 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 14:03:34,581 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 14:03:34,638 [INFO] uvicorn.error: Started server process [3650373]
-2025-11-18 14:03:34,638 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-18 14:03:34,638 [INFO] uvicorn.error: Application startup complete.
-2025-11-18 14:03:34,639 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-18 14:03:52,786 [INFO] uvicorn.error: Shutting down
-2025-11-18 14:03:52,886 [INFO] uvicorn.error: Finished server process [3650373]
-2025-11-18 14:03:52,889 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-18 14:03:52,890 [INFO] app: MCP server thread exited.
-2025-11-18 14:03:54,972 [INFO] app: Helpdesk Pro started
-2025-11-18 14:03:54,984 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 14:03:59,468 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 14:03:59,509 [INFO] uvicorn.error: Started server process [3650625]
-2025-11-18 14:03:59,510 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-18 14:03:59,510 [INFO] uvicorn.error: Application startup complete.
-2025-11-18 14:03:59,510 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-18 14:04:00,413 [INFO] uvicorn.error: Shutting down
-2025-11-18 14:04:00,513 [INFO] uvicorn.error: Finished server process [3650625]
-2025-11-18 14:04:00,515 [ERROR] uvicorn.error: Traceback (most recent call last):
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/starlette/routing.py", line 700, in lifespan
-    await receive()
-  File "/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/.venv/lib/python3.12/site-packages/uvicorn/lifespan/on.py", line 137, in receive
-    return await self.receive_queue.get()
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/usr/lib/python3.12/asyncio/queues.py", line 158, in get
-    await getter
-asyncio.exceptions.CancelledError
-
-2025-11-18 14:04:00,517 [INFO] app: MCP server thread exited.
-2025-11-18 14:04:02,576 [INFO] app: Helpdesk Pro started
-2025-11-18 14:04:02,590 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 14:04:04,582 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 14:04:04,630 [INFO] uvicorn.error: Started server process [3650722]
-2025-11-18 14:04:04,630 [INFO] uvicorn.error: Waiting for application startup.
-2025-11-18 14:04:04,630 [INFO] uvicorn.error: Application startup complete.
-2025-11-18 14:04:04,631 [INFO] uvicorn.error: Uvicorn running on http://127.0.0.1:8081 (Press CTRL+C to quit)
-2025-11-18 18:45:30,263 [INFO] app: Helpdesk Pro started
-2025-11-18 18:47:01,556 [INFO] app: Helpdesk Pro started
-2025-11-18 18:47:03,005 [INFO] app: Helpdesk Pro started
-2025-11-18 18:47:03,019 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
-2025-11-18 18:47:11,706 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
-2025-11-18 18:47:11,861 [INFO] uvicorn.error: Started server process [3827596]
+2025-11-20 12:00:34,280 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:00:34] "[31m[1mPOST /ingest HTTP/1.1[0m" 400 -
+2025-11-20 12:00:40,941 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:00:40] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:00:41,093 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:00:41] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:00:41,101 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:00:41] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:00:42,350 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:00:42] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:00:43,181 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:00:43] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:00:44,360 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:00:44] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:00:46,394 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:00:46] "GET /fleet/hosts/PC02/uploads?api_key=flt-7f8e0c168f0e8eba641acc2c7262655b66745e6db7159376 HTTP/1.1" 200 -
+2025-11-20 12:00:47,581 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:00:47] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:00:54,589 [INFO] werkzeug:  * Detected change in '/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/fleet/ingest.py', reloading
+2025-11-20 12:00:54,718 [INFO] app: MCP server thread exited.
+2025-11-20 12:00:56,903 [INFO] app: Helpdesk Pro started
+2025-11-20 12:00:56,916 [INFO] app: Fleet ingest server listening on 0.0.0.0:8449
+2025-11-20 12:00:56,954 [WARNING] werkzeug:  * Debugger is active!
+2025-11-20 12:00:57,131 [INFO] werkzeug:  * Debugger PIN: 100-959-712
+2025-11-20 12:00:57,160 [INFO] app: Starting MCP server on 127.0.0.1:8081 (env=production)
+2025-11-20 12:00:57,208 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:00:57] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:00:57,391 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:00:57] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:00:57,446 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:00:57] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:00:57,446 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:00:57] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:00:58,196 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:00:58] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:11,394 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:11] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:01:11,552 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:11] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:11,552 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:11] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:12,409 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:12] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:13,211 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:13] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:26,898 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:26] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:01:27,069 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:27] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:27,078 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:27] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:27,397 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:27] "GET /fleet/hosts/PC03/uploads?api_key=flt-210dc8af5e9cf177335e93898944a53c4869264c15139bc4 HTTP/1.1" 200 -
+2025-11-20 12:01:27,439 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:27] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:28,247 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:28] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:31,212 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:31] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:01:31,270 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:31] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:01:34,328 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:34] "[31m[1mPOST /ingest HTTP/1.1[0m" 400 -
+2025-11-20 12:01:39,852 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:39] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:01:41,893 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:41] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:01:42,082 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:42] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:42,084 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:42] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:42,469 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:42] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:43,268 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:43] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:45,087 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:45] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:01:46,430 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:46] "GET /fleet/hosts/PC02/uploads?api_key=flt-7f8e0c168f0e8eba641acc2c7262655b66745e6db7159376 HTTP/1.1" 200 -
+2025-11-20 12:01:50,395 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:50] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:01:56,908 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:56] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:01:57,069 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:57] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:57,069 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:01:57] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:01:57,495 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:01:57] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:01:58,293 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:01:58] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:02:04,366 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:02:04] "[31m[1mPOST /ingest HTTP/1.1[0m" 400 -
+2025-11-20 12:02:12,382 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:02:12] "GET /collab/api/unread-count HTTP/1.1" 200 -
+2025-11-20 12:02:12,522 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:02:12] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:02:12,551 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:02:12] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:02:12,557 [INFO] werkzeug: 127.0.0.1 - - [20/Nov/2025 12:02:12] "GET /fleet/hosts/884/status-panel HTTP/1.1" 200 -
+2025-11-20 12:02:13,306 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:02:13] "[35m[1mPOST /terminal/tasks/next HTTP/1.1[0m" 204 -
+2025-11-20 12:02:22,912 [INFO] werkzeug: 192.168.1.204 - - [20/Nov/2025 12:02:22] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:02:22,984 [INFO] werkzeug: 192.168.1.59 - - [20/Nov/2025 12:02:22] "POST /ingest HTTP/1.1" 200 -
+2025-11-20 12:02:24,309 [INFO] werkzeug:  * Detected change in '/home/ioannisb/Development/Python-Development/helpdesk_pro/helpdesk_pro/app/__init__.py', reloading
+2025-11-20 12:02:24,444 [INFO] app: MCP server thread exited.

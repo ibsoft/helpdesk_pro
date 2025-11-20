@@ -155,3 +155,30 @@ class AuditLog(db.Model):
 
     def __repr__(self):
         return f"<AuditLog {self.action} by {self.username}>"
+
+
+class TicketArchive(db.Model):
+    __tablename__ = "ticket_archive"
+
+    id = db.Column(db.Integer, primary_key=True)
+    ticket_id = db.Column(db.Integer, nullable=False, index=True)
+    subject = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    priority = db.Column(db.String(50))
+    status = db.Column(db.String(50))
+    department = db.Column(db.String(100))
+    created_by = db.Column(db.Integer, nullable=True)
+    assigned_to = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime)
+    updated_at = db.Column(db.DateTime)
+    closed_at = db.Column(db.DateTime)
+    archived_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    archived_by = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    comments = db.Column(db.JSON)
+    attachments = db.Column(db.JSON)
+    logs = db.Column(db.JSON)
+
+    archiver = db.relationship("User", foreign_keys=[archived_by])
+
+    def __repr__(self):
+        return f"<TicketArchive ticket={self.ticket_id}>"

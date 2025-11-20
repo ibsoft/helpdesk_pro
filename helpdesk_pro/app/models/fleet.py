@@ -159,19 +159,51 @@ class FleetApiKey(db.Model):
 
     @classmethod
     def generate_key(cls) -> str:
-        return binascii.hexlify(os.urandom(24)).decode("ascii")
+        random_hex = binascii.hexlify(os.urandom(24)).decode("ascii")
+        return f"flt-{random_hex}"
+
+    def _split_hash_components(self) -> tuple[str, str | None, str | None]:
+        token = self.key_hash or ""
+        parts = token.split(":", 2)
+        if len(parts) == 3:
+            return parts[0], parts[1], parts[2]
+        return token, None, None
 
     def set_key(self, raw_key: str):
         salt = binascii.hexlify(os.urandom(8)).decode("ascii")
         self.salt = salt
-        self.key_hash = self._hash(raw_key, salt)
+        hashed_value = self._hash(raw_key, salt)
+        prefix_hint = raw_key[:4] if raw_key else ""
+        suffix_hint = raw_key[-4:] if raw_key else ""
+        self.key_hash = f"{hashed_value}:{prefix_hint}:{suffix_hint}"
 
     def matches(self, raw_key: str) -> bool:
         if not self.active:
             return False
         if self.expires_at and self.expires_at < datetime.utcnow():
             return False
-        return self.key_hash == self._hash(raw_key, self.salt)
+        stored_hash, _, _ = self._split_hash_components()
+        return stored_hash == self._hash(raw_key, self.salt)
+
+    @property
+    def prefix_hint(self) -> str | None:
+        _, prefix, _ = self._split_hash_components()
+        return prefix
+
+    @property
+    def suffix_hint(self) -> str | None:
+        _, _, suffix = self._split_hash_components()
+        return suffix
+
+    @property
+    def masked_hint(self) -> str | None:
+        prefix = self.prefix_hint
+        suffix = self.suffix_hint
+        if not prefix and not suffix:
+            return None
+        prefix_display = prefix or "••••"
+        suffix_display = suffix or "••••"
+        return f"{prefix_display}\u2026{suffix_display}"
 
 
 class FleetModuleSettings(db.Model):

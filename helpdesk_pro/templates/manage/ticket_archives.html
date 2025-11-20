@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h4 mb-0"><i class="fa fa-archive text-secondary me-2"></i>{{ _('Ticket Archives') }}</h1>
+  <a class="btn btn-outline-secondary" href="{{ url_for('tickets.list_tickets') }}"><i class="fa fa-ticket me-1"></i>{{ _('Back to Tickets') }}</a>
+</div>
+
+<style>
+  .status-summary-card {
+    border: 1px solid transparent;
+    border-radius: 0.85rem;
+    transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
+    overflow: hidden;
+  }
+  html[data-bs-theme="light"] body .status-summary-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.9) 50%, rgba(226, 232, 240, 0.85) 100%);
+    color: #1e293b;
+    border-color: rgba(148, 163, 184, 0.25);
+    --status-divider-color: rgba(148, 163, 184, 0.35);
+    --status-label-color: rgba(71, 85, 105, 0.75);
+    --status-total-bg: rgba(13, 110, 253, 0.18);
+    --status-total-fg: #0d47a1;
+    --status-open-bg: rgba(16, 185, 129, 0.18);
+    --status-open-fg: #047857;
+    --status-progress-bg: rgba(245, 158, 11, 0.2);
+    --status-progress-fg: #b45309;
+    --status-closed-bg: rgba(100, 116, 139, 0.22);
+    --status-closed-fg: #374151;
+  }
+  html[data-bs-theme="dark"] body .status-summary-card {
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.75) 0%, rgba(17, 24, 39, 0.72) 50%, rgba(30, 41, 59, 0.68) 100%);
+    color: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.28);
+    backdrop-filter: blur(12px);
+    --status-divider-color: rgba(148, 163, 184, 0.35);
+    --status-label-color: rgba(203, 213, 225, 0.75);
+    --status-total-bg: rgba(59, 130, 246, 0.28);
+    --status-total-fg: #dbeafe;
+    --status-open-bg: rgba(34, 197, 94, 0.28);
+    --status-open-fg: #bbf7d0;
+    --status-progress-bg: rgba(251, 191, 36, 0.34);
+    --status-progress-fg: #fef3c7;
+    --status-closed-bg: rgba(148, 163, 184, 0.35);
+    --status-closed-fg: #e2e8f0;
+  }
+  .status-summary-card .status-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--status-divider-color);
+    transition: background 0.35s ease;
+  }
+  .status-summary-card .status-block {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .status-summary-card .status-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.45rem;
+    height: 34px;
+    padding: 0 0.9rem;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    line-height: 1;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    transition: background 0.35s ease, color 0.35s ease;
+    white-space: nowrap;
+  }
+  .status-summary-card .status-count i {
+    flex: 0 0 1.1em;
+    width: 1.1em;
+    text-align: center;
+    font-size: 0.95em;
+  }
+  .status-summary-card .status-label {
+    text-transform: uppercase;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    color: var(--status-label-color);
+    transition: color 0.35s ease;
+  }
+  .status-summary-card .status-count.total { background: var(--status-total-bg); color: var(--status-total-fg); }
+  .status-summary-card .status-count.open { background: var(--status-open-bg); color: var(--status-open-fg); }
+  .status-summary-card .status-count.progress { background: var(--status-progress-bg); color: var(--status-progress-fg); }
+  .status-summary-card .status-count.closed { background: var(--status-closed-bg); color: var(--status-closed-fg); }
+  .archive-table-header th {
+    background-color: #111827 !important;
+    color: #f8fafc;
+    border-color: #1f2937;
+  }
+</style>
+
+<div class="card status-summary-card border-0 shadow-sm mb-3">
+  <div class="card-body py-3">
+    <div class="d-flex flex-wrap align-items-center gap-4">
+      <div class="status-block">
+        <span class="status-count total">
+          <i class="fa fa-layer-group"></i>{{ status_counts.total }}
+        </span>
+        <span class="status-label">{{ _('Total Tickets') }}</span>
+      </div>
+      <div class="status-divider d-none d-md-block"></div>
+      <div class="status-block">
+        <span class="status-count closed">
+          <i class="fa fa-check"></i>{{ status_counts.closed }}
+        </span>
+        <span class="status-label">{{ _('Closed') }}</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
+      <div>
+        <h2 class="h6 mb-1 text-uppercase text-muted">{{ _('Archive Tickets') }}</h2>
+        <small class="text-muted">{{ _('Move legacy tickets into the archive to keep the main queues lean.') }}</small>
+      </div>
+    </div>
+    <form method="post" class="row g-3 align-items-end">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="col-md-6">
+        <label class="form-label">{{ _('Window') }}</label>
+        <select name="scope" class="form-select form-select-sm" {% if not can_archive %}disabled{% endif %}>
+          {% for key, label in windows %}
+            <option value="{{ key }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <button class="btn btn-danger btn-sm w-100" {% if not can_archive %}disabled{% endif %}>
+          <i class="fa fa-box-archive me-1"></i>{{ _('Archive Tickets') }}
+        </button>
+      </div>
+    </form>
+    {% if not can_archive %}
+      <div class="alert alert-warning mt-3 mb-0">
+        <i class="fa fa-lock me-2"></i>{{ _('You have read-only access to archives.') }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <div class="table-responsive">
+        <table id="manageArchiveTable" class="table table-striped table-hover align-middle w-100">
+        <thead class="table-dark archive-table-header text-white">
+          <tr>
+            <th>{{ _('Ticket #') }}</th>
+            <th>{{ _('Subject') }}</th>
+            <th>{{ _('Priority') }}</th>
+            <th>{{ _('Status') }}</th>
+            <th>{{ _('Department') }}</th>
+            <th>{{ _('Created') }}</th>
+            <th>{{ _('Archived') }}</th>
+            <th class="text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for archive in archives %}
+            <tr>
+              <td>{{ archive.ticket_id }}</td>
+              <td>{{ archive.subject }}</td>
+              <td>{{ archive.priority or _('—') }}</td>
+              <td>{{ archive.status or _('Unknown') }}</td>
+              <td>{{ archive.department or _('—') }}</td>
+              <td data-order="{{ archive.created_at.isoformat() if archive.created_at else '' }}">{{ archive.created_at.strftime('%Y-%m-%d %H:%M') if archive.created_at else '—' }}</td>
+              <td data-order="{{ archive.archived_at.isoformat() if archive.archived_at else '' }}">{{ archive.archived_at.strftime('%Y-%m-%d %H:%M') if archive.archived_at else '—' }}</td>
+              <td class="text-end">
+                <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('manage.ticket_archive_detail', archive_id=archive.id) }}">
+                  <i class="fa fa-eye"></i> {{ _('View') }}
+                </a>
+                {% if can_archive %}
+                  <form method="post" action="{{ url_for('manage.restore_ticket_archive', archive_id=archive.id) }}" class="d-inline" onsubmit="return confirm('{{ _('Restore this ticket back to the active queue?') }}');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-success"><i class="fa fa-rotate-left"></i> {{ _('Restore') }}</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/searchbuilder/1.7.0/css/searchBuilder.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/searchbuilder/1.7.0/js/dataTables.searchBuilder.min.js"></script>
+
+<script>
+$(function() {
+  const dtLanguage = {
+    emptyTable: "{{ _('No archived tickets found.') }}",
+    zeroRecords: "{{ _('No archived tickets match the filters.') }}",
+    url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}"
+  };
+  const table = $('#manageArchiveTable').DataTable({
+    order: [[5, 'desc']],
+    language: dtLanguage,
+    dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
+         "<'row'<'col-sm-12'tr>>" +
+         "<'row mt-3'<'col-12'Q>>" +
+         "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+    buttons: [
+      { extend: 'excelHtml5', text: '<i class="fa fa-file-excel"></i> {{ _("Excel") }}', className: 'btn btn-success btn-sm mx-1' },
+      { extend: 'print', text: '<i class="fa fa-print"></i> {{ _("Print") }}', className: 'btn btn-secondary btn-sm mx-1' },
+      { extend: 'searchBuilder', text: '<i class="fa fa-filter"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
+    ],
+    columnDefs: [
+      { targets: -1, orderable: false, searchable: false }
+    ],
+    searchBuilder: {
+      columns: [0, 1, 2, 3, 4, 5, 6],
+      depthLimit: 3
+    }
+  });
+  $('[data-bs-toggle="tooltip"]').tooltip();
+});
+</script>
+
+{% endblock %}

@@ -41,6 +41,9 @@ class Config:
     BABEL_DEFAULT_LOCALE = os.getenv('DEFAULT_LANGUAGE', 'en')
     PERMANENT_SESSION_LIFETIME = timedelta(minutes=45)
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
+    LOG_FILE_LEVEL = os.getenv('LOG_FILE_LEVEL')
+    if LOG_FILE_LEVEL:
+        LOG_FILE_LEVEL = LOG_FILE_LEVEL.upper()
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or SECRET_KEY
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
