@@ -271,7 +271,9 @@ def create_app():
 
     # ───────── Embedded MCP server ───────── #
     init_mcp(app)
-    start_fleet_ingest_server(app)
+    embed_ingest = str(os.environ.get("FLEET_EMBED_INGEST", "true")).lower() in {"1", "true", "yes"}
+    if embed_ingest:
+        start_fleet_ingest_server(app)
 
     # ───────── Root route ───────── #
     @app.route("/")
