@@ -1,5 +1,57 @@
 {% extends "base.html" %}
 {% block content %}
+<style>
+  .archive-shell {
+    border: none;
+    border-radius: 1rem;
+    background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(59,130,246,0.08));
+  }
+  .archive-shell .card-body { padding: 2rem; }
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+    gap: 1rem;
+  }
+  .meta-block {
+    border-radius: 0.85rem;
+    padding: 1rem;
+    background: rgba(15,23,42,0.04);
+  }
+  html[data-bs-theme="dark"] .meta-block { background: rgba(255,255,255,0.05); }
+  .list-soft .list-group-item {
+    border: none;
+    border-radius: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: rgba(15,23,42,0.04);
+  }
+  html[data-bs-theme="dark"] .list-soft .list-group-item { background: rgba(255,255,255,0.05); }
+  pre {
+    background: rgba(248,249,250,0.85);
+    color: #0f172a;
+  }
+  html[data-bs-theme="dark"] pre,
+  html[data-bs-theme="dark"] .archive-description {
+    background: rgba(15,23,42,0.8);
+    color: #f8fafc;
+  }
+  .archive-description {
+    background: rgba(15,23,42,0.04);
+    border-radius: 0.75rem;
+    color: #0f172a;
+  }
+  html[data-bs-theme="dark"] .archive-description {
+    background: rgba(15,23,42,0.75);
+    color: #e2e8f0;
+  }
+  html[data-bs-theme="dark"] .archive-shell {
+    background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(14,165,233,0.22));
+  }
+  html[data-bs-theme="dark"] .card-header.bg-white {
+    background-color: rgba(15,23,42,0.8) !important;
+    color: #f8fafc;
+  }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
   <div>
     <h4 class="mb-0"><i class="fa fa-box-archive me-2"></i>{{ _('Archived Ticket #%(id)s', id=archive.ticket_id) }}</h4>
@@ -8,24 +60,30 @@
   <a class="btn btn-outline-secondary" href="{{ url_for('tickets.list_ticket_archives') }}"><i class="fa fa-arrow-left me-1"></i>{{ _('Back') }}</a>
 </div>
 
-<div class="card shadow-sm mb-4">
+<div class="card archive-shell shadow-sm mb-4">
   <div class="card-body">
-    <dl class="row">
-      <dt class="col-sm-3">{{ _('Subject') }}</dt>
-      <dd class="col-sm-9">{{ archive.subject }}</dd>
-      <dt class="col-sm-3">{{ _('Description') }}</dt>
-      <dd class="col-sm-9"><pre class="bg-light p-3 rounded">{{ archive.description }}</pre></dd>
-      <dt class="col-sm-3">{{ _('Priority') }}</dt>
-      <dd class="col-sm-3">{{ archive.priority or _('—') }}</dd>
-      <dt class="col-sm-3">{{ _('Status') }}</dt>
-      <dd class="col-sm-3">{{ archive.status or _('—') }}</dd>
-      <dt class="col-sm-3">{{ _('Department') }}</dt>
-      <dd class="col-sm-3">{{ archive.department or _('—') }}</dd>
-      <dt class="col-sm-3">{{ _('Created At') }}</dt>
-      <dd class="col-sm-3">{{ archive.created_at.strftime('%Y-%m-%d %H:%M') if archive.created_at else '—' }}</dd>
-      <dt class="col-sm-3">{{ _('Closed At') }}</dt>
-      <dd class="col-sm-3">{{ archive.closed_at.strftime('%Y-%m-%d %H:%M') if archive.closed_at else '—' }}</dd>
-    </dl>
+    <div class="meta-grid mb-3">
+      <div class="meta-block">
+        <div class="text-muted small mb-1"><i class="fa fa-heading me-1"></i>{{ _('Subject') }}</div>
+        <div class="fw-semibold">{{ archive.subject }}</div>
+      </div>
+      <div class="meta-block">
+        <div class="text-muted small mb-1"><i class="fa fa-building me-1"></i>{{ _('Department') }}</div>
+        <div>{{ archive.department or _('—') }}</div>
+      </div>
+      <div class="meta-block">
+        <div class="text-muted small mb-1"><i class="fa fa-calendar-plus me-1"></i>{{ _('Created At') }}</div>
+        <div>{{ archive.created_at.strftime('%Y-%m-%d %H:%M') if archive.created_at else '—' }}</div>
+      </div>
+      <div class="meta-block">
+        <div class="text-muted small mb-1"><i class="fa fa-calendar-check me-1"></i>{{ _('Closed At') }}</div>
+        <div>{{ archive.closed_at.strftime('%Y-%m-%d %H:%M') if archive.closed_at else '—' }}</div>
+      </div>
+    </div>
+    <div class="meta-block">
+      <p class="fw-semibold mb-2"><i class="fa fa-align-left me-1"></i>{{ _('Description') }}</p>
+      <pre class="archive-description" style="white-space: pre-wrap;">{{ archive.description }}</pre>
+    </div>
   </div>
 </div>
 
@@ -37,14 +95,14 @@
       </div>
       <div class="card-body">
         {% if archive.comments %}
-          <div class="list-group list-group-flush">
+          <div class="list-group list-soft">
             {% for comment in archive.comments %}
               <div class="list-group-item">
                 <div class="d-flex justify-content-between align-items-center">
-                  <strong>{{ comment.user or _('Anonymous') }}</strong>
-                  <small class="text-muted">{{ comment.created_at or '' }}</small>
+                  <strong><i class="fa fa-user text-primary me-1"></i>{{ comment.user or _('Anonymous') }}</strong>
+                  <small class="text-muted"><i class="fa fa-clock me-1"></i>{{ comment.created_at or '' }}</small>
                 </div>
-                <p class="mb-0 small">{{ comment.comment }}</p>
+                <p class="mb-0 small mt-2">{{ comment.comment }}</p>
               </div>
             {% endfor %}
           </div>
@@ -61,11 +119,11 @@
       </div>
       <div class="card-body">
         {% if archive.attachments %}
-          <ul class="list-unstyled mb-0">
+          <ul class="list-group list-soft">
             {% for attachment in archive.attachments %}
-              <li class="mb-2">
-                <i class="fa fa-file text-primary me-1"></i>{{ attachment.filename }}
-                <div class="small text-muted">{{ attachment.filepath }}</div>
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <span><i class="fa fa-file text-primary me-1"></i>{{ attachment.filename }}</span>
+                <span class="small text-muted">{{ attachment.filepath }}</span>
               </li>
             {% endfor %}
           </ul>
@@ -83,10 +141,14 @@
   </div>
   <div class="card-body">
     {% if archive.logs %}
-      <ul class="list-unstyled mb-0">
+      <ul class="list-group list-soft mb-0">
         {% for log in archive.logs %}
-          <li class="mb-2">
-            <strong>{{ log.timestamp or '' }}</strong> — {{ log.username or _('System') }} → {{ log.action }}
+          <li class="list-group-item">
+            <div class="d-flex justify-content-between align-items-center">
+              <span><i class="fa fa-user-gear text-secondary me-1"></i>{{ log.username or _('System') }}</span>
+              <small class="text-muted"><i class="fa fa-clock me-1"></i>{{ log.timestamp or '' }}</small>
+            </div>
+            <div class="small text-muted mt-1">{{ log.action }}</div>
           </li>
         {% endfor %}
       </ul>

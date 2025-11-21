@@ -198,20 +198,23 @@
 </div>
 {% endif %}
 {% if show_admin_metrics %}
+{% set admin_contract_col = 'col-lg-4 col-md-6' if inventory_enabled else 'col-lg-6 col-md-6' %}
 <div class="row g-3 mt-3">
-  <div class="col-lg-4 col-md-6">
-    <div class="card shadow-sm">
-      <div class="card-header"><i class="fa fa-boxes-stacked"></i> {{ _('Asset Allocation (Admin)') }}</div>
-      <div class="card-body"><canvas id="adminAssetChart" height="200"></canvas></div>
+  {% if inventory_enabled %}
+    <div class="col-lg-4 col-md-6">
+      <div class="card shadow-sm">
+        <div class="card-header"><i class="fa fa-boxes-stacked"></i> {{ _('Asset Allocation') }}</div>
+        <div class="card-body"><canvas id="adminAssetChart" height="200"></canvas></div>
+      </div>
     </div>
-  </div>
-  <div class="col-lg-4 col-md-6">
+  {% endif %}
+  <div class="{{ admin_contract_col }}">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-file-invoice-dollar"></i> {{ _('Contracts Cost Summary') }}</div>
       <div class="card-body"><canvas id="contractCostChart" height="200"></canvas></div>
     </div>
   </div>
-  <div class="col-lg-4 col-md-6">
+  <div class="{{ admin_contract_col }}">
     <div class="card shadow-sm">
       <div class="card-header"><i class="fa fa-chart-bar"></i> {{ _('Annual Contract Spend') }}</div>
       <div class="card-body"><canvas id="contractYearlyChartAdmin" height="200"></canvas></div>
