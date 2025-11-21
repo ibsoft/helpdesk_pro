@@ -1042,6 +1042,19 @@ def api_message():
     messages_for_model: List[Dict[str, str]] = []
     if system_prompt:
         messages_for_model.append({"role": "system", "content": system_prompt})
+    user_identity_parts = [f"username={current_user.username}"]
+    if current_user.full_name:
+        user_identity_parts.append(f"full_name={current_user.full_name}")
+    if current_user.role:
+        user_identity_parts.append(f"role={current_user.role}")
+    if getattr(current_user, "department", None):
+        user_identity_parts.append(f"department={current_user.department}")
+    user_identity = "; ".join(user_identity_parts)
+    identity_context = (
+        f"Current signed-in user context: {user_identity}. "
+        "Use this when applying permissions or tailoring responses."
+    )
+    messages_for_model.append({"role": "system", "content": identity_context})
     messages_for_model.extend(prior_history)
     if document_context:
         messages_for_model.append({"role": "system", "content": document_context})
