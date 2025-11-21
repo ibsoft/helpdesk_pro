@@ -3,10 +3,13 @@
 Data models for the Fleet Monitoring module.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 import os
 import binascii
 import hashlib
+from typing import Optional, Tuple
 
 from app import db
 
@@ -133,7 +136,7 @@ class FleetScreenshot(db.Model):
     latest_for_state = db.relationship("FleetLatestState", back_populates="screenshot", uselist=False)
 
     @property
-    def data_base64(self) -> str | None:
+    def data_base64(self) -> Optional[str]:
         if not self.data:
             return None
         import base64
@@ -162,7 +165,7 @@ class FleetApiKey(db.Model):
         random_hex = binascii.hexlify(os.urandom(24)).decode("ascii")
         return f"flt-{random_hex}"
 
-    def _split_hash_components(self) -> tuple[str, str | None, str | None]:
+    def _split_hash_components(self) -> Tuple[str, Optional[str], Optional[str]]:
         token = self.key_hash or ""
         parts = token.split(":", 2)
         if len(parts) == 3:
@@ -186,17 +189,17 @@ class FleetApiKey(db.Model):
         return stored_hash == self._hash(raw_key, self.salt)
 
     @property
-    def prefix_hint(self) -> str | None:
+    def prefix_hint(self) -> Optional[str]:
         _, prefix, _ = self._split_hash_components()
         return prefix
 
     @property
-    def suffix_hint(self) -> str | None:
+    def suffix_hint(self) -> Optional[str]:
         _, _, suffix = self._split_hash_components()
         return suffix
 
     @property
-    def masked_hint(self) -> str | None:
+    def masked_hint(self) -> Optional[str]:
         prefix = self.prefix_hint
         suffix = self.suffix_hint
         if not prefix and not suffix:

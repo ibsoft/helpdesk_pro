@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import or_, func
 import copy
 import os
@@ -77,7 +79,7 @@ def _can_view_archive(archive: TicketArchive) -> bool:
     return allowed
 
 
-def _archive_detail_redirect(source: str | None, archive: TicketArchive):
+def _archive_detail_redirect(source: Optional[str], archive: TicketArchive):
     target = (source or "").lower()
     if target == "manage":
         try:
