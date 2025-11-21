@@ -11,6 +11,7 @@ import json
 import os
 import hashlib
 import logging
+import re
 from datetime import datetime, timedelta, timezone
 from threading import Thread
 from copy import deepcopy
@@ -54,8 +55,25 @@ def _iso_utc(value: str) -> datetime | None:
     if not value:
         return None
     text = str(value).strip()
+    tz_part = ""
     if text.endswith("Z"):
-        text = text[:-1] + "+00:00"
+        tz_part = "+00:00"
+        text = text[:-1]
+    else:
+        tz_match = re.search(r"([+-]\d{2}:\d{2})$", text)
+        if tz_match:
+            tz_part = tz_match.group(1)
+            text = text[: -len(tz_part)]
+    if "." in text:
+        base, frac = text.split(".", 1)
+        frac_digits = re.sub(r"\D", "", frac)
+        if frac_digits:
+            frac_digits = (frac_digits + "000000")[:6]
+            text = f"{base}.{frac_digits}"
+        else:
+            text = base
+    if tz_part:
+        text = f"{text}{tz_part}"
     try:
         dt = datetime.fromisoformat(text)
     except ValueError:
@@ -66,6 +84,7 @@ def _iso_utc(value: str) -> datetime | None:
 
 
 def _error(message: str, status: int = 400):
+    logging.getLogger(__name__).warning("Fleet ingest error (%s): %s", status, message)
     return jsonify({"success": False, "message": message}), status
 
 
@@ -371,6 +390,12 @@ def create_fleet_ingest_app(main_app) -> Flask:
                     db.session.rollback()
                     return _error("Database commit failed.", 500)
 
+            if errors:
+                logging.getLogger(__name__).warning(
+                    "Fleet ingest batch had %s error(s): %s",
+                    len(errors),
+                    "; ".join(errors[:5]),
+                )
             status_code = 200 if processed and not errors else 207 if processed else 400
             return (
                 jsonify({"success": processed > 0, "processed": processed, "errors": errors}),

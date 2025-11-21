@@ -316,7 +316,9 @@ def _dispatch_due_jobs(host_scope: FleetHost | None = None, action_filter: set[s
     if not due_jobs:
         return
     host_cache: dict[int, FleetHost] = {}
-    upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER")
+    upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER") or os.path.join(
+        current_app.instance_path, "fleet_uploads"
+    )
     os.makedirs(upload_root, exist_ok=True)
     for job in due_jobs:
         if action_filter and job.action_type not in action_filter:
@@ -974,7 +976,9 @@ def settings():
         "rule_count": len(settings_obj.default_alert_rules or {}),
         "last_updated": settings_obj.updated_at,
     }
-    installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH")
+    installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH") or os.path.join(
+        current_app.instance_path, "Telemetry_Agent.msi"
+    )
     installer_info = None
     if installer_path and os.path.exists(installer_path):
         try:
@@ -1060,7 +1064,9 @@ def job_scheduler():
                 flash(err, "danger")
         else:
             if action == "upload" and upload_file:
-                upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER")
+                upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER") or os.path.join(
+                    current_app.instance_path, "fleet_uploads"
+                )
                 os.makedirs(upload_root, exist_ok=True)
                 scheduled_dir = os.path.join(upload_root, "scheduled")
                 os.makedirs(scheduled_dir, exist_ok=True)
@@ -1380,7 +1386,9 @@ def upload_remote_file(host_id: int):
         flash(_("Select a file to upload."), "danger")
         return redirect(url_for("fleet.host_detail", host_id=host.id))
     filename = secure_filename(file.filename, allow_unicode=True)
-    upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER")
+    upload_root = current_app.config.get("FLEET_UPLOAD_FOLDER") or os.path.join(
+        current_app.instance_path, "fleet_uploads"
+    )
     os.makedirs(upload_root, exist_ok=True)
     host_folder = os.path.join(upload_root, str(host.id))
     os.makedirs(host_folder, exist_ok=True)
@@ -1701,7 +1709,9 @@ def upload_agent_installer():
     if ext != ".msi":
         flash(_("Installer must be a .msi file."), "danger")
         return redirect(url_for("fleet.settings"))
-    installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH")
+    installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH") or os.path.join(
+        current_app.instance_path, "Telemetry_Agent.msi"
+    )
     if not installer_path:
         flash(_("Installer path is not configured."), "danger")
         return redirect(url_for("fleet.settings"))
@@ -1734,7 +1744,9 @@ def upload_agent_installer():
 @login_required
 def create_agent_download_link():
     require_module_write("fleet_monitoring")
-    installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH")
+    installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH") or os.path.join(
+        current_app.instance_path, "Telemetry_Agent.msi"
+    )
     if not installer_path or not os.path.exists(installer_path):
         flash(_("Upload the Telemetry_Agent.msi before generating links."), "danger")
         return redirect(url_for("fleet.settings"))

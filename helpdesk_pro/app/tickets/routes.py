@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import or_, func
 import copy
 import os
@@ -10,7 +12,7 @@ except ImportError:
 
 import requests
 
-from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app, send_from_directory
+from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app, send_from_directory, send_file
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from app.utils.files import secure_filename
@@ -59,6 +61,34 @@ def _user_can_archive_ticket(ticket: Ticket) -> bool:
     if current_user.role == "admin":
         return True
     return ticket.created_by == current_user.id or ticket.assigned_to == current_user.id
+
+
+def _can_view_archive(archive: TicketArchive) -> bool:
+    if current_user.role == "admin":
+        return True
+    allowed = (
+        archive.created_by == current_user.id
+        or archive.assigned_to == current_user.id
+        or archive.archived_by == current_user.id
+    )
+    if current_user.role == "manager":
+        dept_value = current_user.department
+        dept_ids = {u.id for u in User.query.filter_by(department=dept_value).all()}
+        if archive.created_by in dept_ids or archive.assigned_to in dept_ids:
+            allowed = True
+    return allowed
+
+
+def _archive_detail_redirect(source: Optional[str], archive: TicketArchive):
+    target = (source or "").lower()
+    if target == "manage":
+        try:
+            return redirect(url_for("manage.ticket_archive_detail", archive_id=archive.id))
+        except Exception:
+            pass
+    if request.referrer:
+        return redirect(request.referrer)
+    return redirect(url_for("tickets.view_ticket_archive", archive_id=archive.id))
 
 
 def _ticket_url(ticket):
@@ -751,6 +781,12 @@ def archive_ticket(ticket_id: int):
     if not _user_can_archive_ticket(ticket):
         flash(_("You are not authorized to archive this ticket."), "danger")
         abort(403)
+    if (ticket.status or "").lower() != "closed":
+        msg = _("Only closed tickets can be archived.")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(success=False, message=msg), 400
+        flash(msg, "warning")
+        return redirect(request.referrer or url_for("tickets.list_tickets"))
     try:
         archive_entry = build_archive_from_ticket(ticket, current_user.id)
         db.session.add(archive_entry)
@@ -774,7 +810,21 @@ def archive_ticket(ticket_id: int):
 @login_required
 def list_ticket_archives():
     query = TicketArchive.query
-    if current_user.role != "admin":
+    if current_user.role == "admin":
+        pass
+    elif current_user.role == "manager":
+        dept_subq = (
+            User.query.filter_by(department=current_user.department)
+            .with_entities(User.id)
+            .subquery()
+        )
+        query = query.filter(
+            or_(
+                TicketArchive.created_by.in_(dept_subq),
+                TicketArchive.assigned_to.in_(dept_subq),
+            )
+        )
+    else:
         query = query.filter(
             or_(
                 TicketArchive.created_by == current_user.id,
@@ -790,9 +840,63 @@ def list_ticket_archives():
 @login_required
 def view_ticket_archive(archive_id: int):
     archive = TicketArchive.query.get_or_404(archive_id)
-    if current_user.role != "admin":
-        allowed = archive.created_by == current_user.id or archive.assigned_to == current_user.id or archive.archived_by == current_user.id
-        if not allowed:
-            flash(_("You cannot view this archived ticket."), "danger")
-            abort(403)
+    if not _can_view_archive(archive):
+        flash(_("You cannot view this archived ticket."), "danger")
+        abort(403)
     return render_template("tickets/archive_detail.html", archive=archive)
+
+
+@tickets_bp.route("/tickets/archives/<int:archive_id>/attachments/<int:attachment_index>/download")
+@login_required
+def download_archived_attachment(archive_id: int, attachment_index: int):
+    archive = TicketArchive.query.get_or_404(archive_id)
+    if not _can_view_archive(archive):
+        flash(_("You are not authorized to access this archived ticket."), "danger")
+        abort(403)
+
+    attachments = archive.attachments or []
+    if attachment_index < 0 or attachment_index >= len(attachments):
+        abort(404)
+
+    attachment = attachments[attachment_index] or {}
+    path_value = (attachment.get("filepath") or "").strip()
+    download_label = attachment.get("filename") or os.path.basename(path_value) or _("attachment")
+    source = request.args.get("source")
+    if not path_value:
+        flash(_("Attachment reference is missing."), "warning")
+        return _archive_detail_redirect(source, archive)
+
+    upload_folder = _ensure_ticket_upload_folder()
+    static_upload_dir = os.path.join(
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")),
+        "static",
+        "uploads",
+    )
+
+    candidate_paths = []
+    if path_value.startswith("/tickets/attachments/"):
+        stored_name = os.path.basename(path_value)
+        if stored_name:
+            candidate_paths.append(("instance", upload_folder, stored_name))
+    elif path_value.startswith("/static/uploads/"):
+        stored_name = os.path.basename(path_value)
+        if stored_name:
+            candidate_paths.append(("static", static_upload_dir, stored_name))
+    else:
+        if os.path.isabs(path_value):
+            candidate_paths.append(("absolute", None, path_value))
+        stored_name = os.path.basename(path_value)
+        if stored_name:
+            candidate_paths.append(("instance", upload_folder, stored_name))
+
+    for path_kind, directory, value in candidate_paths:
+        if path_kind == "absolute":
+            if os.path.exists(value):
+                return send_file(value, as_attachment=True, download_name=download_label)
+            continue
+        full_path = os.path.join(directory, value)
+        if os.path.exists(full_path):
+            return send_from_directory(directory, value, as_attachment=True, download_name=download_label)
+
+    flash(_("Attachment file could not be located on the server."), "warning")
+    return _archive_detail_redirect(source, archive)
