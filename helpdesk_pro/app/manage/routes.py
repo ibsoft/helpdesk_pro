@@ -1162,6 +1162,8 @@ def ticket_archives():
     access = get_module_access(current_user, "ticket_archives")
     if access not in {"read", "write"}:
         abort(403)
+    can_archive = access == "write"
+    can_restore = can_archive or current_user.role == "manager"
     windows = [
         ("day", _("Older than 1 day")),
         ("week", _("Older than 1 week")),
@@ -1225,7 +1227,8 @@ def ticket_archives():
         "manage/ticket_archives.html",
         windows=windows,
         archives=archives,
-        can_archive=access == "write",
+        can_archive=can_archive,
+        can_restore=can_restore,
         status_counts=status_counts,
         owner_lookup=owner_lookup,
     )
@@ -1248,8 +1251,31 @@ def ticket_archive_detail(archive_id: int):
 @manage_bp.post("/ticket-archives/<int:archive_id>/restore")
 @login_required
 def restore_ticket_archive(archive_id: int):
-    require_module_write("ticket_archives")
+    access = get_module_access(current_user, "ticket_archives")
     archive = TicketArchive.query.get_or_404(archive_id)
+    if access != "write":
+        if current_user.role != "manager":
+            abort(403)
+        dept_user_ids = {
+            user_id
+            for (user_id,) in User.query.filter_by(department=current_user.department)
+            .with_entities(User.id)
+            .all()
+        }
+        dept_allowed = False
+        dept_name = (current_user.department or "").strip().lower()
+        archive_dept = (archive.department or "").strip().lower()
+        if dept_name and archive_dept and dept_name == archive_dept:
+            dept_allowed = True
+        if archive.created_by and archive.created_by in dept_user_ids:
+            dept_allowed = True
+        if archive.assigned_to and archive.assigned_to in dept_user_ids:
+            dept_allowed = True
+        if not dept_allowed:
+            abort(403)
+    else:
+        require_module_write("ticket_archives")
+
     existing = Ticket.query.get(archive.ticket_id)
     if existing:
         flash(_("Ticket %(id)s already exists. Remove it before restoring.", id=archive.ticket_id), "warning")

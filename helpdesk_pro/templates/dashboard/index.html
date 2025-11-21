@@ -220,17 +220,6 @@
   </div>
 </div>
 {% endif %}
-{% if contract_year_labels and contract_year_labels|length and show_admin_metrics %}
-  <div class="row g-3 mt-3">
-    <div class="col-lg-4 col-md-6">
-      <div class="card shadow-sm">
-        <div class="card-header"><i class="fa fa-chart-bar"></i> {{ _('Annual Contract Spend') }}</div>
-        <div class="card-body"><canvas id="contractYearlyChart" height="200"></canvas></div>
-      </div>
-    </div>
-  </div>
-{% endif %}
-
 {% if dept_summary %}
 <hr class="my-4">
 <div class="row g-3">
