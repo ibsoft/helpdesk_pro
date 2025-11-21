@@ -12,14 +12,16 @@ import requests
 
 from flask import Blueprint, render_template, request, jsonify, flash, redirect, url_for, abort, current_app, send_from_directory
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from app.utils.files import secure_filename
 from flask_mail import Message
 
 from app import db, csrf
-from app.models.ticket import Ticket, TicketComment, Attachment, AuditLog
+from app.models.ticket import Ticket, TicketComment, Attachment, AuditLog, TicketArchive
 from app.models.user import User
 from app.mail_utils import queue_mail_with_optional_auth
 from app.background import submit_background_task
+from app.tickets.archive_utils import build_archive_from_ticket
 
 tickets_bp = Blueprint("tickets", __name__)
 
@@ -51,6 +53,12 @@ def _shorten(text, length=200):
     if len(text) <= length:
         return text
     return text[: max(0, length - 3)] + "..."
+
+
+def _user_can_archive_ticket(ticket: Ticket) -> bool:
+    if current_user.role == "admin":
+        return True
+    return ticket.created_by == current_user.id or ticket.assigned_to == current_user.id
 
 
 def _ticket_url(ticket):
@@ -687,6 +695,9 @@ def delete_ticket(id):
     except Exception as e:
         flash(f"Error deleting ticket: {str(e)}", "danger")
         return redirect(url_for("tickets.list_tickets"))
+    except Exception as e:
+        flash(f"Error deleting ticket: {str(e)}", "danger")
+        return redirect(url_for("tickets.list_tickets"))
 
 
 # ============================================================
@@ -728,3 +739,60 @@ def download_ticket_attachment(filename):
         as_attachment=True,
         download_name=(attachment.filename or os.path.basename(filename)),
     )
+
+
+# ============================================================
+# ARCHIVE
+# ============================================================
+@tickets_bp.route("/tickets/<int:ticket_id>/archive", methods=["POST"])
+@login_required
+def archive_ticket(ticket_id: int):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if not _user_can_archive_ticket(ticket):
+        flash(_("You are not authorized to archive this ticket."), "danger")
+        abort(403)
+    try:
+        archive_entry = build_archive_from_ticket(ticket, current_user.id)
+        db.session.add(archive_entry)
+        db.session.delete(ticket)
+        db.session.commit()
+        success_msg = _("Ticket #%d archived successfully.") % ticket.id
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(success=True, message=success_msg)
+        flash(success_msg, "success")
+    except Exception:
+        db.session.rollback()
+        current_app.logger.exception("Failed to archive ticket %s", ticket_id)
+        error_msg = _("Unable to archive this ticket. Please try again.")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(success=False, message=error_msg), 500
+        flash(error_msg, "danger")
+    return redirect(request.referrer or url_for("tickets.list_tickets"))
+
+
+@tickets_bp.route("/tickets/archives")
+@login_required
+def list_ticket_archives():
+    query = TicketArchive.query
+    if current_user.role != "admin":
+        query = query.filter(
+            or_(
+                TicketArchive.created_by == current_user.id,
+                TicketArchive.assigned_to == current_user.id,
+                TicketArchive.archived_by == current_user.id,
+            )
+        )
+    archives = query.order_by(TicketArchive.archived_at.desc()).all()
+    return render_template("tickets/archive_list.html", archives=archives)
+
+
+@tickets_bp.route("/tickets/archives/<int:archive_id>")
+@login_required
+def view_ticket_archive(archive_id: int):
+    archive = TicketArchive.query.get_or_404(archive_id)
+    if current_user.role != "admin":
+        allowed = archive.created_by == current_user.id or archive.assigned_to == current_user.id or archive.archived_by == current_user.id
+        if not allowed:
+            flash(_("You cannot view this archived ticket."), "danger")
+            abort(403)
+    return render_template("tickets/archive_detail.html", archive=archive)

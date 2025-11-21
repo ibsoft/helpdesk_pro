@@ -184,11 +184,16 @@
   </div>
 </div>
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <h4><i class="fa fa-ticket-alt"></i> {{ _('Tickets') }}</h4>
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-    <i class="fa fa-plus"></i> {{ _('New Ticket') }}
-  </button>
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h4 class="mb-0"><i class="fa fa-ticket-alt me-1"></i> {{ _('Tickets') }}</h4>
+  <div class="d-flex flex-wrap gap-2">
+    <a class="btn btn-outline-secondary" href="{{ url_for('tickets.list_ticket_archives') }}">
+      <i class="fa fa-box-archive me-1"></i>{{ _('Archived Tickets') }}
+    </a>
+    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
+      <i class="fa fa-plus"></i> {{ _('New Ticket') }}
+    </button>
+  </div>
 </div>
 
 <table id="ticketsTable" class="table table-striped table-hover align-middle w-100">
@@ -269,6 +274,14 @@
         <button type="button" class="btn btn-sm btn-outline-danger delete-ticket-btn" data-id="{{ t.id }}" title="{{ _('Delete') }}">
           <i class="fa fa-trash"></i>
         </button>
+        {% if current_user.is_authenticated and (current_user.role == 'admin' or current_user.id == t.created_by or current_user.id == t.assigned_to) %}
+          <form method="post" action="{{ url_for('tickets.archive_ticket', ticket_id=t.id) }}" class="d-inline archive-ticket-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Archive') }}">
+              <i class="fa fa-box-archive"></i>
+            </button>
+          </form>
+        {% endif %}
       </td>
     </tr>
     {% endfor %}
@@ -338,9 +351,27 @@
   </div>
 </div>
 
+<!-- Archive Result Modal -->
+<div class="modal fade" id="archiveResultModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-box-archive me-2"></i>{{ _('Archive Ticket') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body" id="archiveResultBody">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- DataTables + Buttons -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/searchbuilder/1.7.0/css/searchBuilder.bootstrap5.min.css">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
@@ -349,6 +380,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdn.datatables.net/searchbuilder/1.7.0/js/dataTables.searchBuilder.min.js"></script>
 
 <script>
 $(function() {
@@ -541,6 +573,57 @@ $(function() {
     $('.container').prepend(alert);
     setTimeout(() => alert.alert('close'), 4000);
   }
+
+  // Archive ticket handler (AJAX)
+  let archiveModal;
+  let archiveShouldReload = false;
+  const archiveModalEl = document.getElementById('archiveResultModal');
+  const archiveModalBody = document.getElementById('archiveResultBody');
+  if (archiveModalEl) {
+    archiveModal = new bootstrap.Modal(archiveModalEl);
+    archiveModalEl.addEventListener('hidden.bs.modal', () => {
+      if (archiveShouldReload) {
+        archiveShouldReload = false;
+        window.location.reload();
+      }
+    });
+  }
+
+  $(document).on('submit', '.archive-ticket-form', function(e) {
+    e.preventDefault();
+    const form = this;
+    const formData = new FormData(form);
+    const btn = form.querySelector('button[type="submit"]');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData,
+    })
+      .then(resp => resp.json().catch(() => ({ success: false, message: '{{ _("Unexpected server response.") }}' })))
+      .then(data => {
+        if (archiveModal && archiveModalBody) {
+          archiveModalBody.textContent = data.message || '{{ _("Operation completed.") }}';
+          archiveShouldReload = !!data.success;
+          archiveModal.show();
+        } else if (data.success) {
+          window.location.reload();
+        }
+      })
+      .catch(() => {
+        if (archiveModal && archiveModalBody) {
+          archiveModalBody.textContent = '{{ _("Unable to archive this ticket. Please try again.") }}';
+          archiveShouldReload = false;
+          archiveModal.show();
+        }
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      });
+  });
 });
 
 // Toast notification function

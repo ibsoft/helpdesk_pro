@@ -18,7 +18,7 @@ from flask_mail import Mail
 from flask_wtf import CSRFProtect
 from flask_babel import Babel
 from flask_jwt_extended import JWTManager
-from logging.handlers import RotatingFileHandler
+from logging.handlers import TimedRotatingFileHandler
 from config import Config
 from app.mcp import init_app as init_mcp
 from app.utils.i18n import PoFallbackDomain
@@ -194,6 +194,7 @@ def create_app():
             FleetFileTransfer,
             FleetAgentDownloadLink,
         )
+        from app.models.ticket import TicketArchive
 
         ModulePermission.__table__.create(bind=db.engine, checkfirst=True)
 
@@ -221,6 +222,7 @@ def create_app():
         FleetAlert.__table__.create(bind=db.engine, checkfirst=True)
         FleetRemoteCommand.__table__.create(bind=db.engine, checkfirst=True)
         FleetFileTransfer.__table__.create(bind=db.engine, checkfirst=True)
+        TicketArchive.__table__.create(bind=db.engine, checkfirst=True)
 
     from app.email2ticket import init_app as init_email2ticket
 
@@ -228,24 +230,37 @@ def create_app():
 
     # ───────── Logging ───────── #
     os.makedirs("logs", exist_ok=True)
-    handler = RotatingFileHandler(
-        "logs/helpdesk.log", maxBytes=10240, backupCount=10)
-    handler.setLevel(app.config.get("LOG_LEVEL", "INFO"))
-    handler.setFormatter(logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-    app.logger.addHandler(handler)
+    log_level_name = str(app.config.get("LOG_LEVEL", "INFO")).upper()
+    file_level_name = str(
+        app.config.get("LOG_FILE_LEVEL") or ("INFO" if log_level_name == "DEBUG" else log_level_name)
+    ).upper()
+    log_level = getattr(logging, log_level_name, logging.INFO)
+    file_level = getattr(logging, file_level_name, logging.INFO)
+    log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-    if not any(isinstance(h, logging.StreamHandler) for h in app.logger.handlers):
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(app.config.get("LOG_LEVEL", "INFO"))
-        console_handler.setFormatter(logging.Formatter(
-            "%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
-        app.logger.addHandler(console_handler)
+    file_handler = TimedRotatingFileHandler("logs/helpdesk.log", when="midnight", interval=1, backupCount=10, utc=False)
+    file_handler.setLevel(file_level)
+    file_handler.setFormatter(log_formatter)
 
-    app.logger.setLevel(app.config.get("LOG_LEVEL", "INFO"))
-    app.logger.propagate = False
+    root_logger = logging.getLogger()
+    # remove existing handlers pointing to the same file to avoid duplicate entries
+    for handler in list(root_logger.handlers):
+        if isinstance(handler, TimedRotatingFileHandler) and getattr(handler, "baseFilename", "") == file_handler.baseFilename:
+            root_logger.removeHandler(handler)
+            try:
+                handler.close()
+            except Exception:
+                pass
+    root_logger.addHandler(file_handler)
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    console_handler.setFormatter(log_formatter)
+    root_logger.addHandler(console_handler)
+    root_logger.setLevel(min(level for level in [root_logger.level or log_level, file_level, log_level] if isinstance(level, int)))
 
-    if app.config.get("SQLALCHEMY_ECHO", False) or app.config.get("LOG_LEVEL", "INFO") == "DEBUG":
+    app.logger.propagate = True
+
+    if app.config.get("SQLALCHEMY_ECHO", False) or log_level_name == "DEBUG":
         sql_logger = logging.getLogger("sqlalchemy.engine")
         sql_logger.setLevel(logging.INFO)
         if not any(isinstance(h, logging.StreamHandler) for h in sql_logger.handlers):

@@ -709,38 +709,75 @@ def host_detail(host_id: int):
         return jsonify({"host": host.agent_id, "messages": data})
 
     per_page_param = request.args.get("per_page")
-    try:
-        per_page = int(per_page_param or current_app.config.get("FLEET_HOST_FEED_PAGE_SIZE", 25))
-    except (TypeError, ValueError):
-        per_page = current_app.config.get("FLEET_HOST_FEED_PAGE_SIZE", 25)
-    per_page = max(5, min(per_page, 200))
+    show_all_entries = (per_page_param or "").strip().lower() == "all"
+    if show_all_entries:
+        per_page = None
+    else:
+        try:
+            per_page = int(per_page_param or current_app.config.get("FLEET_HOST_FEED_PAGE_SIZE", 25))
+        except (TypeError, ValueError):
+            per_page = current_app.config.get("FLEET_HOST_FEED_PAGE_SIZE", 25)
+        per_page = max(5, min(per_page, 200))
     page = request.args.get("page", 1, type=int) or 1
     if filtered_messages_cache is not None:
         total_matches = len(filtered_messages_cache)
-        pages = max(1, math.ceil(total_matches / per_page)) if total_matches else 1
-        page = max(1, min(page, pages))
-        start = (page - 1) * per_page
-        end = start + per_page
-        messages = filtered_messages_cache[start:end]
+        sorted_cache = sorted(filtered_messages_cache, key=lambda m: m.ts or datetime.min, reverse=True)
+        if show_all_entries:
+            messages = sorted_cache
+            pagination = SimpleNamespace(
+                page=1,
+                per_page=total_matches,
+                total=total_matches,
+                pages=1,
+                has_prev=False,
+                has_next=False,
+                prev_num=1,
+                next_num=1,
+                show_all=True,
+            )
+        else:
+            pages = max(1, math.ceil(total_matches / per_page)) if total_matches else 1
+            page = max(1, min(page, pages))
+            start = (page - 1) * per_page
+            end = start + per_page
+            messages = sorted_cache[start:end]
+            pagination = SimpleNamespace(
+                page=page,
+                per_page=per_page,
+                total=total_matches,
+                pages=pages,
+                has_prev=page > 1 and total_matches > 0,
+                has_next=page < pages and total_matches > 0,
+                prev_num=page - 1 if page > 1 else 1,
+                next_num=page + 1 if page < pages else pages,
+                show_all=False,
+            )
         message_payload_map = {msg.id: msg.payload for msg in messages}
-        pagination = SimpleNamespace(
-            page=page,
-            per_page=per_page,
-            total=total_matches,
-            pages=pages,
-            has_prev=page > 1 and total_matches > 0,
-            has_next=page < pages and total_matches > 0,
-            prev_num=page - 1 if page > 1 else 1,
-            next_num=page + 1 if page < pages else pages,
-        )
         counts = Counter(msg.category or "" for msg in filtered_messages_cache)
         category_counts = [
             {"name": name or _("Uncategorized"), "raw": name or "", "count": count}
             for name, count in counts.most_common(12)
         ]
     else:
-        pagination = query.order_by(FleetMessage.ts.desc()).paginate(page=page, per_page=per_page, error_out=False)
-        messages = pagination.items
+        ordered_query = query.order_by(FleetMessage.ts.desc())
+        if show_all_entries:
+            messages = ordered_query.all()
+            total_matches = len(messages)
+            pagination = SimpleNamespace(
+                page=1,
+                per_page=total_matches,
+                total=total_matches,
+                pages=1,
+                has_prev=False,
+                has_next=False,
+                prev_num=1,
+                next_num=1,
+                show_all=True,
+            )
+        else:
+            pagination = ordered_query.paginate(page=page, per_page=per_page, error_out=False)
+            messages = pagination.items
+            pagination.show_all = False  # type: ignore[attr-defined]
         message_payload_map = {msg.id: msg.payload for msg in messages}
         category_rows = (
             category_count_query.with_entities(
@@ -836,6 +873,44 @@ def remote_actions_panel(host_id: int):
     _require_view_permission()
     host = FleetHost.query.get_or_404(host_id)
     return _remote_panel_response(host)
+
+
+@fleet_bp.post("/hosts/<int:host_id>/messages/purge")
+@login_required
+def purge_host_messages(host_id: int):
+    require_module_write("fleet_monitoring")
+    host = FleetHost.query.get_or_404(host_id)
+    scope = (request.form.get("scope") or "").strip().lower()
+    windows = {
+        "day": timedelta(days=1),
+        "week": timedelta(weeks=1),
+        "month": timedelta(days=30),
+        "year": timedelta(days=365),
+    }
+    if scope not in windows:
+        message = _("Select a valid purge window.")
+        if _is_ajax_request():
+            return jsonify({"success": False, "message": message}), 400
+        flash(message, "danger")
+        return redirect(url_for("fleet.host_detail", host_id=host.id))
+
+    cutoff = datetime.utcnow() - windows[scope]
+    deleted = FleetMessage.query.filter(
+        FleetMessage.host_id == host.id,
+        FleetMessage.ts < cutoff,
+    ).delete(synchronize_session=False)
+    db.session.commit()
+
+    message = _(
+        "Purged %(count)s telemetry messages older than %(scope)s.",
+        count=deleted,
+        scope=scope,
+    )
+    if _is_ajax_request():
+        return jsonify({"success": True, "message": message})
+
+    flash(message, "success")
+    return redirect(url_for("fleet.host_detail", host_id=host.id))
 
 
 @fleet_bp.get("/hosts/<int:host_id>/status-panel")
@@ -1622,7 +1697,8 @@ def upload_agent_installer():
         flash(_("Select a Telemetry_Agent.msi file to upload."), "danger")
         return redirect(url_for("fleet.settings"))
     filename = secure_filename(file.filename, allow_unicode=True)
-    if not filename.lower().endswith(".msi"):
+    ext = os.path.splitext(filename or "")[1].lower()
+    if ext != ".msi":
         flash(_("Installer must be a .msi file."), "danger")
         return redirect(url_for("fleet.settings"))
     installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH")
@@ -1641,12 +1717,12 @@ def upload_agent_installer():
             os.remove(tmp_path)
             return redirect(url_for("fleet.settings"))
         with open(tmp_path, "rb") as fh:
-            magic = fh.read(2)
-            if magic != b"MZ":
+            magic = fh.read(4)
+            if not (magic.startswith(b"MZ") or magic == b"\xd0\xcf\x11\xe0"):
                 flash(_("Installer file is not a valid Windows executable."), "danger")
                 os.remove(tmp_path)
                 return redirect(url_for("fleet.settings"))
-        os.replace(tmp_path, installer_path)
+        shutil.move(tmp_path, installer_path)
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

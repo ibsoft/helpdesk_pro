@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template
 from flask_login import login_required, current_user
+from flask_babel import gettext as _
 from sqlalchemy import func, or_, case, select
 from datetime import datetime, timedelta, date
 from app import db
@@ -8,6 +9,7 @@ from app.models.ticket import Ticket
 from app.models.knowledge import KnowledgeArticle
 from app.models.inventory import HardwareAsset, SoftwareAsset
 from app.models.network import Network, NetworkHost
+from app.models.contracts import Contract
 from app.navigation import is_feature_allowed
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -117,13 +119,13 @@ def index():
         return str(d.year)
 
     daily_labels, daily_created = build_series("day", 7, created_day_map, daily_formatter)
-    _, daily_closed = build_series("day", 7, closed_day_map, daily_formatter)
+    dummy, daily_closed = build_series("day", 7, closed_day_map, daily_formatter)
 
     weekly_labels, weekly_created = build_series("week", 8, created_week_map, weekly_formatter)
-    _, weekly_closed = build_series("week", 8, closed_week_map, weekly_formatter)
+    dummy, weekly_closed = build_series("week", 8, closed_week_map, weekly_formatter)
 
     monthly_labels, monthly_created = build_series("month", 12, created_month_map, monthly_formatter)
-    _, monthly_closed = build_series("month", 12, closed_month_map, monthly_formatter)
+    dummy, monthly_closed = build_series("month", 12, closed_month_map, monthly_formatter)
 
     monthly_rate = [
         round((closed / created * 100) if created else 0, 1)
@@ -153,10 +155,12 @@ def index():
             knowledge_map[bucket_value.date()] = count
         knowledge_labels, knowledge_counts = build_series("month", 12, knowledge_map, monthly_formatter)
 
+    show_admin_metrics = current_user.role in {"admin", "manager"}
+
     inventory_enabled = is_feature_allowed("inventory", current_user)
     hardware_stats = {"total": 0, "assigned": 0, "available": 0}
     software_stats = {"total": 0, "assigned": 0, "available": 0}
-    if inventory_enabled:
+    if inventory_enabled or show_admin_metrics:
         hardware_stats["total"] = db.session.query(func.count(HardwareAsset.id)).scalar() or 0
         hardware_stats["assigned"] = db.session.query(func.count(HardwareAsset.id)).filter(HardwareAsset.assigned_to.isnot(None)).scalar() or 0
         hardware_stats["available"] = max(hardware_stats["total"] - hardware_stats["assigned"], 0)
@@ -185,6 +189,15 @@ def index():
 
     # === 7️⃣ Department summary table (Managers & Admins) ===
     dept_summary = []
+    timeline_rows = []
+    timeline_max_load = 0
+    contract_labels: list[str] = []
+    contract_values: list[float] = []
+    contract_year_labels: list[str] = []
+    contract_year_hardware: list[float] = []
+    contract_year_software: list[float] = []
+    contract_year_services: list[float] = []
+    contract_year_other: list[float] = []
     if current_user.role in ("admin", "manager"):
         if current_user.role == "admin":
             dept_users_query = User.query
@@ -207,6 +220,72 @@ def index():
             .order_by(User.username)
             .all()
         )
+        for row in dept_summary:
+            open_count = int(row.open or 0)
+            progress_count = int(row.in_progress or 0)
+            total = open_count + progress_count
+            timeline_max_load = max(timeline_max_load, total)
+            timeline_rows.append(
+                {
+                    "username": row.username,
+                    "open": open_count,
+                    "in_progress": progress_count,
+                    "total": total,
+                }
+            )
+
+    contract_rows = (
+        db.session.query(
+            Contract.contract_type,
+            func.coalesce(func.sum(Contract.value), 0).label("total_value"),
+        )
+        .group_by(Contract.contract_type)
+        .order_by(func.coalesce(func.sum(Contract.value), 0).desc())
+        .all()
+    )
+    for contract_type, total in contract_rows:
+        contract_labels.append(contract_type or _("Unknown"))
+        contract_values.append(float(total or 0))
+
+    date_expr = func.coalesce(Contract.start_date, Contract.renewal_date, Contract.end_date)
+    yearly_contract_rows = (
+        db.session.query(
+            func.extract("year", date_expr).label("yr"),
+            Contract.contract_type,
+            func.coalesce(func.sum(Contract.value), 0).label("total_value"),
+        )
+        .filter(date_expr.isnot(None))
+        .group_by("yr", Contract.contract_type)
+        .order_by("yr")
+        .all()
+    )
+    if yearly_contract_rows:
+        year_map: dict[int, dict[str, float]] = {}
+        for yr_val, contract_type, total in yearly_contract_rows:
+            if yr_val is None:
+                continue
+            year = int(yr_val)
+            bucket = year_map.setdefault(year, {"hardware": 0.0, "software": 0.0, "services": 0.0, "other": 0.0})
+            ctype = (contract_type or "").lower()
+            if "hardware" in ctype:
+                key = "hardware"
+            elif "software" in ctype:
+                key = "software"
+            elif "service" in ctype:
+                key = "services"
+            else:
+                key = "other"
+            bucket[key] += float(total or 0)
+        year_labels_sorted = sorted(year_map.keys())
+        contract_year_labels = [str(y) for y in year_labels_sorted]
+        contract_year_hardware = [round(year_map[y]["hardware"], 2) for y in year_labels_sorted]
+        contract_year_software = [round(year_map[y]["software"], 2) for y in year_labels_sorted]
+        contract_year_services = [round(year_map[y]["services"], 2) for y in year_labels_sorted]
+        contract_year_other = [round(year_map[y]["other"], 2) for y in year_labels_sorted]
+
+    asset_labels = [_("Hardware"), _("Software")]
+    asset_assigned = [hardware_stats["assigned"], software_stats["assigned"]]
+    asset_available = [hardware_stats["available"], software_stats["available"]]
 
     # === 8️⃣ Render ===
     return render_template(
@@ -223,6 +302,8 @@ def index():
         weekly_closed=weekly_closed,
         monthly_labels=monthly_labels,
         monthly_rate=monthly_rate,
+        monthly_created_series=monthly_created,
+        monthly_closed_series=monthly_closed,
         yearly_labels=yearly_labels,
         yearly_closed=yearly_closed,
         dept_summary=dept_summary,
@@ -236,4 +317,17 @@ def index():
         network_labels=network_labels,
         network_used=network_used,
         network_available=network_available,
+        timeline_rows=timeline_rows,
+        timeline_max_load=timeline_max_load,
+        contract_labels=contract_labels,
+        contract_values=contract_values,
+        show_admin_metrics=show_admin_metrics,
+        asset_labels=asset_labels,
+        asset_assigned=asset_assigned,
+        asset_available=asset_available,
+        contract_year_labels=contract_year_labels,
+        contract_year_hardware=contract_year_hardware,
+        contract_year_software=contract_year_software,
+        contract_year_services=contract_year_services,
+        contract_year_other=contract_year_other,
     )

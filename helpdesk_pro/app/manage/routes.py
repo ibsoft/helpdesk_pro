@@ -8,9 +8,10 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 
-from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app
+from flask import Blueprint, render_template, request, redirect, url_for, flash, current_app, abort
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
+from sqlalchemy import or_
 
 from app import db
 from app.models import (
@@ -21,6 +22,11 @@ from app.models import (
     ApiClient,
     User,
     EmailIngestConfig,
+    Ticket,
+    TicketArchive,
+    TicketComment,
+    Attachment,
+    AuditLog,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
@@ -34,10 +40,13 @@ from app.permissions import (
     MODULE_ACCESS_DEFINITIONS,
     MODULE_ACCESS_LEVELS,
     clear_access_cache,
+    get_module_access,
+    require_module_write,
 )
 from app.mcp import start_mcp_server, stop_mcp_server, refresh_mcp_settings
 from dotenv import dotenv_values, load_dotenv, set_key, unset_key
 from config import Config
+from app.tickets.archive_utils import build_archive_from_ticket
 
 
 manage_bp = Blueprint("manage", __name__, url_prefix="/manage")
@@ -47,6 +56,15 @@ def _require_admin():
     if not current_user.is_authenticated or current_user.role != "admin":
         from flask import abort
         abort(403)
+
+
+def _parse_iso(value: str | None):
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
 
 
 CONFIGURATION_SECTIONS = [
@@ -1136,3 +1154,152 @@ def email_ingest():
         users=users,
         password_placeholder=password_placeholder,
     )
+
+
+@manage_bp.route("/ticket-archives", methods=["GET", "POST"])
+@login_required
+def ticket_archives():
+    access = get_module_access(current_user, "ticket_archives")
+    if access not in {"read", "write"}:
+        abort(403)
+    windows = [
+        ("day", _("Older than 1 day")),
+        ("week", _("Older than 1 week")),
+        ("month", _("Older than 1 month")),
+        ("year", _("Older than 1 year")),
+    ]
+    window_map = {
+        "day": timedelta(days=1),
+        "week": timedelta(weeks=1),
+        "month": timedelta(days=30),
+        "year": timedelta(days=365),
+    }
+    if request.method == "POST":
+        require_module_write("ticket_archives")
+        scope = (request.form.get("scope") or "").strip().lower()
+        if scope not in window_map:
+            flash(_("Select a valid archive window."), "danger")
+            return redirect(url_for("manage.ticket_archives"))
+        cutoff = datetime.utcnow() - window_map[scope]
+        tickets_query = Ticket.query.filter(Ticket.created_at <= cutoff).filter(Ticket.status == "Closed")
+        tickets = tickets_query.all()
+        archived = 0
+        for ticket in tickets:
+            archive_entry = build_archive_from_ticket(ticket, current_user.id)
+            db.session.add(archive_entry)
+            db.session.delete(ticket)
+            archived += 1
+        db.session.commit()
+        flash(
+            _("Archived %(count)s ticket(s) older than %(window)s.", count=archived, window=scope),
+            "success" if archived else "info",
+        )
+        return redirect(url_for("manage.ticket_archives"))
+
+    query = TicketArchive.query.filter(TicketArchive.status == "Closed")
+    if current_user.role == "manager":
+        dept_users = (
+            User.query.filter_by(department=current_user.department)
+            .with_entities(User.id)
+            .subquery()
+        )
+        query = query.filter(
+            or_(
+                TicketArchive.created_by.in_(dept_users),
+                TicketArchive.assigned_to.in_(dept_users),
+            )
+        )
+
+    archives = query.order_by(TicketArchive.archived_at.desc()).all()
+    status_counts = {
+        "total": len(archives),
+        "closed": sum(1 for a in archives if (a.status or "").lower() == "closed"),
+    }
+    owner_lookup = {}
+    owner_ids = {a.created_by for a in archives if a.created_by}
+    if owner_ids:
+        owners = User.query.filter(User.id.in_(owner_ids)).all()
+        owner_lookup = {u.id: u.username for u in owners}
+
+    return render_template(
+        "manage/ticket_archives.html",
+        windows=windows,
+        archives=archives,
+        can_archive=access == "write",
+        status_counts=status_counts,
+        owner_lookup=owner_lookup,
+    )
+
+
+@manage_bp.get("/ticket-archives/<int:archive_id>")
+@login_required
+def ticket_archive_detail(archive_id: int):
+    access = get_module_access(current_user, "ticket_archives")
+    if access not in {"read", "write"}:
+        abort(403)
+    archive = TicketArchive.query.get_or_404(archive_id)
+    owner_name = None
+    if archive.created_by:
+        owner = User.query.get(archive.created_by)
+        owner_name = owner.username if owner else f"#{archive.created_by}"
+    return render_template("manage/ticket_archive_detail.html", archive=archive, owner_name=owner_name)
+
+
+@manage_bp.post("/ticket-archives/<int:archive_id>/restore")
+@login_required
+def restore_ticket_archive(archive_id: int):
+    require_module_write("ticket_archives")
+    archive = TicketArchive.query.get_or_404(archive_id)
+    existing = Ticket.query.get(archive.ticket_id)
+    if existing:
+        flash(_("Ticket %(id)s already exists. Remove it before restoring.", id=archive.ticket_id), "warning")
+        return redirect(url_for("manage.ticket_archives"))
+
+    ticket = Ticket(
+        subject=archive.subject,
+        description=archive.description,
+        priority=archive.priority,
+        status=archive.status,
+        department=archive.department,
+        created_by=archive.created_by or current_user.id,
+        assigned_to=archive.assigned_to,
+        created_at=archive.created_at or datetime.utcnow(),
+        updated_at=archive.updated_at or datetime.utcnow(),
+        closed_at=archive.closed_at,
+    )
+    ticket.id = archive.ticket_id
+    db.session.add(ticket)
+    db.session.flush()
+
+    for comment_data in archive.comments or []:
+        comment = TicketComment(
+            ticket_id=ticket.id,
+            user=comment_data.get("user"),
+            comment=comment_data.get("comment"),
+            created_at=_parse_iso(comment_data.get("created_at")),
+        )
+        db.session.add(comment)
+
+    for attachment_data in archive.attachments or []:
+        attachment = Attachment(
+            ticket_id=ticket.id,
+            filename=attachment_data.get("filename"),
+            filepath=attachment_data.get("filepath"),
+            uploaded_by=attachment_data.get("uploaded_by"),
+            uploaded_at=_parse_iso(attachment_data.get("uploaded_at")),
+        )
+        db.session.add(attachment)
+
+    for log_data in archive.logs or []:
+        log = AuditLog(
+            action=log_data.get("action"),
+            username=log_data.get("username"),
+            ticket_id=ticket.id,
+            timestamp=_parse_iso(log_data.get("timestamp")),
+        )
+        db.session.add(log)
+
+    db.session.delete(archive)
+    db.session.commit()
+    flash(_("Ticket %(id)s restored from archive.", id=ticket.id), "success")
+    return redirect(url_for("manage.ticket_archives"))

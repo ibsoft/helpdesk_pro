@@ -257,21 +257,28 @@ Legacy compatibility: older ticket attachments under `static/uploads` are served
 ```
 helpdesk_pro/
   app/
-    api/          # Public REST API blueprint
-    assistant/    # AI assistant routes
-    auth/         # Login/session flows
-    inventory/    # Hardware & software modules
-    knowledge/    # Knowledge base
-    networks/     # Network maps and hosts
-    tickets/      # Ticketing UI and actions
-    users/        # User management
-    manage/       # Admin settings, API keys, docs
-    utils/        # Helpers (files, mail, etc.)
-    models/       # SQLAlchemy models
-  instance/       # Local config and uploads
-  migrations/     # Alembic migrations
-  config.py       # Settings
-  API.md          # Detailed API guide
+    api/            # Public REST API blueprint
+    assistant/      # AI assistant routes & uploads
+    auth/           # Login/session flows
+    backup/         # Tape custody tracking
+    collab/         # Team conversations
+    contracts/      # Vendor contract management
+    dashboard/      # Default landing widgets
+    email2ticket/   # Mail ingestion worker
+    fleet/          # Fleet monitoring (+ ingest/job scheduler)
+    inventory/      # Hardware & software modules
+    knowledge/      # Knowledge base
+    manage/         # Admin settings, API keys, docs
+    networks/       # Network maps and hosts
+    tickets/        # Ticketing UI and actions
+    users/          # User management
+    utils/          # Helpers (files, mail, etc.)
+    models/         # SQLAlchemy models (tickets, fleet, etc.)
+  instance/         # Local config and uploads
+  migrations/       # Alembic migrations
+  docs/             # Handbook, rate-limiting snippets
+  config.py         # Settings
+  API.md            # Detailed API guide
   README.md
 ```
 
