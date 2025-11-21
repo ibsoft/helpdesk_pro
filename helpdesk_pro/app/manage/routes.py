@@ -1197,17 +1197,37 @@ def ticket_archives():
         return redirect(url_for("manage.ticket_archives"))
 
     query = TicketArchive.query.filter(TicketArchive.status == "Closed")
+    if current_user.role == "manager":
+        dept_users = (
+            User.query.filter_by(department=current_user.department)
+            .with_entities(User.id)
+            .subquery()
+        )
+        query = query.filter(
+            or_(
+                TicketArchive.created_by.in_(dept_users),
+                TicketArchive.assigned_to.in_(dept_users),
+            )
+        )
+
     archives = query.order_by(TicketArchive.archived_at.desc()).all()
     status_counts = {
         "total": len(archives),
         "closed": sum(1 for a in archives if (a.status or "").lower() == "closed"),
     }
+    owner_lookup = {}
+    owner_ids = {a.created_by for a in archives if a.created_by}
+    if owner_ids:
+        owners = User.query.filter(User.id.in_(owner_ids)).all()
+        owner_lookup = {u.id: u.username for u in owners}
+
     return render_template(
         "manage/ticket_archives.html",
         windows=windows,
         archives=archives,
         can_archive=access == "write",
         status_counts=status_counts,
+        owner_lookup=owner_lookup,
     )
 
 
@@ -1218,7 +1238,11 @@ def ticket_archive_detail(archive_id: int):
     if access not in {"read", "write"}:
         abort(403)
     archive = TicketArchive.query.get_or_404(archive_id)
-    return render_template("manage/ticket_archive_detail.html", archive=archive)
+    owner_name = None
+    if archive.created_by:
+        owner = User.query.get(archive.created_by)
+        owner_name = owner.username if owner else f"#{archive.created_by}"
+    return render_template("manage/ticket_archive_detail.html", archive=archive, owner_name=owner_name)
 
 
 @manage_bp.post("/ticket-archives/<int:archive_id>/restore")

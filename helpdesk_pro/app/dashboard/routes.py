@@ -155,10 +155,12 @@ def index():
             knowledge_map[bucket_value.date()] = count
         knowledge_labels, knowledge_counts = build_series("month", 12, knowledge_map, monthly_formatter)
 
+    show_admin_metrics = current_user.role in {"admin", "manager"}
+
     inventory_enabled = is_feature_allowed("inventory", current_user)
     hardware_stats = {"total": 0, "assigned": 0, "available": 0}
     software_stats = {"total": 0, "assigned": 0, "available": 0}
-    if inventory_enabled:
+    if inventory_enabled or show_admin_metrics:
         hardware_stats["total"] = db.session.query(func.count(HardwareAsset.id)).scalar() or 0
         hardware_stats["assigned"] = db.session.query(func.count(HardwareAsset.id)).filter(HardwareAsset.assigned_to.isnot(None)).scalar() or 0
         hardware_stats["available"] = max(hardware_stats["total"] - hardware_stats["assigned"], 0)
@@ -196,10 +198,6 @@ def index():
     contract_year_software: list[float] = []
     contract_year_services: list[float] = []
     contract_year_other: list[float] = []
-    show_admin_metrics = current_user.role == "admin"
-    asset_labels = [_("Hardware"), _("Software")]
-    asset_assigned = [hardware_stats["assigned"], software_stats["assigned"]]
-    asset_available = [hardware_stats["available"], software_stats["available"]]
     if current_user.role in ("admin", "manager"):
         if current_user.role == "admin":
             dept_users_query = User.query
@@ -284,6 +282,10 @@ def index():
         contract_year_software = [round(year_map[y]["software"], 2) for y in year_labels_sorted]
         contract_year_services = [round(year_map[y]["services"], 2) for y in year_labels_sorted]
         contract_year_other = [round(year_map[y]["other"], 2) for y in year_labels_sorted]
+
+    asset_labels = [_("Hardware"), _("Software")]
+    asset_assigned = [hardware_stats["assigned"], software_stats["assigned"]]
+    asset_available = [hardware_stats["available"], software_stats["available"]]
 
     # === 8️⃣ Render ===
     return render_template(

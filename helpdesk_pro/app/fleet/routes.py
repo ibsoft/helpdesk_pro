@@ -1697,7 +1697,8 @@ def upload_agent_installer():
         flash(_("Select a Telemetry_Agent.msi file to upload."), "danger")
         return redirect(url_for("fleet.settings"))
     filename = secure_filename(file.filename, allow_unicode=True)
-    if not filename.lower().endswith(".msi"):
+    ext = os.path.splitext(filename or "")[1].lower()
+    if ext != ".msi":
         flash(_("Installer must be a .msi file."), "danger")
         return redirect(url_for("fleet.settings"))
     installer_path = current_app.config.get("FLEET_AGENT_INSTALLER_PATH")
@@ -1716,12 +1717,12 @@ def upload_agent_installer():
             os.remove(tmp_path)
             return redirect(url_for("fleet.settings"))
         with open(tmp_path, "rb") as fh:
-            magic = fh.read(2)
-            if magic != b"MZ":
+            magic = fh.read(4)
+            if not (magic.startswith(b"MZ") or magic == b"\xd0\xcf\x11\xe0"):
                 flash(_("Installer file is not a valid Windows executable."), "danger")
                 os.remove(tmp_path)
                 return redirect(url_for("fleet.settings"))
-        os.replace(tmp_path, installer_path)
+        shutil.move(tmp_path, installer_path)
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

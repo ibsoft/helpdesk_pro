@@ -154,6 +154,7 @@
           <tr>
             <th>{{ _('Ticket #') }}</th>
             <th>{{ _('Subject') }}</th>
+            <th>{{ _('Owner') }}</th>
             <th>{{ _('Priority') }}</th>
             <th>{{ _('Status') }}</th>
             <th>{{ _('Department') }}</th>
@@ -167,6 +168,7 @@
             <tr>
               <td>{{ archive.ticket_id }}</td>
               <td>{{ archive.subject }}</td>
+              <td>{{ owner_lookup.get(archive.created_by, _('—')) }}</td>
               <td>{{ archive.priority or _('—') }}</td>
               <td>{{ archive.status or _('Unknown') }}</td>
               <td>{{ archive.department or _('—') }}</td>
@@ -177,16 +179,37 @@
                   <i class="fa fa-eye"></i> {{ _('View') }}
                 </a>
                 {% if can_archive %}
-                  <form method="post" action="{{ url_for('manage.restore_ticket_archive', archive_id=archive.id) }}" class="d-inline" onsubmit="return confirm('{{ _('Restore this ticket back to the active queue?') }}');">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-success"><i class="fa fa-rotate-left"></i> {{ _('Restore') }}</button>
-                  </form>
+                  <button type="button" class="btn btn-sm btn-outline-success restore-btn" data-action="{{ url_for('manage.restore_ticket_archive', archive_id=archive.id) }}">
+                    <i class="fa fa-rotate-left"></i> {{ _('Restore') }}
+                  </button>
                 {% endif %}
               </td>
             </tr>
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- Restore modal -->
+<div class="modal fade" id="restoreModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title"><i class="fa fa-rotate-left me-2"></i>{{ _('Restore Ticket') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-0">{{ _('Restore this ticket back to the active queue?') }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <form method="post" id="restoreForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-success"><i class="fa fa-rotate-left"></i> {{ _('Restore') }}</button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
@@ -212,7 +235,7 @@ $(function() {
     url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}"
   };
   const table = $('#manageArchiveTable').DataTable({
-    order: [[5, 'desc']],
+    order: [[6, 'desc']],
     language: dtLanguage,
     dom: "<'row mb-2'<'col-md-6 d-flex align-items-center gap-2'lB><'col-md-6 text-end'f>>" +
          "<'row'<'col-sm-12'tr>>" +
@@ -227,11 +250,24 @@ $(function() {
       { targets: -1, orderable: false, searchable: false }
     ],
     searchBuilder: {
-      columns: [0, 1, 2, 3, 4, 5, 6],
+      columns: [0, 1, 2, 3, 4, 5, 6, 7],
       depthLimit: 3
     }
   });
   $('[data-bs-toggle="tooltip"]').tooltip();
+
+  const restoreModalEl = document.getElementById('restoreModal');
+  const restoreFormEl = document.getElementById('restoreForm');
+  let restoreModal;
+  if (restoreModalEl) {
+    restoreModal = new bootstrap.Modal(restoreModalEl);
+  }
+  $(document).on('click', '.restore-btn', function() {
+    if (!restoreModal || !restoreFormEl) return;
+    const action = this.getAttribute('data-action');
+    restoreFormEl.setAttribute('action', action);
+    restoreModal.show();
+  });
 });
 </script>
 

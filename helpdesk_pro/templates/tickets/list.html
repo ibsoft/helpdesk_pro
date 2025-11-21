@@ -275,7 +275,7 @@
           <i class="fa fa-trash"></i>
         </button>
         {% if current_user.is_authenticated and (current_user.role == 'admin' or current_user.id == t.created_by or current_user.id == t.assigned_to) %}
-          <form method="post" action="{{ url_for('tickets.archive_ticket', ticket_id=t.id) }}" class="d-inline" onsubmit="return confirm('{{ _('Archive this ticket?') }}');">
+          <form method="post" action="{{ url_for('tickets.archive_ticket', ticket_id=t.id) }}" class="d-inline archive-ticket-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-sm btn-outline-secondary" title="{{ _('Archive') }}">
               <i class="fa fa-box-archive"></i>
@@ -346,6 +346,23 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
         <button type="button" id="confirmDeleteBtn" class="btn btn-danger"><i class="fa fa-trash"></i> {{ _('Delete') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Archive Result Modal -->
+<div class="modal fade" id="archiveResultModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-box-archive me-2"></i>{{ _('Archive Ticket') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body" id="archiveResultBody">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ _('Close') }}</button>
       </div>
     </div>
   </div>
@@ -556,6 +573,57 @@ $(function() {
     $('.container').prepend(alert);
     setTimeout(() => alert.alert('close'), 4000);
   }
+
+  // Archive ticket handler (AJAX)
+  let archiveModal;
+  let archiveShouldReload = false;
+  const archiveModalEl = document.getElementById('archiveResultModal');
+  const archiveModalBody = document.getElementById('archiveResultBody');
+  if (archiveModalEl) {
+    archiveModal = new bootstrap.Modal(archiveModalEl);
+    archiveModalEl.addEventListener('hidden.bs.modal', () => {
+      if (archiveShouldReload) {
+        archiveShouldReload = false;
+        window.location.reload();
+      }
+    });
+  }
+
+  $(document).on('submit', '.archive-ticket-form', function(e) {
+    e.preventDefault();
+    const form = this;
+    const formData = new FormData(form);
+    const btn = form.querySelector('button[type="submit"]');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      body: formData,
+    })
+      .then(resp => resp.json().catch(() => ({ success: false, message: '{{ _("Unexpected server response.") }}' })))
+      .then(data => {
+        if (archiveModal && archiveModalBody) {
+          archiveModalBody.textContent = data.message || '{{ _("Operation completed.") }}';
+          archiveShouldReload = !!data.success;
+          archiveModal.show();
+        } else if (data.success) {
+          window.location.reload();
+        }
+      })
+      .catch(() => {
+        if (archiveModal && archiveModalBody) {
+          archiveModalBody.textContent = '{{ _("Unable to archive this ticket. Please try again.") }}';
+          archiveShouldReload = false;
+          archiveModal.show();
+        }
+      })
+      .finally(() => {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      });
+  });
 });
 
 // Toast notification function

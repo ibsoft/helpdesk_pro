@@ -44,20 +44,15 @@
     background: rgba(248,249,250,0.85);
     color: #0f172a;
   }
-  html[data-bs-theme="dark"] pre,
-  html[data-bs-theme="dark"] .description-block,
-  html[data-bs-theme="dark"] .archive-description {
-    background: rgba(15,23,42,0.8);
+  .description-text {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    color: inherit;
+    background: transparent;
+  }
+  html[data-bs-theme="dark"] pre {
+    background: rgba(15,23,42,0.65);
     color: #f8fafc;
-  }
-  .description-block {
-    background: rgba(15,23,42,0.04);
-    border-radius: 0.75rem;
-    color: #0f172a;
-  }
-  html[data-bs-theme="dark"] .description-block {
-    background: rgba(15,23,42,0.75);
-    color: #e2e8f0;
   }
   html[data-bs-theme="dark"] .ticket-pulse {
     background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(99,102,241,0.24));
@@ -106,7 +101,7 @@
     </div>
     <div class="ticket-meta-item description-container mt-3">
       <p class="fw-semibold mb-1"><i class="fa fa-align-left me-1 text-primary"></i>{{ _('Description') }}</p>
-      <pre class="description-block" style="white-space: pre-wrap;">{{ archive.description }}</pre>
+      <div class="description-text">{{ archive.description }}</div>
     </div>
   </div>
 </div>

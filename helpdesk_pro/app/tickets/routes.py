@@ -756,11 +756,17 @@ def archive_ticket(ticket_id: int):
         db.session.add(archive_entry)
         db.session.delete(ticket)
         db.session.commit()
-        flash(_("Ticket #%d archived successfully.", ticket.id), "success")
+        success_msg = _("Ticket #%d archived successfully.") % ticket.id
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(success=True, message=success_msg)
+        flash(success_msg, "success")
     except Exception:
         db.session.rollback()
         current_app.logger.exception("Failed to archive ticket %s", ticket_id)
-        flash(_("Unable to archive this ticket. Please try again."), "danger")
+        error_msg = _("Unable to archive this ticket. Please try again.")
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return jsonify(success=False, message=error_msg), 500
+        flash(error_msg, "danger")
     return redirect(request.referrer or url_for("tickets.list_tickets"))
 
 

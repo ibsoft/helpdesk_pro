@@ -29,19 +29,15 @@
     background: rgba(248,249,250,0.85);
     color: #0f172a;
   }
-  html[data-bs-theme="dark"] pre,
-  html[data-bs-theme="dark"] .archive-description {
-    background: rgba(15,23,42,0.8);
-    color: #f8fafc;
+  html[data-bs-theme="dark"] pre {
+    background: rgba(15,23,42,0.65);
+    color: #e2e8f0;
   }
   .archive-description {
-    background: rgba(15,23,42,0.04);
-    border-radius: 0.75rem;
-    color: #0f172a;
-  }
-  html[data-bs-theme="dark"] .archive-description {
-    background: rgba(15,23,42,0.75);
-    color: #e2e8f0;
+    white-space: pre-wrap;
+    line-height: 1.6;
+    color: inherit;
+    background: transparent;
   }
   html[data-bs-theme="dark"] .archive-shell {
     background: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(14,165,233,0.22));
@@ -82,7 +78,7 @@
     </div>
     <div class="meta-block">
       <p class="fw-semibold mb-2"><i class="fa fa-align-left me-1"></i>{{ _('Description') }}</p>
-      <pre class="archive-description" style="white-space: pre-wrap;">{{ archive.description }}</pre>
+      <div class="archive-description">{{ archive.description }}</div>
     </div>
   </div>
 </div>

@@ -39,6 +39,19 @@
   .custom-alert-row.invalid {
     border-color: #dc3545 !important;
   }
+  .card-header.bg-white {
+    background: rgba(248,249,252,0.9) !important;
+    border-bottom: 1px solid rgba(148,163,184,0.25);
+  }
+  html[data-bs-theme="dark"] body .card-header.bg-white {
+    background: rgba(15,23,42,0.85) !important;
+    border-bottom-color: rgba(255,255,255,0.08);
+    color: #f8fafc;
+  }
+  html[data-bs-theme="dark"] body .card-header.bg-white small,
+  html[data-bs-theme="dark"] body .card-header.bg-white h2 {
+    color: #f8fafc !important;
+  }
 </style>
 
 <div class="fleet-settings-hero card shadow-sm border-0 mb-4">
@@ -275,7 +288,7 @@
   <div class="col-lg-7">
     <div class="card shadow-sm h-100">
       <div class="card-header bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h2 class="h5 mb-0"><i class="fa fa-cloud-arrow-down text-primary me-2"></i>{{ _('Telemetry Agent Installer') }}</h2>
+        <h2 class="h5 mb-0 text-dark"><i class="fa fa-cloud-arrow-down text-primary me-2"></i>{{ _('Telemetry Agent Installer') }}</h2>
         <small class="text-muted d-block">{{ _('Upload the latest Telemetry_Agent.msi and share download links with clients.') }}</small>
         <small class="text-muted">{{ _('Download the official agent from') }} <a href="https://github.com/ibsoft/WinTelemetryAgent.git" target="_blank" rel="noopener">WinTelemetryAgent</a>.</small>
       </div>
