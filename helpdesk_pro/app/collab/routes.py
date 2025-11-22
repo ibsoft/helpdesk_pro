@@ -8,6 +8,7 @@ import os
 import re
 import uuid
 import time
+import shutil
 from datetime import datetime, timezone
 
 from flask import (
@@ -33,6 +34,13 @@ from app.models import (
     ChatMessage,
     ChatMessageRead,
     ChatFavorite,
+    AssistantSession,
+    AssistantDocument,
+)
+from app.assistant.routes import (
+    _assistant_upload_folder,
+    _extract_document_text,
+    generate_assistant_reply,
 )
 
 
@@ -40,6 +48,161 @@ collab_bp = Blueprint("collab", __name__, url_prefix="/collab")
 
 _TYPING_TTL_SECONDS = 5
 _typing_states = {}
+
+_AI_ASSISTANT_USERNAME = "helpdesk-assistant"
+_AI_ASSISTANT_EMAIL = "helpdesk-assistant@system.local"
+_AI_SESSION_TITLE = "__collab_ai_session__"
+_AI_MENTION_PATTERNS = [
+    re.compile(r"@ai\b", re.IGNORECASE),
+    re.compile(r"@ai\s+assistant\b", re.IGNORECASE),
+    re.compile(r"@helpdesk-assistant\b", re.IGNORECASE),
+]
+
+
+def _get_ai_user(create=True):
+    ai_user = User.query.filter_by(username=_AI_ASSISTANT_USERNAME).first()
+    if ai_user or not create:
+        return ai_user
+    return _ensure_ai_user()
+
+
+def _ensure_ai_user():
+    ai_user = User.query.filter_by(username=_AI_ASSISTANT_USERNAME).first()
+    if ai_user:
+        return ai_user
+    ai_user = User(
+        username=_AI_ASSISTANT_USERNAME,
+        email=_AI_ASSISTANT_EMAIL,
+        full_name="AI Assistant",
+        role="assistant",
+        active=False,
+    )
+    ai_user.set_password(uuid.uuid4().hex)
+    db.session.add(ai_user)
+    db.session.commit()
+    return ai_user
+
+
+def _ensure_ai_direct_conversation(user):
+    ai_user = _ensure_ai_user()
+    conv_candidates = (
+        ChatConversation.query.filter_by(is_direct=True)
+        .join(ChatMembership)
+        .filter(ChatMembership.user_id == user.id)
+        .all()
+    )
+    for conv in conv_candidates:
+        member_ids = {m.user_id for m in conv.members}
+        if member_ids == {user.id, ai_user.id}:
+            return conv
+    conversation = ChatConversation(
+        is_direct=True,
+        created_by=user.id,
+        is_bot=True,
+        name=_("AI Assistant"),
+    )
+    db.session.add(conversation)
+    db.session.flush()
+    for uid in (user.id, ai_user.id):
+        db.session.add(ChatMembership(conversation_id=conversation.id, user_id=uid))
+    db.session.commit()
+    return conversation
+
+
+def _is_ai_conversation(conversation):
+    if not conversation or not conversation.is_direct:
+        return False
+    ai_user = _get_ai_user(create=False)
+    if not ai_user:
+        return False
+    member_ids = {m.user_id for m in conversation.members}
+    return ai_user.id in member_ids
+
+
+def _contains_ai_mention(body):
+    if not body:
+        return False
+    return any(pattern.search(body) for pattern in _AI_MENTION_PATTERNS)
+
+
+def _ensure_ai_session(user):
+    session = AssistantSession.query.filter_by(user_id=user.id, title=_AI_SESSION_TITLE).first()
+    if session:
+        return session
+    session = AssistantSession(user_id=user.id, title=_AI_SESSION_TITLE)
+    db.session.add(session)
+    db.session.commit()
+    return session
+
+
+def _ingest_assistant_document(session, source_path, original_filename, mimetype):
+    if not source_path or not os.path.exists(source_path):
+        return None
+    upload_folder = _assistant_upload_folder()
+    safe_name = secure_filename(original_filename or "attachment", allow_unicode=True) or "attachment"
+    stored_name = f"{uuid.uuid4().hex}_{safe_name}"
+    dest_path = os.path.join(upload_folder, stored_name)
+    try:
+        shutil.copy2(source_path, dest_path)
+    except OSError:
+        return None
+    try:
+        file_size = os.path.getsize(dest_path)
+    except OSError:
+        file_size = None
+    extracted_text = _extract_document_text(dest_path, mimetype)
+    status = "ready" if extracted_text else "uploaded"
+    document = AssistantDocument(
+        session_id=session.id,
+        user_id=current_user.id,
+        original_filename=original_filename or safe_name,
+        stored_filename=stored_name,
+        mimetype=mimetype,
+        file_size=file_size,
+        extracted_text=extracted_text,
+        status=status,
+    )
+    db.session.add(document)
+    return document
+
+
+def _trigger_assistant_response(conversation, user, prompt_text, attachments=None):
+    session = _ensure_ai_session(user)
+    attachments = attachments or []
+    for attachment in attachments:
+        _ingest_assistant_document(
+            session,
+            attachment.get("path"),
+            attachment.get("original"),
+            attachment.get("mimetype"),
+        )
+    if attachments:
+        db.session.flush()
+        session = AssistantSession.query.get(session.id)
+
+    prompt = (prompt_text or "").strip()
+    if not prompt:
+        if attachments:
+            db.session.commit()
+        return {"success": True}
+
+    result = generate_assistant_reply(user, prompt, session=session, require_permission=False)
+    if not result.get("success"):
+        return result
+
+    ai_user = _ensure_ai_user()
+    reply_text = result.get("reply") or ""
+    ai_message = ChatMessage(
+        conversation_id=conversation.id,
+        sender_id=ai_user.id,
+        body=reply_text,
+    )
+    db.session.add(ai_message)
+    db.session.flush()
+    conversation.updated_at = datetime.utcnow()
+    db.session.add(ChatMessageRead(message_id=ai_message.id, user_id=user.id))
+    db.session.commit()
+    return {"success": True}
 
 def _chat_upload_folder():
     upload_folder = current_app.config.get("COLLAB_UPLOAD_FOLDER")
@@ -83,6 +246,8 @@ def _conversation_payload(conversation, user_id):
         .count()
     )
     label = conversation.name or _("Direct Chat")
+    ai_user = _get_ai_user(create=False)
+    is_ai = bool(getattr(conversation, "is_bot", False))
     if conversation.is_direct:
         other = (
             db.session.query(User)
@@ -92,7 +257,10 @@ def _conversation_payload(conversation, user_id):
             .first()
         )
         if other:
-            label = other.username
+            label = other.full_name or other.username
+            if ai_user and other.id == ai_user.id:
+                label = _("AI Assistant")
+                is_ai = True
     member_ids = {m.user_id for m in conversation.members}
     if conversation.created_by:
         can_delete = conversation.is_direct and conversation.created_by == user_id
@@ -108,6 +276,7 @@ def _conversation_payload(conversation, user_id):
         },
         "unread": unread_count,
         "can_delete": can_delete,
+        "is_ai": is_ai,
     }
 
 
@@ -134,6 +303,7 @@ def _active_typers(conversation_id):
 def chat_home():
     general_convo = _ensure_general_conversation()
     _ensure_membership(general_convo.id, current_user.id)
+    ai_user = _ensure_ai_user()
 
     conversations = (
         ChatConversation.query.join(ChatMembership)
@@ -142,12 +312,14 @@ def chat_home():
         .all()
     )
     convo_payloads = [_conversation_payload(conv, current_user.id) for conv in conversations]
+    ai_conversation = next((conv for conv in conversations if getattr(conv, "is_bot", False)), None)
 
     users = (
         User.query.filter(User.id != current_user.id)
         .order_by(User.username.asc())
         .all()
     )
+    users = sorted(users, key=lambda u: (u.id != ai_user.id, (u.username or "").lower()))
     favorites = {fav.favorite_user_id for fav in ChatFavorite.query.filter_by(user_id=current_user.id)}
 
     total_conversations = len(conversations)
@@ -175,10 +347,13 @@ def chat_home():
     return render_template(
         "collab/chat.html",
         general_conversation=general_convo,
+        ai_conversation=ai_conversation,
+        ai_user=ai_user,
         conversations=convo_payloads,
         users=users,
         favorites=favorites,
         collab_stats=collab_stats,
+        ai_aliases=["@AI", "@AI Assistant", "@helpdesk-assistant"],
     )
 
 
@@ -269,6 +444,8 @@ def _serialize_message(message):
     else:
         created_at_iso = None
 
+    ai_user = _get_ai_user(create=False)
+
     return {
         "id": message.id,
         "conversation_id": message.conversation_id,
@@ -278,6 +455,7 @@ def _serialize_message(message):
         "created_at": created_at_iso,
         "isMine": message.sender_id == current_user.id,
         "attachment": attachment_info,
+        "isAssistant": bool(ai_user and message.sender_id == ai_user.id),
     }
 
 
@@ -343,6 +521,7 @@ def api_post_message(conversation_id):
     attachment_filename = None
     attachment_original = None
     attachment_mimetype = None
+    attachment_path = None
 
     if file and file.filename:
         upload_folder = _chat_upload_folder()
@@ -352,6 +531,7 @@ def api_post_message(conversation_id):
         file.save(path)
         attachment_filename = safe_name
         attachment_mimetype = file.mimetype
+        attachment_path = path
 
     message = ChatMessage(
         conversation_id=conversation_id,
@@ -371,7 +551,41 @@ def api_post_message(conversation_id):
         typer_state.pop(current_user.id, None)
         if not typer_state:
             _typing_states.pop(conversation_id, None)
-    return jsonify({"success": True, "message": _serialize_message(message)})
+    assistant_error = None
+    assistant_triggered = False
+    is_ai_convo = _is_ai_conversation(convo)
+    mention_triggered = _contains_ai_mention(body)
+    prompt_text = (body or "").strip()
+    attachments_payload = []
+    if attachment_path:
+        attachments_payload.append(
+            {
+                "path": attachment_path,
+                "original": attachment_original,
+                "mimetype": attachment_mimetype,
+            }
+        )
+
+    if is_ai_convo and attachments_payload and not prompt_text:
+        _trigger_assistant_response(convo, current_user, "", attachments=attachments_payload)
+
+    if prompt_text and (is_ai_convo or mention_triggered):
+        assistant_triggered = True
+        result = _trigger_assistant_response(
+            convo,
+            current_user,
+            prompt_text,
+            attachments=attachments_payload if prompt_text else None,
+        )
+        if not result.get("success"):
+            assistant_error = result.get("message") or _("Assistant was unable to reply.")
+
+    response_payload = {"success": True, "message": _serialize_message(message)}
+    if assistant_triggered:
+        response_payload["assistant_invoked"] = True
+    if assistant_error:
+        response_payload["assistant_error"] = assistant_error
+    return jsonify(response_payload)
 
 
 @collab_bp.route("/api/conversations/<int:conversation_id>/typing", methods=["POST"])
@@ -469,7 +683,6 @@ def api_delete_conversation(conversation_id):
     convo = ChatConversation.query.get_or_404(conversation_id)
     if not convo.is_direct:
         return jsonify({"success": False, "message": _("You cannot delete this conversation.")}), 403
-
     member_ids = {m.user_id for m in convo.members}
     can_delete = False
     if convo.created_by:
