@@ -682,6 +682,158 @@ def _compose_document_context(session: AssistantSession, max_chars: int = 8000) 
     )
 
 
+def generate_assistant_reply(
+    user,
+    message: str,
+    session: Optional[AssistantSession] = None,
+    require_permission: bool = True,
+) -> Dict[str, Any]:
+    """Shared helper that sends a prompt to the configured assistant provider.
+
+    Returns a dict with keys:
+      - success (bool)
+      - reply (str) when success is True
+      - session (AssistantSession)
+      - history (List[Dict[str, str]])
+      - message (str) and status (int) when success is False
+    """
+
+    if require_permission and not is_feature_allowed("assistant_widget", user):
+        return {
+            "success": False,
+            "message": _("You are not allowed to use the assistant."),
+            "status": 403,
+        }
+
+    config = _load_config()
+    if not config:
+        return {
+            "success": False,
+            "message": _("Assistant is disabled."),
+            "status": 400,
+        }
+
+    normalized_message = _normalize_message_text(message or "").strip()
+    if not normalized_message:
+        return {
+            "success": False,
+            "message": _("Message cannot be empty."),
+            "status": 400,
+        }
+
+    session = session or _create_session_for_user(user)
+    db.session.flush()
+
+    user_history_entry = {"role": "user", "content": normalized_message}
+    prior_history = _session_history(session)
+    history = prior_history + [user_history_entry]
+    document_context = _compose_document_context(session)
+
+    messages_for_model: List[Dict[str, str]] = []
+    system_prompt = config.system_prompt or DEFAULT_SYSTEM_PROMPT
+    if system_prompt:
+        messages_for_model.append({"role": "system", "content": system_prompt})
+    user_identity_parts = [f"username={user.username}"]
+    if getattr(user, "full_name", None):
+        user_identity_parts.append(f"full_name={user.full_name}")
+    if getattr(user, "role", None):
+        user_identity_parts.append(f"role={user.role}")
+    if getattr(user, "department", None):
+        user_identity_parts.append(f"department={user.department}")
+    identity_context = (
+        f"Current signed-in user context: {'; '.join(user_identity_parts)}. "
+        "Use this when applying permissions or tailoring responses."
+    )
+    messages_for_model.append({"role": "system", "content": identity_context})
+    messages_for_model.extend(prior_history)
+    if document_context:
+        messages_for_model.append({"role": "system", "content": document_context})
+    messages_for_model.append(user_history_entry)
+
+    user_message_row = AssistantMessage(session_id=session.id, role="user", content=normalized_message)
+    db.session.add(user_message_row)
+
+    reply: Optional[str] = None
+    try:
+        if config.provider == "chatgpt_hybrid":
+            if not config.openai_api_key:
+                return {
+                    "success": False,
+                    "message": _("OpenAI API key is not configured."),
+                    "status": 400,
+                }
+            tool_context = {
+                "user": user,
+                "history": history,
+                "latest_user_message": normalized_message,
+            }
+            reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
+        elif config.provider == "openwebui":
+            if not config.openwebui_base_url:
+                return {
+                    "success": False,
+                    "message": _("OpenWebUI base URL is not configured."),
+                    "status": 400,
+                }
+            tool_context = {
+                "user": user,
+                "history": history,
+                "latest_user_message": normalized_message,
+            }
+            reply = _call_openwebui(messages_for_model, config, tool_context=tool_context)
+        elif config.provider == "webhook":
+            if not config.webhook_url:
+                return {
+                    "success": False,
+                    "message": _("Webhook URL is not configured."),
+                    "status": 400,
+                }
+            reply = _call_webhook(history, messages_for_model, config, system_prompt)
+        else:
+            return {
+                "success": False,
+                "message": _("Unsupported assistant provider configured."),
+                "status": 400,
+            }
+    except requests.RequestException as exc:
+        db.session.rollback()
+        return {
+            "success": False,
+            "message": _("Connection error: %(error)s", error=str(exc)),
+            "status": 502,
+        }
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        return {
+            "success": False,
+            "message": str(exc),
+            "status": 500,
+        }
+
+    if not reply:
+        db.session.rollback()
+        return {
+            "success": False,
+            "message": _("Assistant did not return a reply."),
+            "status": 502,
+        }
+
+    assistant_message_row = AssistantMessage(session_id=session.id, role="assistant", content=reply)
+    db.session.add(assistant_message_row)
+    session.touch()
+    db.session.commit()
+
+    refreshed_session = AssistantSession.query.get(session.id)
+    session_payload = refreshed_session or session
+    history_payload = _session_history(session_payload)
+    return {
+        "success": True,
+        "reply": reply,
+        "session": session_payload,
+        "history": history_payload,
+    }
+
+
 def _build_history(messages: List[Dict[str, Any]]) -> List[Dict[str, str]]:
     valid = []
     for msg in messages or []:
@@ -1011,10 +1163,6 @@ def api_message():
     if not is_feature_allowed("assistant_widget", current_user):
         abort(403)
 
-    config = _load_config()
-    if not config:
-        return jsonify({"success": False, "message": _("Assistant is disabled.")}), 400
-
     data = request.get_json(silent=True) or {}
     session_id = data.get("session_id")
     session = None
@@ -1029,89 +1177,17 @@ def api_message():
     message = _safe_strip(data.get("message"))
     if not message:
         return jsonify({"success": False, "message": _("Message cannot be empty.")}), 400
+    result = generate_assistant_reply(current_user, message, session=session)
+    if not result.get("success"):
+        status = result.get("status", 400)
+        return jsonify({"success": False, "message": result.get("message")}), status
 
-    normalized_message = _normalize_message_text(message)
-    message = normalized_message
-
-    system_prompt = config.system_prompt or DEFAULT_SYSTEM_PROMPT
-    prior_history = _session_history(session)
-    user_history_entry = {"role": "user", "content": message}
-    history = prior_history + [user_history_entry]
-
-    document_context = _compose_document_context(session)
-    messages_for_model: List[Dict[str, str]] = []
-    if system_prompt:
-        messages_for_model.append({"role": "system", "content": system_prompt})
-    user_identity_parts = [f"username={current_user.username}"]
-    if current_user.full_name:
-        user_identity_parts.append(f"full_name={current_user.full_name}")
-    if current_user.role:
-        user_identity_parts.append(f"role={current_user.role}")
-    if getattr(current_user, "department", None):
-        user_identity_parts.append(f"department={current_user.department}")
-    user_identity = "; ".join(user_identity_parts)
-    identity_context = (
-        f"Current signed-in user context: {user_identity}. "
-        "Use this when applying permissions or tailoring responses."
-    )
-    messages_for_model.append({"role": "system", "content": identity_context})
-    messages_for_model.extend(prior_history)
-    if document_context:
-        messages_for_model.append({"role": "system", "content": document_context})
-    messages_for_model.append(user_history_entry)
-
-    reply: Optional[str] = None
-    user_message_row = AssistantMessage(session_id=session.id, role="user", content=message)
-    db.session.add(user_message_row)
-
-    try:
-        if config.provider == "chatgpt_hybrid":
-            if not config.openai_api_key:
-                return jsonify({"success": False, "message": _("OpenAI API key is not configured.")}), 400
-            tool_context = {
-                "user": current_user,
-                "history": history,
-                "latest_user_message": message,
-            }
-            reply = _call_openai(messages_for_model, config, allow_tools=True, tool_context=tool_context)
-        elif config.provider == "openwebui":
-            if not config.openwebui_base_url:
-                return jsonify({"success": False, "message": _("OpenWebUI base URL is not configured.")}), 400
-            tool_context = {
-                "user": current_user,
-                "history": history,
-                "latest_user_message": message,
-            }
-            reply = _call_openwebui(messages_for_model, config, tool_context=tool_context)
-        elif config.provider == "webhook":
-            if not config.webhook_url:
-                return jsonify({"success": False, "message": _("Webhook URL is not configured.")}), 400
-            reply = _call_webhook(history, messages_for_model, config, system_prompt)
-        else:
-            return jsonify({"success": False, "message": _("Unsupported assistant provider configured.")}), 400
-    except requests.RequestException as exc:
-        return jsonify({"success": False, "message": _("Connection error: %(error)s", error=str(exc))}), 502
-    except Exception as exc:  # pragma: no cover
-        db.session.rollback()
-        return jsonify({"success": False, "message": str(exc)}), 500
-
-    if not reply:
-        db.session.rollback()
-        return jsonify({"success": False, "message": _("Assistant did not return a reply.")}), 502
-
-    assistant_message_row = AssistantMessage(session_id=session.id, role="assistant", content=reply)
-    db.session.add(assistant_message_row)
-    session.touch()
-    db.session.commit()
-
-    history.append({"role": "assistant", "content": reply})
-    updated_session = AssistantSession.query.get(session.id)
-    session_payload = _session_response_payload(updated_session)
+    session_payload = _session_response_payload(result["session"])
     return jsonify(
         {
             "success": True,
-            "reply": reply,
-            "history": history,
+            "reply": result["reply"],
+            "history": result.get("history", []),
             **session_payload,
         }
     )
