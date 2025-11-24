@@ -96,19 +96,16 @@
   html[data-bs-theme="dark"] body .emoji-picker{background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.92));border-color:rgba(226,232,240,.2);box-shadow:0 18px 36px rgba(15,23,42,.8)}
   .emoji-picker button{border:none;background:transparent;font-size:1.25rem;line-height:1;padding:.35rem;cursor:pointer;transition:transform .15s ease}
   .emoji-picker button:hover{transform:scale(1.2)}
-  .chat-accent-btn{background:#fff;border:1px solid rgba(15,23,42,.12);color:#0f172a;box-shadow:0 3px 8px rgba(15,23,42,.08);width:36px;height:36px;border-radius:.75rem;display:inline-flex;align-items:center;justify-content:center;padding:0}
-  .chat-accent-btn:hover{color:#0f172a;box-shadow:0 4px 10px rgba(15,23,42,.15)}
-  #attachButton i{color:#2563eb}
-  #emojiButton{color:#f97316;font-size:1.2rem}
+  .chat-accent-btn{background:linear-gradient(135deg,#f8b4d9,#f97316);color:#1f2937;border:none;box-shadow:0 6px 16px rgba(249,115,22,.35)}
+  .chat-accent-btn:hover{color:#1f2937;opacity:.9}
   .chat-container .card-footer{position:relative}
   .copy-btn{position:absolute;top:6px;right:6px;border:none;background:rgba(255,255,255,.7);color:#0f172a;font-size:.85rem;line-height:1;padding:.2rem .4rem;border-radius:.5rem;opacity:0;transition:opacity .2s ease}
   .chat-bubble:hover .copy-btn{opacity:1}
   html[data-bs-theme="dark"] body .copy-btn{background:rgba(15,23,42,.6);color:#e2e8f0}
-  .chat-input{background:#fff;border-color:rgba(15,23,42,.15);box-shadow:0 4px 16px rgba(15,23,42,.08);color:#0f172a;caret-color:#0f172a}
-  .chat-input:focus{background:#fff;border-color:rgba(15,23,42,.25);box-shadow:none;outline:none;color:#0f172a}
-  html[data-bs-theme="dark"] body .chat-input{background:#fff;border-color:rgba(15,23,42,.25);color:#0f172a}
-  html[data-bs-theme="dark"] body .chat-input:focus{background:#fff;border-color:rgba(15,23,42,.35);box-shadow:none;outline:none}
-  .chat-input::placeholder{color:rgba(15,23,42,.4)}
+  .chat-input{background:rgba(248,231,237,.9);border-color:rgba(249,115,22,.35);box-shadow:inset 0 0 0 1px rgba(249,115,22,.2);color:#0f172a}
+  .chat-input:focus{background:rgba(255,247,250,.95);border-color:#f97316;box-shadow:0 0 0 .2rem rgba(249,115,22,.15)}
+  html[data-bs-theme="dark"] body .chat-input{background:rgba(47,29,82,.65);border-color:rgba(249,115,22,.4);color:#fdf2f8}
+  html[data-bs-theme="dark"] body .chat-input:focus{background:rgba(52,23,72,.8);border-color:#fb7185;box-shadow:0 0 0 .2rem rgba(249,115,22,.25)}
 </style>
 
 {% set stats = collab_stats %}
@@ -122,6 +119,7 @@
   data-direct-url="{{ url_for('collab.api_direct_conversation') }}"
   data-toggle-fav-url-tpl="{{ url_for('collab.api_toggle_favorite', target_id=0) }}"
   data-delete-convo-url-tpl="{{ url_for('collab.api_delete_conversation', conversation_id=0) }}"
+  data-clear-all-url="{{ url_for('collab.api_clear_all_conversations') }}"
   {% if current_user.role == 'admin' %}data-purge-url="{{ url_for('collab.api_purge_conversation', conversation_id=general_conversation.id) }}"{% endif %}
   data-text-is-typing="{{ _('is typing') }}"
   data-text-are-typing="{{ _('are typing') }}"
@@ -145,6 +143,10 @@
   data-text-copy="{{ _('Copy message') }}"
   data-text-copied="{{ _('Copied!') }}"
   data-text-copy-failed="{{ _('Unable to copy message') }}"
+  data-text-clear-all="{{ _('Clear all conversations') }}"
+  data-text-clear-all-confirm="{{ _('This will permanently delete every conversation for everyone. This action cannot be undone.') }}"
+  data-text-clear-all-success="{{ _('All conversations cleared.') }}"
+  data-text-clear-all-failed="{{ _('Unable to clear conversations') }}"
   data-csrf-token="{{ csrf_token() }}"
 >
   <div class="card collab-summary-card border-0 shadow-sm">
@@ -233,6 +235,9 @@
               {% if current_user.role == 'admin' %}
                 <button class="btn btn-sm btn-outline-danger d-none" id="purgeGeneralBtn" data-convo="{{ general_conversation.id }}" title="{{ _('Purge General Chat') }}">
                   <i class="fa fa-broom"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" id="clearAllConvosBtn" title="{{ _('Clear All Conversations') }}">
+                  <i class="fa fa-trash-can"></i>
                 </button>
               {% endif %}
               <button class="btn btn-sm btn-outline-secondary" id="toggleAutoScroll"><i class="fa fa-arrows-down-to-line"></i></button>
@@ -379,6 +384,9 @@
   const txtSendFailed = D.textSendFailed || 'Send failed';
   const txtUnableOpen = D.textUnableOpen || 'Unable to open conversation';
   const txtUnableDelete = D.textUnableDelete || 'Unable to delete conversation';
+  const clearAllConvosUrl = D.clearAllUrl || '';
+  const txtClearAllSuccess = D.textClearAllSuccess || 'All conversations cleared.';
+  const txtClearAllFailed = D.textClearAllFailed || 'Unable to clear conversations';
   const txtGeneralChat = D.textGeneralChat || 'General Chat';
   const txtEveryone = D.textEveryone || 'Everyone in the organization';
   const txtDirect = D.textDirect || 'Direct conversation';
@@ -852,6 +860,30 @@
     });
   }
 
+  if (clearAllConvosUrl){
+    $(document).on('click','#clearAllConvosBtn',()=>new bootstrap.Modal(document.getElementById('clearAllConvosModal')).show());
+    $(document).on('click','#confirmClearAllConvos', function(){
+      const $btn = $(this).prop('disabled', true);
+      $.post(clearAllConvosUrl)
+        .done(resp=>{
+          if (resp.success){
+            showToast(txtClearAllSuccess, 'success');
+            lastMessagesSignature = null;
+            renderMessages([]);
+            renderTypingIndicator([]);
+            loadMessages(currentConversationId);
+            refreshConversations();
+          } else showToast(resp.message || txtClearAllFailed, 'danger');
+        })
+        .fail(()=>showToast(txtClearAllFailed, 'danger'))
+        .always(()=>{
+          $btn.prop('disabled', false);
+          const modal = bootstrap.Modal.getInstance(document.getElementById('clearAllConvosModal'));
+          if (modal) modal.hide();
+        });
+    });
+  }
+
   $('.conversation-list').on('click', '.convo-delete, .convo-delete *', function(e){
     e.preventDefault(); e.stopPropagation();
     pendingDeleteId = $(this).closest('.convo-delete').data('convo');
@@ -920,6 +952,26 @@
       </div>
     </div>
   </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% if current_user.role == 'admin' %}
+<div class="modal fade" id="clearAllConvosModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="fa fa-trash-can text-danger"></i> {{ _('Clear All Conversations') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        {{ _('This will permanently delete every conversation for everyone. This action cannot be undone.') }}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+        <button type="button" class="btn btn-danger" id="confirmClearAllConvos">{{ _('Clear') }}</button>
+      </div>
     </div>
   </div>
 </div>
