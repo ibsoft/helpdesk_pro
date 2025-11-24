@@ -76,6 +76,8 @@ class Config:
             os.getenv('ASSISTANT_TOOL_CALL_DEPTH_LIMIT', '-1'))
     except (TypeError, ValueError):
         ASSISTANT_TOOL_CALL_DEPTH_LIMIT = -1
+    COLLAB_ASSISTANT_ENABLED = os.getenv('COLLAB_ASSISTANT_ENABLED', 'True').lower() not in {
+        '0', 'false', 'no'}
     MCP_ENABLED = os.getenv('MCP_ENABLED', 'True').lower() not in {
         '0', 'false', 'no'}
     MCP_HOST = os.getenv('MCP_HOST', '127.0.0.1')

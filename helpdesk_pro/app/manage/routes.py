@@ -224,6 +224,13 @@ CONFIGURATION_SECTIONS = [
                 "default": -1,
                 "help": _("Maximum recursive depth for tool calls (-1 to disable limit)."),
             },
+            {
+                "key": "COLLAB_ASSISTANT_ENABLED",
+                "label": _("Enable Chat Assistant"),
+                "type": "bool",
+                "default": True,
+                "help": _("Enable AI responses within the collaboration chat module."),
+            },
         ],
     },
     {

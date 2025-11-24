@@ -14,6 +14,7 @@
   .chat-bubble.assistant{border-color:rgba(59,130,246,.5);box-shadow:0 10px 30px rgba(59,130,246,.15);background:linear-gradient(135deg,rgba(219,234,254,.85),rgba(224,231,255,.9));color:#0f172a}
   html[data-bs-theme="dark"] body .chat-bubble.assistant{background:linear-gradient(135deg,rgba(30,64,175,.6),rgba(79,70,229,.5));color:#eef2ff}
   .chat-bubble.pending-message{opacity:.8}
+  .chat-body{white-space:pre-wrap;word-break:break-word;overflow-wrap:anywhere;max-width:100%}
   .chat-meta{font-size:.75rem;opacity:.7;margin-top:.35rem}
   .conversation-item{cursor:pointer;border-radius:.85rem;padding:.75rem;transition:background .2s ease,transform .2s ease}
   .conversation-item.active{background:rgba(14,165,233,.15);color:#075985;box-shadow:0 10px 20px rgba(14,165,233,.15)}
@@ -96,16 +97,21 @@
   html[data-bs-theme="dark"] body .emoji-picker{background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.92));border-color:rgba(226,232,240,.2);box-shadow:0 18px 36px rgba(15,23,42,.8)}
   .emoji-picker button{border:none;background:transparent;font-size:1.25rem;line-height:1;padding:.35rem;cursor:pointer;transition:transform .15s ease}
   .emoji-picker button:hover{transform:scale(1.2)}
-  .chat-accent-btn{background:linear-gradient(135deg,#f8b4d9,#f97316);color:#1f2937;border:none;box-shadow:0 6px 16px rgba(249,115,22,.35)}
-  .chat-accent-btn:hover{color:#1f2937;opacity:.9}
+  .chat-accent-btn{background:#fff;border:1px solid rgba(15,23,42,.12);color:#0f172a;box-shadow:0 3px 8px rgba(15,23,42,.08);width:36px;height:36px;border-radius:.2rem;display:inline-flex;align-items:center;justify-content:center;padding:0;margin:0}
+  .chat-accent-btn:hover{color:#0f172a;box-shadow:0 4px 10px rgba(15,23,42,.15)}
+  #attachButton{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;width:36px;height:36px;border-radius:.2rem;display:inline-flex;align-items:center;justify-content:center}
+  #attachButton i{color:#fff;font-size:1rem}
+  #emojiButton{background:linear-gradient(135deg,#2563eb,#3b82f6);color:#fff;border:none;width:36px;height:36px;border-radius:.2rem;display:inline-flex;align-items:center;justify-content:center;font-size:1.2rem}
   .chat-container .card-footer{position:relative}
+  .assistant-spinner{display:flex;align-items:center;gap:.35rem;font-size:.9rem;font-weight:500;margin-left:auto}
+  .assistant-spinner i{color:#2563eb}
   .copy-btn{position:absolute;top:6px;right:6px;border:none;background:rgba(255,255,255,.7);color:#0f172a;font-size:.85rem;line-height:1;padding:.2rem .4rem;border-radius:.5rem;opacity:0;transition:opacity .2s ease}
   .chat-bubble:hover .copy-btn{opacity:1}
   html[data-bs-theme="dark"] body .copy-btn{background:rgba(15,23,42,.6);color:#e2e8f0}
-  .chat-input{background:rgba(248,231,237,.9);border-color:rgba(249,115,22,.35);box-shadow:inset 0 0 0 1px rgba(249,115,22,.2);color:#0f172a}
-  .chat-input:focus{background:rgba(255,247,250,.95);border-color:#f97316;box-shadow:0 0 0 .2rem rgba(249,115,22,.15)}
-  html[data-bs-theme="dark"] body .chat-input{background:rgba(47,29,82,.65);border-color:rgba(249,115,22,.4);color:#fdf2f8}
-  html[data-bs-theme="dark"] body .chat-input:focus{background:rgba(52,23,72,.8);border-color:#fb7185;box-shadow:0 0 0 .2rem rgba(249,115,22,.25)}
+  .chat-input{background:#fff;border-color:rgba(15,23,42,.15);box-shadow:0 4px 16px rgba(15,23,42,.08);color:#0f172a;caret-color:#0f172a}
+  .chat-input:focus{background:#fff;border-color:rgba(15,23,42,.25);box-shadow:none;outline:none;color:#0f172a}
+  html[data-bs-theme="dark"] body .chat-input{background:linear-gradient(180deg,#0f172a,#1e293b);border-color:rgba(226,232,240,.2);box-shadow:0 4px 16px rgba(15,23,42,.35);color:#fff;caret-color:#fff}
+  html[data-bs-theme="dark"] body .chat-input:focus{background:linear-gradient(180deg,#111827,#1f2937);border-color:rgba(226,232,240,.35);box-shadow:0 0 0 0 transparent;outline:none;color:#fff}
 </style>
 
 {% set stats = collab_stats %}
@@ -115,6 +121,7 @@
   data-get-messages-url-tpl="{{ url_for('collab.api_get_messages', conversation_id=0) }}"
   data-post-message-url-tpl="{{ url_for('collab.api_post_message', conversation_id=0) }}"
   data-conversations-url="{{ url_for('collab.api_conversations') }}"
+  data-assistant-enabled="{{ 'true' if assistant_chat_enabled else 'false' }}"
   data-unread-url="{{ url_for('collab.api_unread_count') }}"
   data-direct-url="{{ url_for('collab.api_direct_conversation') }}"
   data-toggle-fav-url-tpl="{{ url_for('collab.api_toggle_favorite', target_id=0) }}"
@@ -215,9 +222,6 @@
                     {% endif %}
                   </div>
                 </div>
-                {% if convo.last_message.text %}
-                  <div class="small text-muted text-truncate">{{ convo.last_message.text }}</div>
-                {% endif %}
               </div>
             {% endfor %}
           </div>
@@ -268,6 +272,10 @@
                   <span class="spinner-border spinner-border-sm d-none" id="sendSpinner" role="status" aria-hidden="true"></span>
                 </button>
               </div>
+              <div class="assistant-spinner d-none" id="assistantSpinner">
+                <i class="fa fa-robot fa-spin" aria-hidden="true"></i>
+                <span id="assistantSpinnerLabel">{{ _('AI Assistant is thinking...') }}</span>
+              </div>
               <div id="attachmentPreview" class="small text-muted mt-1 d-none"></div>
               <div id="emojiPicker" class="emoji-picker d-none" aria-hidden="true"></div>
             </form>
@@ -281,22 +289,24 @@
           <div class="card-body chat-users-list flex-grow-1">
             {% for user in users %}
               {% set is_ai_user = ai_user and user.id == ai_user.id %}
-              <div class="d-flex justify-content-between align-items-center border-bottom py-2 user-entry" data-user="{{ user.id }}" data-ai="{{ 'true' if is_ai_user else 'false' }}">
-                <div>
-                  <strong>{% if is_ai_user %}{{ _('AI Assistant') }}{% else %}{{ user.username }}{% endif %}</strong>
-                  {% if is_ai_user %}
-                    <div class="small text-muted">{{ _(' @AI') }}</div>
-                  {% elif user.role %}
-                    <div class="small text-muted">{{ _(user.role|capitalize) }}</div>
-                  {% endif %}
+              {% if not (is_ai_user and not assistant_chat_enabled) %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2 user-entry" data-user="{{ user.id }}" data-ai="{{ 'true' if is_ai_user else 'false' }}">
+                  <div>
+                    <strong>{% if is_ai_user %}{{ _('AI Assistant') }}{% else %}{{ user.username }}{% endif %}</strong>
+                    {% if is_ai_user %}
+                      <div class="small text-muted">{{ _(' @AI') }}</div>
+                    {% elif user.role %}
+                      <div class="small text-muted">{{ _(user.role|capitalize) }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="d-flex align-items-center gap-2">
+                    {% if not is_ai_user %}
+                      <i class="fa fa-star favorite-star {% if user.id in favorites %}favorited{% endif %}" data-user="{{ user.id }}"></i>
+                    {% endif %}
+                    <button class="btn btn-sm btn-outline-primary start-direct" data-user="{{ user.id }}"><i class="fa fa-comments"></i></button>
+                  </div>
                 </div>
-                <div class="d-flex align-items-center gap-2">
-                  {% if not is_ai_user %}
-                    <i class="fa fa-star favorite-star {% if user.id in favorites %}favorited{% endif %}" data-user="{{ user.id }}"></i>
-                  {% endif %}
-                  <button class="btn btn-sm btn-outline-primary start-direct" data-user="{{ user.id }}"><i class="fa fa-comments"></i></button>
-                </div>
-              </div>
+              {% endif %}
             {% endfor %}
           </div>
         </div>
@@ -341,6 +351,8 @@
   let typingCooldownUntil = 0;
   let typingResetTimer = null;
   let pendingAssistantReply = false;
+  let lastAssistantMessageId = 0;
+  let assistantPendingTriggerId = 0;
 
   const $messages = $('#chatMessages');
   const $conversationId = $('#conversationId');
@@ -352,17 +364,8 @@
   const $emojiPicker = $('#emojiPicker');
   const $emojiButton = $('#emojiButton');
   const $messageBody = $('#messageBody');
-
-  const $assistantThinking = $('<div>').attr('id','assistantThinking').addClass('assistant-thinking d-none');
-  const $assistantBubble = $('<div>').addClass('chat-bubble them assistant');
-  const $assistantHeader = $('<div>').addClass('fw-semibold d-flex align-items-center gap-2')
-    .append($('<i>').addClass('fa fa-robot fa-spin'))
-    .append($('<span>').text(txtAiThinking));
-  const $assistantDots = $('<div>').addClass('assistant-dots').attr('aria-hidden','true');
-  $assistantDots.append($('<span>')).append($('<span>')).append($('<span>'));
-  $assistantBubble.append($assistantHeader).append($assistantDots);
-  $assistantThinking.append($assistantBubble);
-  $messages.append($assistantThinking);
+  const assistantEnabled = D.assistantEnabled === 'true';
+  const $assistantSpinner = $('#assistantSpinner');
 
   const generalConversationId = parseIntSafe(D.generalId);
   const typingEndpointTemplate = D.typingEndpointTpl || '';
@@ -394,7 +397,7 @@
 
   const urlTpl = (tpl, id) => (tpl || '').replace('0', String(id));
   const includesAiAlias = (text)=>{
-    if (!text) return false;
+    if (!assistantEnabled || !text) return false;
     const lowered = String(text).toLowerCase();
     return aiAliases.some(alias=>alias && lowered.includes(alias));
   };
@@ -495,11 +498,10 @@
 
   function toggleAssistantThinking(state){
     if (state){
-      $assistantThinking.appendTo($messages);
-      $assistantThinking.removeClass('d-none');
+      $assistantSpinner.removeClass('d-none');
       scrollToBottom(true);
     } else {
-      $assistantThinking.addClass('d-none');
+      $assistantSpinner.addClass('d-none');
     }
   }
 
@@ -570,6 +572,7 @@
     $placeholder.addClass('d-none');
     const frag = $(document.createDocumentFragment());
     let awaitingAssistant = false;
+    let highestAssistantMessageId = lastAssistantMessageId;
     messages.forEach(msg=>{
       const bubble = $('<div>').addClass('chat-bubble').addClass(msg.isMine ? 'me' : 'them');
       if (msg.isAssistant){
@@ -593,17 +596,27 @@
       }
       if (msg.isAssistant){
         awaitingAssistant = false;
+        highestAssistantMessageId = Math.max(highestAssistantMessageId, msg.id);
       }
       bubble.append($('<div>').addClass('chat-meta').text(`${msg.sender_name} • ${new Date(msg.created_at).toLocaleString()}`));
       frag.append(bubble);
     });
     $messages.children('.chat-bubble').remove();
     $messages.append(frag);
-    if (pendingAssistantReply && messages.some(m=>m.isAssistant)){
+    lastAssistantMessageId = highestAssistantMessageId;
+    if (!assistantEnabled){
+      pendingAssistantReply = false;
+      $assistantSpinner.addClass('d-none');
+      scrollToBottom(true);
+      return;
+    }
+    if (pendingAssistantReply && highestAssistantMessageId > assistantPendingTriggerId){
       pendingAssistantReply = false;
       toggleAssistantThinking(false);
+      assistantPendingTriggerId = highestAssistantMessageId;
     }
     if (awaitingAssistant){
+      assistantPendingTriggerId = highestAssistantMessageId;
       pendingAssistantReply = true;
       toggleAssistantThinking(true);
     } else if (!pendingAssistantReply){
@@ -661,7 +674,7 @@
           const titleWrap = $('<div>').addClass('d-flex align-items-center gap-2 flex-grow-1 convo-title').append($('<strong>'));
           const actionsWrap = $('<div>').addClass('d-flex align-items-center gap-2 conv-actions');
           header.append(titleWrap, actionsWrap);
-          item.append(header).append($('<div>').addClass('small text-muted text-truncate last-message'));
+          item.append(header);
           list.append(item);
         }
         item.toggleClass('active', convo.id==currentConversationId);
@@ -676,7 +689,6 @@
           const btn = $('<button>').attr('type','button').addClass('btn btn-sm btn-outline-danger convo-delete').attr('data-convo', convo.id).append($('<i>').addClass('fa fa-trash'));
           actions.append(btn);
         }
-        if (convo.last_message && convo.last_message.text) item.find('.last-message').text(convo.last_message.text).removeClass('d-none'); else item.find('.last-message').addClass('d-none');
       });
       list.find('.conversation-item').each(function(){
         const id = Number($(this).data('convo'));
@@ -710,6 +722,8 @@
       $('#chatSubtitle').text(isGeneral?txtEveryone:txtDirect);
     }
     pendingAssistantReply = false;
+    lastAssistantMessageId = 0;
+    assistantPendingTriggerId = 0;
     toggleAssistantThinking(false);
     if ($purgeButton.length) $purgeButton.toggleClass('d-none', !isGeneral);
     lastMessagesSignature = null;
@@ -736,8 +750,9 @@
     if (textValue){
       localBubble = addLocalMessage(textValue);
     }
-    const expectsAssistant = textValue && (currentConversationIsAi || includesAiAlias(textValue));
+    const expectsAssistant = assistantEnabled && textValue && (currentConversationIsAi || includesAiAlias(textValue));
     if (expectsAssistant){
+      assistantPendingTriggerId = lastAssistantMessageId;
       pendingAssistantReply = true;
       toggleAssistantThinking(true);
     }
@@ -760,7 +775,8 @@
           pendingAssistantReply = false;
           toggleAssistantThinking(false);
           showToast(resp.assistant_error, 'warning');
-        } else if (resp.assistant_invoked){
+        } else if (assistantEnabled && resp.assistant_invoked){
+          assistantPendingTriggerId = lastAssistantMessageId;
           pendingAssistantReply = true;
           toggleAssistantThinking(true);
         } else if (pendingAssistantReply){
