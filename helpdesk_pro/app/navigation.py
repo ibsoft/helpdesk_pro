@@ -47,6 +47,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "roles": ["admin"],
             },
             {
+                "key": "manage_vaultwarden",
+                "label": _("VaultWarden"),
+                "icon": "fa-solid fa-shield-alt text-info",
+                "endpoint": "manage.vaultwarden",
+                "roles": ["admin"],
+            },
+            {
                 "key": "manage_auth",
                 "label": _("Authentication"),
                 "icon": "fa fa-user-shield text-info",
@@ -198,6 +205,13 @@ MENU_DEFINITIONS: List[Dict[str, Any]] = [
                 "icon": "fa fa-calendar-days text-warning",
                 "roles": ["admin", "manager", "technician"],
                 "endpoint": "fleet.job_scheduler",
+            },
+            {
+                "key": "vaultwarden",
+                "label": _("Secure VaultWarden"),
+                "icon": "fa-solid fa-shield text-warning",
+                "roles": ["admin", "manager", "technician"],
+                "endpoint": "vaultwarden.index",
             },
             {
                 "key": "lto_barcode_generator",

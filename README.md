@@ -145,6 +145,14 @@ python wsgi.py                           # production entry (use Gunicorn/Uvicor
 - Software and Hardware asset registries with CRUD UI and REST API.
 - Assign assets to users, track lifecycle fields and timestamps.
 
+### VaultWarden (password manager)
+
+- VaultWarden is a zero-knowledge vault built into helpdesk_pro. It stores only AES-GCM ciphertext for logins, notes, cards, identities, attachments, and custom data while deriving vault keys entirely on the client using Argon2id/PBKDF2.
+- Users unlock their vault through the “Encryption status” modal by entering a vault passphrase (generating one with the included password generator is recommended). The server never sees that passphrase or the plaintext key.
+- Shared collections are scoped to organizations. Admins manage organizations, collections, members, and collection-level access via `Manage → VaultWarden`, and users only gain decryption rights once explicit access is granted (no automatic grants).
+- Browsing the vault shows folders, tags, creator badges, favorites, soft-delete, and activity filters; folder links filter the main list, and edit/sharing actions remain available through modals.
+- Run `flask db upgrade` when deploying VaultWarden to ensure all tables (folders, organizations, collections, collection access, audit logs, etc.) are created.
+
 ### Networks
 
 - Define network maps, add hosts, generate host lists, and export visualizations.
