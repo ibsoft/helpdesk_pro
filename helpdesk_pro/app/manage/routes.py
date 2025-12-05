@@ -685,7 +685,31 @@ def _build_vault_overview():
     )
     organizations = VaultOrganization.query.order_by(VaultOrganization.name).all()
     collections = VaultCollection.query.order_by(VaultCollection.created_at.desc()).all()
-    return vault_stats, vault_events, organizations, collections
+    org_collection_counts = dict(
+        db.session.query(
+            VaultCollection.organization_id,
+            db.func.count(VaultCollection.id),
+        )
+        .group_by(VaultCollection.organization_id)
+        .all()
+    )
+    collection_item_counts = dict(
+        db.session.query(
+            VaultItem.collection_id,
+            db.func.count(VaultItem.id),
+        )
+        .filter(VaultItem.collection_id.isnot(None))
+        .group_by(VaultItem.collection_id)
+        .all()
+    )
+    return (
+        vault_stats,
+        vault_events,
+        organizations,
+        collections,
+        org_collection_counts,
+        collection_item_counts,
+    )
 
 
 def _generate_organization_key() -> str:
@@ -747,7 +771,14 @@ def _grant_collection_access(collection: VaultCollection, user: User, *, access_
 @login_required
 def vaultwarden():
     _require_admin()
-    vault_stats, vault_events, organizations, collections = _build_vault_overview()
+    (
+        vault_stats,
+        vault_events,
+        organizations,
+        collections,
+        org_collection_counts,
+        collection_item_counts,
+    ) = _build_vault_overview()
     collection_accesses = (
         VaultCollectionAccess.query
         .options(
@@ -947,6 +978,8 @@ def vaultwarden():
         compliance_form_action=url_for("manage.vault_compliance_export"),
         collection_accesses=collection_accesses,
         collection_access_form=collection_access_form,
+        org_collection_counts=org_collection_counts,
+        collection_item_counts=collection_item_counts,
     )
 
 
@@ -955,6 +988,13 @@ def vaultwarden():
 def delete_vault_organization(org_id):
     _require_admin()
     org = VaultOrganization.query.get_or_404(org_id)
+    collection_count = VaultCollection.query.filter_by(organization_id=org.id).count()
+    if collection_count:
+        flash(
+            _("Organization %(name)s still has %(count)s collections. Remove them first.", name=org.name, count=collection_count),
+            "warning",
+        )
+        return redirect(url_for("manage.vaultwarden"))
     VaultAuditLog.query.filter_by(organization_id=org.id).update({VaultAuditLog.organization_id: None})
     VaultAuditLog.record(
         action="vault_organization_delete",
@@ -973,6 +1013,15 @@ def delete_vault_organization(org_id):
 def delete_vault_collection(collection_id):
     _require_admin()
     collection = VaultCollection.query.get_or_404(collection_id)
+    item_count = (
+        VaultItem.query.filter_by(collection_id=collection.id).count()
+    )
+    if item_count:
+        flash(
+            _("Collection %(name)s contains %(count)s vault items. Remove them first.", name=collection.name, count=item_count),
+            "warning",
+        )
+        return redirect(url_for("manage.vaultwarden"))
     VaultAuditLog.record(
         action="vault_collection_delete",
         user_id=current_user.id,
@@ -990,6 +1039,8 @@ def delete_vault_collection(collection_id):
 def delete_vault_membership(membership_id):
     _require_admin()
     membership = VaultOrganizationMembership.query.get_or_404(membership_id)
+    user_label = membership.user.username if membership.user else _("Unknown")
+    org_label = membership.organization.name if membership.organization else _("Unknown")
     VaultAuditLog.record(
         action="vault_organization_remove_member",
         user_id=current_user.id,
@@ -1002,7 +1053,7 @@ def delete_vault_membership(membership_id):
     db.session.delete(membership)
     db.session.commit()
     flash(
-        _("Removed %(user)s from %(org)s.", user=membership.user.username if membership.user else _("Unknown"), org=membership.organization.name),
+        _("Removed %(user)s from %(org)s.", user=user_label, org=org_label),
         "success",
     )
     return redirect(url_for("manage.vaultwarden"))

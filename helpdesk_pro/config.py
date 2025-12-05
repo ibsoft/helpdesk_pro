@@ -25,6 +25,13 @@ def _list_env(key: str, default: list[str]) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _bool_env(key: str, default: bool) -> bool:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    return raw.lower() in {"1", "true", "yes"}
+
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
@@ -45,6 +52,28 @@ class Config:
     if LOG_FILE_LEVEL:
         LOG_FILE_LEVEL = LOG_FILE_LEVEL.upper()
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or SECRET_KEY
+    AUTH_METHODS = [
+        method.strip().lower()
+        for method in _list_env("AUTH_METHODS", ["local"])
+    ]
+    AUTH_LDAP_ENABLED = _bool_env("AUTH_LDAP_ENABLED", False)
+    AUTH_LDAP_SERVER_URI = os.getenv("AUTH_LDAP_SERVER_URI")
+    AUTH_LDAP_PORT = int(os.getenv("AUTH_LDAP_PORT", 389))
+    AUTH_LDAP_USE_SSL = _bool_env("AUTH_LDAP_USE_SSL", False)
+    AUTH_LDAP_BIND_DN = os.getenv("AUTH_LDAP_BIND_DN")
+    AUTH_LDAP_BIND_PASSWORD = os.getenv("AUTH_LDAP_BIND_PASSWORD")
+    AUTH_LDAP_SEARCH_BASE = os.getenv("AUTH_LDAP_SEARCH_BASE")
+    AUTH_LDAP_USER_ATTRIBUTE = os.getenv("AUTH_LDAP_USER_ATTRIBUTE", "sAMAccountName")
+    AUTH_LDAP_USER_DN_TEMPLATE = os.getenv("AUTH_LDAP_USER_DN_TEMPLATE")
+    AUTH_LDAP_DEFAULT_EMAIL_DOMAIN = os.getenv("AUTH_LDAP_DEFAULT_EMAIL_DOMAIN", "example.local")
+    AUTH_SSO_ENABLED = _bool_env("AUTH_SSO_ENABLED", False)
+    AUTH_SSO_CLIENT_ID = os.getenv("AUTH_SSO_CLIENT_ID")
+    AUTH_SSO_CLIENT_SECRET = os.getenv("AUTH_SSO_CLIENT_SECRET")
+    AUTH_SSO_METADATA_URL = os.getenv("AUTH_SSO_METADATA_URL")
+    AUTH_SSO_SCOPE = os.getenv("AUTH_SSO_SCOPE", "openid email profile")
+    AUTH_SSO_EMAIL_CLAIM = os.getenv("AUTH_SSO_EMAIL_CLAIM", "email")
+    AUTH_SSO_USERNAME_CLAIM = os.getenv("AUTH_SSO_USERNAME_CLAIM", "preferred_username")
+    AUTH_SSO_NAME_CLAIM = os.getenv("AUTH_SSO_NAME_CLAIM", "name")
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024
     BASE_URL = os.getenv('BASE_URL')

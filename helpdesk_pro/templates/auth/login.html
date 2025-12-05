@@ -121,6 +121,24 @@
         <input type="password" class="form-control" id="password" name="password" placeholder="" required>
         <label for="password"><i class="fa fa-key me-1"></i>{{ _('Password') }}</label>
       </div>
+      {% if auth_methods|length == 1 %}
+        <input type="hidden" name="auth_method" value="{{ auth_methods[0] }}">
+      {% else %}
+        <div class="mb-3">
+          <label class="form-label text-white-50 small">{{ _('Authentication method') }}</label>
+          <select class="form-select form-select-sm" name="auth_method">
+            {% for method in auth_methods %}
+              <option value="{{ method }}" {% if method == selected_auth_method %}selected{% endif %}>
+                {% if method == 'ldap' %}
+                  {{ _('Active Directory / LDAP') }}
+                {% else %}
+                  {{ _('Helpdesk Pro credentials') }}
+                {% endif %}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
 
       <div class="form-check mb-4">
         <input class="form-check-input" type="checkbox" id="remember" name="remember">
@@ -131,6 +149,17 @@
         <i class="fa-solid fa-right-to-bracket me-1"></i>{{ _('Sign in') }}
       </button>
     </form>
+
+    {% if sso_enabled %}
+      <div class="mb-3">
+        <a href="{{ url_for('auth.sso_login') }}" class="btn btn-outline-light w-100 py-2">
+          <i class="fa-solid fa-shield-alt me-1"></i>{{ _('Sign in with SSO provider') }}
+        </a>
+        <div class="text-center small mt-2 text-white-50">
+          {{ _('SSO users are authenticated by your identity provider.') }}
+        </div>
+      </div>
+    {% endif %}
 
     {% if auth_config.allow_password_reset or auth_config.allow_self_registration %}
       <div class="text-center links">

@@ -64,6 +64,11 @@ class VaultOrganization(db.Model):
     collections = relationship("VaultCollection", back_populates="organization", cascade="all, delete-orphan")
     key_shares = relationship("VaultOrganizationKeyShare", back_populates="organization", cascade="all, delete-orphan")
 
+    def assign_key(self, ciphertext: str, version: int) -> None:
+        self.key_ciphertext = ciphertext
+        self.key_version = version
+        self.key_created_at = datetime.utcnow()
+
     def __repr__(self):
         return f"<VaultOrganization id={self.id} name={self.name}>"
 

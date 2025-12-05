@@ -99,6 +99,28 @@ Create `helpdesk_pro/.env` or `helpdesk_pro/instance/.env` and set environment v
 | `KNOWLEDGE_UPLOAD_FOLDER` | Knowledge attachments folder | `instance/knowledge_uploads`
 | `TICKETS_UPLOAD_FOLDER` | Ticket attachments folder | `instance/tickets_uploads`
 
+#### External authentication (LDAP / SSO)
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `AUTH_METHODS` | Comma-separated login methods (`local`, `ldap`, `sso`). | `local` |
+| `AUTH_LDAP_ENABLED` | Enable Active Directory / LDAP authentication. | `False` |
+| `AUTH_LDAP_SERVER_URI` | LDAP host (or URI) to connect to. | — |
+| `AUTH_LDAP_BIND_DN` | Distinguished name used for directory searches (required when searching). | — |
+| `AUTH_LDAP_BIND_PASSWORD` | Password for the bind DN. | — |
+| `AUTH_LDAP_SEARCH_BASE` | Base DN for user searches when no DN template is provided. | — |
+| `AUTH_LDAP_USER_ATTRIBUTE` | LDAP attribute to match the username (`sAMAccountName` by default). | `sAMAccountName` |
+| `AUTH_LDAP_USER_DN_TEMPLATE` | Optional DN template (e.g. `cn={username},ou=Users,dc=example,dc=com`). | — |
+| `AUTH_LDAP_DEFAULT_EMAIL_DOMAIN` | Domain appended when LDAP does not expose an email address. | `example.local` |
+| `AUTH_SSO_ENABLED` | Enable OpenID Connect / SSO login. | `False` |
+| `AUTH_SSO_CLIENT_ID` | Client identifier issued by the identity provider. | — |
+| `AUTH_SSO_CLIENT_SECRET` | Client secret issued by the identity provider. | — |
+| `AUTH_SSO_METADATA_URL` | Discovery URL (OIDC config) for the provider. | — |
+| `AUTH_SSO_SCOPE` | OAuth scope requested by the client. | `openid email profile` |
+| `AUTH_SSO_EMAIL_CLAIM` | Claim holding the user email address. | `email` |
+| `AUTH_SSO_USERNAME_CLAIM` | Claim holding the preferred username. | `preferred_username` |
+| `AUTH_SSO_NAME_CLAIM` | Claim holding the full name. | `name` |
+
 ### Database Setup
 
 ```bash

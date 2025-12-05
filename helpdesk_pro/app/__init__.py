@@ -22,6 +22,7 @@ from logging.handlers import TimedRotatingFileHandler
 from config import Config
 from app.mcp import init_app as init_mcp
 from app.utils.i18n import PoFallbackDomain
+from app.auth import init_oauth
 
 # ───────── Extensions ───────── #
 db = SQLAlchemy()
@@ -59,6 +60,7 @@ def create_app():
     csrf.init_app(app)
     login_manager.init_app(app)
     jwt.init_app(app)
+    init_oauth(app)
 
     # ───────── Flask-Login ───────── #
     from app.models.user import User
