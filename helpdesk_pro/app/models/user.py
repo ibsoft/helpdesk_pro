@@ -39,7 +39,9 @@ class User(UserMixin, db.Model):
             return f"https://www.gravatar.com/avatar/{email_hash}?s={size}&d=identicon"
         if self.avatar_filename:
             try:
-                upload_folder = os.path.join(current_app.static_folder, "uploads", "avatars")
+                upload_folder = current_app.config.get("AVATAR_UPLOAD_FOLDER")
+                if not upload_folder:
+                    upload_folder = os.path.join(current_app.static_folder, "uploads", "avatars")
                 legacy_folder = os.path.join(current_app.root_path, "static", "uploads", "avatars")
                 path = os.path.join(upload_folder, self.avatar_filename)
                 if not os.path.isfile(path) and os.path.isfile(os.path.join(legacy_folder, self.avatar_filename)):
@@ -53,7 +55,7 @@ class User(UserMixin, db.Model):
                 pass
             except OSError:
                 pass
-            return url_for("static", filename=f"uploads/avatars/{self.avatar_filename}")
+            return url_for("users.avatar_file", filename=self.avatar_filename, s=size)
         if self.email:
             email_hash = hashlib.md5(self.email.strip().lower().encode("utf-8")).hexdigest()
         else:

@@ -139,6 +139,22 @@ CONFIGURATION_SECTIONS = [
                 "choices": ["en", "el"],
                 "help": _("Language used when the user has not chosen a preference."),
             },
+            {
+                "key": "MAX_SIZE",
+                "label": _("Max Upload Size"),
+                "type": "text",
+                "default": "16MB",
+                "placeholder": "16MB",
+                "help": _("Default upload limit. Supports bytes or KB/MB/GB suffixes."),
+            },
+            {
+                "key": "CONTRACT_DOCUMENT_MAX_SIZE",
+                "label": _("Contract Document Max Size"),
+                "type": "text",
+                "default": "16MB",
+                "placeholder": "16MB",
+                "help": _("Maximum size for each contract document upload."),
+            },
         ],
     },
     {

@@ -81,6 +81,9 @@
   max-height: 220px;
   overflow: auto;
 }
+.contract-document-row {
+  cursor: pointer;
+}
 </style>
 
 {% set module_access = module_access if module_access is defined else 'write' %}
@@ -422,8 +425,8 @@
               <textarea name="notes" rows="3" class="form-control"></textarea>
             </div>
             <div class="col-12">
-              <label class="form-label">{{ _('Contract PDFs') }}</label>
-              <input name="contract_pdfs" type="file" class="form-control" accept="application/pdf,.pdf" multiple>
+              <label class="form-label">{{ _('Contract Documents') }}</label>
+              <input name="contract_pdfs" type="file" class="form-control" accept=".pdf,.msg,.docx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-outlook" multiple>
             </div>
           </div>
         </div>
@@ -548,8 +551,8 @@
               <input name="history_notes" class="form-control" placeholder="{{ _('Optional note for history') }}">
             </div>
             <div class="col-12">
-              <label class="form-label">{{ _('Add Contract PDFs') }}</label>
-              <input name="contract_pdfs" type="file" class="form-control" accept="application/pdf,.pdf" multiple>
+              <label class="form-label">{{ _('Add Contract Documents') }}</label>
+              <input name="contract_pdfs" type="file" class="form-control" accept=".pdf,.msg,.docx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-outlook" multiple>
             </div>
             <div class="col-12">
               <div class="d-flex align-items-center justify-content-between mb-2">
@@ -576,7 +579,7 @@
             </div>
             <div class="col-12">
               <div class="d-flex align-items-center justify-content-between mb-2">
-                <h6 class="mb-0"><i class="fa fa-file-pdf me-2"></i>{{ _('Contract PDF History') }}</h6>
+                <h6 class="mb-0"><i class="fa fa-folder-open me-2"></i>{{ _('Contract Document History') }}</h6>
                 <span class="small text-body-secondary" id="contract-document-count"></span>
               </div>
               <div class="table-responsive contract-document-box border rounded">
@@ -591,7 +594,7 @@
                     </tr>
                   </thead>
                   <tbody id="contract-document-body">
-                    <tr><td colspan="5" class="text-center text-body-secondary py-3">{{ _('No PDFs yet') }}</td></tr>
+                    <tr><td colspan="5" class="text-center text-body-secondary py-3">{{ _('No documents yet') }}</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -663,8 +666,8 @@
               <textarea name="renewal_notes" rows="3" class="form-control"></textarea>
             </div>
             <div class="col-12">
-              <label class="form-label">{{ _('Contract PDFs') }}</label>
-              <input name="contract_pdfs" type="file" class="form-control" accept="application/pdf,.pdf" multiple>
+              <label class="form-label">{{ _('Contract Documents') }}</label>
+              <input name="contract_pdfs" type="file" class="form-control" accept=".pdf,.msg,.docx,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-outlook" multiple>
             </div>
           </div>
         </div>
@@ -696,6 +699,30 @@
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
           <button type="submit" class="btn btn-danger">
             <i class="fa fa-trash"></i> {{ _('Delete') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Document Modal -->
+<div class="modal fade" id="contractDocumentDeleteModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="contract-document-delete-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-file-lines me-2"></i>{{ _('Delete Contract Document') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-0">{{ _('Are you sure you want to delete') }} <strong id="contract-document-delete-name"></strong>?</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger">
+            <i class="fa fa-trash"></i> {{ _('Delete Document') }}
           </button>
         </div>
       </form>
@@ -797,6 +824,11 @@ $(function() {
     submitForm($(this), 'contractDeleteModal');
   });
 
+  $('#contract-document-delete-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'contractDocumentDeleteModal');
+  });
+
   $('#contract-renew-form').on('submit', function(e) {
     e.preventDefault();
     submitForm($(this), 'contractRenewModal');
@@ -853,6 +885,15 @@ $(function() {
     return $('<div>').text(value || '').html();
   }
 
+  function documentIcon(filename) {
+    const extension = (filename || '').split('.').pop().toLowerCase();
+    if (extension === 'pdf') return '<i class="fa fa-file-pdf text-danger me-1"></i>';
+    if (['png', 'jpg', 'jpeg'].includes(extension)) return '<i class="fa fa-file-image text-primary me-1"></i>';
+    if (extension === 'docx') return '<i class="fa fa-file-word text-primary me-1"></i>';
+    if (extension === 'msg') return '<i class="fa fa-envelope text-secondary me-1"></i>';
+    return '<i class="fa fa-file-lines text-secondary me-1"></i>';
+  }
+
   function renderContractHistory(history) {
     const body = $('#contract-history-body');
     const count = $('#contract-history-count');
@@ -880,21 +921,29 @@ $(function() {
     const body = $('#contract-document-body');
     const count = $('#contract-document-count');
     body.empty();
-    count.text(documents.length ? documents.length + ' {{ _("PDFs") }}' : '');
+    count.text(documents.length ? documents.length + ' {{ _("documents") }}' : '');
     if (!documents.length) {
-      body.append('<tr><td colspan="5" class="text-center text-body-secondary py-3">{{ _("No PDFs yet") }}</td></tr>');
+      body.append('<tr><td colspan="5" class="text-center text-body-secondary py-3">{{ _("No documents yet") }}</td></tr>');
       return;
     }
     documents.forEach(function(doc) {
       const period = periodText(doc.start_date, doc.end_date);
+      const openUrl = '/contracts/documents/' + encodeURIComponent(doc.id) + '/open';
       const downloadUrl = '/contracts/documents/' + encodeURIComponent(doc.id) + '/download';
+      const deleteUrl = '/contracts/documents/' + encodeURIComponent(doc.id) + '/delete';
       body.append(
-        '<tr>' +
-          '<td class="fw-semibold"><i class="fa fa-file-pdf text-danger me-1"></i>' + escapeHtml(doc.display_filename) + '</td>' +
+        '<tr class="contract-document-row" data-open-url="' + openUrl + '">' +
+          '<td class="fw-semibold">' + documentIcon(doc.display_filename) + escapeHtml(doc.display_filename) + '</td>' +
           '<td>' + escapeHtml(period) + '</td>' +
           '<td>' + escapeHtml(doc.uploaded_at || '—') + '</td>' +
           '<td>' + escapeHtml(doc.uploaded_by || '—') + '</td>' +
-          '<td><a class="btn btn-sm btn-outline-primary" href="' + downloadUrl + '"><i class="fa fa-download"></i></a></td>' +
+          '<td class="text-nowrap">' +
+            '<a class="btn btn-sm btn-outline-secondary" href="' + openUrl + '" target="_blank" rel="noopener" title="{{ _("Open") }}"><i class="fa fa-up-right-from-square"></i></a>' +
+            '<a class="btn btn-sm btn-outline-primary ms-1" href="' + downloadUrl + '" title="{{ _("Download") }}"><i class="fa fa-download"></i></a>' +
+            '<button type="button" class="btn btn-sm btn-outline-danger ms-1 delete-contract-document-btn" data-delete-url="' + deleteUrl + '" data-name="' + escapeHtml(doc.display_filename) + '">' +
+              '<i class="fa fa-trash"></i>' +
+            '</button>' +
+          '</td>' +
         '</tr>'
       );
     });
@@ -949,6 +998,29 @@ $(function() {
     $('#contract-delete-name').text(name);
     const modal = new bootstrap.Modal(document.getElementById('contractDeleteModal'));
     modal.show();
+  });
+
+  $(document).on('click', '.delete-contract-document-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
+      return;
+    }
+    const btn = $(this);
+    const deleteUrl = btn.data('delete-url');
+    const name = btn.data('name');
+    if (!deleteUrl) return;
+    $('#contract-document-delete-form').attr('action', deleteUrl);
+    $('#contract-document-delete-name').text(name);
+    const modal = new bootstrap.Modal(document.getElementById('contractDocumentDeleteModal'));
+    modal.show();
+  });
+
+  $(document).on('dblclick', '.contract-document-row', function(e) {
+    if ($(e.target).closest('a, button').length) return;
+    const openUrl = $(this).data('open-url');
+    if (openUrl) {
+      window.open(openUrl, '_blank', 'noopener');
+    }
   });
 
   $(document).on('click', '.renew-contract-btn', function() {

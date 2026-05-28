@@ -32,6 +32,28 @@ def _bool_env(key: str, default: bool) -> bool:
     return raw.lower() in {"1", "true", "yes"}
 
 
+def _bytes_env(key: str, default: int) -> int:
+    raw = os.getenv(key)
+    if raw is None or raw == "":
+        return default
+    raw = raw.strip().lower()
+    multipliers = {
+        "kb": 1024,
+        "k": 1024,
+        "mb": 1024 * 1024,
+        "m": 1024 * 1024,
+        "gb": 1024 * 1024 * 1024,
+        "g": 1024 * 1024 * 1024,
+    }
+    try:
+        for suffix, multiplier in multipliers.items():
+            if raw.endswith(suffix):
+                return int(float(raw[:-len(suffix)].strip()) * multiplier)
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
+
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
@@ -75,7 +97,9 @@ class Config:
     AUTH_SSO_USERNAME_CLAIM = os.getenv("AUTH_SSO_USERNAME_CLAIM", "preferred_username")
     AUTH_SSO_NAME_CLAIM = os.getenv("AUTH_SSO_NAME_CLAIM", "name")
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    MAX_SIZE = _bytes_env('MAX_SIZE', 16 * 1024 * 1024)
+    MAX_CONTENT_LENGTH = _bytes_env('MAX_CONTENT_LENGTH', MAX_SIZE)
+    CONTRACT_DOCUMENT_MAX_SIZE = _bytes_env('CONTRACT_DOCUMENT_MAX_SIZE', MAX_SIZE)
     BASE_URL = os.getenv('BASE_URL')
     SECURITY_HEADERS = {
         "Content-Security-Policy": "default-src 'self'; img-src 'self' data:;",

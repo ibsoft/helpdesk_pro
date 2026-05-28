@@ -7,6 +7,7 @@ Provides lifecycle tracking for software, hardware, and services agreements.
 from collections import Counter
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
+import mimetypes
 import os
 
 from dateutil.relativedelta import relativedelta
@@ -34,7 +35,13 @@ contracts_bp = Blueprint("contracts", __name__)
 CONTRACT_TYPES = ["Software", "Hardware", "Services"]
 CONTRACT_STATUSES = ["Active", "Pending", "Expiring Soon", "Expired", "Terminated", "On Hold"]
 ALERT_WINDOW_DAYS = 60
-CONTRACT_PDF_FIELD = "contract_pdfs"
+CONTRACT_DOCUMENT_FIELD = "contract_pdfs"
+CONTRACT_DOCUMENT_EXTENSIONS = {"pdf", "msg", "docx", "png", "jpg", "jpeg"}
+CONTRACT_DOCUMENT_INLINE_EXTENSIONS = {"pdf", "png", "jpg", "jpeg"}
+CONTRACT_DOCUMENT_MIME_OVERRIDES = {
+    "msg": "application/vnd.ms-outlook",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
 
 
 def _parse_date(field_name):
@@ -179,11 +186,50 @@ def _date_for_filename(value):
     return value.strftime("%d-%m-%Y") if value else "no-date"
 
 
-def _contract_pdf_filename(contract, start_date=None, end_date=None):
+def _document_extension(filename):
+    return os.path.splitext(filename or "")[1].lower().lstrip(".")
+
+
+def _document_mimetype(filename):
+    ext = _document_extension(filename)
+    if ext in CONTRACT_DOCUMENT_MIME_OVERRIDES:
+        return CONTRACT_DOCUMENT_MIME_OVERRIDES[ext]
+    guessed_type, _ = mimetypes.guess_type(filename or "")
+    return guessed_type or "application/octet-stream"
+
+
+def _format_bytes(size):
+    if not size:
+        return "0 bytes"
+    for unit in ("bytes", "KB", "MB", "GB"):
+        if size < 1024 or unit == "GB":
+            return f"{size:.1f} {unit}" if unit != "bytes" else f"{int(size)} bytes"
+        size = size / 1024
+    return f"{size:.1f} GB"
+
+
+def _uploaded_file_size(file):
+    if getattr(file, "content_length", None):
+        return file.content_length
+    stream = getattr(file, "stream", None)
+    if not stream:
+        return 0
+    try:
+        position = stream.tell()
+        stream.seek(0, os.SEEK_END)
+        size = stream.tell()
+        stream.seek(position)
+        return size
+    except (OSError, AttributeError):
+        return 0
+
+
+def _contract_document_filename(contract, original_filename, start_date=None, end_date=None):
     start_date = start_date or contract.start_date
     end_date = end_date or contract.end_date
-    base = f"{contract.name}_{_date_for_filename(start_date)}_{_date_for_filename(end_date)}.pdf"
-    return secure_filename(base, allow_unicode=True) or "contract.pdf"
+    ext = _document_extension(original_filename)
+    base = f"{contract.name}_{_date_for_filename(start_date)}_{_date_for_filename(end_date)}.{ext}"
+    return secure_filename(base, allow_unicode=True) or f"contract.{ext}"
 
 
 def _unique_filename(folder, filename):
@@ -196,24 +242,42 @@ def _unique_filename(folder, filename):
     return candidate
 
 
-def _save_contract_pdfs(contract, history_entry=None, start_date=None, end_date=None, notes=None):
+def _save_contract_documents(contract, history_entry=None, start_date=None, end_date=None, notes=None):
     files = [
         file
-        for file in request.files.getlist(CONTRACT_PDF_FIELD)
+        for file in request.files.getlist(CONTRACT_DOCUMENT_FIELD)
         if file and file.filename
     ]
     if not files:
         return []
 
-    invalid_files = [file.filename for file in files if not file.filename.lower().endswith(".pdf")]
+    invalid_files = [
+        file.filename
+        for file in files
+        if _document_extension(file.filename) not in CONTRACT_DOCUMENT_EXTENSIONS
+    ]
     if invalid_files:
-        raise ValueError("Only PDF contract attachments are allowed.")
+        raise ValueError("Only PDF, MSG, DOCX, PNG, JPG or JPEG contract documents are allowed.")
+
+    max_size = current_app.config.get("CONTRACT_DOCUMENT_MAX_SIZE") or current_app.config.get("MAX_CONTENT_LENGTH")
+    if max_size:
+        for file in files:
+            size = _uploaded_file_size(file)
+            if size > max_size:
+                raise ValueError(
+                    f"Document “{file.filename}” is {_format_bytes(size)}. Maximum allowed size is {_format_bytes(max_size)}."
+                )
 
     folder = _contract_upload_folder()
     saved_documents = []
     for file in files:
         original_name = file.filename or ""
-        base_filename = _contract_pdf_filename(contract, start_date=start_date, end_date=end_date)
+        base_filename = _contract_document_filename(
+            contract,
+            original_name,
+            start_date=start_date,
+            end_date=end_date,
+        )
         stored_filename = _unique_filename(folder, base_filename)
         file.save(os.path.join(folder, stored_filename))
         document = ContractDocument(
@@ -315,7 +379,7 @@ def create_contract():
 
         db.session.add(contract)
         history_entry = _add_history(contract, "created", notes="Initial contract record.")
-        _save_contract_pdfs(contract, history_entry=history_entry, notes="Initial contract PDF.")
+        _save_contract_documents(contract, history_entry=history_entry, notes="Initial contract document.")
         db.session.commit()
         return _json_or_redirect(True, f"Contract “{contract.name}” added.", "success", "contracts.list_contracts")
     except Exception as exc:
@@ -357,12 +421,12 @@ def update_contract(contract_id):
         contract.notes = _clean_str("notes")
         if not contract.status:
             contract.status = _default_contract_status(contract)
-        has_pdf_uploads = any(file and file.filename for file in request.files.getlist(CONTRACT_PDF_FIELD))
+        has_document_uploads = any(file and file.filename for file in request.files.getlist(CONTRACT_DOCUMENT_FIELD))
         history_entry = None
-        if not _same_snapshot(previous, contract) or has_pdf_uploads:
+        if not _same_snapshot(previous, contract) or has_document_uploads:
             history_entry = _add_history(contract, "updated", previous=previous, notes=_clean_str("history_notes") or "Manual update.")
-        if has_pdf_uploads:
-            _save_contract_pdfs(contract, history_entry=history_entry, notes=_clean_str("history_notes"))
+        if has_document_uploads:
+            _save_contract_documents(contract, history_entry=history_entry, notes=_clean_str("history_notes"))
 
         db.session.commit()
         return _json_or_redirect(True, f"Contract “{contract.name}” updated.", "success", "contracts.list_contracts")
@@ -408,7 +472,7 @@ def renew_contract(contract_id):
             contract.notes = f"{existing_notes}\n\nRenewal note: {notes}".strip()
 
         history_entry = _add_history(contract, "renewed", previous=previous, notes=notes or "Renewed for next period.")
-        _save_contract_pdfs(
+        _save_contract_documents(
             contract,
             history_entry=history_entry,
             start_date=contract.start_date,
@@ -453,8 +517,57 @@ def download_contract_document(document_id):
         document.stored_filename,
         as_attachment=True,
         download_name=document.display_filename,
-        mimetype="application/pdf",
+        mimetype=_document_mimetype(document.display_filename or document.stored_filename),
     )
+
+
+@contracts_bp.route("/contracts/documents/<int:document_id>/open", methods=["GET"])
+@login_required
+def open_contract_document(document_id):
+    document = ContractDocument.query.get_or_404(document_id)
+    folder = _contract_upload_folder()
+    path = os.path.join(folder, document.stored_filename)
+    if not os.path.isfile(path):
+        abort(404)
+    ext = _document_extension(document.display_filename or document.stored_filename)
+    return send_from_directory(
+        folder,
+        document.stored_filename,
+        as_attachment=ext not in CONTRACT_DOCUMENT_INLINE_EXTENSIONS,
+        download_name=document.display_filename,
+        mimetype=_document_mimetype(document.display_filename or document.stored_filename),
+    )
+
+
+@contracts_bp.route("/contracts/documents/<int:document_id>/delete", methods=["POST"])
+@login_required
+def delete_contract_document(document_id):
+    document = ContractDocument.query.get_or_404(document_id)
+    require_module_write("contracts")
+    try:
+        display_filename = document.display_filename or document.stored_filename
+        stored_filename = document.stored_filename
+        folder = _contract_upload_folder()
+        db.session.delete(document)
+        if stored_filename:
+            path = os.path.join(folder, stored_filename)
+            if os.path.isfile(path):
+                os.remove(path)
+        db.session.commit()
+        return _json_or_redirect(
+            True,
+            f"Document “{display_filename}” deleted.",
+            "success",
+            "contracts.list_contracts",
+        )
+    except Exception as exc:
+        db.session.rollback()
+        return _json_or_redirect(
+            False,
+            f"Failed to delete document: {exc}",
+            "danger",
+            "contracts.list_contracts",
+        )
 
 
 @contracts_bp.route("/contracts/<int:contract_id>/delete", methods=["POST"])
