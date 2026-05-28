@@ -1,7 +1,7 @@
 import os
 import time
 import shutil
-from flask import Blueprint, render_template, request, jsonify, abort, current_app
+from flask import Blueprint, render_template, request, jsonify, abort, current_app, send_from_directory
 from flask_login import login_required, current_user
 from app.utils.files import secure_filename
 from app import db, csrf
@@ -193,6 +193,36 @@ def _avatar_upload_folder() -> str:
 
 def _legacy_avatar_folder() -> str:
     return os.path.join(current_app.root_path, "static", "uploads", "avatars")
+
+
+def _static_avatar_folder() -> str:
+    return os.path.join(current_app.static_folder, "uploads", "avatars")
+
+
+@users_bp.route("/profile/avatar/<path:filename>")
+@login_required
+def avatar_file(filename):
+    safe_name = secure_filename(os.path.basename(filename), allow_unicode=True)
+    if not safe_name or safe_name != os.path.basename(filename):
+        abort(404)
+    if not _allowed_avatar(safe_name):
+        abort(404)
+
+    folders = []
+    configured_folder = current_app.config.get("AVATAR_UPLOAD_FOLDER")
+    if configured_folder:
+        folders.append(configured_folder)
+    folders.extend([_static_avatar_folder(), _legacy_avatar_folder()])
+
+    seen = set()
+    for folder in folders:
+        if not folder or folder in seen:
+            continue
+        seen.add(folder)
+        path = os.path.join(folder, safe_name)
+        if os.path.isfile(path):
+            return send_from_directory(folder, safe_name)
+    abort(404)
 
 
 def _remove_avatar_file(filename: str) -> None:

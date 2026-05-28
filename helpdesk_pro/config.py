@@ -25,6 +25,35 @@ def _list_env(key: str, default: list[str]) -> list[str]:
     return [item.strip() for item in raw.split(",") if item.strip()]
 
 
+def _bool_env(key: str, default: bool) -> bool:
+    raw = os.getenv(key)
+    if raw is None:
+        return default
+    return raw.lower() in {"1", "true", "yes"}
+
+
+def _bytes_env(key: str, default: int) -> int:
+    raw = os.getenv(key)
+    if raw is None or raw == "":
+        return default
+    raw = raw.strip().lower()
+    multipliers = {
+        "kb": 1024,
+        "k": 1024,
+        "mb": 1024 * 1024,
+        "m": 1024 * 1024,
+        "gb": 1024 * 1024 * 1024,
+        "g": 1024 * 1024 * 1024,
+    }
+    try:
+        for suffix, multiplier in multipliers.items():
+            if raw.endswith(suffix):
+                return int(float(raw[:-len(suffix)].strip()) * multiplier)
+        return int(raw)
+    except (TypeError, ValueError):
+        return default
+
+
 class Config:
     SECRET_KEY = os.getenv('SECRET_KEY')
     SQLALCHEMY_DATABASE_URI = os.getenv('SQLALCHEMY_DATABASE_URI')
@@ -45,8 +74,32 @@ class Config:
     if LOG_FILE_LEVEL:
         LOG_FILE_LEVEL = LOG_FILE_LEVEL.upper()
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY') or SECRET_KEY
+    AUTH_METHODS = [
+        method.strip().lower()
+        for method in _list_env("AUTH_METHODS", ["local"])
+    ]
+    AUTH_LDAP_ENABLED = _bool_env("AUTH_LDAP_ENABLED", False)
+    AUTH_LDAP_SERVER_URI = os.getenv("AUTH_LDAP_SERVER_URI")
+    AUTH_LDAP_PORT = int(os.getenv("AUTH_LDAP_PORT", 389))
+    AUTH_LDAP_USE_SSL = _bool_env("AUTH_LDAP_USE_SSL", False)
+    AUTH_LDAP_BIND_DN = os.getenv("AUTH_LDAP_BIND_DN")
+    AUTH_LDAP_BIND_PASSWORD = os.getenv("AUTH_LDAP_BIND_PASSWORD")
+    AUTH_LDAP_SEARCH_BASE = os.getenv("AUTH_LDAP_SEARCH_BASE")
+    AUTH_LDAP_USER_ATTRIBUTE = os.getenv("AUTH_LDAP_USER_ATTRIBUTE", "sAMAccountName")
+    AUTH_LDAP_USER_DN_TEMPLATE = os.getenv("AUTH_LDAP_USER_DN_TEMPLATE")
+    AUTH_LDAP_DEFAULT_EMAIL_DOMAIN = os.getenv("AUTH_LDAP_DEFAULT_EMAIL_DOMAIN", "example.local")
+    AUTH_SSO_ENABLED = _bool_env("AUTH_SSO_ENABLED", False)
+    AUTH_SSO_CLIENT_ID = os.getenv("AUTH_SSO_CLIENT_ID")
+    AUTH_SSO_CLIENT_SECRET = os.getenv("AUTH_SSO_CLIENT_SECRET")
+    AUTH_SSO_METADATA_URL = os.getenv("AUTH_SSO_METADATA_URL")
+    AUTH_SSO_SCOPE = os.getenv("AUTH_SSO_SCOPE", "openid email profile")
+    AUTH_SSO_EMAIL_CLAIM = os.getenv("AUTH_SSO_EMAIL_CLAIM", "email")
+    AUTH_SSO_USERNAME_CLAIM = os.getenv("AUTH_SSO_USERNAME_CLAIM", "preferred_username")
+    AUTH_SSO_NAME_CLAIM = os.getenv("AUTH_SSO_NAME_CLAIM", "name")
     UPLOAD_FOLDER = os.path.join(os.getcwd(), 'uploads')
-    MAX_CONTENT_LENGTH = 16 * 1024 * 1024
+    MAX_SIZE = _bytes_env('MAX_SIZE', 16 * 1024 * 1024)
+    MAX_CONTENT_LENGTH = _bytes_env('MAX_CONTENT_LENGTH', MAX_SIZE)
+    CONTRACT_DOCUMENT_MAX_SIZE = _bytes_env('CONTRACT_DOCUMENT_MAX_SIZE', MAX_SIZE)
     BASE_URL = os.getenv('BASE_URL')
     SECURITY_HEADERS = {
         "Content-Security-Policy": "default-src 'self'; img-src 'self' data:;",
@@ -91,7 +144,7 @@ class Config:
     MCP_KEEP_ALIVE_SECONDS = int(os.getenv('MCP_KEEP_ALIVE', 5))
     MCP_ACCESS_LOG = os.getenv('MCP_ACCESS_LOG', 'False').lower() in {
         '1', 'true', 'yes'}
-    APP_VERSION = os.getenv('APP_VERSION', '4.0.5')
+    APP_VERSION = os.getenv('APP_VERSION', '5.0.2')
     FLEET_INGEST_ENABLED = os.getenv('FLEET_INGEST_ENABLED', 'True').lower() not in {'0', 'false', 'no'}
     FLEET_INGEST_HOST = os.getenv('FLEET_INGEST_HOST', '0.0.0.0')
     FLEET_INGEST_PORT = int(os.getenv('FLEET_INGEST_PORT', 8449))

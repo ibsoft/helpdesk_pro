@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 {% block content %}
 
+{% set org_collection_counts = org_collection_counts or {} %}
+{% set collection_item_counts = collection_item_counts or {} %}
+
 <div class="container-fluid px-4 py-3">
   <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
     <div>
@@ -197,6 +200,7 @@
         </div>
         <div class="list-group list-group-flush">
           {% for org in organizations %}
+            {% set org_blocked_collections = org_collection_counts.get(org.id, 0) %}
             <div class="list-group-item">
               <div class="d-flex justify-content-between align-items-start gap-2">
                 <div>
@@ -216,6 +220,9 @@
                     data-title="{{ _('Delete organization') }}"
                     data-message="{{ _('Delete organization %(name)s? This will remove every linked collection and membership.', name=org.name) }}"
                     data-action="{{ url_for('manage.delete_vault_organization', org_id=org.id) }}"
+                    {% if org_blocked_collections > 0 %}
+                      data-blocked-message="{{ _('Cannot delete %(name)s while it still has %(count)d collections.', name=org.name, count=org_blocked_collections) }}"
+                    {% endif %}
                   >
                     <i class="fa fa-trash"></i>
                   </button>
@@ -249,25 +256,29 @@
               </tr>
             </thead>
             <tbody>
-              {% for collection in collections %}
-                <tr>
-                  <td>{{ collection.name }}</td>
-                  <td>{{ collection.organization.name }}</td>
-                  <td>{{ collection.description or '-' }}</td>
-                  <td>{{ collection.created_at.strftime('%Y-%m-%d') }}</td>
-                <td class="text-center">
-                  <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm confirm-delete"
-                    data-bs-toggle="modal"
-                    data-bs-target="#confirmDeletionModal"
-                    data-title="{{ _('Delete collection') }}"
-                    data-message="{{ _('Delete collection %(name)s from %(org)s?', name=collection.name, org=collection.organization.name) }}"
-                    data-action="{{ url_for('manage.delete_vault_collection', collection_id=collection.id) }}"
-                  >
-                    <i class="fa fa-trash"></i>
-                  </button>
-                </td>
+          {% for collection in collections %}
+            {% set blocked_items = collection_item_counts.get(collection.id, 0) %}
+            <tr>
+              <td>{{ collection.name }}</td>
+              <td>{{ collection.organization.name }}</td>
+              <td>{{ collection.description or '-' }}</td>
+              <td>{{ collection.created_at.strftime('%Y-%m-%d') }}</td>
+            <td class="text-center">
+              <button
+                type="button"
+                class="btn btn-outline-danger btn-sm confirm-delete"
+                data-bs-toggle="modal"
+                data-bs-target="#confirmDeletionModal"
+                data-title="{{ _('Delete collection') }}"
+                data-message="{{ _('Delete collection %(name)s from %(org)s?', name=collection.name, org=collection.organization.name) }}"
+                data-action="{{ url_for('manage.delete_vault_collection', collection_id=collection.id) }}"
+                {% if blocked_items > 0 %}
+                  data-blocked-message="{{ _('Cannot delete %(name)s because %(count)d vault items are still stored in it.', name=collection.name, count=blocked_items) }}"
+                {% endif %}
+              >
+                <i class="fa fa-trash"></i>
+              </button>
+            </td>
                 </tr>
               {% else %}
                 <tr>
@@ -490,6 +501,23 @@
   </div>
 </div>
 
+<div class="modal fade" id="blockedDeletionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title">{{ _('Action blocked') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <div class="modal-body">
+        <p class="blocked-delete-message mb-0 text-muted small">{{ _('This action is currently unavailable.') }}</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Dismiss') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% if org_form.errors %}
 <script>
   document.addEventListener("DOMContentLoaded", () => new bootstrap.Modal(document.getElementById("orgModal")).show());
@@ -520,9 +548,21 @@
       return;
     }
     const confirmForm = document.getElementById("confirmDeletionForm");
+    const blockedModalEl = document.getElementById("blockedDeletionModal");
+    const blockedMessageEl = blockedModalEl ? blockedModalEl.querySelector(".blocked-delete-message") : null;
+    const blockedModal = blockedModalEl ? new bootstrap.Modal(blockedModalEl) : null;
     const messageEl = confirmModalEl.querySelector(".confirm-delete-message");
     confirmModalEl.addEventListener("show.bs.modal", (event) => {
       const trigger = event.relatedTarget;
+      const blockedMessage = trigger?.dataset?.blockedMessage;
+      if (blockedMessage && blockedModal) {
+        event.preventDefault();
+        if (blockedMessageEl) {
+          blockedMessageEl.textContent = blockedMessage;
+        }
+        blockedModal.show();
+        return;
+      }
       if (!trigger || !confirmForm) {
         return;
       }

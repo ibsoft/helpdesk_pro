@@ -1,11 +1,17 @@
+import secrets
+
+from authlib.integrations.base_client import OAuthError
 from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_mail import Message
 from sqlalchemy import func
 from urllib.parse import urlparse, urljoin
+from ldap3 import Server, Connection, ALL
+from ldap3.core.exceptions import LDAPException
 
 from app import db, login_manager
+from app.auth import oauth
 from app.models.user import User
 from app.models.auth_config import AuthConfig
 from app.utils.security import validate_password_strength
@@ -27,30 +33,246 @@ def _is_safe_redirect(target: str) -> bool:
     )
 
 
+AUTH_METHOD_LOCAL = "local"
+AUTH_METHOD_LDAP = "ldap"
+AUTH_METHOD_SSO = "sso"
+
+
+def _form_auth_methods() -> list[str]:
+    raw_methods = current_app.config.get("AUTH_METHODS") or ["local"]
+    methods: list[str] = []
+    for entry in raw_methods:
+        method = (entry or "").strip().lower()
+        if method == AUTH_METHOD_LDAP and not current_app.config.get("AUTH_LDAP_ENABLED"):
+            continue
+        if method in {AUTH_METHOD_LOCAL, AUTH_METHOD_LDAP}:
+            if method not in methods:
+                methods.append(method)
+    if AUTH_METHOD_LOCAL not in methods:
+        methods.insert(0, AUTH_METHOD_LOCAL)
+    return methods
+
+
+def _is_sso_configured() -> bool:
+    cfg = current_app.config
+    return all(
+        (
+            cfg.get("AUTH_SSO_ENABLED"),
+            cfg.get("AUTH_SSO_CLIENT_ID"),
+            cfg.get("AUTH_SSO_CLIENT_SECRET"),
+            cfg.get("AUTH_SSO_METADATA_URL"),
+        )
+    )
+
+
+def _get_selected_method(request_method: str, available_methods: list[str]) -> str:
+    if request_method != "POST":
+        return available_methods[0]
+    requested = (request.form.get("auth_method") or "").strip().lower()
+    if requested in available_methods:
+        return requested
+    return available_methods[0]
+
+
+def _handle_successful_login(user: User, remember: bool):
+    login_user(user, remember=remember)
+    display_name = user.full_name or user.username
+    flash(_("Welcome, %(username)s!", username=display_name), "success")
+    next_url = request.args.get("next")
+    if next_url and _is_safe_redirect(next_url):
+        return redirect(next_url)
+    return redirect(url_for("dashboard.index"))
+
+
+def _get_or_create_external_user(
+    username: str,
+    email: str | None = None,
+    full_name: str | None = None,
+) -> User | None:
+    username_value = (username or "").strip()
+    if not username_value:
+        return None
+    email_value = (email or "").strip().lower() or None
+    user = User.query.filter(func.lower(User.username) == username_value.lower()).first()
+    if not user and email_value:
+        user = User.query.filter(func.lower(User.email) == email_value).first()
+    if user:
+        if not user.active:
+            return None
+        updated = False
+        if email_value and user.email.lower() != email_value:
+            user.email = email_value
+            updated = True
+        if full_name and not user.full_name:
+            user.full_name = full_name.strip() or None
+            updated = True
+        if updated:
+            db.session.commit()
+        return user
+    if not email_value:
+        domain = current_app.config.get("AUTH_LDAP_DEFAULT_EMAIL_DOMAIN") or "example.local"
+        email_value = f"{username_value}@{domain}"
+    auth_config = AuthConfig.load()
+    external_user = User(
+        username=username_value,
+        email=email_value,
+        full_name=full_name or None,
+        role=auth_config.default_role,
+        active=True,
+    )
+    external_user.set_password(secrets.token_urlsafe(40))
+    db.session.add(external_user)
+    db.session.commit()
+    return external_user
+
+
+def _ldap_authenticate(username: str, password: str) -> dict[str, str] | None:
+    if not username or not password:
+        return None
+    if not current_app.config.get("AUTH_LDAP_ENABLED"):
+        return None
+    server_uri = current_app.config.get("AUTH_LDAP_SERVER_URI")
+    if not server_uri:
+        return None
+    server = Server(
+        server_uri,
+        port=current_app.config.get("AUTH_LDAP_PORT", 389),
+        use_ssl=current_app.config.get("AUTH_LDAP_USE_SSL", False),
+        get_info=ALL,
+    )
+    bind_dn = current_app.config.get("AUTH_LDAP_BIND_DN")
+    bind_password = current_app.config.get("AUTH_LDAP_BIND_PASSWORD")
+    user_dn_template = current_app.config.get("AUTH_LDAP_USER_DN_TEMPLATE")
+    user_dn: str | None = None
+    email: str | None = None
+    full_name: str | None = None
+    search_conn = None
+    try:
+        if user_dn_template:
+            user_dn = user_dn_template.format(username=username)
+        else:
+            search_base = current_app.config.get("AUTH_LDAP_SEARCH_BASE")
+            if not search_base or not bind_dn or not bind_password:
+                return None
+            search_conn = Connection(server, user=bind_dn, password=bind_password, auto_bind=True)
+            user_attr = current_app.config.get("AUTH_LDAP_USER_ATTRIBUTE", "sAMAccountName")
+            filter_expression = f"({user_attr}={username})"
+            search_conn.search(search_base, filter_expression, attributes=["mail", "displayName"])
+            if not search_conn.entries:
+                return None
+            entry = search_conn.entries[0]
+            user_dn = entry.entry_dn
+            email = getattr(entry, "mail", None)
+            if email:
+                email = email.value
+            full_name_attr = getattr(entry, "displayName", None)
+            if full_name_attr:
+                full_name = full_name_attr.value
+    finally:
+        if search_conn:
+            search_conn.unbind()
+    if not user_dn:
+        return None
+    user_conn = None
+    try:
+        user_conn = Connection(server, user=user_dn, password=password, auto_bind=True)
+        return {
+            "username": username,
+            "email": email,
+            "full_name": full_name,
+        }
+    except LDAPException:
+        return None
+    finally:
+        if user_conn:
+            user_conn.unbind()
+
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if not User.query.first():
         return redirect(url_for("auth.setup_admin"))
     if current_user.is_authenticated:
         return redirect(url_for("dashboard.index"))
+    form_methods = _form_auth_methods()
+    selected_method = _get_selected_method(request.method, form_methods)
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "").strip()
-        user = User.query.filter_by(username=username).first()
-        if not user or not user.active or not user.check_password(password):
-            flash(_("Incorrect credentials."), "danger")
-        elif not user.active:
-            flash(_("Account is disabled."), "danger")
+        remember = bool(request.form.get("remember"))
+        if selected_method == AUTH_METHOD_LOCAL:
+            if not username or not password:
+                flash(_("Username and password are required."), "danger")
+            else:
+                user = User.query.filter_by(username=username).first()
+                if not user:
+                    flash(_("Incorrect credentials."), "danger")
+                elif not user.active:
+                    flash(_("Account is disabled."), "danger")
+                elif not user.check_password(password):
+                    flash(_("Incorrect credentials."), "danger")
+                else:
+                    return _handle_successful_login(user, remember)
+        elif selected_method == AUTH_METHOD_LDAP:
+            ldap_info = _ldap_authenticate(username, password)
+            if not ldap_info:
+                flash(_("Incorrect credentials."), "danger")
+            else:
+                user = _get_or_create_external_user(
+                    ldap_info["username"],
+                    ldap_info.get("email"),
+                    ldap_info.get("full_name"),
+                )
+                if not user:
+                    flash(_("Account is disabled."), "danger")
+                else:
+                    return _handle_successful_login(user, remember)
         else:
-            remember = bool(request.form.get("remember"))
-            login_user(user, remember=remember)
-            display_name = user.full_name or user.username
-            flash(_("Welcome, %(username)s!", username=display_name), "success")
-            next_url = request.args.get("next")
-            if next_url and _is_safe_redirect(next_url):
-                return redirect(next_url)
-            return redirect(url_for("dashboard.index"))
-    return render_template("auth/login.html")
+            flash(_("Unsupported authentication method."), "danger")
+    return render_template(
+        "auth/login.html",
+        auth_methods=form_methods,
+        selected_auth_method=selected_method,
+        sso_enabled=_is_sso_configured()
+        and AUTH_METHOD_SSO in current_app.config.get("AUTH_METHODS", []),
+    )
+
+
+@auth_bp.route("/sso/login")
+def sso_login():
+    available = current_app.config.get("AUTH_METHODS", [])
+    if not _is_sso_configured() or AUTH_METHOD_SSO not in available:
+        flash(_("SSO login is not configured."), "warning")
+        return redirect(url_for("auth.login"))
+    redirect_uri = url_for("auth.sso_callback", _external=True)
+    return oauth.sso.authorize_redirect(redirect_uri)
+
+
+@auth_bp.route("/sso/callback")
+def sso_callback():
+    if not _is_sso_configured():
+        return redirect(url_for("auth.login"))
+    try:
+        token = oauth.sso.authorize_access_token()
+    except OAuthError as exc:  # pragma: no cover
+        current_app.logger.warning("SSO login error: %s", exc)
+        flash(_("SSO login failed."), "danger")
+        return redirect(url_for("auth.login"))
+    user_info = oauth.sso.parse_id_token(token)
+    if not user_info:
+        flash(_("SSO response did not include a valid user profile."), "danger")
+        return redirect(url_for("auth.login"))
+    email_claim = current_app.config.get("AUTH_SSO_EMAIL_CLAIM", "email")
+    username_claim = current_app.config.get("AUTH_SSO_USERNAME_CLAIM", "preferred_username")
+    name_claim = current_app.config.get("AUTH_SSO_NAME_CLAIM", "name")
+    email = user_info.get(email_claim)
+    username = user_info.get(username_claim) or email or user_info.get("sub")
+    full_name = user_info.get(name_claim)
+    user = _get_or_create_external_user(username or email or user_info.get("sub"), email, full_name)
+    if not user:
+        flash(_("Account is disabled."), "danger")
+        return redirect(url_for("auth.login"))
+    return _handle_successful_login(user, remember=True)
 
 
 @auth_bp.route("/logout")
