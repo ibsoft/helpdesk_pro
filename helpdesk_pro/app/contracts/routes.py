@@ -7,28 +7,34 @@ Provides lifecycle tracking for software, hardware, and services agreements.
 from collections import Counter
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
+import os
 
 from dateutil.relativedelta import relativedelta
 from flask import (
     Blueprint,
+    abort,
+    current_app,
     render_template,
     request,
     jsonify,
     redirect,
     url_for,
     flash,
+    send_from_directory,
 )
 from flask_login import login_required, current_user
 
 from app import db
-from app.models import Contract, ContractUpdateHistory, User
+from app.models import Contract, ContractDocument, ContractUpdateHistory, User
 from app.permissions import get_module_access, require_module_write
+from app.utils.files import secure_filename
 
 contracts_bp = Blueprint("contracts", __name__)
 
 CONTRACT_TYPES = ["Software", "Hardware", "Services"]
 CONTRACT_STATUSES = ["Active", "Pending", "Expiring Soon", "Expired", "Terminated", "On Hold"]
 ALERT_WINDOW_DAYS = 60
+CONTRACT_PDF_FIELD = "contract_pdfs"
 
 
 def _parse_date(field_name):
@@ -163,6 +169,69 @@ def _default_next_period(contract):
     return next_start, next_end, next_renewal
 
 
+def _contract_upload_folder():
+    folder = os.path.join(current_app.instance_path, "contracts_uploads")
+    os.makedirs(folder, exist_ok=True)
+    return folder
+
+
+def _date_for_filename(value):
+    return value.strftime("%d-%m-%Y") if value else "no-date"
+
+
+def _contract_pdf_filename(contract, start_date=None, end_date=None):
+    start_date = start_date or contract.start_date
+    end_date = end_date or contract.end_date
+    base = f"{contract.name}_{_date_for_filename(start_date)}_{_date_for_filename(end_date)}.pdf"
+    return secure_filename(base, allow_unicode=True) or "contract.pdf"
+
+
+def _unique_filename(folder, filename):
+    root, ext = os.path.splitext(filename)
+    candidate = filename
+    counter = 2
+    while os.path.exists(os.path.join(folder, candidate)):
+        candidate = f"{root}_{counter}{ext}"
+        counter += 1
+    return candidate
+
+
+def _save_contract_pdfs(contract, history_entry=None, start_date=None, end_date=None, notes=None):
+    files = [
+        file
+        for file in request.files.getlist(CONTRACT_PDF_FIELD)
+        if file and file.filename
+    ]
+    if not files:
+        return []
+
+    invalid_files = [file.filename for file in files if not file.filename.lower().endswith(".pdf")]
+    if invalid_files:
+        raise ValueError("Only PDF contract attachments are allowed.")
+
+    folder = _contract_upload_folder()
+    saved_documents = []
+    for file in files:
+        original_name = file.filename or ""
+        base_filename = _contract_pdf_filename(contract, start_date=start_date, end_date=end_date)
+        stored_filename = _unique_filename(folder, base_filename)
+        file.save(os.path.join(folder, stored_filename))
+        document = ContractDocument(
+            contract=contract,
+            history=history_entry,
+            original_filename=original_name,
+            stored_filename=stored_filename,
+            display_filename=stored_filename,
+            start_date=start_date or contract.start_date,
+            end_date=end_date or contract.end_date,
+            uploaded_by_id=current_user.id if current_user and current_user.is_authenticated else None,
+            notes=notes,
+        )
+        db.session.add(document)
+        saved_documents.append(document)
+    return saved_documents
+
+
 @contracts_bp.route("/contracts")
 @login_required
 def list_contracts():
@@ -245,7 +314,8 @@ def create_contract():
             contract.status = _default_contract_status(contract)
 
         db.session.add(contract)
-        _add_history(contract, "created", notes="Initial contract record.")
+        history_entry = _add_history(contract, "created", notes="Initial contract record.")
+        _save_contract_pdfs(contract, history_entry=history_entry, notes="Initial contract PDF.")
         db.session.commit()
         return _json_or_redirect(True, f"Contract “{contract.name}” added.", "success", "contracts.list_contracts")
     except Exception as exc:
@@ -287,8 +357,12 @@ def update_contract(contract_id):
         contract.notes = _clean_str("notes")
         if not contract.status:
             contract.status = _default_contract_status(contract)
-        if not _same_snapshot(previous, contract):
-            _add_history(contract, "updated", previous=previous, notes=_clean_str("history_notes") or "Manual update.")
+        has_pdf_uploads = any(file and file.filename for file in request.files.getlist(CONTRACT_PDF_FIELD))
+        history_entry = None
+        if not _same_snapshot(previous, contract) or has_pdf_uploads:
+            history_entry = _add_history(contract, "updated", previous=previous, notes=_clean_str("history_notes") or "Manual update.")
+        if has_pdf_uploads:
+            _save_contract_pdfs(contract, history_entry=history_entry, notes=_clean_str("history_notes"))
 
         db.session.commit()
         return _json_or_redirect(True, f"Contract “{contract.name}” updated.", "success", "contracts.list_contracts")
@@ -333,7 +407,14 @@ def renew_contract(contract_id):
             existing_notes = contract.notes or ""
             contract.notes = f"{existing_notes}\n\nRenewal note: {notes}".strip()
 
-        _add_history(contract, "renewed", previous=previous, notes=notes or "Renewed for next period.")
+        history_entry = _add_history(contract, "renewed", previous=previous, notes=notes or "Renewed for next period.")
+        _save_contract_pdfs(
+            contract,
+            history_entry=history_entry,
+            start_date=contract.start_date,
+            end_date=contract.end_date,
+            notes=notes,
+        )
         db.session.commit()
         return _json_or_redirect(True, f"Contract “{contract.name}” renewed for the next period.", "success", "contracts.list_contracts")
     except Exception as exc:
@@ -356,6 +437,23 @@ def renewal_defaults(contract_id):
             "new_value": str(contract.value) if contract.value is not None else "",
             "new_currency": contract.currency or "",
         },
+    )
+
+
+@contracts_bp.route("/contracts/documents/<int:document_id>/download", methods=["GET"])
+@login_required
+def download_contract_document(document_id):
+    document = ContractDocument.query.get_or_404(document_id)
+    folder = _contract_upload_folder()
+    path = os.path.join(folder, document.stored_filename)
+    if not os.path.isfile(path):
+        abort(404)
+    return send_from_directory(
+        folder,
+        document.stored_filename,
+        as_attachment=True,
+        download_name=document.display_filename,
+        mimetype="application/pdf",
     )
 
 
