@@ -174,7 +174,7 @@ class SoftwareRenewalsArgs(BaseModel):
     )
     include_overdue: bool = Field(
         False,
-        description="Include renewals that are overdue by up to the same window.",
+        description="Include all renewals that are already overdue.",
     )
     status: Optional[List[str]] = Field(
         default=None, description="Optional list of software status values to include."
@@ -232,12 +232,14 @@ class SoftwareRenewalsTool(BaseTool[SoftwareRenewalsArgs, SoftwareRenewalsResult
         }
         conditions = ["sa.renewal_date IS NOT NULL"]
 
-        lower_bound = "CURRENT_DATE"
         if arguments.include_overdue:
-            lower_bound = "(CURRENT_DATE - (INTERVAL '1 day' * :window_days))"
-        conditions.append(
-            f"sa.renewal_date BETWEEN {lower_bound} AND (CURRENT_DATE + (INTERVAL '1 day' * :window_days))"
-        )
+            conditions.append(
+                "sa.renewal_date <= (CURRENT_DATE + (INTERVAL '1 day' * :window_days))"
+            )
+        else:
+            conditions.append(
+                "sa.renewal_date BETWEEN CURRENT_DATE AND (CURRENT_DATE + (INTERVAL '1 day' * :window_days))"
+            )
 
         if arguments.status:
             conditions.append("sa.status = ANY(:status_list)")
