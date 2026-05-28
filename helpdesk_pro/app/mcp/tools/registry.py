@@ -10,7 +10,7 @@ from typing import Dict, List
 
 from .base import BaseTool, ToolExecutionError, ToolMetadata
 from .schema import DescribeTableTool, ListTablesTool
-from .contracts import ContractsSummaryTool, ContractsExpiringTool
+from .contracts import ContractsSummaryTool, ContractsExpiringTool, ContractsLifecycleSummaryTool
 from .backup import BackupJobsExpiringTool, BackupTapeSummaryTool
 from .inventory import HardwareSummaryTool, SoftwareRenewalsTool
 from .tickets import TicketQueueSummaryTool, TicketSlaAlertsTool
@@ -36,6 +36,7 @@ def _build_tools() -> Dict[str, BaseTool]:
     # Domain-specific summaries
     tools[ContractsSummaryTool.name] = ContractsSummaryTool()
     tools[ContractsExpiringTool.name] = ContractsExpiringTool()
+    tools[ContractsLifecycleSummaryTool.name] = ContractsLifecycleSummaryTool()
     tools[BackupTapeSummaryTool.name] = BackupTapeSummaryTool()
     tools[BackupJobsExpiringTool.name] = BackupJobsExpiringTool()
     tools[HardwareSummaryTool.name] = HardwareSummaryTool()

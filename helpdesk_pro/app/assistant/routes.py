@@ -2169,7 +2169,7 @@ def _answer_backup_query(message: str, lowered: str) -> Optional[str]:
                 else:
                     status_bits.append(_("%(days)s day(s) remaining", days=remaining))
             info = f"- {medium.barcode} ({_medium_label(medium)}) — "
-            info += _("ends %(date)s", date=medium.retention_until.strftime("%Y-%m-%d %H:%M"))
+            info += _("ends %(date)s", date=_fmt_datetime(medium.retention_until))
             info += "; " + _location_label(medium)
             if status_bits:
                 info += " (" + ", ".join(status_bits) + ")"
@@ -2271,7 +2271,7 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
                 return f"Ticket #{ticket.id} has no recorded comments."
             lines = [
                 f"{idx + 1}. {comment.user or 'Unknown'} — {comment.comment or '—'} "
-                f"({comment.created_at.strftime('%Y-%m-%d %H:%M') if comment.created_at else 'n/a'})"
+                f"({_fmt_datetime(comment.created_at)})"
                 for idx, comment in enumerate(comments)
             ]
             return "Comments for ticket #{0}:\n{1}".format(ticket.id, "\n".join(lines))
@@ -2288,7 +2288,7 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
             lines = [
                 f"{idx + 1}. {attachment.filename or attachment.filepath or 'Attachment'} "
                 f"(uploaded by {attachment.uploaded_by or 'unknown'} on "
-                f"{attachment.uploaded_at.strftime('%Y-%m-%d %H:%M') if attachment.uploaded_at else 'n/a'})"
+                f"{_fmt_datetime(attachment.uploaded_at)})"
                 for idx, attachment in enumerate(attachments)
             ]
             return "Attachments for ticket #{0}:\n{1}".format(ticket.id, "\n".join(lines))
@@ -2303,15 +2303,15 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
             if not logs:
                 return f"No audit log entries were found for ticket #{ticket.id}."
             lines = [
-                f"{log.timestamp.strftime('%Y-%m-%d %H:%M') if log.timestamp else 'n/a'} — "
+                f"{_fmt_datetime(log.timestamp)} — "
                 f"{log.username or 'system'}: {log.action or '—'}"
                 for log in logs
             ]
             return "Audit log for ticket #{0}:\n{1}".format(ticket.id, "\n".join(lines))
 
         assignee = ticket.assignee.username if ticket.assignee else "Unassigned"
-        created = ticket.created_at.strftime("%Y-%m-%d %H:%M") if ticket.created_at else "—"
-        updated = ticket.updated_at.strftime("%Y-%m-%d %H:%M") if ticket.updated_at else "—"
+        created = _fmt_datetime(ticket.created_at) if ticket.created_at else "—"
+        updated = _fmt_datetime(ticket.updated_at) if ticket.updated_at else "—"
         return (
             f"Ticket #{ticket.id}: {ticket.subject}\n"
             f"Status: {ticket.status or 'Unknown'} | Priority: {ticket.priority or 'n/a'} | Department: {ticket.department or 'n/a'}\n"
@@ -2600,7 +2600,7 @@ def _answer_ticket_query(message: str, lowered: str, user) -> Optional[str]:
     lines = []
     for ticket in results:
         assignee = ticket.assignee.username if ticket.assignee else "Unassigned"
-        created = ticket.created_at.strftime("%Y-%m-%d") if ticket.created_at else "—"
+        created = _fmt_date(ticket.created_at) if ticket.created_at else "—"
         line = (
             f"#{ticket.id} {ticket.subject} — {ticket.status or 'Unknown'}"
             f" | Priority {ticket.priority or 'n/a'} | Assigned to {assignee} | Created {created}"
@@ -2640,7 +2640,7 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
             )
             if not version:
                 return f"No version history recorded for article {article_id}."
-            created_at = version.created_at.strftime("%Y-%m-%d %H:%M") if version.created_at else "n/a"
+            created_at = _fmt_datetime(version.created_at)
             return (
                 f"Article {article_id} latest version v{version.version_number}: {version.title}\n"
                 f"Created by user #{version.created_by} on {created_at}."
@@ -2656,7 +2656,7 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
             if not versions:
                 return f"No version history recorded for article {article_id}."
             lines = [
-                f"v{version.version_number} — {version.title} (created {version.created_at.strftime('%Y-%m-%d %H:%M') if version.created_at else 'n/a'} by user #{version.created_by})"
+                f"v{version.version_number} — {version.title} (created {_fmt_datetime(version.created_at)} by user #{version.created_by})"
                 for version in versions
             ]
             return f"Version history for article {article_id}:\n" + "\n".join(lines)
@@ -2671,7 +2671,7 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
             if not attachments:
                 return f"No attachments are linked to article {article_id}."
             lines = [
-                f"{att.original_filename} ({att.mimetype or 'unknown'}; uploaded {att.uploaded_at.strftime('%Y-%m-%d %H:%M') if att.uploaded_at else 'n/a'})"
+                f"{att.original_filename} ({att.mimetype or 'unknown'}; uploaded {_fmt_datetime(att.uploaded_at)})"
                 for att in attachments
             ]
             return f"Attachments for article {article_id}:\n" + "\n".join(lines)
@@ -2770,7 +2770,7 @@ def _answer_knowledge_query(message: str) -> Optional[str]:
 
     lines = []
     for article in results:
-        updated = article.updated_at.strftime("%Y-%m-%d") if article.updated_at else "—"
+        updated = _fmt_date(article.updated_at) if article.updated_at else "—"
         tags = article.tags or "n/a"
         attachment_count = len(article.attachments)
         attachment_part = f" | attachments: {attachment_count}" if attachment_count else ""
@@ -2794,14 +2794,43 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
     base_query = Contract.query.options(joinedload(Contract.owner))
     filters: List[str] = []
     need_total = "how many" in lowered or "count" in lowered
+    today = date.today()
     support_terms = ("support", "phone", "email", "contact", "τηλεφων", "επικοινων", "email")
     show_support = any(term in lowered for term in support_terms)
     suppressed_keywords: Set[str] = set()
 
+    wants_expired = any(
+        term in lowered
+        for term in ("expired", "overdue", "past due", "ληγμ", "έληξε", "εληξε")
+    )
+    wants_expiring = any(
+        term in lowered
+        for term in ("expiring", "expires soon", "expire soon", "λήγει", "ληγει")
+    )
+
     if "active" in lowered or "ενεργ" in lowered:
-        base_query = base_query.filter(func.lower(Contract.status) == "active")
-        filters.append("status active")
+        if wants_expired:
+            base_query = base_query.filter(func.lower(Contract.status) == "active")
+            filters.append("status active")
+        else:
+            base_query = base_query.filter(
+                or_(Contract.end_date.is_(None), Contract.end_date >= today)
+            )
+            filters.append("active / not expired")
         suppressed_keywords.add("active")
+
+    if wants_expired:
+        base_query = base_query.filter(Contract.end_date.isnot(None))
+        base_query = base_query.filter(Contract.end_date < today)
+        filters.append(f"expired before {today.strftime('%d/%m/%Y')}")
+        suppressed_keywords.update({"expired", "overdue", "past", "due"})
+    elif wants_expiring:
+        threshold = today + timedelta(days=60)
+        base_query = base_query.filter(Contract.end_date.isnot(None))
+        base_query = base_query.filter(Contract.end_date >= today)
+        base_query = base_query.filter(Contract.end_date <= threshold)
+        filters.append(f"expiring by {threshold.strftime('%d/%m/%Y')}")
+        suppressed_keywords.update({"expiring", "expires", "expire", "soon"})
 
     if "auto-renew" in lowered or "auto renew" in lowered:
         base_query = base_query.filter(Contract.auto_renew.is_(True))
@@ -3061,7 +3090,26 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
 
     keywords = _extract_keywords(
         message,
-        extra_stop={"contract", "contracts", "renewal", "renewals", "search", "vendor", "vendors"},
+        extra_stop={
+            "contract",
+            "contracts",
+            "renewal",
+            "renewals",
+            "search",
+            "vendor",
+            "vendors",
+            "how",
+            "many",
+            "count",
+            "status",
+            "active",
+            "expired",
+            "expiring",
+            "expires",
+            "expire",
+            "overdue",
+            "soon",
+        },
     )
     keywords = [
         keyword
@@ -3091,10 +3139,11 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
 
     lines = []
     for contract in results:
-        end_date = contract.end_date.strftime("%Y-%m-%d") if contract.end_date else "n/a"
-        renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
+        end_date = contract.end_date.strftime("%d/%m/%Y") if contract.end_date else "n/a"
+        renewal = contract.renewal_date.strftime("%d/%m/%Y") if contract.renewal_date else "n/a"
         owner_name = contract.owner.username if contract.owner else "n/a"
         support_info = _support_contact_snippet(contract) if show_support else ""
+        alert = contract.lifecycle_alert(today)
         value_display = "n/a"
         if contract.value is not None:
             amount = _ensure_decimal(contract.value)
@@ -3106,7 +3155,7 @@ def _answer_contract_query(message: str, lowered: str, user) -> Optional[str]:
             value_display = f"{formatted_amount}{currency_part}".strip()
         line = (
             f"{contract.name} — {contract.contract_type}; vendor {contract.vendor or 'n/a'}; "
-            f"status {contract.status or 'n/a'}; end {end_date}; renewal {renewal}; "
+            f"status {contract.status or 'n/a'}; alert {alert['label']}; end {end_date}; renewal {renewal}; "
             f"auto-renew {'yes' if contract.auto_renew else 'no'}; owner {owner_name}; value {value_display}"
         )
         if support_info:
@@ -3314,7 +3363,7 @@ def _answer_cross_module_query(message: str, lowered: str, user) -> Optional[str
             ).order_by(KnowledgeArticle.updated_at.desc())
             articles = kb_query.limit(10).all()
             if articles:
-                lines = [f"#{article.id} {article.title} — updated {article.updated_at.strftime('%Y-%m-%d') if article.updated_at else 'n/a'}" for article in articles]
+                lines = [f"#{article.id} {article.title} — updated {_fmt_date(article.updated_at)}" for article in articles]
                 return f"Knowledge articles referencing {software.name}:\n" + "\n".join(lines)
             return f"No knowledge base articles reference {software.name}."
 
@@ -3334,7 +3383,7 @@ def _answer_cross_module_query(message: str, lowered: str, user) -> Optional[str
                     lines = []
                     for contract in contracts:
                         support = _support_contact_snippet(contract) or "n/a"
-                        renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
+                        renewal = _fmt_date(contract.renewal_date) if contract.renewal_date else "n/a"
                         lines.append(
                             f"{contract.name} — support {support}; renewal {renewal}; auto-renew {'yes' if contract.auto_renew else 'no'}"
                         )
@@ -3446,7 +3495,14 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
         filters.append("status decommissioned")
 
     if "warranty" in lowered or "εγγύηση" in lowered:
-        if "out of warranty" in lowered or "εκτός εγγύησης" in lowered:
+        wants_expired_warranty = (
+            "out of warranty" in lowered
+            or "expired" in lowered
+            or "overdue" in lowered
+            or "past due" in lowered
+            or "εκτός εγγύησης" in lowered
+        )
+        if wants_expired_warranty:
             base_query = base_query.filter(HardwareAsset.warranty_end.isnot(None))
             base_query = base_query.filter(HardwareAsset.warranty_end < date.today())
             filters.append("out of warranty")
@@ -3459,8 +3515,10 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
                     base_query = base_query.filter(HardwareAsset.warranty_end <= target_date)
                     filters.append(f"warranty ends by {target_date.isoformat()}")
             elif any(term in lowered for term in ("expiring", "λήγει", "ληγει")):
+                today = date.today()
                 window = date.today() + timedelta(days=60)
                 base_query = base_query.filter(HardwareAsset.warranty_end.isnot(None))
+                base_query = base_query.filter(HardwareAsset.warranty_end >= today)
                 base_query = base_query.filter(HardwareAsset.warranty_end <= window)
                 filters.append("warranty expiring within 60 days")
 
@@ -3562,8 +3620,9 @@ def _answer_hardware_query(message: str, lowered: str, user) -> Optional[str]:
         status = asset.status or "unknown"
         assignee = asset.assignee.username if asset.assignee else "Unassigned"
         location = asset.location or "n/a"
+        warranty = _fmt_date(asset.warranty_end) if asset.warranty_end else "n/a"
         line = (
-            f"{name} — {category}; status {status}; assigned to {assignee}; location {location}"
+            f"{name} — {category}; status {status}; assigned to {assignee}; location {location}; warranty end {warranty}"
         )
         lines.append(line)
 
@@ -3653,22 +3712,35 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
         filters.append("unassigned")
         field_filters_applied = True
 
+    wants_expired_license = any(
+        term in lowered
+        for term in ("expired", "overdue", "past due", "λήγμ", "ληγμ", "έληξε", "εληξε")
+    )
+    wants_expiring_license = any(term in lowered for term in ("expir", "expires", "λήγει", "ληγει"))
+
     expiration_date_match = None
-    if any(term in lowered for term in ("expir", "expires", "λήγει", "ληγει")):
+    if wants_expiring_license:
         expiration_date_match = DATE_BY_PATTERN.search(lowered)
 
-    if expiration_date_match:
+    if wants_expired_license:
+        today = date.today()
+        base_query = base_query.filter(SoftwareAsset.expiration_date.isnot(None))
+        base_query = base_query.filter(SoftwareAsset.expiration_date < today)
+        filters.append("expired")
+        field_filters_applied = True
+    elif expiration_date_match:
         target_date = _parse_date_string(expiration_date_match.group(1))
         if target_date:
             base_query = base_query.filter(SoftwareAsset.expiration_date.isnot(None))
             base_query = base_query.filter(SoftwareAsset.expiration_date <= target_date)
             filters.append(f"expires by {target_date.isoformat()}")
             field_filters_applied = True
-    elif any(term in lowered for term in ("expir", "expires", "λήγει", "ληγει")):
+    elif wants_expiring_license:
         today = date.today()
         window = today + timedelta(days=60)
         base_query = base_query.filter(
             SoftwareAsset.expiration_date.isnot(None),
+            SoftwareAsset.expiration_date >= today,
             SoftwareAsset.expiration_date <= window,
         )
         filters.append("expiring within 60 days")
@@ -3752,7 +3824,7 @@ def _answer_software_query(message: str, lowered: str, user) -> Optional[str]:
         version = asset.version or "—"
         vendor = asset.vendor or "Unknown vendor"
         assignee = asset.assignee.username if asset.assignee else "Unassigned"
-        expires = asset.expiration_date.strftime("%Y-%m-%d") if asset.expiration_date else "n/a"
+        expires = _fmt_date(asset.expiration_date) if asset.expiration_date else "n/a"
         license_key = asset.license_key or "n/a"
         serial = asset.serial_number or "n/a"
         line = (
@@ -3778,6 +3850,18 @@ def _extract_keywords(text: str, extra_stop: Optional[Iterable[str]] = None) -> 
         stops.update(extra_stop)
     words = re.findall(r"[a-z0-9]{3,}", text.lower())
     return [word for word in words if word not in stops]
+
+
+def _fmt_date(value: Optional[Union[date, datetime]]) -> str:
+    if not value:
+        return "n/a"
+    if isinstance(value, datetime):
+        value = value.date()
+    return value.strftime("%d/%m/%Y")
+
+
+def _fmt_datetime(value: Optional[datetime]) -> str:
+    return value.strftime("%d/%m/%Y %H:%M") if value else "n/a"
 
 
 DATE_PARSE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%m/%d/%Y", "%d-%m-%Y")
@@ -3823,13 +3907,15 @@ def _support_contact_snippet(contract: Contract) -> str:
 
 def _format_contract_detail(contract: Contract, include_support: bool = False) -> str:
     owner_name = contract.owner.username if contract.owner else "n/a"
-    start_date = contract.start_date.strftime("%Y-%m-%d") if contract.start_date else "n/a"
-    end_date = contract.end_date.strftime("%Y-%m-%d") if contract.end_date else "n/a"
-    renewal = contract.renewal_date.strftime("%Y-%m-%d") if contract.renewal_date else "n/a"
+    today = date.today()
+    alert = contract.lifecycle_alert(today)
+    start_date = contract.start_date.strftime("%d/%m/%Y") if contract.start_date else "n/a"
+    end_date = contract.end_date.strftime("%d/%m/%Y") if contract.end_date else "n/a"
+    renewal = contract.renewal_date.strftime("%d/%m/%Y") if contract.renewal_date else "n/a"
     value = f"{contract.value} {contract.currency}" if contract.value else "n/a"
     lines = [
         f"Contract #{contract.id}: {contract.name}",
-        f"Type: {contract.contract_type} | Status: {contract.status or 'n/a'} | Vendor: {contract.vendor or 'n/a'}",
+        f"Type: {contract.contract_type} | Status: {contract.status or 'n/a'} | Alert: {alert['label']} | Vendor: {contract.vendor or 'n/a'}",
         f"Contract number: {contract.contract_number or 'n/a'} | PO: {contract.po_number or 'n/a'} | Owner: {owner_name}",
         f"Start: {start_date} | End: {end_date} | Renewal: {renewal} | Auto-renew: {'yes' if contract.auto_renew else 'no'}",
         f"Value: {value}",
@@ -4175,20 +4261,21 @@ def _lookup_software_asset_by_identifier(message: str) -> Optional[SoftwareAsset
 
 def _format_hardware_detail(asset: HardwareAsset) -> str:
     assignee = asset.assignee.username if asset.assignee else "Unassigned"
-    created = asset.created_at.strftime("%Y-%m-%d") if asset.created_at else "—"
-    updated = asset.updated_at.strftime("%Y-%m-%d") if asset.updated_at else "—"
+    created = _fmt_date(asset.created_at) if asset.created_at else "—"
+    updated = _fmt_date(asset.updated_at) if asset.updated_at else "—"
+    warranty = _fmt_date(asset.warranty_end) if asset.warranty_end else "n/a"
     return (
         f"Hardware asset {asset.asset_tag or asset.custom_tag or asset.hostname or '#' + str(asset.id)}\n"
         f"Category: {asset.category or asset.type or 'n/a'} | Manufacturer: {asset.manufacturer or 'n/a'} | Model: {asset.model or 'n/a'}\n"
         f"Assigned to: {assignee} | Location: {asset.location or 'n/a'}\n"
-        f"Status: {asset.status or 'n/a'} | Created: {created} | Updated: {updated}"
+        f"Status: {asset.status or 'n/a'} | Warranty end: {warranty} | Created: {created} | Updated: {updated}"
     )
 
 
 def _format_software_detail(asset: SoftwareAsset) -> str:
     assignee = asset.assignee.username if asset.assignee else "Unassigned"
-    expires = asset.expiration_date.strftime("%Y-%m-%d") if asset.expiration_date else "n/a"
-    renewed = asset.renewal_date.strftime("%Y-%m-%d") if asset.renewal_date else "n/a"
+    expires = _fmt_date(asset.expiration_date) if asset.expiration_date else "n/a"
+    renewed = _fmt_date(asset.renewal_date) if asset.renewal_date else "n/a"
     license_key = asset.license_key or "n/a"
     return (
         f"Software asset {asset.name or asset.custom_tag or '#' + str(asset.id)}\n"
