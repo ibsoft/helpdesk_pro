@@ -1,0 +1,879 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='vaultwarden/vaultwarden.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-3">
+  {% set vault_type_labels = {
+    'login': _('Login'),
+    'secure_note': _('Secure note'),
+    'card': _('Card'),
+    'identity': _('Identity'),
+    'custom': _('Custom item'),
+  } %}
+  <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+    <div>
+    <h1 class="mb-1"><i class="fa-solid fa-shield-alt text-warning me-2"></i>{{ _('VaultWarden') }}</h1>
+    <p class="text-muted mb-0">{{ _('Zero-knowledge vault for passwords, keys, secure notes and shared collections.') }}</p>
+    </div>
+    <div class="d-flex flex-column align-items-end gap-2">
+      <div class="vault-context d-flex flex-wrap gap-3 align-items-center">
+        <div class="vault-context-group d-flex flex-wrap gap-2 align-items-center">
+          <span class="vault-context-label text-uppercase small fw-semibold text-muted">{{ _('Organizations') }}:</span>
+          <div class="d-flex flex-wrap gap-1">
+            {% if organization_memberships %}
+              {% for membership in organization_memberships %}
+                {% if membership.organization %}
+                  <span class="vault-context-pill" title="{{ membership.organization.name }}">
+                    <i class="fa-solid fa-building"></i> {{ membership.organization.name }}
+                  </span>
+                {% endif %}
+              {% endfor %}
+            {% else %}
+              <span class="vault-context-pill text-primary">{{ _('Personal vault only') }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="vault-context-group d-flex flex-wrap gap-2 align-items-center">
+          <span class="vault-context-label text-uppercase small fw-semibold text-muted">{{ _('Collections') }}:</span>
+          <div class="d-flex flex-wrap gap-1">
+            {% set highlighted_collections = collections[:3] %}
+            {% if highlighted_collections %}
+              {% for collection in highlighted_collections %}
+                <span class="vault-context-pill vault-context-pill-collection" title="{{ collection.name }}">
+                  <i class="fa-solid fa-layer-group"></i> {{ collection.name }}
+                </span>
+              {% endfor %}
+              {% if collections|length > highlighted_collections|length %}
+                <span class="vault-context-pill text-muted px-3 py-1">
+                  +{{ collections|length - highlighted_collections|length }} {{ _('more') }}
+                </span>
+              {% endif %}
+            {% else %}
+              <span class="vault-context-pill text-success">{{ _('None yet') }}</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <a href="{{ url_for('vaultwarden.index', trash=1) }}" class="btn btn-outline-warning{% if filters.show_trash %} active{% endif %}">
+          <i class="fa-solid fa-trash"></i> {{ _('Show Trash') }}
+        </a>
+        <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#vaultItemModal">
+          <i class="fa-solid fa-plus"></i> {{ _('New item') }}
+        </button>
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#vaultFolderModal">
+          <i class="fa-solid fa-folder-plus"></i> {{ _('Folders') }}
+        </button>
+        <button class="btn btn-outline-info" data-bs-toggle="modal" data-bs-target="#vaultEncryptionModal">
+          <i class="fa-solid fa-unlock-keyhole"></i> {{ _('Unlock vault') }}
+        </button>
+        <a href="{{ url_for('vaultwarden.index', favorites=1) }}" class="btn btn-outline-primary{% if filters.favorites %} active{% endif %}">
+          <i class="fa-solid fa-star"></i> {{ _('Favorites') }}
+        </a>
+        <a href="{{ url_for('vaultwarden.index') }}" class="btn btn-outline-secondary">
+          <i class="fa-solid fa-sync-alt"></i> {{ _('Refresh') }}
+        </a>
+      </div>
+    </div>
+  </div>
+
+  {% set stat_cards = [
+  {'label': _('Items'), 'value': vault_stats.total, 'icon': 'fa-solid fa-lock', 'color': 'text-primary'},
+  {'label': _('Favorites'), 'value': vault_stats.favorites, 'icon': 'fa-solid fa-star', 'color': 'text-warning'},
+    {'label': _('Trash'), 'value': vault_stats.trashed, 'icon': 'fa-solid fa-trash', 'color': 'text-danger'},
+    {'label': _('Folders'), 'value': vault_stats.folders, 'icon': 'fa-solid fa-folder', 'color': 'text-info'},
+  ] %}
+  <div class="row g-3 mb-4">
+    {% for stat in stat_cards %}
+      <div class="col-6 col-sm-3">
+        <div class="card vault-stat-card shadow-sm p-3">
+          <div class="metric-label text-muted d-flex align-items-center gap-1">
+            <i class="{{ stat.icon }} vault-stat-icon {{ stat.color }}"></i>
+            {{ stat.label }}
+          </div>
+          <div class="metric-value">{{ stat.value }}</div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+
+  <div class="row g-4 mb-4">
+    <div class="col-12">
+      <div class="card vault-search-card shadow-sm">
+        <div class="card-header vault-search-header d-flex align-items-center justify-content-between">
+          <div>
+            <strong>{{ _('Search vault items') }}</strong>
+            <div class="text-muted small">{{ _('Server stores ciphertext only.') }}</div>
+          </div>
+          {% if filters.folder or filters.tag or filters.search %}
+            <a href="{{ url_for('vaultwarden.index') }}" class="btn btn-outline-secondary btn-sm">
+              <i class="fa-solid fa-arrow-left me-1"></i>{{ _('Back') }}
+            </a>
+          {% endif %}
+        </div>
+        <div class="card-body vault-search-body">
+          <form class="row g-3 align-items-end" method="get" action="{{ url_for('vaultwarden.index') }}">
+            <div class="col-12 col-lg-7">
+              <input type="search" name="q" value="{{ filters.search }}" class="form-control vault-search-input" placeholder="{{ _('Search by name or tag') }}">
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <select name="folder" class="form-select vault-search-input">
+                <option value="0">{{ _('Any folder') }}</option>
+                {% for folder in folders %}
+                  <option value="{{ folder.id }}" {% if filters.folder == folder.id %}selected{% endif %}>{{ folder.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6 col-md-3 col-lg-2">
+              <select name="type" class="form-select vault-search-input">
+                <option value="">{{ _('Any type') }}</option>
+                {% for choice_value, choice_label in item_form.item_type.choices %}
+                  <option value="{{ choice_value }}"{% if filters.item_type == choice_value %} selected{% endif %}>{{ _(choice_label) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-12 col-md-3 col-lg-1 text-end">
+              <button type="submit" class="btn btn-primary"><i class="fa-solid fa-filter me-1"></i>{{ _('Filter') }}</button>
+            </div>
+          </form>
+          <div class="mt-3">
+            {% for tag in available_tags %}
+              <a href="{{ url_for('vaultwarden.index', tag=tag) }}" class="vault-filter-pill{% if filters.tag == tag %} active{% endif %}">
+                <i class="fa-solid fa-tag me-1"></i>{{ tag }}
+              </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card shadow-sm mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div><i class="fa-solid fa-bars me-2"></i>{{ _('Vault items') }}</div>
+      <small class="text-muted">{{ _('Showing latest 200 records') }}</small>
+    </div>
+        <div class="table-responsive">
+      <table class="table vault-item-table mb-0">
+        <thead>
+          <tr>
+            <th>{{ _('Name') }}</th>
+            <th>{{ _('Organization') }}</th>
+            <th>{{ _('Collection') }}</th>
+            <th>{{ _('Folder') }}</th>
+            <th>{{ _('Creator') }}</th>
+            <th>{{ _('Updated') }}</th>
+            <th class="text-end">{{ _('Actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in items %}
+            <tr class="{% if item.trashed %}table-danger{% endif %}">
+              <td>
+                <div class="d-flex align-items-center gap-2">
+                  {% if item.favorite %}
+                    <i class="fa-solid fa-star text-warning"></i>
+                  {% endif %}
+                  <span class="fw-semibold" id="vault-name-{{ item.id }}">{{ item.name }}</span>
+                  {% if item.owner_id != current_user.id %}
+                    <span class="badge bg-info text-dark text-uppercase small">{{ _('Shared') }}</span>
+                  {% endif %}
+                </div>
+                <div class="small text-muted">
+                  {{ item.item_type|capitalize }}
+                  {% if item.owner %}
+                    · {{ _('Created by %(name)s', name=(item.owner.display_name or item.owner.username)) }}
+                  {% endif %}
+                </div>
+                <div class="mt-1">
+                  {% for tag in item.tag_list %}
+                    <span class="badge bg-secondary vault-tag">{{ tag }}</span>
+                  {% endfor %}
+                </div>
+              </td>
+              <td>
+                {% if item.organization %}
+                  {{ item.organization.name }}
+                {% else %}
+                  <span class="text-muted">{{ _('Personal vault') }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.collection %}
+                  {{ item.collection.name }}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.folder %}
+                  <a href="{{ url_for('vaultwarden.index', folder=item.folder.id) }}" class="vault-folder-link">
+                    <i class="fa-solid fa-folder text-primary me-1"></i>{{ item.folder.name }}
+                  </a>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if item.owner %}
+                  {{ item.owner.display_name or item.owner.username }}
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="text-muted small">{{ item.updated_at.strftime('%Y-%m-%d %H:%M') if item.updated_at else '-' }}</div>
+                <div class="text-muted small">{{ _('Last used') }}: {{ item.last_accessed.strftime('%Y-%m-%d %H:%M') if item.last_accessed else _('Never') }}</div>
+              </td>
+              <td class="text-end">
+                {% set access_map = collection_access_map or {} %}
+                {% set collection_access_level = access_map.get(item.collection_id) %}
+                {% set can_modify_item = item.owner_id == current_user.id or (collection_access_level in modify_access_levels) %}
+                <div class="btn-group" role="group">
+                  {% if can_modify_item %}
+                    <form method="post" action="{{ url_for('vaultwarden.toggle_favorite', item_id=item.id) }}" class="d-inline">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit" class="btn btn-outline-{{ 'warning' if item.favorite else 'secondary' }} btn-sm" title="{{ _('Toggle favorite') }}">
+                        <i class="fa-solid fa-star"></i>
+                      </button>
+                    </form>
+                    {% if not item.trashed %}
+                      <form method="post" action="{{ url_for('vaultwarden.move_to_trash', item_id=item.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" title="{{ _('Move to trash') }}">
+                          <i class="fa-solid fa-trash"></i>
+                        </button>
+                      </form>
+                    {% else %}
+                      <form method="post" action="{{ url_for('vaultwarden.restore_item', item_id=item.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-success btn-sm" title="{{ _('Restore item') }}">
+                          <i class="fa-solid fa-undo"></i>
+                        </button>
+                      </form>
+                      <form method="post" action="{{ url_for('vaultwarden.purge_item', item_id=item.id) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline-dark btn-sm" title="{{ _('Delete permanently') }}">
+                          <i class="fa-solid fa-times"></i>
+                        </button>
+                      </form>
+                    {% endif %}
+                  {% endif %}
+                  <button type="button" class="btn btn-outline-info btn-sm"
+                          data-vault-blob='{{ item.encrypted_blob|tojson }}'
+                          data-vault-label="{{ item.name|e }}"
+                          data-vault-type="{{ item.item_type|e }}"
+                          data-vault-type-label="{{ vault_type_labels.get(item.item_type, item.item_type|capitalize)|e }}"
+                          data-vault-folder="{{ (item.folder.name if item.folder else _('Personal vault'))|e }}"
+                          data-vault-collection-id="{{ item.collection_id or 0 }}"
+                          title="{{ _('Decrypt') }}">
+                    <i class="fa-solid fa-eye"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr>
+              <td colspan="7" class="text-center text-muted">{{ _('No vault items found.') }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if pagination.total_pages > 1 %}
+        <nav aria-label="Vault pagination" class="px-3 py-2">
+          <ul class="pagination justify-content-end mb-0">
+            <li class="page-item {% if pagination.current == 1 %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('vaultwarden.index', page=pagination.current-1) }}{{ filters_query }}">{{ _('Previous') }}</a>
+            </li>
+            {% for p in range(1, pagination.total_pages + 1) %}
+              <li class="page-item {% if pagination.current == p %}active{% endif %}">
+                <a class="page-link" href="{{ url_for('vaultwarden.index', page=p) }}{{ filters_query }}">{{ p }}</a>
+              </li>
+            {% endfor %}
+            <li class="page-item {% if pagination.current >= pagination.total_pages %}disabled{% endif %}">
+              <a class="page-link" href="{{ url_for('vaultwarden.index', page=pagination.current+1) }}{{ filters_query }}">{{ _('Next') }}</a>
+            </li>
+          </ul>
+        </nav>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<div class="modal fade" id="vaultItemModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <form id="vaultItemForm" method="post" action="{{ url_for('vaultwarden.create_item') }}">
+        {{ item_form.hidden_tag() }}
+        {{ item_form.encrypted_blob() }}
+        {{ item_form.metadata_blob() }}
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa-solid fa-lock me-2"></i>{{ _('Encrypt & save item') }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            {{ item_form.name.label(class_="form-label") }}
+            {{ item_form.name(class_="form-control") }}
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label" for="vaultItemOrganization">{{ item_form.organization_id.label.text }}</label>
+              <select id="vaultItemOrganization" name="organization_id" class="form-select">
+                {% set selected_org = item_form.organization_id.data|string %}
+                {% for value, label in item_form.organization_id.choices %}
+                  <option value="{{ value }}" {% if selected_org == (value|string) %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label" for="vaultItemCollection">{{ item_form.collection_id.label.text }}</label>
+              <select id="vaultItemCollection" name="collection_id" class="form-select">
+                {% set selected_collection = item_form.collection_id.data|string %}
+                {% for option in collection_options %}
+                  <option
+                    value="{{ option.id }}"
+                    data-org="{{ option.org_id }}"
+                    {% if selected_collection == (option.id|string) %}selected{% endif %}
+                  >
+                    {{ option.label }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <div class="row g-3 mb-3 align-items-end">
+            <div class="col-md-4">
+              {{ item_form.item_type.label(class_="form-label") }}
+              {{ item_form.item_type(class_="form-select", id="vaultItemType") }}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label" for="vaultItemFolder">{{ item_form.folder_id.label.text }}</label>
+              <select id="vaultItemFolder" name="folder_id" class="form-select">
+                {% set folder_value = item_form.folder_id.data|string %}
+                <option value="0" data-org="0" data-collection="0"{% if folder_value == '0' %} selected{% endif %}>{{ _("- No folder -") }}</option>
+                {% for folder in folders %}
+                  <option
+                    value="{{ folder.id }}"
+                    data-org="{{ folder.organization_id or 0 }}"
+                    data-collection="{{ folder.collection_id or 0 }}"
+                    {% if folder_value == (folder.id|string) %}selected{% endif %}
+                  >
+                    {{ folder.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <div class="form-check">
+                {{ item_form.favorite(class_="form-check-input") }}
+                <label class="form-check-label">{{ _('Favorite') }}</label>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            {{ item_form.tags.label(class_="form-label") }}
+            {{ item_form.tags(class_="form-control") }}
+            <div class="form-text">{{ _('Comma-separated tags for filtering on the client.') }}</div>
+          </div>
+          <div class="vault-type-section" data-type="login">
+            <p class="small text-muted mb-2">{{ _('Standard login fields (username, password, URI, notes).') }}</p>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Username') }}</label>
+                <input type="text" id="vaultItemUsername" data-type-field="username" class="form-control" placeholder="admin@example.com">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Password') }}</label>
+                <div class="input-group">
+                  <input type="text" id="vaultItemPassword" data-type-field="password" class="form-control" placeholder="••••••••">
+                  <button class="btn btn-outline-secondary" type="button" data-copy-target="vaultItemPassword">{{ _('Copy') }}</button>
+                </div>
+              </div>
+            </div>
+            <div class="row g-3 mt-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ _('URI') }}</label>
+                <input type="url" id="vaultItemUri" data-type-field="uri" class="form-control" placeholder="https://dashboard.example.com">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Notes') }}</label>
+                <input type="text" id="vaultItemNotes" data-type-field="notes" class="form-control" placeholder="{{ _('Additional context, TOTP seeds, etc.') }}">
+              </div>
+            </div>
+          </div>
+          <div class="vault-type-section d-none" data-type="secure_note">
+            <label class="form-label">{{ _('Secure note details') }}</label>
+            <textarea id="vaultSecureNote" data-type-field="secure_note" class="form-control" rows="4" placeholder="{{ _('Use this area for longer notes or files references.') }}"></textarea>
+          </div>
+          <div class="vault-type-section d-none" data-type="card">
+            <p class="small text-muted mb-2">{{ _('Card details (stored only encrypted).') }}</p>
+            <div class="row g-3">
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Cardholder') }}</label>
+                <input type="text" data-type-field="cardholder" class="form-control" placeholder="{{ _('Full name') }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Number') }}</label>
+                <input type="text" data-type-field="card_number" class="form-control" placeholder="•••• •••• •••• ••••">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label">{{ _('Expiry / CVC') }}</label>
+                <div class="input-group">
+                  <input type="text" data-type-field="card_expiry" class="form-control" placeholder="MM/YY">
+                  <input type="text" data-type-field="card_cvc" class="form-control" placeholder="CVC">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="vault-type-section d-none" data-type="identity">
+            <p class="small text-muted mb-2">{{ _('Identity fields for passports, IDs, or personal profiles.') }}</p>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Full name') }}</label>
+                <input type="text" data-type-field="identity_name" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Email') }}</label>
+                <input type="email" data-type-field="identity_email" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Phone') }}</label>
+                <input type="text" data-type-field="identity_phone" class="form-control">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label">{{ _('Address') }}</label>
+                <input type="text" data-type-field="identity_address" class="form-control">
+              </div>
+            </div>
+          </div>
+          <div class="vault-type-section d-none" data-type="custom">
+            <label class="form-label">{{ _('Custom fields') }}</label>
+            <input type="text" data-type-field="custom_field_a" class="form-control mb-2" placeholder="{{ _('Key') }}">
+            <input type="text" data-type-field="custom_field_b" class="form-control" placeholder="{{ _('Value') }}">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-lock me-1"></i>{{ _('Encrypt & Save') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="vaultFolderModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa-solid fa-folder-plus me-2"></i>{{ _('Add folder & generate passwords') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+          <div class="modal-body">
+            <form id="vaultFolderForm" method="post" action="{{ url_for('vaultwarden.create_folder') }}">
+              {{ folder_form.hidden_tag() }}
+              <div class="mb-3">
+                <label class="form-label">{{ _('Folder name') }}</label>
+                {{ folder_form.name(class_="form-control") }}
+              </div>
+              <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                  {{ folder_form.organization_id.label(class_="form-label") }}
+                  {{ folder_form.organization_id(class_="form-select") }}
+                </div>
+                <div class="col-md-6">
+                  {{ folder_form.collection_id.label(class_="form-label") }}
+                  {{ folder_form.collection_id(class_="form-select") }}
+                </div>
+              </div>
+            </form>
+        <hr>
+        <div class="mb-3 vault-folders-scroll">
+          <h6 class="text-uppercase small text-muted mb-2">{{ _('Your folders') }}</h6>
+          <div class="list-group">
+            {% for folder in folders %}
+                <div class="list-group-item py-2 d-flex justify-content-between align-items-center">
+                  <div>
+                    <strong>{{ folder.name }}</strong>
+                    <div class="text-muted small">{{ folder.created_at.strftime('%Y-%m-%d') if folder.created_at else '-' }}</div>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmDeletionModal"
+                    data-title="{{ _('Delete folder') }}"
+                    data-message="{{ _('Delete folder %(name)s? All items contained in it will be permanently removed.', name=folder.name) }}"
+                    data-action="{{ url_for('vaultwarden.delete_folder', folder_id=folder.id) }}"
+                  >
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                </div>
+            {% else %}
+              <div class="list-group-item text-muted text-center">{{ _('No folders yet.') }}</div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+        <button type="submit" form="vaultFolderForm" class="btn btn-primary">
+          <i class="fa-solid fa-plus me-1"></i>{{ _('Add folder') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="vaultEncryptionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa-solid fa-unlock me-2"></i>{{ _('Unlock vault') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small">
+          {{ _('Derive the vault key on the client: enter your passphrase, keep it for the session, and clear it whenever you want to lock the vault again.') }}
+        </p>
+        <div class="mb-3">
+          <label class="form-label">{{ _('Vault passphrase') }}</label>
+          <input id="vaultPassphrase" type="password" class="form-control" placeholder="{{ _('Enter passphrase') }}">
+          <div class="text-muted small mt-1" id="vaultKeyHint"></div>
+        </div>
+        <div class="form-check mb-3">
+          <input class="form-check-input" type="checkbox" id="vaultRememberPassphrase">
+          <label class="form-check-label" for="vaultRememberPassphrase">{{ _('Keep passphrase for this session') }}</label>
+        </div>
+        <div class="row g-2 text-muted small mb-2">
+          <div class="col">
+            <strong>{{ _('Vault items') }}:</strong> {{ vault_stats.total }}
+          </div>
+          <div class="col">
+            <strong>{{ _('Favorites') }}:</strong> {{ vault_stats.favorites }}
+          </div>
+          <div class="col">
+            <strong>{{ _('Trash') }}:</strong> {{ vault_stats.trashed }}
+          </div>
+        </div>
+        <div class="row g-2 text-muted small">
+          <div class="col">
+            <strong>{{ _('Orgs') }}:</strong> {{ vault_stats.organizations }}
+          </div>
+          <div class="col">
+            <strong>{{ _('Collections') }}:</strong> {{ vault_stats.collections }}
+          </div>
+        </div>
+        <div class="mt-3">
+          <button type="button" class="btn btn-outline-danger w-100" id="vaultClearPassphrase">
+            <i class="fa-solid fa-eraser me-1"></i>{{ _('Forget key for this session') }}
+          </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+        <button
+          type="button"
+          id="vaultPassphraseOk"
+          class="btn btn-primary"
+          data-bs-dismiss="modal"
+        >
+          {{ _('OK') }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <div class="modal fade" id="vaultDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa-solid fa-eye me-2"></i>{{ _('Decrypted payload preview') }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="vault-detail-card">
+            <div class="vault-detail-hero d-flex align-items-start justify-content-between gap-3 mb-4">
+              <div>
+                <div class="text-muted small text-uppercase fw-semibold">{{ _('Vault item') }}</div>
+                <h4 id="vaultDetailName" class="mb-1 fw-semibold">{{ _('Unlock the vault to display content.') }}</h4>
+                <div class="d-flex gap-2 flex-wrap vault-detail-meta">
+                  <span class="vault-pill">
+                    <i id="vaultDetailTypeIcon" class="fa-solid fa-shield-alt me-1"></i>
+                    <span id="vaultDetailTypeText">-</span>
+                  </span>
+                  <span class="vault-pill">
+                    <i class="fa-solid fa-folder me-1"></i>
+                    <span id="vaultDetailCollectionText" data-default-text="{{ _('Personal vault') }}">-</span>
+                  </span>
+                </div>
+              </div>
+              <span id="vaultDetailStatus" class="badge bg-light text-secondary fw-semibold" data-decrypted-text="{{ _('Unlocked') }}">
+                <i class="fa-solid fa-lock me-1"></i>{{ _('Encrypted') }}
+              </span>
+            </div>
+            <div class="vault-detail-section" data-type="login">
+              <div class="vault-detail-section-header mb-3">
+                <i class="fa-solid fa-lock me-1 text-primary"></i>
+                <strong>{{ _('Login details') }}</strong>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-user me-1"></i>{{ _('Username') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailUsername" title="{{ _('Copy username') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailUsername" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-key me-1"></i>{{ _('Password') }}
+                  </span>
+                  <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-secondary" data-copy-target="vaultDetailPassword" title="{{ _('Copy password') }}">
+                      <i class="fa-solid fa-copy"></i>
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" data-vault-toggle-target="vaultDetailPassword" data-vault-toggle-state="hidden" title="{{ _('Show password') }}">
+                      <i class="fa-solid fa-eye"></i>
+                    </button>
+                  </div>
+                </div>
+                <p id="vaultDetailPassword" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-link me-1"></i>{{ _('URI') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailUri" title="{{ _('Copy URI') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailUri" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-sticky-note me-1"></i>{{ _('Notes') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailNotes" title="{{ _('Copy notes') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailNotes" class="vault-detail-value mb-0">-</p>
+              </div>
+            </div>
+            <div class="vault-detail-section d-none" data-type="secure_note">
+              <div class="vault-detail-section-header mb-3">
+                <i class="fa-solid fa-note-sticky me-1 text-info"></i>
+                <strong>{{ _('Secure note') }}</strong>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-align-left me-1"></i>{{ _('Content') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailSecureNote" title="{{ _('Copy secure note') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailSecureNote" class="vault-detail-value mb-0">-</p>
+              </div>
+            </div>
+            <div class="vault-detail-section d-none" data-type="card">
+              <div class="vault-detail-section-header mb-3">
+                <i class="fa-solid fa-credit-card me-1 text-success"></i>
+                <strong>{{ _('Card details') }}</strong>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-user-circle me-1"></i>{{ _('Cardholder') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailCardholder" title="{{ _('Copy cardholder') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailCardholder" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-credit-card-blank me-1"></i>{{ _('Card number') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailCardNumber" title="{{ _('Copy card number') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailCardNumber" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-calendar-days me-1"></i>{{ _('Expiry') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailCardExpiry" title="{{ _('Copy expiry') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailCardExpiry" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-lock me-1"></i>{{ _('CVC') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailCardCvc" title="{{ _('Copy CVC') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailCardCvc" class="vault-detail-value mb-0">-</p>
+              </div>
+            </div>
+            <div class="vault-detail-section d-none" data-type="identity">
+              <div class="vault-detail-section-header mb-3">
+                <i class="fa-solid fa-id-card-clip me-1 text-warning"></i>
+                <strong>{{ _('Identity') }}</strong>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-user me-1"></i>{{ _('Full name') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailIdentityName" title="{{ _('Copy name') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailIdentityName" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-envelope me-1"></i>{{ _('Email') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailIdentityEmail" title="{{ _('Copy email') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailIdentityEmail" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-phone me-1"></i>{{ _('Phone') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailIdentityPhone" title="{{ _('Copy phone') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailIdentityPhone" class="vault-detail-value mb-0">-</p>
+              </div>
+              <div class="vault-detail-field">
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="vault-detail-field-label small text-uppercase text-muted">
+                    <i class="fa-solid fa-map-location-dot me-1"></i>{{ _('Address') }}
+                  </span>
+                  <button type="button" class="btn btn-outline-secondary btn-sm" data-copy-target="vaultDetailIdentityAddress" title="{{ _('Copy address') }}">
+                    <i class="fa-solid fa-copy"></i>
+                  </button>
+                </div>
+                <p id="vaultDetailIdentityAddress" class="vault-detail-value mb-0">-</p>
+              </div>
+            </div>
+            <div class="vault-detail-section d-none" data-type="custom">
+              <div class="vault-detail-section-header mb-3">
+                <i class="fa-solid fa-gears me-1 text-muted"></i>
+                <strong>{{ _('Custom fields') }}</strong>
+              </div>
+              <div id="vaultDetailCustomFields" class="vault-detail-custom-grid" data-copy-title="{{ _('Copy value') }}"></div>
+              <p id="vaultDetailCustomPlaceholder" class="text-muted small mb-0">{{ _('No custom fields recorded.') }}</p>
+            </div>
+            <pre id="vaultDetailRaw" class="mt-3 small text-muted vault-detail-json" hidden></pre>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Close') }}</button>
+        </div>
+      </div>
+    </div>
+  </div>
+<div class="modal fade" id="vaultAlertModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title">{{ _('Vault notification') }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="vaultAlertMessage" class="mb-0"></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">{{ _('Dismiss') }}</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="confirmDeletionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="confirmDeletionForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title">{{ _('Confirm action') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+        </div>
+        <div class="modal-body">
+          <p class="confirm-delete-message mb-0 text-muted">{{ _('Are you sure you want to perform this action?') }}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger">{{ _('Confirm') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const confirmModalEl = document.getElementById("confirmDeletionModal");
+    if (!confirmModalEl) {
+      return;
+    }
+    const confirmForm = document.getElementById("confirmDeletionForm");
+    const messageEl = confirmModalEl.querySelector(".confirm-delete-message");
+    confirmModalEl.addEventListener("show.bs.modal", (event) => {
+      const trigger = event.relatedTarget;
+      if (!trigger || !confirmForm) {
+        return;
+      }
+      confirmForm.action = trigger.dataset.action || confirmForm.action;
+      const titleElement = confirmModalEl.querySelector(".modal-title");
+      if (titleElement) {
+        titleElement.textContent = trigger.dataset.title || "{{ _('Confirm action') }}";
+      }
+      if (messageEl) {
+        messageEl.textContent = trigger.dataset.message || "{{ _('Are you sure you want to perform this action?') }}";
+      }
+    });
+  });
+</script>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{{ url_for('static', filename='vaultwarden/vaultwarden.js') }}"></script>
+  {% if vault_alert_message %}
+    <script>
+      document.addEventListener("DOMContentLoaded", () => showAlert({{ vault_alert_message|tojson }}));
+    </script>
+  {% endif %}
+{% endblock %}

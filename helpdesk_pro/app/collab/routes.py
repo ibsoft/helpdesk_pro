@@ -304,6 +304,7 @@ def chat_home():
     general_convo = _ensure_general_conversation()
     _ensure_membership(general_convo.id, current_user.id)
     ai_user = _ensure_ai_user()
+    assistant_chat_enabled = current_app.config.get("COLLAB_ASSISTANT_ENABLED", True)
 
     conversations = (
         ChatConversation.query.join(ChatMembership)
@@ -313,6 +314,8 @@ def chat_home():
     )
     convo_payloads = [_conversation_payload(conv, current_user.id) for conv in conversations]
     ai_conversation = next((conv for conv in conversations if getattr(conv, "is_bot", False)), None)
+    if not assistant_chat_enabled:
+        ai_conversation = None
 
     users = (
         User.query.filter(User.id != current_user.id)
@@ -354,6 +357,7 @@ def chat_home():
         favorites=favorites,
         collab_stats=collab_stats,
         ai_aliases=["@AI", "@AI Assistant", "@helpdesk-assistant"],
+        assistant_chat_enabled=assistant_chat_enabled,
     )
 
 
@@ -553,6 +557,7 @@ def api_post_message(conversation_id):
             _typing_states.pop(conversation_id, None)
     assistant_error = None
     assistant_triggered = False
+    assistant_chat_enabled = current_app.config.get("COLLAB_ASSISTANT_ENABLED", True)
     is_ai_convo = _is_ai_conversation(convo)
     mention_triggered = _contains_ai_mention(body)
     prompt_text = (body or "").strip()
@@ -566,10 +571,10 @@ def api_post_message(conversation_id):
             }
         )
 
-    if is_ai_convo and attachments_payload and not prompt_text:
+    if assistant_chat_enabled and is_ai_convo and attachments_payload and not prompt_text:
         _trigger_assistant_response(convo, current_user, "", attachments=attachments_payload)
 
-    if prompt_text and (is_ai_convo or mention_triggered):
+    if assistant_chat_enabled and prompt_text and (is_ai_convo or mention_triggered):
         assistant_triggered = True
         result = _trigger_assistant_response(
             convo,
@@ -629,6 +634,37 @@ def api_purge_conversation(conversation_id):
     convo.updated_at = datetime.utcnow()
     db.session.commit()
     _typing_states.pop(conversation_id, None)
+    return jsonify({"success": True, "removed": removed})
+
+
+@collab_bp.route("/api/conversations/clear_all", methods=["POST"])
+@login_required
+def api_clear_all_conversations():
+    if current_user.role != "admin":
+        return jsonify({"success": False, "message": _("You are not authorized to do this.")}), 403
+    upload_folder = _chat_upload_folder()
+    messages = ChatMessage.query.all()
+    removed = 0
+    convo_ids = set()
+    for message in messages:
+        if message.attachment_filename:
+            path = message.attachment_path(upload_folder)
+            if path and os.path.exists(path):
+                try:
+                    os.remove(path)
+                except OSError:
+                    pass
+        convo_ids.add(message.conversation_id)
+        db.session.delete(message)
+        removed += 1
+    if convo_ids:
+        now = datetime.utcnow()
+        ChatConversation.query.filter(ChatConversation.id.in_(convo_ids)).update(
+            {"updated_at": now}, synchronize_session=False
+        )
+    db.session.commit()
+    for convo_id in convo_ids:
+        _typing_states.pop(convo_id, None)
     return jsonify({"success": True, "removed": removed})
 
 @collab_bp.route("/api/favorites/<int:target_id>", methods=["POST"])

@@ -37,3 +37,16 @@ from .fleet import (
     FleetAgentDownloadLink,
     FleetScheduledJob,
 )
+from .vaultwarden import (
+    ITEM_TYPES,
+    VaultAttachment,
+    VaultAuditLog,
+    VaultCollection,
+    VaultFolder,
+    VaultItem,
+    VaultItemShare,
+    VaultOrganization,
+    VaultOrganizationMembership,
+    VaultOrganizationKeyShare,
+    VaultCollectionAccess,
+)

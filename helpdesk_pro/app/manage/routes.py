@@ -5,8 +5,11 @@ Manage blueprint routes (access control, admin utilities).
 
 from __future__ import annotations
 
+import base64
 import json
 import os
+import re
+import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -14,6 +17,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 from flask_babel import gettext as _
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models import (
@@ -29,6 +33,13 @@ from app.models import (
     TicketComment,
     Attachment,
     AuditLog,
+    VaultAuditLog,
+    VaultCollection,
+    VaultCollectionAccess,
+    VaultItem,
+    VaultOrganization,
+    VaultOrganizationMembership,
+    VaultOrganizationKeyShare,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
@@ -49,6 +60,12 @@ from app.mcp import start_mcp_server, stop_mcp_server, refresh_mcp_settings
 from dotenv import dotenv_values, load_dotenv, set_key, unset_key
 from config import Config
 from app.tickets.archive_utils import build_archive_from_ticket
+from .forms import (
+    VaultCollectionForm,
+    VaultOrganizationForm,
+    VaultOrganizationMemberForm,
+    VaultCollectionAccessForm,
+)
 
 
 manage_bp = Blueprint("manage", __name__, url_prefix="/manage")
@@ -223,6 +240,13 @@ CONFIGURATION_SECTIONS = [
                 "type": "int",
                 "default": -1,
                 "help": _("Maximum recursive depth for tool calls (-1 to disable limit)."),
+            },
+            {
+                "key": "COLLAB_ASSISTANT_ENABLED",
+                "label": _("Enable Chat Assistant"),
+                "type": "bool",
+                "default": True,
+                "help": _("Enable AI responses within the collaboration chat module."),
             },
         ],
     },
@@ -645,6 +669,421 @@ def access():
             "read_only": module_read_only,
         },
     )
+
+
+def _build_vault_overview():
+    vault_items_total = VaultItem.query.count()
+    vault_stats = {
+        "total": vault_items_total,
+        "favorites": VaultItem.query.filter_by(favorite=True).count(),
+        "trashed": VaultItem.query.filter_by(trashed=True).count(),
+        "organizations": VaultOrganization.query.count(),
+        "collections": VaultCollection.query.count(),
+    }
+    vault_events = (
+        VaultAuditLog.query.order_by(VaultAuditLog.created_at.desc()).limit(10).all()
+    )
+    organizations = VaultOrganization.query.order_by(VaultOrganization.name).all()
+    collections = VaultCollection.query.order_by(VaultCollection.created_at.desc()).all()
+    return vault_stats, vault_events, organizations, collections
+
+
+def _generate_organization_key() -> str:
+    raw = secrets.token_bytes(32)
+    return base64.b64encode(raw).decode("ascii")
+
+
+def _create_organization_key_share(org: VaultOrganization, user: User):
+    if not org.key_ciphertext:
+        return None
+    existing = (
+        VaultOrganizationKeyShare.query
+        .filter_by(organization_id=org.id, user_id=user.id, version=org.key_version)
+        .first()
+    )
+    if existing:
+        return existing
+    share = VaultOrganizationKeyShare(
+        organization=org,
+        user=user,
+        key_blob=org.key_ciphertext,
+        version=org.key_version,
+        created_by_user_id=current_user.id,
+    )
+    db.session.add(share)
+    VaultAuditLog.record(
+        action="vault_organization_key_share_create",
+        user_id=current_user.id,
+        organization_id=org.id,
+        details={"user": user.username, "version": share.version},
+    )
+    return share
+
+
+def _grant_collection_access(collection: VaultCollection, user: User, *, access_level: str = "read"):
+    if not collection or not user:
+        return None, False
+    existing = (
+        VaultCollectionAccess.query
+        .filter_by(collection_id=collection.id, user_id=user.id)
+        .first()
+    )
+    if existing:
+        if existing.access_level != access_level:
+            existing.access_level = access_level
+            return existing, True
+        return existing, False
+    access = VaultCollectionAccess(
+        collection=collection,
+        user=user,
+        access_level=access_level,
+        created_by_user_id=current_user.id,
+    )
+    db.session.add(access)
+    return access, True
+
+
+@manage_bp.route("/vaultwarden", methods=["GET", "POST"])
+@login_required
+def vaultwarden():
+    _require_admin()
+    vault_stats, vault_events, organizations, collections = _build_vault_overview()
+    collection_accesses = (
+        VaultCollectionAccess.query
+        .options(
+            joinedload(VaultCollectionAccess.collection).joinedload(VaultCollection.organization),
+            joinedload(VaultCollectionAccess.user),
+            joinedload(VaultCollectionAccess.created_by),
+        )
+        .order_by(VaultCollectionAccess.created_at.desc())
+        .all()
+    )
+    users = User.query.order_by(User.username).all()
+    memberships = (
+        VaultOrganizationMembership.query
+        .options(
+            joinedload(VaultOrganizationMembership.organization),
+            joinedload(VaultOrganizationMembership.user),
+        )
+        .order_by(VaultOrganizationMembership.created_at.desc())
+        .all()
+    )
+    membership_rows = [
+        {
+            "id": membership.id,
+            "user_display_name": membership.user.display_name if membership.user else membership.user_id,
+            "user_username": membership.user.username if membership.user else "-",
+            "organization_name": membership.organization.name if membership.organization else "-",
+            "organization_id": membership.organization_id,
+            "role": membership.role,
+            "created_at": membership.created_at,
+        }
+        for membership in memberships
+    ]
+    org_form = VaultOrganizationForm()
+    collection_form = VaultCollectionForm()
+    collection_form.organization_id.choices = [(org.id, org.name) for org in organizations]
+    member_form = VaultOrganizationMemberForm()
+    member_form.organization_id.choices = [(org.id, org.name) for org in organizations]
+    member_form.user_id.choices = [
+        (user.id, f"{user.display_name} ({user.username})") for user in users
+    ]
+    collection_access_form = VaultCollectionAccessForm()
+    collection_access_form.collection_id.choices = [
+        (col.id, f"{col.organization.name} · {col.name}") for col in collections
+    ]
+    collection_access_form.user_id.choices = [
+        (user.id, f"{user.display_name} ({user.username})") for user in users
+    ]
+    if request.method == "POST":
+        engine = request.form.get("form_type")
+        if engine == "org_create" and org_form.validate_on_submit():
+            name = org_form.name.data.strip()
+            slug = _build_unique_slug(name)
+            org = VaultOrganization(
+                name=name,
+                slug=slug,
+                description=(org_form.description.data or "").strip(),
+                created_by_user_id=current_user.id,
+            )
+            key_blob = _generate_organization_key()
+            org.assign_key(key_blob, 1)
+            db.session.add(org)
+            db.session.flush()
+            _create_organization_key_share(org, current_user)
+            VaultAuditLog.record(
+                action="vault_organization_create",
+                user_id=current_user.id,
+                organization_id=org.id,
+                details={"name": org.name, "slug": org.slug},
+            )
+            db.session.commit()
+            flash(_("Organization %(name)s created.", name=org.name), "success")
+            return redirect(url_for("manage.vaultwarden"))
+        if engine == "collection_create":
+            if not organizations:
+                flash(_("Create an organization before adding collections."), "warning")
+            elif collection_form.validate_on_submit():
+                org_id = collection_form.organization_id.data
+                org = VaultOrganization.query.get(org_id)
+                if not org:
+                    flash(_("Selected organization not found."), "danger")
+                    return redirect(url_for("manage.vaultwarden"))
+                collection = VaultCollection(
+                    organization=org,
+                    name=collection_form.name.data.strip(),
+                    description=(collection_form.description.data or "").strip(),
+                )
+                db.session.add(collection)
+                db.session.commit()
+                VaultAuditLog.record(
+                    action="vault_collection_create",
+                    user_id=current_user.id,
+                    organization_id=org.id,
+                    details={"collection": collection.name, "organization": org.name},
+                )
+                flash(_("Collection %(name)s added to %(org)s.", name=collection.name, org=org.name), "success")
+            return redirect(url_for("manage.vaultwarden"))
+        if engine == "membership_add":
+            if not organizations:
+                flash(_("Create an organization before adding members."), "warning")
+            elif member_form.validate_on_submit():
+                org = VaultOrganization.query.get(member_form.organization_id.data)
+                user = User.query.get(member_form.user_id.data)
+                if not org:
+                    flash(_("Selected organization not found."), "danger")
+                    return redirect(url_for("manage.vaultwarden"))
+                if not user:
+                    flash(_("Selected user not found."), "danger")
+                    return redirect(url_for("manage.vaultwarden"))
+                existing = VaultOrganizationMembership.query.filter_by(
+                    organization_id=org.id, user_id=user.id
+                ).first()
+                if existing:
+                    flash(_("User %(username)s is already a member of %(org)s.", username=user.username, org=org.name), "info")
+                    return redirect(url_for("manage.vaultwarden"))
+                membership = VaultOrganizationMembership(
+                    organization=org,
+                    user=user,
+                    role=member_form.role.data,
+                    is_admin=(member_form.role.data == "admin"),
+                )
+                db.session.add(membership)
+                _create_organization_key_share(org, user)
+                VaultAuditLog.record(
+                    action="vault_organization_add_member",
+                    user_id=current_user.id,
+                    organization_id=org.id,
+                    details={"user": user.username, "role": membership.role},
+                )
+                db.session.commit()
+                flash(
+                    _("Added %(user)s to %(org)s as %(role)s.", user=user.username, org=org.name, role=membership.role),
+                    "success",
+                )
+                return redirect(url_for("manage.vaultwarden"))
+        if engine == "collection_access_grant":
+            if not collections:
+                flash(_("Create an organization and a collection before assigning access."), "warning")
+                return redirect(url_for("manage.vaultwarden"))
+            if not users:
+                flash(_("No users available to assign collection access."), "warning")
+                return redirect(url_for("manage.vaultwarden"))
+            if collection_access_form.validate_on_submit():
+                collection = VaultCollection.query.get(collection_access_form.collection_id.data)
+                user = User.query.get(collection_access_form.user_id.data)
+                if not collection or not user:
+                    flash(_("Selected collection or user not found."), "danger")
+                else:
+                    membership = VaultOrganizationMembership.query.filter_by(
+                        organization_id=collection.organization_id,
+                        user_id=user.id,
+                    ).first()
+                    if not membership:
+                        flash(
+                            _("User %(user)s is not a member of %(org)s.", user=user.username, org=collection.organization.name),
+                            "danger",
+                        )
+                    else:
+                        access_level = collection_access_form.access_level.data
+                        access, changed = _grant_collection_access(
+                            collection,
+                            user,
+                            access_level=access_level,
+                        )
+                        if changed:
+                            VaultAuditLog.record(
+                                action="vault_collection_access_grant",
+                                user_id=current_user.id,
+                                organization_id=collection.organization_id,
+                                details={
+                                    "collection": collection.name,
+                                    "user": user.username,
+                                    "level": access.access_level,
+                                },
+                            )
+                            db.session.commit()
+                            flash(
+                                _("Granted %(level)s access to %(user)s for %(collection)s.", level=access.access_level.capitalize(), user=user.username, collection=collection.name),
+                                "success",
+                            )
+                        else:
+                            flash(
+                                _("User %(user)s already has %(level)s access for %(collection)s.", level=access.access_level.capitalize(), user=user.username, collection=collection.name),
+                                "info",
+                            )
+                return redirect(url_for("manage.vaultwarden"))
+    return render_template(
+        "manage/vaultwarden.html",
+        vault_stats=vault_stats,
+        vault_events=vault_events,
+        organizations=organizations,
+        collections=collections,
+        memberships=membership_rows,
+        org_form=org_form,
+        collection_form=collection_form,
+        member_form=member_form,
+        users=users,
+        compliance_form_action=url_for("manage.vault_compliance_export"),
+        collection_accesses=collection_accesses,
+        collection_access_form=collection_access_form,
+    )
+
+
+@manage_bp.route("/vaultwarden/organizations/<int:org_id>/delete", methods=["POST"])
+@login_required
+def delete_vault_organization(org_id):
+    _require_admin()
+    org = VaultOrganization.query.get_or_404(org_id)
+    VaultAuditLog.query.filter_by(organization_id=org.id).update({VaultAuditLog.organization_id: None})
+    VaultAuditLog.record(
+        action="vault_organization_delete",
+        user_id=current_user.id,
+        organization_id=None,
+        details={"name": org.name, "slug": org.slug},
+    )
+    db.session.delete(org)
+    db.session.commit()
+    flash(_("Organization %(name)s has been removed.", name=org.name), "success")
+    return redirect(url_for("manage.vaultwarden"))
+
+
+@manage_bp.route("/vaultwarden/collections/<int:collection_id>/delete", methods=["POST"])
+@login_required
+def delete_vault_collection(collection_id):
+    _require_admin()
+    collection = VaultCollection.query.get_or_404(collection_id)
+    VaultAuditLog.record(
+        action="vault_collection_delete",
+        user_id=current_user.id,
+        organization_id=collection.organization_id,
+        details={"collection": collection.name, "organization": collection.organization.name},
+    )
+    db.session.delete(collection)
+    db.session.commit()
+    flash(_("Collection %(name)s has been removed.", name=collection.name), "success")
+    return redirect(url_for("manage.vaultwarden"))
+
+
+@manage_bp.route("/vaultwarden/memberships/<int:membership_id>/delete", methods=["POST"])
+@login_required
+def delete_vault_membership(membership_id):
+    _require_admin()
+    membership = VaultOrganizationMembership.query.get_or_404(membership_id)
+    VaultAuditLog.record(
+        action="vault_organization_remove_member",
+        user_id=current_user.id,
+        organization_id=membership.organization_id,
+        details={
+            "user": membership.user.username if membership.user else None,
+            "role": membership.role,
+        },
+    )
+    db.session.delete(membership)
+    db.session.commit()
+    flash(
+        _("Removed %(user)s from %(org)s.", user=membership.user.username if membership.user else _("Unknown"), org=membership.organization.name),
+        "success",
+    )
+    return redirect(url_for("manage.vaultwarden"))
+
+
+@manage_bp.route("/vaultwarden/access/<int:access_id>/delete", methods=["POST"])
+@login_required
+def delete_vault_collection_access(access_id):
+    _require_admin()
+    access = VaultCollectionAccess.query.get_or_404(access_id)
+    VaultAuditLog.record(
+        action="vault_collection_access_revoke",
+        user_id=current_user.id,
+        organization_id=access.collection.organization_id if access.collection else None,
+        details={
+            "collection": access.collection.name if access.collection else None,
+            "user": access.user.username if access.user else access.user_id,
+            "level": access.access_level,
+        },
+    )
+    db.session.delete(access)
+    db.session.commit()
+    flash(
+        _("Revoked access from %(user)s for %(collection)s.", user=access.user.username if access.user else _("Unknown"), collection=access.collection.name if access.collection else _("this collection")),
+        "success",
+    )
+    return redirect(url_for("manage.vaultwarden"))
+
+
+def _build_unique_slug(name: str) -> str:
+    slug_base = re.sub(r"[^\w]+", "-", name.lower()).strip("-")
+    slug_base = slug_base or "vault-org"
+    slug = slug_base
+    counter = 1
+    while VaultOrganization.query.filter_by(slug=slug).first():
+        slug = f"{slug_base}-{counter}"
+        counter += 1
+    return slug
+
+
+@manage_bp.route("/vault-compliance/export", methods=["POST"])
+@login_required
+def vault_compliance_export():
+    _require_admin()
+
+    entries = []
+    for item in (
+        VaultItem.query.order_by(VaultItem.updated_at.desc()).limit(500).all()
+    ):
+        entries.append(
+            {
+                "id": item.id,
+                "owner_id": item.owner_id,
+                "item_type": item.item_type,
+                "favorite": item.favorite,
+                "trashed": item.trashed,
+                "tags": item.tag_list,
+                "folder": item.folder.name if item.folder else None,
+                "updated_at": item.updated_at.isoformat() if item.updated_at else None,
+            }
+        )
+
+    payload = {
+        "items": entries,
+        "generated_at": datetime.utcnow().isoformat(),
+        "counts": {
+            "total": len(entries),
+            "flags": {
+                "favorites": sum(1 for e in entries if e["favorite"]),
+                "trashed": sum(1 for e in entries if e["trashed"]),
+            },
+        },
+    }
+
+    response = current_app.response_class(
+        json.dumps(payload, default=str), mimetype="application/json"
+    )
+    response.headers[
+        "Content-Disposition"
+    ] = "attachment; filename=\"vaultwarden-compliance.json\""
+    return response
 
 
 @manage_bp.route("/assistant", methods=["GET", "POST"])

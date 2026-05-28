@@ -447,11 +447,15 @@
                   <a class="nav-link dropdown-toggle" href="#" id="nav_{{ item.key }}" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                     {% if item.icon %}<i class="{{ item.icon }}"></i>{% endif %} {{ _(item.label) }}
                   </a>
-                  <ul class="dropdown-menu" aria-labelledby="nav_{{ item.key }}">
+                    <ul class="dropdown-menu" aria-labelledby="nav_{{ item.key }}">
                     {% for child in item.children %}
                       <li>
                         <a class="dropdown-item" href="{{ child.url }}">
-                          {% if child.icon %}<i class="{{ child.icon }} me-2"></i>{% endif %}{{ _(child.label) }}
+                          {% set child_icon = child.icon or ('fa-solid fa-lock text-danger' if child.key == 'vaultwarden' else None) %}
+                          {% if child_icon %}
+                            <i class="{{ child_icon }} me-2"></i>
+                          {% endif %}
+                          {{ _(child.label) }}
                         </a>
                       </li>
                     {% endfor %}

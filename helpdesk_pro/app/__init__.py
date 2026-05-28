@@ -147,6 +147,7 @@ def create_app():
     from app.task_scheduler.routes import task_scheduler_bp
     from app.fleet.routes import fleet_bp, fleet_agent_bp
     from app.fleet.ingest import start_fleet_ingest_server
+    from app.vaultwarden.routes import vaultwarden_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(tickets_bp)
@@ -166,6 +167,7 @@ def create_app():
     app.register_blueprint(task_scheduler_bp)
     app.register_blueprint(fleet_bp)
     app.register_blueprint(fleet_agent_bp)
+    app.register_blueprint(vaultwarden_bp)
     csrf.exempt(fleet_agent_bp)
 
     with app.app_context():

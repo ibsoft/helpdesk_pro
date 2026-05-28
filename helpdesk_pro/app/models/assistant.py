@@ -26,6 +26,8 @@ Ticket Archives → table `ticket_archive` (ticket_id, subject, description, pri
 
 Knowledge Base → tables `knowledge_article`, `knowledge_article_version`, `knowledge_attachment` containing published procedures, summaries, tags, and version history.
 
+Users → table `user` (id, username, full_name, email, role, department, title, phone, mobile, timezone, last_login_at, active, created_at, updated_at) storing account metadata for agents and administrators.
+
 Inventory → tables:
 • Hardware: `hardware_asset` (asset_tag, serial_number, hostname, ip_address, location, status, assigned_to, warranty_end, notes)
 • Software: `software_asset` (name, version, license_type, custom_tag, assigned_to, expiration_date, deployment_notes)

@@ -1,0 +1,541 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container-fluid px-4 py-3">
+  <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap gap-2">
+    <div>
+      <h1 class="mb-0"><i class="fa fa-shield-alt me-2"></i>{{ _('VaultWarden overview') }}</h1>
+      <p class="text-muted small mb-0">{{ _('Manage shared organizations and collections with full auditing.') }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#orgModal">
+        <i class="fa fa-building me-1"></i>{{ _('Create organization') }}
+      </button>
+      <button class="btn btn-outline-info btn-sm{% if not organizations %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#collectionModal">
+        <i class="fa fa-layer-group me-1"></i>{{ _('Create collection') }}
+      </button>
+      <button class="btn btn-outline-primary btn-sm{% if not organizations or not users %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#membershipModal">
+        <i class="fa fa-user-plus me-1"></i>{{ _('Add member') }}
+      </button>
+      <button class="btn btn-outline-secondary btn-sm{% if not collections or not users %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#collectionAccessModal">
+        <i class="fa fa-lock me-1"></i>{{ _('Grant collection access') }}
+      </button>
+      <form method="post" action="{{ compliance_form_action }}" class="m-0">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-outline-primary btn-sm" type="submit">
+          <i class="fa fa-file-export me-1"></i>{{ _('Compliance export') }}
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="row g-3">
+    <div class="col-12">
+      <div class="card shadow-sm mb-3">
+        <div class="card-body">
+          <div class="row g-3">
+            {% for stat in [
+              {'label': _('Vault items'), 'value': vault_stats.total, 'icon': 'fa-lock'},
+              {'label': _('Favorites'), 'value': vault_stats.favorites, 'icon': 'fa-star text-warning'},
+              {'label': _('Trashed'), 'value': vault_stats.trashed, 'icon': 'fa-trash text-danger'},
+              {'label': _('Collections'), 'value': vault_stats.collections, 'icon': 'fa-layer-group text-success'},
+            ] %}
+              <div class="col-sm-6 col-lg-3">
+                <div class="metric">
+                  <span class="metric-label">{{ stat.label }}</span>
+                  <span class="metric-value"><i class="fa {{ stat.icon }} me-1"></i>{{ stat.value }}</span>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <hr class="my-3">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <strong class="small text-uppercase text-muted">{{ _('Organizations') }}</strong>
+              <p class="mb-0">{{ vault_stats.organizations }}</p>
+            </div>
+            <div class="col-md-6">
+              <strong class="small text-uppercase text-muted">{{ _('Recent events') }}</strong>
+              <p class="mb-0">{{ vault_events|length }} {{ _('security events') }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <i class="fa fa-user-friends me-2"></i>{{ _('Organization members') }}
+            <div class="text-muted small mb-0">{{ _('Who can access each shared vault organization.') }}</div>
+          </div>
+          <button class="btn btn-outline-primary btn-sm{% if not organizations or not users %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#membershipModal">
+            <i class="fa fa-user-plus me-1"></i>{{ _('Add member') }}
+          </button>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for member in memberships %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <strong>{{ member.user_display_name }}</strong>
+                  <div class="text-muted small">
+                    {{ member.user_username }} · {{ member.organization_name }}
+                  </div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-2">
+                  <span class="badge bg-warning text-dark text-capitalize">{{ member.role }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm confirm-delete"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmDeletionModal"
+                    data-title="{{ _('Remove member') }}"
+                    data-message="{{ _('Remove %(user)s from %(org)s?', user=member.user_username, org=member.organization_name) }}"
+                    data-action="{{ url_for('manage.delete_vault_membership', membership_id=member.id) }}"
+                  >
+                    <i class="fa fa-user-minus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="text-muted small mt-1">
+                {{ _('Added on') }} {{ member.created_at.strftime('%Y-%m-%d') }}
+              </div>
+            </div>
+          {% else %}
+            <div class="list-group-item text-muted text-center">{{ _('No organization members yet.') }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <i class="fa fa-key me-2"></i>{{ _('Collection access') }}
+            <div class="text-muted small mb-0">{{ _('Manage which members can decrypt items per collection.') }}</div>
+          </div>
+          <button class="btn btn-outline-secondary btn-sm{% if not collections or not users %} disabled{% endif %}" data-bs-toggle="modal" data-bs-target="#collectionAccessModal">
+            <i class="fa fa-lock me-1"></i>{{ _('Grant access') }}
+          </button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>{{ _('Collection') }}</th>
+                <th>{{ _('User') }}</th>
+                <th>{{ _('Access level') }}</th>
+                <th>{{ _('Assigned') }}</th>
+                <th class="text-center">{{ _('Actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for access in collection_accesses %}
+                <tr>
+                  <td>
+                    {% if access.collection %}
+                      <strong>{{ access.collection.name }}</strong>
+                      <div class="text-muted small">{{ access.collection.organization.name }}</div>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if access.user %}
+                      {{ access.user.display_name }}<br>
+                      <span class="text-muted small">{{ access.user.username }}</span>
+                    {% else %}
+                      <span class="text-muted">-</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    <span class="badge bg-secondary text-uppercase small">{{ access.access_level }}</span>
+                  </td>
+                  <td>
+                    <div class="small text-muted">{{ access.created_at.strftime('%Y-%m-%d') if access.created_at else '-' }}</div>
+                    <div class="text-muted small">{{ _('By') }} {{ access.created_by.username if access.created_by else _('System') }}</div>
+                  </td>
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm confirm-delete"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmDeletionModal"
+                      data-title="{{ _('Revoke access') }}"
+                      data-message="{{ _('Revoke %(user)s access to %(collection)s?', user=(access.user.username if access.user else _('Unknown')), collection=(access.collection.name if access.collection else _('this collection'))) }}"
+                      data-action="{{ url_for('manage.delete_vault_collection_access', access_id=access.id) }}"
+                    >
+                      <i class="fa fa-trash"></i>
+                    </button>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">{{ _('No collection access entries yet.') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>{{ _('Organizations') }}</strong>
+          <span class="badge bg-body-secondary">{{ organizations|length }}</span>
+        </div>
+        <div class="list-group list-group-flush">
+          {% for org in organizations %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                  <h6 class="mb-1">{{ org.name }}</h6>
+                  <p class="small text-muted mb-1">{{ org.description or _('No description provided.') }}</p>
+                  <div class="text-muted small">
+                    {{ org.memberships|length }} {{ _('members') }} · {{ org.collections|length }} {{ _('collections') }}
+                  </div>
+                </div>
+                <div class="d-flex flex-column align-items-end">
+                  <span class="text-muted small">{{ org.created_at.strftime('%Y-%m-%d') }}</span>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm confirm-delete mt-2"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmDeletionModal"
+                    data-title="{{ _('Delete organization') }}"
+                    data-message="{{ _('Delete organization %(name)s? This will remove every linked collection and membership.', name=org.name) }}"
+                    data-action="{{ url_for('manage.delete_vault_organization', org_id=org.id) }}"
+                  >
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {% else %}
+            <div class="list-group-item text-center text-muted">{{ _('No organizations created yet.') }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <strong>{{ _('Collections') }}</strong>
+          <span class="badge bg-body-secondary">{{ collections|length }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>{{ _('Name') }}</th>
+                <th>{{ _('Organization') }}</th>
+                <th>{{ _('Description') }}</th>
+                <th>{{ _('Created') }}</th>
+                <th class="text-center">{{ _('Actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for collection in collections %}
+                <tr>
+                  <td>{{ collection.name }}</td>
+                  <td>{{ collection.organization.name }}</td>
+                  <td>{{ collection.description or '-' }}</td>
+                  <td>{{ collection.created_at.strftime('%Y-%m-%d') }}</td>
+                <td class="text-center">
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm confirm-delete"
+                    data-bs-toggle="modal"
+                    data-bs-target="#confirmDeletionModal"
+                    data-title="{{ _('Delete collection') }}"
+                    data-message="{{ _('Delete collection %(name)s from %(org)s?', name=collection.name, org=collection.organization.name) }}"
+                    data-action="{{ url_for('manage.delete_vault_collection', collection_id=collection.id) }}"
+                  >
+                    <i class="fa fa-trash"></i>
+                  </button>
+                </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="4" class="text-center text-muted">{{ _('No collections yet.') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header">
+          <i class="fa fa-list me-2"></i>{{ _('Vault security events') }}
+        </div>
+        <div class="list-group list-group-flush">
+          {% for event in vault_events %}
+            <div class="list-group-item">
+              <div class="d-flex justify-content-between">
+                <div>
+                  <strong>{{ _(event.action.replace('_', ' ')) }}</strong>
+                  <div class="text-muted small">{{ event.details | tojson }}</div>
+                </div>
+                <span class="text-muted small">{{ event.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+              </div>
+            </div>
+          {% else %}
+            <div class="list-group-item text-center text-muted">{{ _('No VaultWarden events recorded yet.') }}</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="orgModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-building me-2"></i>{{ _('Create organization') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="org_create">
+        <div class="modal-body">
+          {{ org_form.hidden_tag() }}
+          <div class="mb-3">
+            {{ org_form.name.label(class_="form-label") }}
+            {{ org_form.name(class_="form-control") }}
+          </div>
+          <div class="mb-3">
+            {{ org_form.description.label(class_="form-label") }}
+            {{ org_form.description(class_="form-control") }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary">{{ _('Create organization') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="collectionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-layer-group me-2"></i>{{ _('Create collection') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="collection_create">
+        <div class="modal-body">
+          {{ collection_form.hidden_tag() }}
+          <div class="mb-3">
+            {{ collection_form.organization_id.label(class_="form-label") }}
+            {% if organizations %}
+              {{ collection_form.organization_id(class_="form-select") }}
+            {% else %}
+              <select class="form-select" disabled>
+                <option>{{ _('Create an organization first') }}</option>
+              </select>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            {{ collection_form.name.label(class_="form-label") }}
+            {{ collection_form.name(class_="form-control") }}
+          </div>
+          <div class="mb-3">
+            {{ collection_form.description.label(class_="form-label") }}
+            {{ collection_form.description(class_="form-control") }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary" {% if not organizations %}disabled{% endif %}>{{ _('Create collection') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="membershipModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-user-plus me-2"></i>{{ _('Add organization member') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="membership_add">
+        <div class="modal-body">
+          {{ member_form.hidden_tag() }}
+          <div class="mb-3">
+            {{ member_form.organization_id.label(class_="form-label") }}
+            {% if organizations %}
+              {{ member_form.organization_id(class_="form-select") }}
+            {% else %}
+              <select class="form-select" disabled>
+                <option>{{ _('Create an organization first') }}</option>
+              </select>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            {{ member_form.user_id.label(class_="form-label") }}
+            {% if users %}
+              {{ member_form.user_id(class_="form-select") }}
+            {% else %}
+              <select class="form-select" disabled>
+                <option>{{ _('No users available') }}</option>
+              </select>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            {{ member_form.role.label(class_="form-label") }}
+            {{ member_form.role(class_="form-select") }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary" {% if not organizations or not users %}disabled{% endif %}>{{ _('Add member') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="collectionAccessModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header modal-header-gradient text-white">
+        <h5 class="modal-title"><i class="fa fa-lock me-2"></i>{{ _('Assign collection access') }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+      </div>
+      <form method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <input type="hidden" name="form_type" value="collection_access_grant">
+        <div class="modal-body">
+          {{ collection_access_form.hidden_tag() }}
+          <div class="mb-3">
+            {{ collection_access_form.collection_id.label(class_="form-label") }}
+            {% if collections %}
+              {{ collection_access_form.collection_id(class_="form-select") }}
+            {% else %}
+              <select class="form-select" disabled>
+                <option>{{ _('Create a collection first') }}</option>
+              </select>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            {{ collection_access_form.user_id.label(class_="form-label") }}
+            {% if users %}
+              {{ collection_access_form.user_id(class_="form-select") }}
+            {% else %}
+              <select class="form-select" disabled>
+                <option>{{ _('Add users before assigning access') }}</option>
+              </select>
+            {% endif %}
+          </div>
+          <div class="mb-3">
+            {{ collection_access_form.access_level.label(class_="form-label") }}
+            {{ collection_access_form.access_level(class_="form-select") }}
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-primary" {% if not collections or not users %}disabled{% endif %}>{{ _('Grant access') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="confirmDeletionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="confirmDeletionForm" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title">{{ _('Confirm action') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="{{ _('Close') }}"></button>
+        </div>
+        <div class="modal-body">
+          <p class="confirm-delete-message mb-0 text-muted">{{ _('Are you sure you want to perform this action?') }}</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-danger">{{ _('Confirm') }}</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% if org_form.errors %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => new bootstrap.Modal(document.getElementById("orgModal")).show());
+</script>
+{% endif %}
+{% if collection_form.errors %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => new bootstrap.Modal(document.getElementById("collectionModal")).show());
+</script>
+{% endif %}
+
+{% if member_form.errors %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => new bootstrap.Modal(document.getElementById("membershipModal")).show());
+</script>
+{% endif %}
+
+{% if collection_access_form.errors %}
+<script>
+  document.addEventListener("DOMContentLoaded", () => new bootstrap.Modal(document.getElementById("collectionAccessModal")).show());
+</script>
+{% endif %}
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const confirmModalEl = document.getElementById("confirmDeletionModal");
+    if (!confirmModalEl) {
+      return;
+    }
+    const confirmForm = document.getElementById("confirmDeletionForm");
+    const messageEl = confirmModalEl.querySelector(".confirm-delete-message");
+    confirmModalEl.addEventListener("show.bs.modal", (event) => {
+      const trigger = event.relatedTarget;
+      if (!trigger || !confirmForm) {
+        return;
+      }
+      confirmForm.action = trigger.dataset.action || confirmForm.action;
+      const titleElement = confirmModalEl.querySelector(".modal-title");
+      if (titleElement) {
+        titleElement.textContent = trigger.dataset.title || "{{ _('Confirm action') }}";
+      }
+      if (messageEl) {
+        messageEl.textContent = trigger.dataset.message || "{{ _('Are you sure you want to perform this action?') }}";
+      }
+    });
+  });
+</script>
+
+{% endblock %}
