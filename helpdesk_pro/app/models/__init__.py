@@ -1,7 +1,7 @@
 from .user import User
 from .ticket import Ticket, TicketComment, Attachment, AuditLog, TicketArchive
 from .inventory import SoftwareAsset, HardwareAsset
-from .contracts import Contract
+from .contracts import Contract, ContractUpdateHistory, ContractDocument
 from .address_book import AddressBookEntry
 from .network import Network, NetworkHost
 from .knowledge import KnowledgeArticle, KnowledgeArticleVersion, KnowledgeAttachment
