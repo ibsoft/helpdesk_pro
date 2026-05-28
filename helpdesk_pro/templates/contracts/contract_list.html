@@ -77,6 +77,10 @@
   max-height: 220px;
   overflow: auto;
 }
+.contract-document-box {
+  max-height: 220px;
+  overflow: auto;
+}
 </style>
 
 {% set module_access = module_access if module_access is defined else 'write' %}
@@ -151,7 +155,7 @@
               {% else %}
                 {{ _('%(days)s days left', days=alert.days_until_end) }}
               {% endif %}
-              · {{ _('End') }}: {{ contract.end_date.strftime('%Y-%m-%d') if contract.end_date else '—' }}
+              · {{ _('End') }}: {{ contract.end_date.strftime('%d/%m/%Y') if contract.end_date else '—' }}
             </div>
           </div>
           <div class="d-flex align-items-center gap-2">
@@ -256,9 +260,9 @@
       <td>{{ contract.po_number or '—' }}</td>
       <td data-order="{{ contract.value or 0 }}">{{ contract.value or '—' }}</td>
       <td>{{ contract.currency or '—' }}</td>
-      <td data-order="{{ contract.start_date.isoformat() if contract.start_date else '' }}">{{ contract.start_date.strftime('%Y-%m-%d') if contract.start_date else '—' }}</td>
-      <td data-order="{{ contract.end_date.isoformat() if contract.end_date else '' }}">{{ contract.end_date.strftime('%Y-%m-%d') if contract.end_date else '—' }}</td>
-      <td data-order="{{ contract.renewal_date.isoformat() if contract.renewal_date else '' }}">{{ contract.renewal_date.strftime('%Y-%m-%d') if contract.renewal_date else '—' }}</td>
+      <td data-order="{{ contract.start_date.isoformat() if contract.start_date else '' }}">{{ contract.start_date.strftime('%d/%m/%Y') if contract.start_date else '—' }}</td>
+      <td data-order="{{ contract.end_date.isoformat() if contract.end_date else '' }}">{{ contract.end_date.strftime('%d/%m/%Y') if contract.end_date else '—' }}</td>
+      <td data-order="{{ contract.renewal_date.isoformat() if contract.renewal_date else '' }}">{{ contract.renewal_date.strftime('%d/%m/%Y') if contract.renewal_date else '—' }}</td>
       <td>
         {% if contract.auto_renew %}
           <span class="badge-soft bg-success-subtle text-success-emphasis">{{ _('Yes') }}</span>
@@ -316,7 +320,7 @@
 <div class="modal fade" id="contractCreateModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content">
-      <form id="contract-create-form" action="{{ url_for('contracts.create_contract') }}" method="post">
+      <form id="contract-create-form" action="{{ url_for('contracts.create_contract') }}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header modal-header-gradient text-white">
           <h5 class="modal-title"><i class="fa fa-plus-circle me-2"></i>{{ _('New Contract') }}</h5>
@@ -417,6 +421,10 @@
               <label class="form-label">{{ _('Notes') }}</label>
               <textarea name="notes" rows="3" class="form-control"></textarea>
             </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Contract PDFs') }}</label>
+              <input name="contract_pdfs" type="file" class="form-control" accept="application/pdf,.pdf" multiple>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -434,7 +442,7 @@
 <div class="modal fade" id="contractEditModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-xl">
     <div class="modal-content">
-      <form id="contract-edit-form" action="#" method="post">
+      <form id="contract-edit-form" action="#" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header modal-header-gradient text-white">
           <h5 class="modal-title"><i class="fa fa-pen-to-square me-2"></i>{{ _('Edit Contract') }}</h5>
@@ -540,6 +548,10 @@
               <input name="history_notes" class="form-control" placeholder="{{ _('Optional note for history') }}">
             </div>
             <div class="col-12">
+              <label class="form-label">{{ _('Add Contract PDFs') }}</label>
+              <input name="contract_pdfs" type="file" class="form-control" accept="application/pdf,.pdf" multiple>
+            </div>
+            <div class="col-12">
               <div class="d-flex align-items-center justify-content-between mb-2">
                 <h6 class="mb-0"><i class="fa fa-clock-rotate-left me-2"></i>{{ _('Update History') }}</h6>
                 <span class="small text-body-secondary" id="contract-history-count"></span>
@@ -558,6 +570,28 @@
                   </thead>
                   <tbody id="contract-history-body">
                     <tr><td colspan="6" class="text-center text-body-secondary py-3">{{ _('No history yet') }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="col-12">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <h6 class="mb-0"><i class="fa fa-file-pdf me-2"></i>{{ _('Contract PDF History') }}</h6>
+                <span class="small text-body-secondary" id="contract-document-count"></span>
+              </div>
+              <div class="table-responsive contract-document-box border rounded">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>{{ _('File') }}</th>
+                      <th>{{ _('Period') }}</th>
+                      <th>{{ _('Uploaded') }}</th>
+                      <th>{{ _('By') }}</th>
+                      <th>{{ _('Action') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contract-document-body">
+                    <tr><td colspan="5" class="text-center text-body-secondary py-3">{{ _('No PDFs yet') }}</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -584,7 +618,7 @@
 <div class="modal fade" id="contractRenewModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
-      <form id="contract-renew-form" action="#" method="post">
+      <form id="contract-renew-form" action="#" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-header modal-header-gradient text-white">
           <h5 class="modal-title"><i class="fa fa-rotate-right me-2"></i>{{ _('Renew Contract') }}</h5>
@@ -627,6 +661,10 @@
             <div class="col-12">
               <label class="form-label">{{ _('Renewal Note') }}</label>
               <textarea name="renewal_notes" rows="3" class="form-control"></textarea>
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Contract PDFs') }}</label>
+              <input name="contract_pdfs" type="file" class="form-control" accept="application/pdf,.pdf" multiple>
             </div>
           </div>
         </div>
@@ -712,7 +750,9 @@ $(function() {
     $.ajax({
       url: $form.attr('action'),
       type: 'POST',
-      data: $form.serialize(),
+      data: new FormData($form[0]),
+      processData: false,
+      contentType: false,
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       success: function(res) {
         if (!res || res.success === false) {
@@ -794,8 +834,10 @@ $(function() {
     form.find('[name="support_url"]').val(contract.support_url);
     form.find('[name="notes"]').val(contract.notes);
     form.find('[name="history_notes"]').val('');
+    form.find('[name="contract_pdfs"]').val('');
     form.find('[name="auto_renew"]').prop('checked', contract.auto_renew);
     renderContractHistory(contract.history || []);
+    renderContractDocuments(contract.documents || []);
 
     $('#contract-delete-form').attr('action', deleteUrl);
     $('#contract-delete-name').text(contract.name);
@@ -825,10 +867,34 @@ $(function() {
         '<tr>' +
           '<td>' + escapeHtml(entry.created_at) + '</td>' +
           '<td><span class="badge bg-secondary-subtle text-secondary-emphasis">' + escapeHtml(entry.action) + '</span></td>' +
-          '<td>' + escapeHtml(periodText(entry.previous_start_date, entry.previous_end_date)) + '</td>' +
-          '<td>' + escapeHtml(periodText(entry.new_start_date, entry.new_end_date)) + '</td>' +
+          '<td>' + escapeHtml(periodText(entry.previous_start_date_display, entry.previous_end_date_display)) + '</td>' +
+          '<td>' + escapeHtml(periodText(entry.new_start_date_display, entry.new_end_date_display)) + '</td>' +
           '<td>' + escapeHtml(entry.changed_by || '—') + '</td>' +
           '<td class="text-truncate" style="max-width: 220px;">' + escapeHtml(entry.notes || '—') + '</td>' +
+        '</tr>'
+      );
+    });
+  }
+
+  function renderContractDocuments(documents) {
+    const body = $('#contract-document-body');
+    const count = $('#contract-document-count');
+    body.empty();
+    count.text(documents.length ? documents.length + ' {{ _("PDFs") }}' : '');
+    if (!documents.length) {
+      body.append('<tr><td colspan="5" class="text-center text-body-secondary py-3">{{ _("No PDFs yet") }}</td></tr>');
+      return;
+    }
+    documents.forEach(function(doc) {
+      const period = periodText(doc.start_date, doc.end_date);
+      const downloadUrl = '/contracts/documents/' + encodeURIComponent(doc.id) + '/download';
+      body.append(
+        '<tr>' +
+          '<td class="fw-semibold"><i class="fa fa-file-pdf text-danger me-1"></i>' + escapeHtml(doc.display_filename) + '</td>' +
+          '<td>' + escapeHtml(period) + '</td>' +
+          '<td>' + escapeHtml(doc.uploaded_at || '—') + '</td>' +
+          '<td>' + escapeHtml(doc.uploaded_by || '—') + '</td>' +
+          '<td><a class="btn btn-sm btn-outline-primary" href="' + downloadUrl + '"><i class="fa fa-download"></i></a></td>' +
         '</tr>'
       );
     });

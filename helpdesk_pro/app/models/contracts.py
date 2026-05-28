@@ -43,6 +43,12 @@ class Contract(db.Model):
         cascade="all, delete-orphan",
         order_by="desc(ContractUpdateHistory.created_at)",
     )
+    documents = db.relationship(
+        "ContractDocument",
+        back_populates="contract",
+        cascade="all, delete-orphan",
+        order_by="desc(ContractDocument.uploaded_at)",
+    )
 
     def days_until_end(self, today=None):
         if not self.end_date:
@@ -148,6 +154,7 @@ class Contract(db.Model):
                 "notice_date": self.notice_date().isoformat() if self.notice_date() else "",
             },
             "history": [entry.to_dict() for entry in self.history[:20]],
+            "documents": [document.to_dict() for document in self.documents],
         }
 
     def __repr__(self):
@@ -182,6 +189,9 @@ class ContractUpdateHistory(db.Model):
     def _date_to_string(self, value):
         return value.isoformat() if value else ""
 
+    def _date_to_display(self, value):
+        return value.strftime("%d/%m/%Y") if value else ""
+
     def _decimal_to_string(self, value):
         if isinstance(value, Decimal):
             return str(value)
@@ -197,6 +207,12 @@ class ContractUpdateHistory(db.Model):
             "new_end_date": self._date_to_string(self.new_end_date),
             "previous_renewal_date": self._date_to_string(self.previous_renewal_date),
             "new_renewal_date": self._date_to_string(self.new_renewal_date),
+            "previous_start_date_display": self._date_to_display(self.previous_start_date),
+            "previous_end_date_display": self._date_to_display(self.previous_end_date),
+            "new_start_date_display": self._date_to_display(self.new_start_date),
+            "new_end_date_display": self._date_to_display(self.new_end_date),
+            "previous_renewal_date_display": self._date_to_display(self.previous_renewal_date),
+            "new_renewal_date_display": self._date_to_display(self.new_renewal_date),
             "previous_status": self.previous_status or "",
             "new_status": self.new_status or "",
             "previous_value": self._decimal_to_string(self.previous_value),
@@ -205,5 +221,37 @@ class ContractUpdateHistory(db.Model):
             "new_currency": self.new_currency or "",
             "changed_by": self.changed_by.username if self.changed_by else "",
             "notes": self.notes or "",
-            "created_at": self.created_at.strftime("%Y-%m-%d %H:%M") if self.created_at else "",
+            "created_at": self.created_at.strftime("%d/%m/%Y %H:%M") if self.created_at else "",
+        }
+
+
+class ContractDocument(db.Model):
+    __tablename__ = "contract_document"
+
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contract.id"), nullable=False, index=True)
+    history_id = db.Column(db.Integer, db.ForeignKey("contract_update_history.id"), nullable=True, index=True)
+    original_filename = db.Column(db.String(255))
+    stored_filename = db.Column(db.String(255), nullable=False, unique=True)
+    display_filename = db.Column(db.String(255), nullable=False)
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+    uploaded_by_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    notes = db.Column(db.Text)
+
+    contract = db.relationship("Contract", back_populates="documents")
+    history = db.relationship("ContractUpdateHistory", backref=db.backref("documents", lazy=True))
+    uploaded_by = db.relationship("User", foreign_keys=[uploaded_by_id])
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "original_filename": self.original_filename or "",
+            "display_filename": self.display_filename or self.stored_filename,
+            "start_date": self.start_date.strftime("%d/%m/%Y") if self.start_date else "",
+            "end_date": self.end_date.strftime("%d/%m/%Y") if self.end_date else "",
+            "uploaded_by": self.uploaded_by.username if self.uploaded_by else "",
+            "uploaded_at": self.uploaded_at.strftime("%d/%m/%Y %H:%M") if self.uploaded_at else "",
+            "notes": self.notes or "",
         }
