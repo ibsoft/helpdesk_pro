@@ -4,6 +4,8 @@ REST API client credential model.
 Handles key generation, rotation, and verification for external integrations.
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 import secrets
 import bcrypt
@@ -92,4 +94,3 @@ class ApiClient(db.Model):
             "last_used_at": self.last_used_at.isoformat() if self.last_used_at else None,
             "revoked_at": self.revoked_at.isoformat() if self.revoked_at else None,
         }
-
