@@ -67,6 +67,16 @@
 .btn-readonly {
   opacity: 0.55;
 }
+.contract-alert-row {
+  border-left: 4px solid var(--bs-warning);
+}
+.contract-alert-row.alert-danger {
+  border-left-color: var(--bs-danger);
+}
+.contract-history-box {
+  max-height: 220px;
+  overflow: auto;
+}
 </style>
 
 {% set module_access = module_access if module_access is defined else 'write' %}
@@ -105,6 +115,12 @@
       </div>
       <div class="metric">
         <span class="metric-count bg-danger-subtle text-danger-emphasis">
+          <i class="fa fa-bell"></i> {{ urgent_count }}
+        </span>
+        <span class="metric-label">{{ _('Needs Action') }}</span>
+      </div>
+      <div class="metric">
+        <span class="metric-count bg-danger-subtle text-danger-emphasis">
           <i class="fa fa-calendar-times"></i> {{ expired_count }}
         </span>
         <span class="metric-label">{{ _('Expired') }}</span>
@@ -112,6 +128,51 @@
     </div>
   </div>
 </div>
+
+{% if actionable_contracts %}
+<div class="card border-0 shadow-sm mb-3">
+  <div class="card-header bg-body d-flex align-items-center justify-content-between">
+    <h6 class="mb-0"><i class="fa fa-bell text-warning me-2"></i>{{ _('Contract Alerts') }}</h6>
+    <span class="badge bg-warning-subtle text-warning-emphasis">{{ actionable_contracts|length }}</span>
+  </div>
+  <div class="list-group list-group-flush">
+    {% for contract in actionable_contracts[:8] %}
+      {% set alert = contract_alerts[contract.id] %}
+      <div class="list-group-item contract-alert-row alert-{{ alert.severity }}">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+          <div>
+            <div class="fw-semibold">{{ contract.name }}</div>
+            <div class="small text-body-secondary">
+              {{ contract.vendor or _('No vendor') }} ·
+              {% if alert.days_until_end < 0 %}
+                {{ _('%(days)s days overdue', days=0 - alert.days_until_end) }}
+              {% elif alert.days_until_end == 0 %}
+                {{ _('Expires today') }}
+              {% else %}
+                {{ _('%(days)s days left', days=alert.days_until_end) }}
+              {% endif %}
+              · {{ _('End') }}: {{ contract.end_date.strftime('%Y-%m-%d') if contract.end_date else '—' }}
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-{{ alert.severity }}-subtle text-{{ alert.severity }}-emphasis">{{ _(alert.label) }}</span>
+            {% if can_write %}
+              <button type="button"
+                      class="btn btn-sm btn-outline-primary renew-contract-btn"
+                      data-id="{{ contract.id }}"
+                      data-name="{{ contract.name }}"
+                      data-renew-url="{{ url_for('contracts.renew_contract', contract_id=contract.id) }}"
+                      data-defaults-url="{{ url_for('contracts.renewal_defaults', contract_id=contract.id) }}">
+                <i class="fa fa-rotate-right"></i> {{ _('Renew') }}
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h4 class="mb-0"><i class="fa fa-file-contract"></i> {{ _('Contract Registry') }}</h4>
@@ -134,6 +195,8 @@
       <th>{{ _('Name') }}</th>
       <th>{{ _('Type') }}</th>
       <th>{{ _('Status') }}</th>
+      <th>{{ _('Alert') }}</th>
+      <th>{{ _('Days Left') }}</th>
       <th>{{ _('Vendor') }}</th>
       <th>{{ _('Contract #') }}</th>
       <th>{{ _('PO #') }}</th>
@@ -155,6 +218,7 @@
   </thead>
   <tbody>
     {% for contract in contracts %}
+    {% set alert = contract_alerts[contract.id] %}
     <tr data-contract-id="{{ contract.id }}">
       <td class="fw-semibold">{{ contract.name }}</td>
       <td>{{ contract.contract_type }}</td>
@@ -171,6 +235,20 @@
           <span class="badge-soft bg-dark-subtle text-dark-emphasis">{{ _('Terminated') }}</span>
         {% else %}
           <span class="badge-soft bg-light text-body-secondary">{{ contract.status or _('Unknown') }}</span>
+        {% endif %}
+      </td>
+      <td>
+        <span class="badge-soft bg-{{ alert.severity }}-subtle text-{{ alert.severity }}-emphasis">{{ _(alert.label) }}</span>
+      </td>
+      <td data-order="{{ alert.days_until_end if alert.days_until_end is not none else 999999 }}">
+        {% if alert.days_until_end is none %}
+          —
+        {% elif alert.days_until_end < 0 %}
+          {{ _('%(days)s overdue', days=0 - alert.days_until_end) }}
+        {% elif alert.days_until_end == 0 %}
+          {{ _('Today') }}
+        {% else %}
+          {{ alert.days_until_end }}
         {% endif %}
       </td>
       <td>{{ contract.vendor or '—' }}</td>
@@ -209,6 +287,15 @@
                 data-delete-url="{{ url_for('contracts.delete_contract', contract_id=contract.id) }}"
                 {% if not can_write %}data-readonly="true"{% endif %}>
           <i class="fa fa-edit"></i>
+        </button>
+        <button type="button"
+                class="btn btn-sm btn-outline-success renew-contract-btn ms-1 {% if not can_write %}btn-readonly{% endif %}"
+                data-id="{{ contract.id }}"
+                data-name="{{ contract.name }}"
+                data-renew-url="{{ url_for('contracts.renew_contract', contract_id=contract.id) }}"
+                data-defaults-url="{{ url_for('contracts.renewal_defaults', contract_id=contract.id) }}"
+                {% if not can_write %}data-readonly="true"{% endif %}>
+          <i class="fa fa-rotate-right"></i>
         </button>
         <button type="button"
                 class="btn btn-sm btn-outline-danger delete-contract-btn ms-1 {% if not can_write %}btn-readonly{% endif %}"
@@ -448,6 +535,33 @@
               <label class="form-label">{{ _('Notes') }}</label>
               <textarea name="notes" rows="3" class="form-control"></textarea>
             </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Update Note') }}</label>
+              <input name="history_notes" class="form-control" placeholder="{{ _('Optional note for history') }}">
+            </div>
+            <div class="col-12">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <h6 class="mb-0"><i class="fa fa-clock-rotate-left me-2"></i>{{ _('Update History') }}</h6>
+                <span class="small text-body-secondary" id="contract-history-count"></span>
+              </div>
+              <div class="table-responsive contract-history-box border rounded">
+                <table class="table table-sm table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th>{{ _('Date') }}</th>
+                      <th>{{ _('Action') }}</th>
+                      <th>{{ _('Previous Period') }}</th>
+                      <th>{{ _('New Period') }}</th>
+                      <th>{{ _('By') }}</th>
+                      <th>{{ _('Note') }}</th>
+                    </tr>
+                  </thead>
+                  <tbody id="contract-history-body">
+                    <tr><td colspan="6" class="text-center text-body-secondary py-3">{{ _('No history yet') }}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer justify-content-between">
@@ -460,6 +574,67 @@
               <i class="fa fa-save"></i> {{ _('Save Changes') }}
             </button>
           </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Renew Modal -->
+<div class="modal fade" id="contractRenewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <form id="contract-renew-form" action="#" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-header modal-header-gradient text-white">
+          <h5 class="modal-title"><i class="fa fa-rotate-right me-2"></i>{{ _('Renew Contract') }}</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <div class="fw-semibold" id="contract-renew-name"></div>
+            <div class="small text-body-secondary">{{ _('Create the next active period and keep the previous period in history.') }}</div>
+          </div>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label">{{ _('New Start Date') }}</label>
+              <input name="new_start_date" type="date" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('New End Date') }}</label>
+              <input name="new_end_date" type="date" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Next Review Date') }}</label>
+              <input name="new_renewal_date" type="date" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Status') }}</label>
+              <select name="new_status" class="form-select">
+                {% for option in contract_statuses %}
+                  <option value="{{ option }}" {% if option == 'Active' %}selected{% endif %}>{{ _(option) }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Value') }}</label>
+              <input name="new_value" type="number" step="0.01" min="0" class="form-control">
+            </div>
+            <div class="col-md-4">
+              <label class="form-label">{{ _('Currency') }}</label>
+              <input name="new_currency" class="form-control" maxlength="8">
+            </div>
+            <div class="col-12">
+              <label class="form-label">{{ _('Renewal Note') }}</label>
+              <textarea name="renewal_notes" rows="3" class="form-control"></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ _('Cancel') }}</button>
+          <button type="submit" class="btn btn-success">
+            <i class="fa fa-save"></i> {{ _('Save Renewal') }}
+          </button>
         </div>
       </form>
     </div>
@@ -499,7 +674,7 @@ $(function() {
   const moduleAccess = "{{ module_access|default('write') }}";
   const canWrite = moduleAccess === "write";
   const contractsTable = $('#contractsTable').DataTable({
-    order: [[8, 'asc']],
+    order: [[11, 'asc']],
     pageLength: 25,
     language: { url: "{{ url_for('static', filename='datatables/' + g.locale + '.json') }}" },
     scrollX: true,
@@ -515,11 +690,11 @@ $(function() {
       { extend: 'searchBuilder', text: '<i class=\"fa fa-filter\"></i> {{ _("Advanced Filters") }}', className: 'btn btn-secondary btn-sm mx-1' }
     ],
     columnDefs: [
-      { targets: [8, 9, 10], type: 'date', searchBuilderType: 'date' },
-      { targets: [6], render: $.fn.dataTable.render.number(',', '.', 2, '') }
+      { targets: [10, 11, 12], type: 'date', searchBuilderType: 'date' },
+      { targets: [8], render: $.fn.dataTable.render.number(',', '.', 2, '') }
     ],
     searchBuilder: {
-      columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+      columns: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]
     }
   });
 
@@ -582,6 +757,11 @@ $(function() {
     submitForm($(this), 'contractDeleteModal');
   });
 
+  $('#contract-renew-form').on('submit', function(e) {
+    e.preventDefault();
+    submitForm($(this), 'contractRenewModal');
+  });
+
   const createModal = document.getElementById('contractCreateModal');
   if (createModal) {
     createModal.addEventListener('hidden.bs.modal', function() {
@@ -613,11 +793,45 @@ $(function() {
     form.find('[name="support_phone"]').val(contract.support_phone);
     form.find('[name="support_url"]').val(contract.support_url);
     form.find('[name="notes"]').val(contract.notes);
+    form.find('[name="history_notes"]').val('');
     form.find('[name="auto_renew"]').prop('checked', contract.auto_renew);
+    renderContractHistory(contract.history || []);
 
     $('#contract-delete-form').attr('action', deleteUrl);
     $('#contract-delete-name').text(contract.name);
     $('.delete-contract-from-edit-btn').data('delete-url', deleteUrl).data('name', contract.name);
+  }
+
+  function periodText(start, end) {
+    if (!start && !end) return '—';
+    return (start || '—') + ' → ' + (end || '—');
+  }
+
+  function escapeHtml(value) {
+    return $('<div>').text(value || '').html();
+  }
+
+  function renderContractHistory(history) {
+    const body = $('#contract-history-body');
+    const count = $('#contract-history-count');
+    body.empty();
+    count.text(history.length ? history.length + ' {{ _("entries") }}' : '');
+    if (!history.length) {
+      body.append('<tr><td colspan="6" class="text-center text-body-secondary py-3">{{ _("No history yet") }}</td></tr>');
+      return;
+    }
+    history.forEach(function(entry) {
+      body.append(
+        '<tr>' +
+          '<td>' + escapeHtml(entry.created_at) + '</td>' +
+          '<td><span class="badge bg-secondary-subtle text-secondary-emphasis">' + escapeHtml(entry.action) + '</span></td>' +
+          '<td>' + escapeHtml(periodText(entry.previous_start_date, entry.previous_end_date)) + '</td>' +
+          '<td>' + escapeHtml(periodText(entry.new_start_date, entry.new_end_date)) + '</td>' +
+          '<td>' + escapeHtml(entry.changed_by || '—') + '</td>' +
+          '<td class="text-truncate" style="max-width: 220px;">' + escapeHtml(entry.notes || '—') + '</td>' +
+        '</tr>'
+      );
+    });
   }
 
   function openContractEdit(btn) {
@@ -669,6 +883,29 @@ $(function() {
     $('#contract-delete-name').text(name);
     const modal = new bootstrap.Modal(document.getElementById('contractDeleteModal'));
     modal.show();
+  });
+
+  $(document).on('click', '.renew-contract-btn', function() {
+    if (!canWrite) {
+      showToast('{{ _("You have read-only access to Contracts.") }}', 'info');
+      return;
+    }
+    const btn = $(this);
+    const form = $('#contract-renew-form');
+    form[0].reset();
+    form.attr('action', btn.data('renew-url'));
+    $('#contract-renew-name').text(btn.data('name'));
+    $.get(btn.data('defaults-url'), function(res) {
+      if (res && res.success && res.defaults) {
+        Object.keys(res.defaults).forEach(function(key) {
+          form.find('[name="' + key + '"]').val(res.defaults[key]);
+        });
+      }
+      const modal = new bootstrap.Modal(document.getElementById('contractRenewModal'));
+      modal.show();
+    }).fail(function() {
+      showToast('{{ _("Failed to prepare renewal.") }}', 'danger');
+    });
   });
 
   $('#contractsTable tbody').on('dblclick', 'tr', function() {
