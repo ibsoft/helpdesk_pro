@@ -541,7 +541,10 @@ def save_vault_profile():
 
     payload = request.get_json(silent=True) or {}
     kdf_salt = (payload.get("kdf_salt") or "").strip()
+    account_password = payload.get("account_password") or ""
     verification_blob = payload.get("verification_blob")
+    if not account_password or not current_user.check_password(account_password):
+        return jsonify({"error": _("Account password confirmation failed.")}), 403
     if not kdf_salt or not isinstance(verification_blob, dict):
         return jsonify({"error": _("Vault verification data is incomplete.")}), 400
     if not verification_blob.get("iv") or not verification_blob.get("ciphertext"):
