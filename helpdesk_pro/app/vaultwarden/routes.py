@@ -32,6 +32,7 @@ from app.models import (
     VaultOrganization,
     VaultOrganizationKeyShare,
     VaultOrganizationMembership,
+    VaultUserProfile,
 )
 from app.vaultwarden.forms import VaultFolderForm, VaultItemForm
 
@@ -44,6 +45,7 @@ SORT_OPTIONS = {
     "last_accessed": VaultItem.last_accessed.desc(),
 }
 COLLECTION_MODIFY_ACCESS_LEVELS = {"edit", "manage"}
+LEGACY_VAULT_SALT = "helpdesk-pro-vaultwarden"
 
 
 class VaultItemAccessError(Exception):
@@ -154,6 +156,18 @@ def _safe_json_payload(payload: str) -> Optional[dict]:
         return json.loads(payload)
     except (json.JSONDecodeError, TypeError):
         return None
+
+
+def _vault_profile_payload(profile: Optional[VaultUserProfile]) -> dict:
+    if not profile:
+        return {"configured": False}
+    return {
+        "configured": True,
+        "kdf_algorithm": profile.kdf_algorithm,
+        "kdf_salt": profile.kdf_salt,
+        "verification_blob": profile.verification_blob,
+        "version": profile.version,
+    }
 
 
 def _apply_filters(query, *, show_trash: bool, favorites_only: bool, folder_id: Optional[int], tag: Optional[str], item_type: Optional[str], search: str):
@@ -338,6 +352,20 @@ def index():
         .limit(6)
         .all()
     )
+    vault_profile = VaultUserProfile.query.filter_by(user_id=current_user.id).first()
+    personal_item_count = VaultItem.query.filter_by(
+        owner_id=current_user.id,
+        collection_id=None,
+    ).count()
+    vault_setup_sample_blob = None
+    if personal_item_count and not vault_profile:
+        sample_item = (
+            VaultItem.query
+            .filter_by(owner_id=current_user.id, collection_id=None)
+            .order_by(VaultItem.created_at.asc())
+            .first()
+        )
+        vault_setup_sample_blob = sample_item.encrypted_blob if sample_item else None
 
     item_form = VaultItemForm()
     item_form.folder_id.choices = _build_folder_choices(
@@ -404,6 +432,9 @@ def index():
         collection_access_map=collection_access_map,
         modify_access_levels=sorted(COLLECTION_MODIFY_ACCESS_LEVELS),
         vault_alert_message=vault_alert_message,
+        vault_profile=_vault_profile_payload(vault_profile),
+        vault_setup_salt=LEGACY_VAULT_SALT if personal_item_count else None,
+        vault_setup_sample_blob=vault_setup_sample_blob,
     )
 
 
@@ -493,6 +524,32 @@ def create_item():
 
     flask_flash(_("Encrypted vault item saved."), "success")
     return redirect(url_for("vaultwarden.index"))
+
+
+@vaultwarden_bp.route("/profile", methods=["POST"])
+@login_required
+def save_vault_profile():
+    existing = VaultUserProfile.query.filter_by(user_id=current_user.id).first()
+    if existing:
+        return jsonify({"error": _("Vault profile is already configured.")}), 409
+
+    payload = request.get_json(silent=True) or {}
+    kdf_salt = (payload.get("kdf_salt") or "").strip()
+    verification_blob = payload.get("verification_blob")
+    if not kdf_salt or not isinstance(verification_blob, dict):
+        return jsonify({"error": _("Vault verification data is incomplete.")}), 400
+    if not verification_blob.get("iv") or not verification_blob.get("ciphertext"):
+        return jsonify({"error": _("Vault verification blob is invalid.")}), 400
+
+    profile = VaultUserProfile(
+        user_id=current_user.id,
+        kdf_salt=kdf_salt,
+        verification_blob=verification_blob,
+    )
+    db.session.add(profile)
+    _record("vault_profile_create")
+    db.session.commit()
+    return jsonify({"profile": _vault_profile_payload(profile)}), 201
 
 
 @vaultwarden_bp.route("/folders/create", methods=["POST"])

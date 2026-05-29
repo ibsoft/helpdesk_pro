@@ -539,12 +539,19 @@
       </div>
       <div class="modal-body">
         <p class="text-muted small">
-          {{ _('Derive the vault key on the client: enter your passphrase, keep it for the session, and clear it whenever you want to lock the vault again.') }}
+          {{ _('Enter your vault passphrase. The browser verifies it before unlocking encrypted item details for this session.') }}
         </p>
+        {% if not vault_profile.configured %}
+          <div class="alert alert-info small py-2">
+            <i class="fa-solid fa-circle-info me-1"></i>
+            {{ _('First unlock will initialize vault verification for this account. Keep this passphrase safe; encrypted personal items cannot be recovered without it.') }}
+          </div>
+        {% endif %}
         <div class="mb-3">
           <label class="form-label">{{ _('Vault passphrase') }}</label>
           <input id="vaultPassphrase" type="password" class="form-control" placeholder="{{ _('Enter passphrase') }}">
           <div class="text-muted small mt-1" id="vaultKeyHint"></div>
+          <div class="small mt-1" id="vaultUnlockStatus"></div>
         </div>
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" id="vaultRememberPassphrase">
@@ -581,9 +588,8 @@
           type="button"
           id="vaultPassphraseOk"
           class="btn btn-primary"
-          data-bs-dismiss="modal"
         >
-          {{ _('OK') }}
+          {{ _('Unlock vault') if vault_profile.configured else _('Set up vault') }}
         </button>
       </div>
     </div>
@@ -870,6 +876,14 @@
 {% endblock %}
 
 {% block extra_js %}
+  <script>
+    window.VaultWardenConfig = {
+      csrfToken: {{ csrf_token()|tojson }},
+      profile: {{ vault_profile|tojson }},
+      setupSalt: {{ vault_setup_salt|tojson }},
+      setupSampleBlob: {{ vault_setup_sample_blob|tojson }},
+    };
+  </script>
   <script src="{{ url_for('static', filename='vaultwarden/vaultwarden.js') }}"></script>
   {% if vault_alert_message %}
     <script>

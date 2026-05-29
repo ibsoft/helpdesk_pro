@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import backref, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app import db
@@ -221,6 +221,29 @@ class VaultAuditLog(db.Model):
 
     def __repr__(self):
         return f"<VaultAuditLog action={self.action} user={self.user_id}>"
+
+
+class VaultUserProfile(db.Model):
+    __tablename__ = "vault_user_profile"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("user.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+    )
+    kdf_algorithm = db.Column(db.String(40), nullable=False, default="argon2id-or-pbkdf2")
+    kdf_salt = db.Column(db.String(255), nullable=False)
+    verification_blob = db.Column(db.JSON, nullable=False)
+    version = db.Column(db.Integer, nullable=False, default=1)
+    created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
+    updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
+
+    user = relationship("User", backref=backref("vault_profile", uselist=False))
+
+    def __repr__(self):
+        return f"<VaultUserProfile user={self.user_id} v={self.version}>"
 
 
 class VaultOrganizationKeyShare(db.Model):
