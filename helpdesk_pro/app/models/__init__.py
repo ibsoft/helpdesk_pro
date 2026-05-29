@@ -49,4 +49,5 @@ from .vaultwarden import (
     VaultOrganizationMembership,
     VaultOrganizationKeyShare,
     VaultCollectionAccess,
+    VaultUserProfile,
 )

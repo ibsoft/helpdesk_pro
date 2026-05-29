@@ -1,7 +1,11 @@
 const VaultWarden = (() => {
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
-  const salt = "helpdesk-pro-vaultwarden";
+  const fallbackSalt = "helpdesk-pro-vaultwarden";
+  const verifierPrefix = "helpdesk-pro-vault-verifier:";
+  const config = window.VaultWardenConfig || {};
+  let vaultProfile = config.profile || { configured: false };
+  let setupSalt = config.setupSalt || null;
   const sessionStorageKey = "vaultwarden_passphrase";
   const typeIconMap = {
     login: "fa-solid fa-user-lock",
@@ -45,7 +49,22 @@ const VaultWarden = (() => {
   const bufferToBase64 = (buffer) => btoa(String.fromCharCode(...new Uint8Array(buffer)));
   const base64ToBuffer = (value) => Uint8Array.from(atob(value), (c) => c.charCodeAt(0));
 
-  const deriveKey = async (passphrase) => {
+  const randomBase64 = (byteLength = 32) => {
+    const bytes = crypto.getRandomValues(new Uint8Array(byteLength));
+    return bufferToBase64(bytes);
+  };
+
+  const getActiveSalt = () => {
+    if (vaultProfile?.configured && vaultProfile.kdf_salt) {
+      return vaultProfile.kdf_salt;
+    }
+    if (!setupSalt) {
+      setupSalt = randomBase64(16);
+    }
+    return setupSalt || fallbackSalt;
+  };
+
+  const deriveKey = async (passphrase, salt = getActiveSalt()) => {
     if (!passphrase) {
       derivedKey = null;
       return null;
@@ -112,7 +131,14 @@ const VaultWarden = (() => {
       hint.textContent = "";
       return;
     }
-    hint.textContent = `Key fingerprint: ${passphrase.length} chars`;
+    hint.textContent = `Passphrase length: ${passphrase.length} chars`;
+  };
+
+  const updateUnlockStatus = (message = "", level = "muted") => {
+    const status = document.getElementById("vaultUnlockStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.className = `small mt-1 text-${level}`;
   };
 
   const persistPassphraseForSession = (passphrase) => {
@@ -129,40 +155,109 @@ const VaultWarden = (() => {
     }
   };
 
+  const saveVaultProfile = async (kdfSalt, verificationBlob) => {
+    const response = await fetch("/vaultwarden/profile", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-CSRFToken": config.csrfToken || "",
+      },
+      body: JSON.stringify({
+        kdf_salt: kdfSalt,
+        verification_blob: verificationBlob,
+      }),
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.error || "Unable to save vault verification profile.");
+    }
+    vaultProfile = payload.profile || vaultProfile;
+    return vaultProfile;
+  };
+
+  const unlockWithPassphrase = async (passphrase) => {
+    const salt = getActiveSalt();
+    const key = await deriveKey(passphrase, salt);
+    if (!key) {
+      throw new Error("Enter your vault passphrase.");
+    }
+
+    if (vaultProfile?.configured) {
+      let decryptedVerifier = "";
+      try {
+        decryptedVerifier = await decryptPayload(vaultProfile.verification_blob, key);
+      } catch (err) {
+        throw new Error("Incorrect vault passphrase.");
+      }
+      if (!decryptedVerifier.startsWith(verifierPrefix)) {
+        throw new Error("Incorrect vault passphrase.");
+      }
+      return key;
+    }
+
+    if (config.setupSampleBlob) {
+      try {
+        await decryptPayload(config.setupSampleBlob, key);
+      } catch (err) {
+        throw new Error("That passphrase cannot decrypt existing personal vault items.");
+      }
+    }
+    const verificationBlob = await encryptPayload(`${verifierPrefix}${randomBase64(24)}`, key);
+    await saveVaultProfile(salt, verificationBlob);
+    return key;
+  };
+
+  const handlePassphraseInput = (event) => {
+    const passphrase = event.target.value || "";
+    updateKeyInfo(passphrase);
+    updateUnlockStatus("");
+    if (!passphrase) {
+      persistPassphraseForSession("");
+    }
+  };
+
   const handlePassphrase = async (event, { notify = false } = {}) => {
-    const passphrase = event.target.value;
+    const passphrase = (event.target.value || "").trim();
+    if (!passphrase) {
+      derivedKey = null;
+      updateKeyInfo("");
+      updateUnlockStatus("");
+      persistPassphraseForSession("");
+      orgKeyCache.clear();
+      orgKeyPromises.clear();
+      if (notify) {
+        showAlert("Vault passphrase cleared for this session.");
+      }
+      return false;
+    }
     try {
-      derivedKey = await deriveKey(passphrase);
+      derivedKey = await unlockWithPassphrase(passphrase);
     } catch (err) {
       derivedKey = null;
+      orgKeyCache.clear();
+      orgKeyPromises.clear();
+      updateUnlockStatus(err.message || "Unable to unlock the vault.", "danger");
       if (notify) {
-        showAlert("Unable to derive the vault key. Please check your passphrase.");
+        showAlert(err.message || "Unable to unlock the vault with that passphrase.");
       }
-      return;
+      return false;
     }
     updateKeyInfo(passphrase);
     persistPassphraseForSession(passphrase.trim());
-    if (passphrase) {
-      loadOrganizationKeys();
-    } else {
-      orgKeyCache.clear();
-      orgKeyPromises.clear();
-    }
+    updateUnlockStatus("Vault unlocked for this session.", "success");
+    loadOrganizationKeys();
     if (notify) {
-      if (passphrase && derivedKey) {
-        showAlert("Vault unlocked for this session.");
-      } else if (!passphrase) {
-        showAlert("Vault passphrase cleared for this session.");
-      } else {
-        showAlert("Unable to unlock the vault with that passphrase.");
-      }
+      showAlert("Vault unlocked for this session.");
     }
+    return true;
   };
 
   const setupPassphraseInput = () => {
     const input = document.getElementById("vaultPassphrase");
     if (!input) return;
-    input.addEventListener("input", () => handlePassphrase({ target: input }));
+    input.addEventListener("input", () => handlePassphraseInput({ target: input }));
     loadSessionPassphrase(input);
   };
 
@@ -205,7 +300,14 @@ const VaultWarden = (() => {
       vaultPassphraseOk.addEventListener("click", () => {
         const input = document.getElementById("vaultPassphrase");
         if (input) {
-          handlePassphrase({ target: input }, { notify: true });
+          handlePassphrase({ target: input }, { notify: true }).then((ok) => {
+            if (ok) {
+              const modalEl = document.getElementById("vaultEncryptionModal");
+              if (modalEl) {
+                bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+              }
+            }
+          });
         }
       });
     }
@@ -382,6 +484,7 @@ const VaultWarden = (() => {
     }
     derivedKey = null;
     updateKeyInfo("");
+    updateUnlockStatus("");
     showAlert("Vault passphrase cleared for this session.");
     if (window.sessionStorage) {
       sessionStorage.removeItem(sessionStorageKey);
