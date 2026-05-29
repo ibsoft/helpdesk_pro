@@ -32,6 +32,13 @@ def _bool_env(key: str, default: bool) -> bool:
     return raw.lower() in {"1", "true", "yes"}
 
 
+def _int_env(key: str, default: int) -> int:
+    try:
+        return int(os.getenv(key, default))
+    except (TypeError, ValueError):
+        return default
+
+
 def _bytes_env(key: str, default: int) -> int:
     raw = os.getenv(key)
     if raw is None or raw == "":
@@ -68,7 +75,10 @@ class Config:
         'MAIL_FALLBACK_TO_NO_AUTH', 'True').lower() == 'true'
     LANGUAGES = ['en', 'el']
     BABEL_DEFAULT_LOCALE = os.getenv('DEFAULT_LANGUAGE', 'en')
-    PERMANENT_SESSION_LIFETIME = timedelta(minutes=45)
+    SESSION_TIMEOUT_MINUTES = _int_env('SESSION_TIMEOUT_MINUTES', 45)
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=SESSION_TIMEOUT_MINUTES)
+    SESSION_REFRESH_EACH_REQUEST = _bool_env('SESSION_REFRESH_EACH_REQUEST', True)
+    REMEMBER_COOKIE_DURATION = timedelta(days=_int_env('REMEMBER_COOKIE_DAYS', 30))
     LOG_LEVEL = os.getenv('LOG_LEVEL', 'INFO').upper()
     LOG_FILE_LEVEL = os.getenv('LOG_FILE_LEVEL')
     if LOG_FILE_LEVEL:
