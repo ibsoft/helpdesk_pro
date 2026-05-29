@@ -155,7 +155,7 @@ const VaultWarden = (() => {
     }
   };
 
-  const saveVaultProfile = async (kdfSalt, verificationBlob) => {
+  const saveVaultProfile = async (kdfSalt, verificationBlob, accountPassword) => {
     const response = await fetch("/vaultwarden/profile", {
       method: "POST",
       credentials: "same-origin",
@@ -167,6 +167,7 @@ const VaultWarden = (() => {
       body: JSON.stringify({
         kdf_salt: kdfSalt,
         verification_blob: verificationBlob,
+        account_password: accountPassword,
       }),
     });
     const payload = await response.json().catch(() => ({}));
@@ -175,6 +176,21 @@ const VaultWarden = (() => {
     }
     vaultProfile = payload.profile || vaultProfile;
     return vaultProfile;
+  };
+
+  const getSetupCredentials = () => {
+    if (vaultProfile?.configured) {
+      return {};
+    }
+    const accountPassword = (document.getElementById("vaultAccountPassword")?.value || "").trim();
+    const confirmation = (document.getElementById("vaultPassphraseConfirm")?.value || "").trim();
+    if (!accountPassword) {
+      throw new Error("Confirm your account password before setting up the vault.");
+    }
+    if (!confirmation) {
+      throw new Error("Confirm the new vault passphrase.");
+    }
+    return { accountPassword, confirmation };
   };
 
   const unlockWithPassphrase = async (passphrase) => {
@@ -197,6 +213,10 @@ const VaultWarden = (() => {
       return key;
     }
 
+    const { accountPassword, confirmation } = getSetupCredentials();
+    if (passphrase !== confirmation) {
+      throw new Error("Vault passphrases do not match.");
+    }
     if (config.setupSampleBlob) {
       try {
         await decryptPayload(config.setupSampleBlob, key);
@@ -205,7 +225,7 @@ const VaultWarden = (() => {
       }
     }
     const verificationBlob = await encryptPayload(`${verifierPrefix}${randomBase64(24)}`, key);
-    await saveVaultProfile(salt, verificationBlob);
+    await saveVaultProfile(salt, verificationBlob, accountPassword);
     return key;
   };
 

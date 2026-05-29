@@ -544,20 +544,33 @@
         {% if vault_profile.reset_required %}
           <div class="alert alert-warning small py-2">
             <i class="fa-solid fa-triangle-exclamation me-1"></i>
-            {{ _('Your vault passphrase verifier was reset. Set a new passphrase for future unlocks; existing personal encrypted items may still require the old passphrase.') }}
+            {{ _('Your vault passphrase verifier was reset. Confirm your account password and set a new vault passphrase for future unlocks; existing personal encrypted items may still require the old passphrase.') }}
           </div>
         {% elif not vault_profile.configured %}
           <div class="alert alert-info small py-2">
             <i class="fa-solid fa-circle-info me-1"></i>
-            {{ _('First unlock will initialize vault verification for this account. Keep this passphrase safe; encrypted personal items cannot be recovered without it.') }}
+            {{ _('Set up vault verification for this account. Confirm your account password, choose a vault passphrase, and keep it safe; encrypted personal items cannot be recovered without it.') }}
+          </div>
+        {% endif %}
+        {% set vault_setup_mode = vault_profile.reset_required or not vault_profile.configured %}
+        {% if vault_setup_mode %}
+          <div class="mb-3">
+            <label class="form-label">{{ _('Account password') }}</label>
+            <input id="vaultAccountPassword" type="password" class="form-control" placeholder="{{ _('Confirm your login password') }}">
           </div>
         {% endif %}
         <div class="mb-3">
-          <label class="form-label">{{ _('Vault passphrase') }}</label>
+          <label class="form-label">{{ _('Vault passphrase') if vault_profile.configured else _('New vault passphrase') }}</label>
           <input id="vaultPassphrase" type="password" class="form-control" placeholder="{{ _('Enter passphrase') }}">
           <div class="text-muted small mt-1" id="vaultKeyHint"></div>
           <div class="small mt-1" id="vaultUnlockStatus"></div>
         </div>
+        {% if vault_setup_mode %}
+          <div class="mb-3">
+            <label class="form-label">{{ _('Confirm vault passphrase') }}</label>
+            <input id="vaultPassphraseConfirm" type="password" class="form-control" placeholder="{{ _('Repeat vault passphrase') }}">
+          </div>
+        {% endif %}
         <div class="form-check mb-3">
           <input class="form-check-input" type="checkbox" id="vaultRememberPassphrase">
           <label class="form-check-label" for="vaultRememberPassphrase">{{ _('Keep passphrase for this session') }}</label>
