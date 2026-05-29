@@ -234,13 +234,17 @@ class VaultUserProfile(db.Model):
         unique=True,
     )
     kdf_algorithm = db.Column(db.String(40), nullable=False, default="argon2id-or-pbkdf2")
-    kdf_salt = db.Column(db.String(255), nullable=False)
-    verification_blob = db.Column(db.JSON, nullable=False)
+    kdf_salt = db.Column(db.String(255), nullable=True)
+    verification_blob = db.Column(db.JSON, nullable=True)
+    reset_required = db.Column(db.Boolean, nullable=False, default=False)
+    reset_at = db.Column(db.DateTime, nullable=True)
+    reset_by_user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=True)
     version = db.Column(db.Integer, nullable=False, default=1)
     created_at = db.Column(db.DateTime, nullable=False, server_default=func.now())
     updated_at = db.Column(db.DateTime, nullable=False, server_default=func.now(), onupdate=func.now())
 
-    user = relationship("User", backref=backref("vault_profile", uselist=False))
+    user = relationship("User", backref=backref("vault_profile", uselist=False), foreign_keys=[user_id])
+    reset_by = relationship("User", foreign_keys=[reset_by_user_id])
 
     def __repr__(self):
         return f"<VaultUserProfile user={self.user_id} v={self.version}>"

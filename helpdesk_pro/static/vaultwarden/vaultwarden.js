@@ -499,6 +499,10 @@ const VaultWarden = (() => {
     if (!window.sessionStorage || !input) {
       return;
     }
+    if (vaultProfile?.reset_required) {
+      sessionStorage.removeItem(sessionStorageKey);
+      return;
+    }
     const stored = sessionStorage.getItem(sessionStorageKey);
     if (!stored) {
       return;
