@@ -375,15 +375,15 @@
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('Start Date') }}</label>
-              <input name="start_date" type="date" class="form-control">
+              <input name="start_date" type="text" class="form-control contract-eu-date" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" pattern="\d{2}/\d{2}/\d{4}">
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('End Date') }}</label>
-              <input name="end_date" type="date" class="form-control">
+              <input name="end_date" type="text" class="form-control contract-eu-date" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" pattern="\d{2}/\d{2}/\d{4}">
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('Renewal Date') }}</label>
-              <input name="renewal_date" type="date" class="form-control">
+              <input name="renewal_date" type="text" class="form-control contract-eu-date" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" pattern="\d{2}/\d{2}/\d{4}">
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('Notice Period (days)') }}</label>
@@ -497,15 +497,15 @@
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('Start Date') }}</label>
-              <input name="start_date" type="date" class="form-control">
+              <input name="start_date" type="text" class="form-control contract-eu-date" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" pattern="\d{2}/\d{2}/\d{4}">
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('End Date') }}</label>
-              <input name="end_date" type="date" class="form-control">
+              <input name="end_date" type="text" class="form-control contract-eu-date" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" pattern="\d{2}/\d{2}/\d{4}">
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('Renewal Date') }}</label>
-              <input name="renewal_date" type="date" class="form-control">
+              <input name="renewal_date" type="text" class="form-control contract-eu-date" placeholder="dd/mm/yyyy" inputmode="numeric" autocomplete="off" pattern="\d{2}/\d{2}/\d{4}">
             </div>
             <div class="col-md-3">
               <label class="form-label">{{ _('Notice Period (days)') }}</label>
@@ -844,6 +844,22 @@ $(function() {
     });
   }
 
+  function isoToEuropeanDate(value) {
+    if (!value) return '';
+    const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!match) return value;
+    return `${match[3]}/${match[2]}/${match[1]}`;
+  }
+
+  $(document).on('input', '.contract-eu-date', function() {
+    const digits = this.value.replace(/\D/g, '').slice(0, 8);
+    const parts = [];
+    if (digits.length > 0) parts.push(digits.slice(0, 2));
+    if (digits.length > 2) parts.push(digits.slice(2, 4));
+    if (digits.length > 4) parts.push(digits.slice(4, 8));
+    this.value = parts.filter(Boolean).join('/');
+  });
+
   function populateContractForm(contract, updateUrl, deleteUrl) {
     const form = $('#contract-edit-form');
     form.attr('action', updateUrl);
@@ -855,9 +871,9 @@ $(function() {
     form.find('[name="po_number"]').val(contract.po_number);
     form.find('[name="value"]').val(contract.value);
     form.find('[name="currency"]').val(contract.currency);
-    form.find('[name="start_date"]').val(contract.start_date);
-    form.find('[name="end_date"]').val(contract.end_date);
-    form.find('[name="renewal_date"]').val(contract.renewal_date);
+    form.find('[name="start_date"]').val(isoToEuropeanDate(contract.start_date));
+    form.find('[name="end_date"]').val(isoToEuropeanDate(contract.end_date));
+    form.find('[name="renewal_date"]').val(isoToEuropeanDate(contract.renewal_date));
     form.find('[name="notice_period_days"]').val(contract.notice_period_days);
     form.find('[name="owner_id"]').val(contract.owner_id || '');
     form.find('[name="coverage_scope"]').val(contract.coverage_scope);

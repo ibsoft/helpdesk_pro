@@ -45,13 +45,15 @@ CONTRACT_DOCUMENT_MIME_OVERRIDES = {
 
 
 def _parse_date(field_name):
-    value = request.form.get(field_name)
+    value = (request.form.get(field_name) or "").strip()
     if not value:
         return None
-    try:
-        return datetime.strptime(value, "%Y-%m-%d").date()
-    except ValueError:
-        return None
+    for date_format in ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y"):
+        try:
+            return datetime.strptime(value, date_format).date()
+        except ValueError:
+            continue
+    return None
 
 
 def _parse_decimal(field_name):
