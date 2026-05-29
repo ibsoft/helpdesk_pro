@@ -3,7 +3,7 @@ from __future__ import annotations
 import secrets
 
 from authlib.integrations.base_client import OAuthError
-from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, flash, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from flask_mail import Message
@@ -78,6 +78,7 @@ def _get_selected_method(request_method: str, available_methods: list[str]) -> s
 
 def _handle_successful_login(user: User, remember: bool):
     login_user(user, remember=remember)
+    session.permanent = True
     display_name = user.full_name or user.username
     flash(_("Welcome, %(username)s!", username=display_name), "success")
     next_url = request.args.get("next")
