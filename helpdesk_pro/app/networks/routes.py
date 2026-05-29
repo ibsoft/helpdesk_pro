@@ -7,6 +7,7 @@ Provides management pages for IP network maps and networking tools.
 import ipaddress
 import platform
 import re
+import shutil
 import socket
 import subprocess
 from typing import List
@@ -77,10 +78,18 @@ def _parse_ports(raw_ports: List[str]) -> List[int]:
 
 def _run_ping_command(target: str) -> subprocess.CompletedProcess:
     system = platform.system().lower()
+    ping_binary = shutil.which("ping")
+    if not ping_binary:
+        for candidate in ("/usr/bin/ping", "/bin/ping", "/sbin/ping"):
+            if shutil.which(candidate):
+                ping_binary = candidate
+                break
+    if not ping_binary:
+        raise FileNotFoundError("ping")
     if system == "windows":
-        command = ["ping", "-n", "3", "-w", "2000", target]
+        command = [ping_binary, "-n", "3", "-w", "2000", target]
     else:
-        command = ["ping", "-c", "3", "-W", "2", target]
+        command = [ping_binary, "-c", "3", "-W", "2", target]
     return subprocess.run(command, capture_output=True, text=True, timeout=10)
 
 
@@ -383,7 +392,19 @@ def run_ping():
     try:
         result = _run_ping_command(target)
     except FileNotFoundError:
-        return _json_response(False, "Ping utility is not available on this server.", "danger", 500)
+        return _json_response(
+            False,
+            "Ping utility is not available on this server. Install iputils-ping or ensure /usr/bin/ping is available to the service.",
+            "danger",
+            500,
+        )
+    except PermissionError:
+        return _json_response(
+            False,
+            "Ping utility exists but cannot run with the current service permissions.",
+            "danger",
+            500,
+        )
     except subprocess.TimeoutExpired:
         return _json_response(False, "Ping command timed out.", "warning", 504)
 
