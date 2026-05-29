@@ -242,20 +242,23 @@ def create_app():
     file_level = getattr(logging, file_level_name, logging.INFO)
     log_formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-    file_handler = TimedRotatingFileHandler("logs/helpdesk.log", when="midnight", interval=1, backupCount=10, utc=False)
-    file_handler.setLevel(file_level)
-    file_handler.setFormatter(log_formatter)
-
     root_logger = logging.getLogger()
-    # remove existing handlers pointing to the same file to avoid duplicate entries
-    for handler in list(root_logger.handlers):
-        if isinstance(handler, TimedRotatingFileHandler) and getattr(handler, "baseFilename", "") == file_handler.baseFilename:
-            root_logger.removeHandler(handler)
-            try:
-                handler.close()
-            except Exception:
-                pass
-    root_logger.addHandler(file_handler)
+    file_handler = None
+    try:
+        file_handler = TimedRotatingFileHandler("logs/helpdesk.log", when="midnight", interval=1, backupCount=10, utc=False)
+        file_handler.setLevel(file_level)
+        file_handler.setFormatter(log_formatter)
+        # remove existing handlers pointing to the same file to avoid duplicate entries
+        for handler in list(root_logger.handlers):
+            if isinstance(handler, TimedRotatingFileHandler) and getattr(handler, "baseFilename", "") == file_handler.baseFilename:
+                root_logger.removeHandler(handler)
+                try:
+                    handler.close()
+                except Exception:
+                    pass
+        root_logger.addHandler(file_handler)
+    except OSError as exc:
+        sys.stderr.write(f"WARNING: unable to open logs/helpdesk.log for writing: {exc}\n")
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
     console_handler.setFormatter(log_formatter)
