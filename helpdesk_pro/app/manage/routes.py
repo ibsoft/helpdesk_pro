@@ -40,6 +40,7 @@ from app.models import (
     VaultOrganization,
     VaultOrganizationMembership,
     VaultOrganizationKeyShare,
+    VaultUserProfile,
 )
 from app.models.assistant import DEFAULT_SYSTEM_PROMPT
 from app.navigation import (
@@ -827,6 +828,37 @@ def vaultwarden():
         }
         for membership in memberships
     ]
+    profile_map = {
+        profile.user_id: profile
+        for profile in VaultUserProfile.query.all()
+    }
+    personal_item_counts = dict(
+        db.session.query(VaultItem.owner_id, db.func.count(VaultItem.id))
+        .filter(VaultItem.collection_id.is_(None))
+        .group_by(VaultItem.owner_id)
+        .all()
+    )
+    vault_user_rows = []
+    for user in users:
+        profile = profile_map.get(user.id)
+        configured = bool(
+            profile
+            and not profile.reset_required
+            and profile.kdf_salt
+            and profile.verification_blob
+        )
+        vault_user_rows.append(
+            {
+                "id": user.id,
+                "display_name": user.display_name,
+                "username": user.username,
+                "email": user.email,
+                "configured": configured,
+                "reset_required": bool(profile and profile.reset_required),
+                "personal_items": personal_item_counts.get(user.id, 0),
+                "updated_at": profile.updated_at if profile else None,
+            }
+        )
     org_form = VaultOrganizationForm()
     collection_form = VaultCollectionForm()
     collection_form.organization_id.choices = [(org.id, org.name) for org in organizations]
@@ -996,7 +1028,52 @@ def vaultwarden():
         collection_access_form=collection_access_form,
         org_collection_counts=org_collection_counts,
         collection_item_counts=collection_item_counts,
+        vault_user_rows=vault_user_rows,
     )
+
+
+@manage_bp.route("/vaultwarden/users/<int:user_id>/reset-passphrase", methods=["POST"])
+@login_required
+def reset_vault_passphrase(user_id):
+    _require_admin()
+    user = User.query.get_or_404(user_id)
+    profile = VaultUserProfile.query.filter_by(user_id=user.id).first()
+    if not profile:
+        profile = VaultUserProfile(
+            user_id=user.id,
+            reset_required=True,
+            reset_at=datetime.utcnow(),
+            reset_by_user_id=current_user.id,
+        )
+        db.session.add(profile)
+    else:
+        profile.kdf_salt = None
+        profile.verification_blob = None
+        profile.reset_required = True
+        profile.reset_at = datetime.utcnow()
+        profile.reset_by_user_id = current_user.id
+        profile.version = (profile.version or 1) + 1
+    VaultAuditLog.record(
+        action="vault_profile_reset",
+        user_id=current_user.id,
+        details={
+            "target_user_id": user.id,
+            "target_username": user.username,
+            "self_reset": user.id == current_user.id,
+        },
+    )
+    db.session.commit()
+    if user.id == current_user.id:
+        flash(
+            _("Your vault passphrase verifier was reset. Set a new passphrase from the vault unlock dialog."),
+            "warning",
+        )
+    else:
+        flash(
+            _("Vault passphrase verifier reset for %(user)s. They must set a new passphrase next time they unlock the vault.", user=user.username),
+            "warning",
+        )
+    return redirect(url_for("manage.vaultwarden"))
 
 
 @manage_bp.route("/vaultwarden/organizations/<int:org_id>/delete", methods=["POST"])

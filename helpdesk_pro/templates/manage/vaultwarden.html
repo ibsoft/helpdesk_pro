@@ -72,6 +72,77 @@
       <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
           <div>
+            <i class="fa fa-unlock-keyhole me-2"></i>{{ _('Vault passphrases') }}
+            <div class="text-muted small mb-0">{{ _('Reset a user verifier so they can set a new vault passphrase.') }}</div>
+          </div>
+          <span class="badge bg-body-secondary">{{ vault_user_rows|length }}</span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>{{ _('User') }}</th>
+                <th>{{ _('Status') }}</th>
+                <th>{{ _('Personal items') }}</th>
+                <th>{{ _('Updated') }}</th>
+                <th class="text-end">{{ _('Actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for vault_user in vault_user_rows %}
+                <tr>
+                  <td>
+                    <strong>{{ vault_user.display_name }}</strong>
+                    <div class="text-muted small">{{ vault_user.username }} · {{ vault_user.email }}</div>
+                  </td>
+                  <td>
+                    {% if vault_user.reset_required %}
+                      <span class="badge bg-warning text-dark">{{ _('Reset required') }}</span>
+                    {% elif vault_user.configured %}
+                      <span class="badge bg-success">{{ _('Configured') }}</span>
+                    {% else %}
+                      <span class="badge bg-secondary">{{ _('Not set up') }}</span>
+                    {% endif %}
+                  </td>
+                  <td>{{ vault_user.personal_items }}</td>
+                  <td>
+                    <span class="text-muted small">{{ vault_user.updated_at.strftime('%Y-%m-%d %H:%M') if vault_user.updated_at else '-' }}</span>
+                  </td>
+                  <td class="text-end">
+                    <button
+                      type="button"
+                      class="btn btn-outline-warning btn-sm confirm-delete"
+                      data-bs-toggle="modal"
+                      data-bs-target="#confirmDeletionModal"
+                      data-title="{{ _('Reset vault passphrase') }}"
+                      data-message="{{ _('Reset the vault passphrase verifier for %(user)s? Existing personal encrypted items may require the old passphrase and cannot be recovered by an admin.', user=vault_user.username) }}"
+                      data-action="{{ url_for('manage.reset_vault_passphrase', user_id=vault_user.id) }}"
+                    >
+                      <i class="fa fa-rotate-left me-1"></i>{{ _('Reset') }}
+                    </button>
+                  </td>
+                </tr>
+              {% else %}
+                <tr>
+                  <td colspan="5" class="text-center text-muted">{{ _('No users available.') }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="card-footer text-muted small">
+          <i class="fa fa-triangle-exclamation me-1"></i>
+          {{ _('Resetting changes only the unlock verifier. It does not decrypt or re-encrypt existing personal vault items.') }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
             <i class="fa fa-user-friends me-2"></i>{{ _('Organization members') }}
             <div class="text-muted small mb-0">{{ _('Who can access each shared vault organization.') }}</div>
           </div>

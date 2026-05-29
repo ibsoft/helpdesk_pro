@@ -541,7 +541,12 @@
         <p class="text-muted small">
           {{ _('Enter your vault passphrase. The browser verifies it before unlocking encrypted item details for this session.') }}
         </p>
-        {% if not vault_profile.configured %}
+        {% if vault_profile.reset_required %}
+          <div class="alert alert-warning small py-2">
+            <i class="fa-solid fa-triangle-exclamation me-1"></i>
+            {{ _('Your vault passphrase verifier was reset. Set a new passphrase for future unlocks; existing personal encrypted items may still require the old passphrase.') }}
+          </div>
+        {% elif not vault_profile.configured %}
           <div class="alert alert-info small py-2">
             <i class="fa-solid fa-circle-info me-1"></i>
             {{ _('First unlock will initialize vault verification for this account. Keep this passphrase safe; encrypted personal items cannot be recovered without it.') }}

@@ -160,9 +160,15 @@ def _safe_json_payload(payload: str) -> Optional[dict]:
 
 def _vault_profile_payload(profile: Optional[VaultUserProfile]) -> dict:
     if not profile:
-        return {"configured": False}
+        return {"configured": False, "reset_required": False}
+    configured = bool(
+        not profile.reset_required
+        and profile.kdf_salt
+        and profile.verification_blob
+    )
     return {
-        "configured": True,
+        "configured": configured,
+        "reset_required": profile.reset_required,
         "kdf_algorithm": profile.kdf_algorithm,
         "kdf_salt": profile.kdf_salt,
         "verification_blob": profile.verification_blob,
@@ -433,7 +439,7 @@ def index():
         modify_access_levels=sorted(COLLECTION_MODIFY_ACCESS_LEVELS),
         vault_alert_message=vault_alert_message,
         vault_profile=_vault_profile_payload(vault_profile),
-        vault_setup_salt=LEGACY_VAULT_SALT if personal_item_count else None,
+        vault_setup_salt=LEGACY_VAULT_SALT if personal_item_count and not vault_profile else None,
         vault_setup_sample_blob=vault_setup_sample_blob,
     )
 
@@ -530,7 +536,7 @@ def create_item():
 @login_required
 def save_vault_profile():
     existing = VaultUserProfile.query.filter_by(user_id=current_user.id).first()
-    if existing:
+    if existing and not existing.reset_required:
         return jsonify({"error": _("Vault profile is already configured.")}), 409
 
     payload = request.get_json(silent=True) or {}
@@ -541,13 +547,24 @@ def save_vault_profile():
     if not verification_blob.get("iv") or not verification_blob.get("ciphertext"):
         return jsonify({"error": _("Vault verification blob is invalid.")}), 400
 
-    profile = VaultUserProfile(
-        user_id=current_user.id,
-        kdf_salt=kdf_salt,
-        verification_blob=verification_blob,
-    )
-    db.session.add(profile)
-    _record("vault_profile_create")
+    if existing:
+        profile = existing
+        profile.kdf_salt = kdf_salt
+        profile.verification_blob = verification_blob
+        profile.reset_required = False
+        profile.reset_at = None
+        profile.reset_by_user_id = None
+        profile.version = (profile.version or 1) + 1
+        action = "vault_profile_recreate"
+    else:
+        profile = VaultUserProfile(
+            user_id=current_user.id,
+            kdf_salt=kdf_salt,
+            verification_blob=verification_blob,
+        )
+        db.session.add(profile)
+        action = "vault_profile_create"
+    _record(action)
     db.session.commit()
     return jsonify({"profile": _vault_profile_payload(profile)}), 201
 
